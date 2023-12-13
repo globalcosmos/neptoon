@@ -90,3 +90,80 @@ For open source projects, say how it is licensed.
 
 ## Project status
 If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+
+
+
+
+---
+tags: example, readme, template
+title: README Template
+---
+::: success
+
+**Todos:**
+<br>
+
+- [ ] Project title and description
+- [ ] Use Cases
+- [ ] Requirements
+- [ ] Installation
+- [ ] Links to Documentation, Background material, further reading
+
+----
+
+- [**Example template from github.**](https://github.com/othneildrew/Best-README-Template/blob/master/BLANK_README.md)
+
+:::
+
+<center>
+<p style="font-size:20pt" align=center> <b>Project Name</b> </p>
+
+> This section is a general description of the project. 
+> It outlines the project's goals, reflects its actual state, and explains specific use cases or properties. 
+> Here is also a good space for a showcase image or video. 
+
+</center>
+
+## About the Project (optional)
+
+## Getting Started
+
+### Prerequisites
+
+> Which software does the user need to have installed to run your project? 
+> Which knowledge should they possess? (Link to potential learning resources) 
+> Does the user require any accounts/ access rights with third-party services? 
+
+### Installation
+
+> (If applicable) add step-by-step instructions on how to install and run the project 
+
+## Usage
+
+> How to use your project? 
+> How to handle everyday use cases? --> this can also be done on a separate documentation page
+
+## Roadmap (optional)
+
+> Give a glimpse of features that are on the roadmap
+
+## Contributing (optional)
+
+> Put other information here, like where to get help and find more project-related information, 
+> e.g., community forums, discord channels, Trello boards 
+
+We are accepting merge requests, bug reports, and feature requests. 
+Please see the [CONTRIBUTING.md](CONTRIBUTING.md) for the complete guide. 
+
+## License
+
+Distributed under the MIT License. See `LICENSE.md` for more information.
+
+-----
+
+> There are many more sections that can be included here, like 
+>
+> * Contributors 
+> * Contact information 
+> * FAQ
+
