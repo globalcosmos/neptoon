@@ -18,13 +18,16 @@ class NMDBDataHandler:
             defaultdir (str, optional): Default working directory. Defaults to ''.
             startdate (str, optional): First date from which data is required.
             enddate (str, optional): Last date from which data is required.
+            cache_dir (str, optional): Storage of cached NMDB monitor data.
+            dfnmdb (None|DF): 
         """
         self.station = station
         self.defaultdir = defaultdir
         self.startdate = self.standardize_date(startdate)
         self.enddate = self.standardize_date(enddate)
-        self.cache_dir = cfg.AppConfig.get_cache_dir()
-    
+        self.cache_dir = cfg.COSMOSConfig.get_cache_dir()
+        self.dfnmdb = None
+
     @staticmethod
     def standardize_date(date_str):
         """Checks the provided date format and converts to necessary format.
@@ -46,38 +49,37 @@ class NMDBDataHandler:
             # Handle the error if the date format is unrecognized
             print(f"Error: '{date_str}' is not a recognizable date format.")
             return None
+    
+    def append_and_sort_data(self, df_cache, dfdownload):
+        """Appends new data to cached data and sorts by date.
+
+        Args:
+            df_cache (DataFrame): The cached data.
+            dfdownload (DataFrame): The newly downloaded data.
+
+        Returns:
+            DataFrame: The combined and sorted DataFrame.
+        """
+        # Concatenate the two DataFrames
+        combined_df = pd.concat([df_cache, dfdownload])
+
+        # Sort the DataFrame by the 'DATE' column
+        combined_df_sorted = combined_df.sort_values(by='DATE')
+
+        # Reset the index if necessary
+        combined_df_sorted.reset_index(drop=True, inplace=True)
+
+        return combined_df_sorted
         
     def delete_cache_file(self):
-        confirmation = input("Are you sure you want to delete the cached NMDB data? (yes/no): ")
-        if confirmation.lower() in ['no', 'n']:
-            print('Aborted.')
-            pass
-        elif confirmation.lower() in ['yes', 'y']:
-            directory = self.cache_dir
-            filename = f'nmdb_{self.station}.csv'
-            os.remove(os.path.join(directory, filename))
-            print('Cache file deleted')
-        else:
-            print("Please type yes if you wish to delete the cache. Aborted.")
-
-    def check_cache(self):
+        """Delete the cached file for the current instance.
+        """
         directory = self.cache_dir
         filename = f'nmdb_{self.station}.csv'
-        file_path = os.path.join(directory, filename)
-        try:
-            df = pd.read_csv(file_path)
-            df['DATE'] = pd.to_datetime(df['DATE'])
-            mindate = df['DATE'].min()
-            maxdate = df['DATE'].max()
-            
-            # if mindate <= self.startdate and maxdate <=:
-            #     self.startdate = maxdate
-            # if self.startdate 
-            
-        except Exception as e:
-            print(f'Problem checking cache: {e}')
+        os.remove(os.path.join(directory, filename))
+        print('Cache file deleted')
 
-    def get_data(self):
+    def get_data(self, startdate, enddate):
         """nmdb_get will collect data for Junfraujoch station that is required to calculate fsol.
         Returns a dictionary that can be used to fill in values to the main dataframe
         of each site.
@@ -96,8 +98,8 @@ class NMDBDataHandler:
             df of neutron count data from NMDB.eu
         """
         # Split dates for use in URL
-        sy, sm, sd = str(self.startdate).split("-")
-        ey, em, ed = str(self.enddate).split("-")
+        sy, sm, sd = str(self.standardize_date(startdate)).split("-")
+        ey, em, ed = str(self.standardize_date(enddate)).split("-")
 
         # Construct URL for data request
         url = f"http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]={self.station}&tabchoice=1h&dtype=corr_for_efficiency&tresolution=60&force=1&yunits=0&date_choice=bydate&start_day={sd}&start_month={sm}&start_year={sy}&start_hour=0&start_min=0&end_day={ed}&end_month={em}&end_year={ey}&end_hour=23&end_min=59&output=ascii"
@@ -119,7 +121,94 @@ class NMDBDataHandler:
         dfneut['DATE'] = pd.to_datetime(dfneut['DATE'])
         dfneut['COUNT'] = dfneut['COUNT'].astype(float)
         
-        self.nmdbdata = dfneut
+        return dfneut
 
-    def append_cache():
-        pass
+    def fetch_and_append_data(self, startdate, enddate):
+        """_summary_
+
+        Args:
+            startdate (_type_): _description_
+            enddate (_type_): _description_
+        """
+        cache_file_path = os.path.join(self.cache_dir, f'nmdb_{self.station}.csv')
+        # Convert Timestamps to strings in 'YYYY-mm-dd' format if necessary
+        if isinstance(startdate, pd.Timestamp):
+            startdate = startdate.strftime('%Y-%m-%d')
+        if isinstance(enddate, pd.Timestamp):
+            enddate = enddate.strftime('%Y-%m-%d')
+        
+        try:
+            df_cache = pd.read_csv(cache_file_path)
+            df_cache['DATE'] = pd.to_datetime(df_cache['DATE'])
+            df_download = self.get_data(startdate, enddate)
+            dfnew = self.append_and_sort_data(df_cache, df_download)
+            dfnew.to_csv(cache_file_path, index=False) # Save new cache.
+        except: # Exception for when cache is not present
+            df_download = self.get_data(startdate, enddate)
+            df_download.to_csv(cache_file_path, index=False)
+
+    def collect_data(self):
+            """Checks the cache and updates the start and end dates for data fetching if needed."""
+            cache_file_path = os.path.join(self.cache_dir, f'nmdb_{self.station}.csv')
+            
+            # if self.startdate or self.enddate are empty ##
+            
+            if os.path.exists(cache_file_path):
+                try:
+                    # Read the cache
+                    df_cache = pd.read_csv(cache_file_path)
+                    df_cache['DATE'] = pd.to_datetime(df_cache['DATE'])
+
+                    # Get the date range in cache
+                    cached_start = df_cache['DATE'].min()
+                    cached_end = df_cache['DATE'].max()
+                    # cached_start = self.standardize_date(cached_start)
+                    # cached_end = self.standardize_date(cached_end)
+
+                    need_data_before_cache = pd.to_datetime(self.startdate) < cached_start
+                    need_data_after_cache = pd.to_datetime(self.enddate) > cached_end
+
+                    if need_data_before_cache and need_data_after_cache:
+                        # Data is needed both before and after the cached data
+                        self.fetch_and_append_data(self.startdate, cached_start)
+                        self.fetch_and_append_data(cached_end, self.enddate)
+                        df_cache = pd.read_csv(cache_file_path)
+                        df_cache['DATE'] = pd.to_datetime(df_cache['DATE'])
+                        return df_cache
+
+                    elif need_data_before_cache:
+                        # Only need to download data before the cached start date
+                        self.fetch_and_append_data(self.startdate, cached_start)
+                        df_cache = pd.read_csv(cache_file_path)
+                        df_cache['DATE'] = pd.to_datetime(df_cache['DATE'])
+                        return df_cache
+
+                    elif need_data_after_cache:
+                        # Only need to download data after the cached end date
+                        self.fetch_and_append_data(cached_end, self.enddate)
+                        df_cache = pd.read_csv(cache_file_path)
+                        df_cache['DATE'] = pd.to_datetime(df_cache['DATE'])
+                        return df_cache
+
+                    else:
+                        # All data is in cache, no need to download
+                        print("All data is present in the cache.")
+                        return df_cache
+                except Exception as e:
+                    print(f'Problem checking cache: {e}')
+            else:
+                print(f"No cache file found at {cache_file_path}.")
+                self.fetch_and_append_data(self.startdate, self.enddate)
+                df_cache = pd.read_csv(cache_file_path)
+                df_cache['DATE'] = pd.to_datetime(df_cache['DATE'])
+                return df_cache
+            
+## Usage (in seperate file)
+            
+# from cosmosbase.ancillary_data_collection.nmdb_data_collection import NMDBDataHandler
+
+# nmdb = NMDBDataHandler(station='JUNG', startdate='10/10/2014', enddate='10/10/2016')
+
+# nmdb.collect_data() <-- Outputs a dataframe of DATETIME and COUNTS
+# nmdb.delete_cache_file()
+
