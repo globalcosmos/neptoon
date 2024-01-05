@@ -16,6 +16,13 @@ test-job2:
     - echo "which simulates a test that runs 20 seconds longer than test-job1"
     - sleep 20
 
+lint:
+  stage: test
+  image: python:3.10
+  script:
+    - pip install flake8
+    - flake8 .
+
 deploy-prod:
   stage: deploy
   script:

@@ -1,13 +1,14 @@
 from platformdirs import PlatformDirs
 import os
 
+
 class COSMOSConfig:
     _dirs = PlatformDirs("cosmos-base", "CRNS")
 
     @staticmethod
     def get_cache_dir():
         return COSMOSConfig._dirs.user_cache_dir
-    
+
     @staticmethod
     def check_and_create_cache():
         directory = COSMOSConfig.get_cache_dir()

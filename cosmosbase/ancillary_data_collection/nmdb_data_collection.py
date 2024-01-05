@@ -2,21 +2,27 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import urllib
 from dateutil import parser
-import cosmosbase.configuration.config as cfg  ### !!!
+import cosmosbase.configuration.config as cfg
 import os
 
 
 class NMDBDataHandler:
-    def __init__(self, station="JUNG", defaultdir="", startdate="", enddate=""):
+    def __init__(
+        self, station="JUNG", defaultdir="", startdate="", enddate=""
+    ):
         """Initialize the NMDBDataFetcher Class
 
-        Args:
-            station (str, optional): if using different station provide the string here. Defaults to 'JUNG'.
-            defaultdir (str, optional): Default working directory. Defaults to ''.
-            startdate (str, optional): First date from which data is required.
-            enddate (str, optional): Last date from which data is required.
-            cache_dir (str, optional): Storage of cached NMDB monitor data.
-            dfnmdb (None|DF):
+        Parameters
+        ----------
+        station : str, optional
+            change station to another, by default "JUNG" testing a type
+        defaultdir : str, optional
+            Default working directory, by default "" testing an extra
+            long sentence using the tool
+        startdate : str, optional
+            _description_, by default ""
+        enddate : str, optional
+            _description_, by default ""
         """
         self.station = station
         self.defaultdir = defaultdir
@@ -27,13 +33,17 @@ class NMDBDataHandler:
 
     @staticmethod
     def standardize_date(date_str):
-        """Checks the provided date format and converts to necessary format.
+        """Function to standardize the date automatically
 
-        Args:
-            date_str (any): String representing the date
+        Parameters
+        ----------
+        date_str : str
+            Converts a string date to the standard format (YYYY-mm-dd)
 
-        Returns:
-            formatted date: Returns the formatted date in the format YYYY-mm-dd
+        Returns
+        -------
+        str
+            Date string in format (YYYY-mm-dd)
         """
         try:
             # Parse the date
@@ -76,9 +86,8 @@ class NMDBDataHandler:
         print("Cache file deleted")
 
     def get_data(self, startdate, enddate):
-        """nmdb_get will collect data for Junfraujoch station that is required to calculate fsol.
-        Returns a dictionary that can be used to fill in values to the main dataframe
-        of each site.
+        """Will collect data from defined station.
+        Returns a dictionary of values
 
         Parameters
         ----------
@@ -130,7 +139,9 @@ class NMDBDataHandler:
             startdate (_type_): _description_
             enddate (_type_): _description_
         """
-        cache_file_path = os.path.join(self.cache_dir, f"nmdb_{self.station}.csv")
+        cache_file_path = os.path.join(
+            self.cache_dir, f"nmdb_{self.station}.csv"
+        )
         # Convert Timestamps to strings in 'YYYY-mm-dd' format if necessary
         if isinstance(startdate, pd.Timestamp):
             startdate = startdate.strftime("%Y-%m-%d")
@@ -143,15 +154,18 @@ class NMDBDataHandler:
             df_download = self.get_data(startdate, enddate)
             dfnew = self.append_and_sort_data(df_cache, df_download)
             dfnew.to_csv(cache_file_path, index=False)  # Save new cache.
-        except:  # Exception for when cache is not present
+        except Exception:  # Exception for when cache is not present
             df_download = self.get_data(startdate, enddate)
             df_download.to_csv(cache_file_path, index=False)
 
     def collect_data(self):
-        """Checks the cache and updates the start and end dates for data fetching if needed."""
-        cache_file_path = os.path.join(self.cache_dir, f"nmdb_{self.station}.csv")
+        """Checks the cache and updates the start and end dates for data
+        fetching if needed."""
+        cache_file_path = os.path.join(
+            self.cache_dir, f"nmdb_{self.station}.csv"
+        )
 
-        # if self.startdate or self.enddate are empty ##
+        # if self.startdate or self.enddate are empty #
 
         if os.path.exists(cache_file_path):
             try:
@@ -165,8 +179,12 @@ class NMDBDataHandler:
                 # cached_start = self.standardize_date(cached_start)
                 # cached_end = self.standardize_date(cached_end)
 
-                need_data_before_cache = pd.to_datetime(self.startdate) < cached_start
-                need_data_after_cache = pd.to_datetime(self.enddate) > cached_end
+                need_data_before_cache = (
+                    pd.to_datetime(self.startdate) < cached_start
+                )
+                need_data_after_cache = (
+                    pd.to_datetime(self.enddate) > cached_end
+                )
 
                 if need_data_before_cache and need_data_after_cache:
                     # Data is needed both before and after the cached data
@@ -202,13 +220,3 @@ class NMDBDataHandler:
             df_cache = pd.read_csv(cache_file_path)
             df_cache["DATE"] = pd.to_datetime(df_cache["DATE"])
             return df_cache
-
-
-## Usage (in seperate file)
-
-# from cosmosbase.ancillary_data_collection.nmdb_data_collection import NMDBDataHandler
-
-# nmdb = NMDBDataHandler(station='JUNG', startdate='10/10/2014', enddate='10/10/2016')
-
-# nmdb.collect_data() <-- Outputs a dataframe of DATETIME and COUNTS
-# nmdb.delete_cache_file()
