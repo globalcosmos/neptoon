@@ -24,6 +24,7 @@ class NMDBDataHandler:
         enddate : str, optional
             _description_, by default ""
         """
+        cfg.COSMOSConfig.check_and_create_cache()
         self.station = station
         self.defaultdir = defaultdir
         self.startdate = self.standardize_date(startdate)
@@ -107,7 +108,13 @@ class NMDBDataHandler:
         ey, em, ed = str(self.standardize_date(enddate)).split("-")
 
         # Construct URL for data request
-        url = f"http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]={self.station}&tabchoice=1h&dtype=corr_for_efficiency&tresolution=60&force=1&yunits=0&date_choice=bydate&start_day={sd}&start_month={sm}&start_year={sy}&start_hour=0&start_min=0&end_day={ed}&end_month={em}&end_year={ey}&end_hour=23&end_min=59&output=ascii"
+        url = (
+            f"http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]={self.station}"
+            f"&tabchoice=1h&dtype=corr_for_efficiency&tresolution=60&force=1&yunits=0"
+            f"&date_choice=bydate&start_day={sd}&start_month={sm}&start_year={sy}"
+            f"&start_hour=0&start_min=0&end_day={ed}&end_month={em}&end_year={ey}"
+            f"&end_hour=23&end_min=59&output=ascii"
+        )
 
         # Fetch and read the HTML content
         response = urllib.request.urlopen(url)
