@@ -1,2 +1,36 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cosmosbase"
+version = "0.1.0"
+authors = [
+    { name = "Daniel Power", email = "daniel.power@ufz.de" },
+    { name = "Martin Schroen", email = "martin.schroen@ufz.de" },
+]
+description = "cosmosbase holds the main classes and functions for processing CRNS."
+readme = "README.md"
+keywords = ["CRNS", "COSMOS"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.1",
+    "beautifulsoup4>=4.12",
+    "urllib3>=1.25",
+    "python-dateutil>=2.8",
+    "pytest>=7.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=22.3",
+    # other development dependencies
+]
+
 [tool.black]
 line-length = 79

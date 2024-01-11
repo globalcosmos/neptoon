@@ -47,14 +47,11 @@ class NMDBDataHandler:
             Date string in format (YYYY-mm-dd)
         """
         try:
-            # Parse the date
             parsed_date = parser.parse(date_str)
-            # Convert to standard format (e.g., YYYY-mm-dd)
             standardized_date_str = parsed_date.strftime("%Y-%m-%d")
             return standardized_date_str
 
         except ValueError:
-            # Handle the error if the date format is unrecognized
             print(f"Error: '{date_str}' is not a recognizable date format.")
             return None
 
@@ -110,7 +107,7 @@ class NMDBDataHandler:
         # Construct URL for data request
         url = (
             f"http://nest.nmdb.eu/draw_graph.php?formchk=1"
-            f"&stations[]&tabchoice=1h&dtype=corr_for_efficiency"
+            f"&stations[]={self.station}&tabchoice=1h&dtype=corr_for_efficiency"
             f"&tresolution=60&force=1&yunits=0&date_choice=bydate"
             f"&start_day={sd}&start_month={sm}&start_year={sy}"
             f"&start_hour=0&start_min=0&end_day={ed}&end_month={em}"
@@ -184,22 +181,23 @@ class NMDBDataHandler:
                 # Get the date range in cache
                 cached_start = df_cache["DATE"].min()
                 cached_end = df_cache["DATE"].max()
+                print(self.startdate)
+
                 # cached_start = self.standardize_date(cached_start)
                 # cached_end = self.standardize_date(cached_end)
 
                 need_data_before_cache = (
-                    pd.to_datetime(self.startdate) < cached_start
+                    pd.to_datetime(self.startdate) <= cached_start
                 )
                 need_data_after_cache = (
-                    pd.to_datetime(self.enddate) > cached_end
+                    pd.to_datetime(self.enddate) >= cached_end
                 )
 
                 if need_data_before_cache and need_data_after_cache:
-                    # Data is needed both before and after the cached data
-                    self.fetch_and_append_data(self.startdate, cached_start)
-                    self.fetch_and_append_data(cached_end, self.enddate)
+                    self.fetch_and_append_data(self.startdate, self.enddate)
                     df_cache = pd.read_csv(cache_file_path)
                     df_cache["DATE"] = pd.to_datetime(df_cache["DATE"])
+                    print(1)
                     return df_cache
 
                 elif need_data_before_cache:
@@ -207,6 +205,7 @@ class NMDBDataHandler:
                     self.fetch_and_append_data(self.startdate, cached_start)
                     df_cache = pd.read_csv(cache_file_path)
                     df_cache["DATE"] = pd.to_datetime(df_cache["DATE"])
+                    print(2)
                     return df_cache
 
                 elif need_data_after_cache:
@@ -214,12 +213,14 @@ class NMDBDataHandler:
                     self.fetch_and_append_data(cached_end, self.enddate)
                     df_cache = pd.read_csv(cache_file_path)
                     df_cache["DATE"] = pd.to_datetime(df_cache["DATE"])
+                    print(3)
                     return df_cache
 
                 else:
                     # All data is in cache, no need to download
                     print("All data is present in the cache.")
                     return df_cache
+
             except Exception as e:
                 print(f"Problem checking cache: {e}")
         else:

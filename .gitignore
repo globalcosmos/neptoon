@@ -1,5 +1,6 @@
 # Others
-testing_area.py
+play_area.py
+.vscode
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

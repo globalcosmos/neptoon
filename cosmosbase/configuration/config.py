@@ -3,7 +3,7 @@ import os
 
 
 class COSMOSConfig:
-    _dirs = PlatformDirs("cosmos-base", "CRNS")
+    _dirs = PlatformDirs("cosmosbase", "CRNS")
 
     @staticmethod
     def get_cache_dir():
