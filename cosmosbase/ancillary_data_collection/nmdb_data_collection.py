@@ -4,6 +4,20 @@ import urllib
 from dateutil import parser
 import cosmosbase.configuration.config as cfg
 import os
+import time
+
+
+def timed_function(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(
+            f"Function '{func.__name__}' took {end_time - start_time} seconds to run."
+        )
+        return result
+
+    return wrapper
 
 
 class NMDBDataHandler:
@@ -163,6 +177,7 @@ class NMDBDataHandler:
             df_download = self.get_data(startdate, enddate)
             df_download.to_csv(cache_file_path, index=False)
 
+    @timed_function
     def collect_data(self):
         """Checks the cache and updates the start and end dates for data
         fetching if needed."""
@@ -181,17 +196,14 @@ class NMDBDataHandler:
                 # Get the date range in cache
                 cached_start = df_cache["DATE"].min()
                 cached_end = df_cache["DATE"].max()
-                print(self.startdate)
+                # Convert datetime objects to date for comparison
+                cached_start_date = cached_start.date()
+                cached_end_date = cached_end.date()
+                start_date = pd.to_datetime(self.startdate).date()
+                end_date = pd.to_datetime(self.enddate).date()
 
-                # cached_start = self.standardize_date(cached_start)
-                # cached_end = self.standardize_date(cached_end)
-
-                need_data_before_cache = (
-                    pd.to_datetime(self.startdate) <= cached_start
-                )
-                need_data_after_cache = (
-                    pd.to_datetime(self.enddate) >= cached_end
-                )
+                need_data_before_cache = start_date < cached_start_date
+                need_data_after_cache = end_date > cached_end_date
 
                 if need_data_before_cache and need_data_after_cache:
                     self.fetch_and_append_data(self.startdate, self.enddate)
