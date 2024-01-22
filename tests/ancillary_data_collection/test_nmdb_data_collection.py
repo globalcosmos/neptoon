@@ -1,4 +1,3 @@
-import pytest
 from cosmosbase.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataHandler,
 )

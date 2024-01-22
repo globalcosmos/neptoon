@@ -34,5 +34,5 @@ def clay_to_lw(clay, method="Greasen_etal_1985"):
         lw = clay_to_lw(clay)
     else:
         print("! Unknown method to convert Clay to lattice water.")
-        lw = nan
+        lw = np.nan
     return lw
