@@ -24,6 +24,7 @@ dependencies = [
     "urllib3>=1.25",
     "python-dateutil>=2.8",
     "pytest>=7.4",
+    "requests>=2.31.0",
 ]
 
 [project.optional-dependencies]
