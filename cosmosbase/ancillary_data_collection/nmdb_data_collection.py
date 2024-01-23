@@ -51,12 +51,23 @@ class DateTimeHandler:
 
 
 class CacheHandler:
+    """CacheHandler is the object that handles reading, writing,
+    deleting and checking existance of the cache.
+    """
+
     def __init__(self, cache_dir, station):
         self.cache_dir = cache_dir
         self.station = station
         self.cache_exists = False
 
     def check_cache_file_exists(self):
+        """Checks the existence of the cache file
+
+        Returns
+        -------
+        Boolean
+            True/False is there a cache file
+        """
         cache_file_path = os.path.join(
             self.cache_dir, f"nmdb_{self.station}.csv"
         )
@@ -65,7 +76,13 @@ class CacheHandler:
             return True
 
     def read_cache(self):
-        """Read the cache file, fix index and return a DataFrame."""
+        """Reads cache nmdb file and formats index
+
+        Returns
+        -------
+        DataFrame
+            DF of the cache file
+        """
         self.check_cache_file_exists()
         if self.cache_exists:
             filepath = os.path.join(self.cache_dir, f"nmdb_{self.station}.csv")
@@ -81,7 +98,12 @@ class CacheHandler:
             logging.error("Cache file does not exist")
 
     def write_cache(self, cache_df):
-        """Write a DataFrame to the cache file."""
+        """Write NMDB data to the cache location
+
+        Parameters
+        ----------
+        cache_df : DataFrame
+        """
         if cache_df.empty:
             logging.warning("Attempting to write an empty DataFrame to cache.")
             return
@@ -89,7 +111,10 @@ class CacheHandler:
         cache_df.to_csv(filepath)
 
     def delete_cache(self):
-        """Delete the cached file for the current instance."""
+        """Delete the cache file assigne to the current instance. E.g.
+        if downloading data for JUNG it will delete the file
+        associated with JUNG from the cache
+        """
         filepath = os.path.join(self.cache_dir, f"nmdb_{self.station}.csv")
         try:
             os.remove(filepath)
@@ -100,6 +125,8 @@ class CacheHandler:
 
 
 class DataFetcher:
+    """Class concerned with requesting data from NMDB.eu"""
+
     def __init__(
         self,
         start_date,
@@ -115,6 +142,19 @@ class DataFetcher:
         self.nmdb_table = nmdb_table
 
     def create_nmdb_url(self, method="http"):
+        """Creates the URL for obtaining the data using HTTP
+
+        Parameters
+        ----------
+        method : str, optional
+            Decide whether to use HTTP or HTML for collection, by
+            default "http"
+
+        Returns
+        -------
+        str
+            URL as a string
+        """
         # Split dates for use in URL
         sy, sm, sd = str(
             DateTimeHandler.standardize_date(str(self.start_date))
@@ -149,6 +189,13 @@ class DataFetcher:
         return url
 
     def fetch_data_http(self):
+        """Fetches the data using http from NMDB.eu and processes it
+
+        Returns
+        -------
+        DataFrame
+            DataFrame of data
+        """
         url = self.create_nmdb_url(method="http")
         try:
             response = requests.get(url)
@@ -179,6 +226,13 @@ class DataFetcher:
         return data
 
     def fetch_data_html(self):
+        """Fetches data using html from NMDB.eu
+
+        Returns
+        -------
+        DataFrame
+            DataFrame of data
+        """
         url = self.create_nmdb_url(method="html")
 
         # Fetch and read the HTML content
@@ -205,6 +259,8 @@ class DataFetcher:
 
 
 class DataManager:
+    """Class for managing the data collected from cache and online"""
+
     def __init__(self, start_date, end_date, cache_dir, station):
         self.start_date = start_date
         self.end_date = end_date
@@ -215,6 +271,9 @@ class DataManager:
         self.need_data_after_cache = None
 
     def check_cache_range(self):
+        """Function to find the range of data already available in the
+        cache
+        """
         df_cache = self.cache_handler.read_cache()
         # Get the date range in cache
         cached_start = df_cache.index.min()
@@ -224,6 +283,7 @@ class DataManager:
         self.cached_end_date = cached_end.date()
 
     def check_if_need_extra_data(self):
+        """Boolean on whether data is needed before or after"""
         start_date = pd.to_datetime(self.start_date).date()
         end_date = pd.to_datetime(self.end_date).date()
 
@@ -240,42 +300,24 @@ class DataManager:
         Returns:
             DataFrame: The combined and sorted DataFrame.
         """
-        # # Concatenate the two DataFrames
-        # combined_df = pd.concat([df_cache, df_download])
-
-        # # Sort the DataFrame by the index (DT)
-        # combined_df_sorted = combined_df.sort_index()
-        # # combined_df_sorted = combined_df.sort_values(by="DT")
-
-        # # # Reset the index if necessary
-        # # combined_df_sorted.reset_index(inplace=True)
-
-        # return combined_df_sorted
-        # Ensure 'DT' is set as index for both DataFrames
         if "DT" not in df_cache.index.names:
             df_cache.set_index("DT", inplace=True)
         if "DT" not in df_download.index.names:
             df_download.set_index("DT", inplace=True)
 
-        # Concatenate the two DataFrames
         combined_df = pd.concat([df_cache, df_download])
-
-        # Reset the index to work with the 'DT' column for deduplication
         combined_df.reset_index(inplace=True)
-
-        # Drop duplicates (keeping the first occurrence)
         combined_df.drop_duplicates(subset="DT", keep="first", inplace=True)
-
-        # Set 'DT' back as index
         combined_df.set_index("DT", inplace=True)
-
-        # Sort the DataFrame by index
         combined_df_sorted = combined_df.sort_index()
-
         return combined_df_sorted
 
 
 class NMDBinitializer:
+    """Initializer class which ensures each instance is using the same
+    variables
+    """
+
     def __init__(
         self,
         config,
@@ -294,9 +336,11 @@ class NMDBinitializer:
         self.cache_dir = config.get_cache_dir()
 
     def create_cache_handler(self):
+        """Creates cache handler instance"""
         return CacheHandler(self.cache_dir, self.station)
 
     def create_data_fetcher(self):
+        """Creates data fetcher instance"""
         return DataFetcher(
             self.start_date,
             self.end_date,
@@ -306,21 +350,28 @@ class NMDBinitializer:
         )
 
     def create_data_manager(self):
+        """Creates data manager instance"""
         return DataManager(
             self.start_date, self.end_date, self.cache_dir, self.station
         )
 
 
 class NMDBDataHandler:
+    """Overall handler for NMDB functions. Takes the classes and pieces
+    them together to collect data from NMDB. If data is available in the
+    cache it will avoid sending requests to server, if partial data is
+    available it will download what is needed
+    """
+
     def __init__(self, start_date, end_date, station="JUNG", initializer=None):
         """
         Initialize the NMDBDataHandler Class.
 
         Parameters
         ----------
-        startdate : str
+        start_date : str
             The start date for data collection.
-        enddate : str
+        end_date : str
             The end date for data collection.
         station : str, optional
             The station to collect data from, defaults to "JUNG".
@@ -338,7 +389,6 @@ class NMDBDataHandler:
         self.start_date = start_date
         self.end_date = end_date
         self.station = station
-        # Use the initializer to create necessary components
         self.cache_handler = self.initializer.create_cache_handler()
         self.data_fetcher = self.initializer.create_data_fetcher()
         self.data_manager = self.initializer.create_data_manager()
@@ -351,7 +401,6 @@ class NMDBDataHandler:
         )
 
         if self.has_cache:
-            # Convert Timestamps to strings in 'YYYY-mm-dd' format if necessary
             if isinstance(self.start_date, pd.Timestamp):
                 self.start_date = self.start_date.strftime("%Y-%m-%d")
             if isinstance(self.end_date, pd.Timestamp):
@@ -360,7 +409,6 @@ class NMDBDataHandler:
             self.data_manager.check_if_need_extra_data()
 
             try:
-                # Read the cache
                 df_cache = self.cache_handler.read_cache()
                 if (
                     self.data_manager.need_data_before_cache
@@ -374,7 +422,6 @@ class NMDBDataHandler:
                     return df_combined
 
                 elif self.data_manager.need_data_before_cache:
-                    # Only need to download data before the cached start date
                     self.data_fetcher.enddate = (
                         self.data_manager.cached_start_date
                     )
@@ -386,7 +433,6 @@ class NMDBDataHandler:
                     return df_combined
 
                 elif self.data_manager.need_data_after_cache:
-                    # Only need to download data after the cached end date
                     self.data_fetcher.startdate = (
                         self.data_manager.cached_end_date
                     )
@@ -398,7 +444,6 @@ class NMDBDataHandler:
                     return df_combined
 
                 else:
-                    # All data is in cache, no need to download
                     logging.info("All data is present in the cache.")
                     return df_cache
 
