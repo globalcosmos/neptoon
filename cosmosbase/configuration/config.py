@@ -1,5 +1,6 @@
-from platformdirs import PlatformDirs
 import os
+import logging
+from platformdirs import PlatformDirs
 
 
 class COSMOSConfig:
@@ -10,13 +11,12 @@ class COSMOSConfig:
         return COSMOSConfig._dirs.user_cache_dir
 
     @staticmethod
-    def check_and_create_cache():
+    def create_cache_dir():
         directory = COSMOSConfig.get_cache_dir()
         if not os.path.exists(directory):
             try:
                 os.makedirs(directory)
-                print(f"Directory created: {directory}")
+                logging.info(f"Directory created: {directory}")
             except OSError as error:
-                print(f"Error creating directory: {error}")
-        else:
-            pass
+                logging.error(f"Error creating directory: {error}")
+                raise
