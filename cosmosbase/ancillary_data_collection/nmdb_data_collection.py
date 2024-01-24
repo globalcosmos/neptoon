@@ -88,8 +88,8 @@ class CacheHandler:
             filepath = os.path.join(self.cache_dir, f"nmdb_{self.station}.csv")
             try:
                 df = pd.read_csv(filepath)
-                df["DT"] = pd.to_datetime(df["DT"])
-                df.set_index("DT", inplace=True)
+                df["datetime"] = pd.to_datetime(df["datetime"])
+                df.set_index("datetime", inplace=True)
                 return df
             except FileNotFoundError:
                 logging.error("Cache file not found.")
@@ -210,7 +210,7 @@ class DataFetcher:
             data = StringIO(response.text)
             data = pd.read_csv(data, delimiter=";", comment="#")
             data.columns = ["count"]
-            data.index.name = "DT"
+            data.index.name = "datetime"
             data.index = pd.to_datetime(data.index)
 
         except requests.exceptions.RequestException as e:
@@ -251,9 +251,9 @@ class DataFetcher:
 
         # Create DataFrame from the processed lines
         dfneut = pd.DataFrame(
-            [line.split(";") for line in lines], columns=["DT", "count"]
+            [line.split(";") for line in lines], columns=["datetime", "count"]
         )
-        dfneut.set_index("DT", inplace=True)
+        dfneut.set_index("datetime", inplace=True)
 
         return dfneut
 
@@ -300,15 +300,17 @@ class DataManager:
         Returns:
             DataFrame: The combined and sorted DataFrame.
         """
-        if "DT" not in df_cache.index.names:
-            df_cache.set_index("DT", inplace=True)
-        if "DT" not in df_download.index.names:
-            df_download.set_index("DT", inplace=True)
+        if "datetime" not in df_cache.index.names:
+            df_cache.set_index("datetime", inplace=True)
+        if "datetime" not in df_download.index.names:
+            df_download.set_index("datetime", inplace=True)
 
         combined_df = pd.concat([df_cache, df_download])
         combined_df.reset_index(inplace=True)
-        combined_df.drop_duplicates(subset="DT", keep="first", inplace=True)
-        combined_df.set_index("DT", inplace=True)
+        combined_df.drop_duplicates(
+            subset="datetime", keep="first", inplace=True
+        )
+        combined_df.set_index("datetime", inplace=True)
         combined_df_sorted = combined_df.sort_index()
         return combined_df_sorted
 
@@ -363,7 +365,15 @@ class NMDBDataHandler:
     available it will download what is needed
     """
 
-    def __init__(self, start_date, end_date, station="JUNG", initializer=None):
+    def __init__(
+        self,
+        start_date,
+        end_date,
+        station="JUNG",
+        nmdb_table="revori",
+        resolution="60",
+        initializer=None,
+    ):
         """
         Initialize the NMDBDataHandler Class.
 
@@ -389,6 +399,8 @@ class NMDBDataHandler:
         self.start_date = start_date
         self.end_date = end_date
         self.station = station
+        self.resolution = resolution
+        self.nmdb_table = nmdb_table
         self.cache_handler = self.initializer.create_cache_handler()
         self.data_fetcher = self.initializer.create_data_fetcher()
         self.data_manager = self.initializer.create_data_manager()
@@ -453,4 +465,5 @@ class NMDBDataHandler:
             logging.info(f"No cache file found at {cache_file_path}.")
             df_download = self.data_fetcher.fetch_data_http()
             self.cache_handler.write_cache(df_download)
+            self.has_cache = True
             return df_download
