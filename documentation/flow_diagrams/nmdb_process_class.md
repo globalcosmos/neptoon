@@ -59,9 +59,6 @@ classDiagram
     class ExternalAPI
     class CacheStorage
 
-    style ExternalAPI fill:#f1f,stroke:#333,stroke-width:2px
-    style CacheStorage fill:#f1f,stroke:#333,stroke-width:2px
-
     NMDBDataManager --> NMDBinitializer : Initializes using
     NMDBinitializer --> DataManager : Creates
     NMDBinitializer --> DataFetcher : Creates
