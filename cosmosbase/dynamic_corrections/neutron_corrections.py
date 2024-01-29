@@ -1,38 +1,25 @@
-"""
-These should be hanging functions so they can be reused
+from importlib import import_module
 
 
-"""
+class CorrectionMethod:
+    required_modules = []
 
-import numpy as np
+    @classmethod
+    def _prepare_imports_(cls):
+        for requirement in cls.required_modules:
+            if requirement not in sys.modules:
+                import_module(requirement)
 
+    def _do_magic_(**kwargs):
+        pass  # Override this
 
-def press_corr(press, B, p0):
-    """pressfact_B corrects neutrons for pressure changes
-
-    Parameters
-    ----------
-    press : float
-        pressure (mb)
-    B : float
-        beta coefficient e.g. 0.007
-    p0 : int
-        reference pressure (mb)
-
-    Returns
-    -------
-    float
-        number to multiply neutron counts by to correct
-    """
-    return np.exp(B * (press - p0))
+    @classmethod
+    def do_correction(cls, inital_value):
+        cls._prepare_imports_()
+        cls._do_magic_()
+        pass
 
 
-def clay_to_lw(clay, method="Greasen_etal_1985"):
-    if method == "Franz_etal_2012":
-        from grains.Greasen1985x import clay_to_lw
-
-        lw = clay_to_lw(clay)
-    else:
-        print("! Unknown method to convert Clay to lattice water.")
-        lw = np.nan
-    return lw
+def pressure_correction(method: CorrectionMethod, **kwargs):
+    print("Magic is happening")
+    return method.do_corection(**kwargs)
