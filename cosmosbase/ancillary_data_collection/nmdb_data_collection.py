@@ -341,9 +341,9 @@ class DataFetcher:
         str
             URL as a string
         """
-        if self.config.start_date_needed == None:
+        if self.config.start_date_needed is None:
             self.config.start_date_needed = self.config.start_date_wanted
-        if self.config.end_date_needed == None:
+        if self.config.end_date_needed is None:
             self.config.end_date_needed = self.config.end_date_wanted
         sy, sm, sd = self.get_ymd_from_date(self.config.start_date_needed)
         ey, em, ed = self.get_ymd_from_date(self.config.end_date_needed)
@@ -543,8 +543,8 @@ class NMDBDataHandler:
             self.cache_handler.check_cache_range()
             self.data_manager.check_if_need_extra_data()
             if (
-                self.data_manager.need_data_before_cache == False
-                and self.data_manager.need_data_after_cache == False
+                self.data_manager.need_data_before_cache is False
+                and self.data_manager.need_data_after_cache is False
             ):
                 logging.info("All data is present in the cache.")
                 df_cache = self.cache_handler.read_cache()
