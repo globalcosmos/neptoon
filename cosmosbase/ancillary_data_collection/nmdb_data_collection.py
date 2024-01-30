@@ -2,8 +2,9 @@ import os
 import time
 import requests
 import logging
-import pandas as pd
+import pandas
 from bs4 import BeautifulSoup
+from pathlib import Path
 import urllib
 from io import StringIO
 from dateutil import parser
@@ -51,11 +52,11 @@ class DateTimeHandler:
 
     @staticmethod
     def format_datetime_to_standard_string(date_datetime):
-        """Standardize dates given as a pd.DateTime
+        """Standardize dates given as a pandas.DateTime
 
         Parameters
         ----------
-        date_datetime : pd.Datetime
+        date_datetime : pandas.Datetime
 
         Returns
         -------
@@ -83,8 +84,8 @@ class DateTimeHandler:
         ValueError
             Raise error when neither str or datetime is given
         """
-        if isinstance(date_input, pd.Timestamp):
-            logging.info("Date was given as a pd.Timestamp")
+        if isinstance(date_input, pandas.Timestamp):
+            logging.info("Date was given as a pandas.Timestamp")
             return DateTimeHandler.format_datetime_to_standard_string(
                 date_input
             )
@@ -97,7 +98,8 @@ class DateTimeHandler:
 
 
 class NMDBConfig:
-    """Config class for shared attributes in NMDB process."""
+    """Config class for shared attributes in NMDB
+    process.(NMDB = Neutron Monitoring Data Base)"""
 
     def __init__(
         self,
@@ -205,42 +207,28 @@ class NMDBConfig:
 class CacheHandler:
     """CacheHandler is the object that handles reading, writing,
     deleting and checking existance of the cache.
+
+    Cache directory is store in NMDBConfig, the cache handler handles
     """
 
     def __init__(self, config):
         self.config = config
         self._cache_file_path = None
-        # self._cache_file = None
 
     @property
     def cache_file_path(self):
-        self._cache_file_path = os.path.join(
-            self.config.cache_dir,
-            f"nmdb_{self.config.station}_resolution_{self.config.resolution}"
-            f"_nmdbtable_{self.config.nmdb_table}.csv",
+        self._cache_file_path = (
+            Path(self.config.cache_dir)
+            / f"nmdb_{self.config.station}_resolution_{self.config.resolution}"
+            f"_nmdbtable_{self.config.nmdb_table}.csv"
         )
         return self._cache_file_path
-
-    # @property
-    # def cache_file(self):
-    #     if self.config.cache_exists:
-    #         self._cache_file = self.read_cache()
-
-    # @cache_file.setter
-    # def cache_file(self, newcache):
-    #     self._cache_file = newcache
 
     def check_cache_file_exists(self):
         """Checks the existence of the cache file
         and sets property in config
-
-        Returns
-        -------
-        Boolean
-            True/False is there a cache file
         """
-
-        if os.path.exists(self.cache_file_path):
+        if self.cache_file_path.exists():
             self.config.cache_exists = True
 
     def read_cache(self):
@@ -252,16 +240,10 @@ class CacheHandler:
             DF of the cache file
         """
         if self.config.cache_exists:
-            try:
-                df = pd.read_csv(self.cache_file_path)
-                df["datetime"] = pd.to_datetime(df["datetime"])
-                df.set_index("datetime", inplace=True)
-                return df
-            except FileNotFoundError:
-                logging.error("Cache file not found.")
-                return None
-        else:
-            logging.error("Cache file does not exist")
+            df = pandas.read_csv(self.cache_file_path)
+            df["datetime"] = pandas.to_datetime(df["datetime"])
+            df.set_index("datetime", inplace=True)
+            return df
 
     def write_cache(self, cache_df):
         """Write NMDB data to the cache location
@@ -280,12 +262,10 @@ class CacheHandler:
         if downloading data for JUNG it will delete the file
         associated with JUNG from the cache
         """
-        try:
-            os.remove(self.cache_file_path)
-            logging.info("Cache file deleted")
-            self.config.cache_exists = False
-        except FileNotFoundError:
-            logging.error("Cache file not found when attempting to delete.")
+        if self.cache_file_path.exists():
+            self.cache_file_path.unlink(missing_ok=True)
+        logging.info("Cache file deleted")
+        self.config.cache_exists = False
 
     def check_cache_range(self):
         """Function to find the range of data already available in the
@@ -327,14 +307,8 @@ class DataFetcher:
         year, month, day = standardized_date.split("-")
         return year, month, day
 
-    def create_nmdb_url(self, method="http"):
+    def create_nmdb_url(self):
         """Creates the URL for obtaining the data using HTTP
-
-        Parameters
-        ----------
-        method : str, optional
-            Decide whether to use HTTP or HTML for collection, by
-            default "http"
 
         Returns
         -------
@@ -348,10 +322,7 @@ class DataFetcher:
         sy, sm, sd = self.get_ymd_from_date(self.config.start_date_needed)
         ey, em, ed = self.get_ymd_from_date(self.config.end_date_needed)
 
-        if method == "http":
-            nmdb_form = "wget"
-        elif method == "html":
-            nmdb_form = "formchk"
+        nmdb_form = "formchk"
         url = (
             f"http://nest.nmdb.eu/draw_graph.php?{nmdb_form}=1"
             f"&stations[]={self.config.station}"
@@ -389,56 +360,19 @@ class DataFetcher:
             )
         data = StringIO(raw_data)
         try:
-            data = pd.read_csv(data, delimiter=";", comment="#")
+            data = pandas.read_csv(data, delimiter=";", comment="#")
             data.columns = ["count"]
             data.index.name = "datetime"
-            data.index = pd.to_datetime(data.index)
+            data.index = pandas.to_datetime(data.index)
         except requests.exceptions.RequestException as e:
             logging.error(f"HTTP Request failed: {e}")
-            return None
         except ValueError as e:
             logging.error(e)
-            return None
-        except pd.errors.ParserError as e:
-            logging.error(f"Error parsing data into DataFrame: {e}")
-            return None
         return data
 
     def fetch_and_parse_http_data(self):
         raw_data = self.fetch_data_http()
         return self.parse_http_data(raw_data)
-
-    def fetch_data_html(self):
-        """Fetches data using html from NMDB.eu
-
-        Returns
-        -------
-        DataFrame
-            DataFrame of data
-        """
-        url = self.create_nmdb_url(method="html")
-
-        # Fetch and read the HTML content
-        response = urllib.request.urlopen(url)
-        html = response.read()
-
-        # Parse HTML using BeautifulSoup
-        soup = BeautifulSoup(html, features="html.parser")
-        pre = soup.find("pre").text
-
-        # Extract and process data from the <pre> tag
-        data = pre[pre.find("start_date_time") :].replace(
-            "start_date_time   1HCOR_E", ""
-        )
-        lines = data.strip().split("\n")[1:]  # Skip header line
-
-        # Create DataFrame from the processed lines
-        dfneut = pd.DataFrame(
-            [line.split(";") for line in lines], columns=["datetime", "count"]
-        )
-        dfneut.set_index("datetime", inplace=True)
-
-        return dfneut
 
 
 class DataManager:
@@ -454,10 +388,12 @@ class DataManager:
     def check_if_need_extra_data(self):
         """Boolean on whether data is needed before or after"""
         self.cache_handler.check_cache_range()
-        start_date_wanted = pd.to_datetime(
+        start_date_wanted = pandas.to_datetime(
             self.config.start_date_wanted
         ).date()
-        end_date_wanted = pd.to_datetime(self.config.end_date_wanted).date()
+        end_date_wanted = pandas.to_datetime(
+            self.config.end_date_wanted
+        ).date()
 
         self.need_data_before_cache = (
             start_date_wanted < self.config.cache_start_date
@@ -494,7 +430,7 @@ class DataManager:
         if "datetime" not in df_download.index.names:
             df_download.set_index("datetime", inplace=True)
 
-        combined_df = pd.concat([df_cache, df_download])
+        combined_df = pandas.concat([df_cache, df_download])
         combined_df.reset_index(inplace=True)
         combined_df.drop_duplicates(
             subset="datetime", keep="first", inplace=True
