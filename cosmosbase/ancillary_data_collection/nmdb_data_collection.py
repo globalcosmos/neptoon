@@ -1,11 +1,8 @@
-import os
 import time
 import requests
 import logging
 import pandas
-from bs4 import BeautifulSoup
 from pathlib import Path
-import urllib
 from io import StringIO
 from dateutil import parser
 import cosmosbase.configuration.config as cfg
@@ -322,7 +319,7 @@ class DataFetcher:
         sy, sm, sd = self.get_ymd_from_date(self.config.start_date_needed)
         ey, em, ed = self.get_ymd_from_date(self.config.end_date_needed)
 
-        nmdb_form = "formchk"
+        nmdb_form = "wget"
         url = (
             f"http://nest.nmdb.eu/draw_graph.php?{nmdb_form}=1"
             f"&stations[]={self.config.station}"
@@ -344,7 +341,7 @@ class DataFetcher:
         DataFrame
             DataFrame of data
         """
-        url = self.create_nmdb_url(method="http")
+        url = self.create_nmdb_url()
         response = requests.get(url)
         response.raise_for_status()
 
