@@ -22,6 +22,8 @@ def timed_function(func):
 
 
 class DateTimeHandler:
+    """Class that holds Date standardization methods"""
+
     @staticmethod
     def convert_string_to_standard_date(date_str):
         """Function to standardize dates given as a string
@@ -348,6 +350,19 @@ class DataFetcher:
         return response.text
 
     def parse_http_data(self, raw_data):
+        """Parse the http data into a dataframe
+
+        Parameters
+        ----------
+        raw_data : HTTP txt file
+            Text file as collected from NMDB.eu
+
+        Returns
+        -------
+        DataFrame
+            DataFrame with index DateTime and Counts per second
+
+        """
         # if date has not been covered we raise an error
         if str(raw_data)[4:9] == "Sorry":
             raise ValueError(
