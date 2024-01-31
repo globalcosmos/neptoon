@@ -20,11 +20,11 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.1",
-    "beautifulsoup4>=4.12",
     "urllib3>=1.25",
     "python-dateutil>=2.8",
     "pytest>=7.4",
     "requests>=2.31.0",
+    "platformdirs",
 ]
 
 [project.optional-dependencies]
