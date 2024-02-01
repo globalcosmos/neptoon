@@ -406,7 +406,8 @@ class DataManager:
         self.need_data_after_cache = None
 
     def check_if_need_extra_data(self):
-        """Boolean on whether data is needed before or after"""
+        """Returns boolean on whether a download of data is required
+        before or after the desired dates"""
         self.cache_handler.check_cache_range()
         start_date_wanted = pandas.to_datetime(
             self.config.start_date_wanted

@@ -8,6 +8,7 @@ from cosmosbase.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataHandler,
     DataFetcher,
     CacheHandler,
+    DataManager,
 )
 
 """
@@ -202,6 +203,97 @@ def test_parse_http_date():
     pdt.assert_frame_equal(data, df_to_compare)
 
 
+"""
+DataManager Tests
+"""
+
+
+def test_check_if_need_extra_data(monkeypatch):
+    """Test to check logic on whether extra dates are needed"""
+    config = NMDBConfig(
+        start_date_wanted="2015-10-10",
+        end_date_wanted="2016-10-10",
+    )
+    monkeypatch.setattr(CacheHandler, "check_cache_range", lambda x: None)
+    cache_handler = CacheHandler(config)
+    data_fetcher = DataFetcher(config)
+    data_manager = DataManager(config, cache_handler, data_fetcher)
+    config.cache_start_date = pandas.to_datetime("2015-10-10").date()
+    config.cache_end_date = pandas.to_datetime("2016-10-10").date()
+
+    data_manager.check_if_need_extra_data()
+
+    assert data_manager.need_data_before_cache == False
+    assert data_manager.need_data_after_cache == False
+
+    config.cache_start_date = pandas.to_datetime("2015-11-10").date()
+    config.cache_end_date = pandas.to_datetime("2016-10-10").date()
+
+    data_manager.check_if_need_extra_data()
+
+    assert data_manager.need_data_before_cache == True
+    assert data_manager.need_data_after_cache == False
+
+    config.cache_start_date = pandas.to_datetime("2015-11-10").date()
+    config.cache_end_date = pandas.to_datetime("2016-09-10").date()
+
+    data_manager.check_if_need_extra_data()
+
+    assert data_manager.need_data_before_cache == True
+    assert data_manager.need_data_after_cache == True
+
+    config.cache_start_date = pandas.to_datetime("2015-11-10").date()
+    config.cache_end_date = pandas.to_datetime("2016-09-10").date()
+
+    data_manager.check_if_need_extra_data()
+
+    assert data_manager.need_data_before_cache == True
+    assert data_manager.need_data_after_cache == True
+
+
+def test_combine_cache_and_new_data(monkeypatch):
+    config = NMDBConfig(
+        start_date_wanted="2015-10-10",
+        end_date_wanted="2016-10-10",
+    )
+    cache_handler = CacheHandler(config)
+    data_fetcher = DataFetcher(config)
+    data_manager = DataManager(config, cache_handler, data_fetcher)
+
+    df_cache_path = (
+        Path(__file__).parent / "mock_data" / "example_cache_merge1.csv"
+    )
+    df_cache = pandas.read_csv(df_cache_path)
+    df_cache["datetime"] = pandas.to_datetime(df_cache["datetime"])
+    df_cache.set_index("datetime", inplace=True)
+
+    print(df_cache_path)
+
+    df_download_path = (
+        Path(__file__).parent / "mock_data" / "example_cache_merge2.csv"
+    )
+    df_download = pandas.read_csv(df_download_path)
+    df_download["datetime"] = pandas.to_datetime(df_download["datetime"])
+    df_download.set_index("datetime", inplace=True)
+
+    print(df_download_path)
+
+    df_assert_path = (
+        Path(__file__).parent / "mock_data" / "example_cache_merge_assert.csv"
+    )
+    df_assert = pandas.read_csv(df_assert_path)
+    df_assert["datetime"] = pandas.to_datetime(df_assert["datetime"])
+    df_assert.set_index("datetime", inplace=True)
+
+    combined_df = data_manager.combine_cache_and_new_data(
+        df_cache, df_download
+    )
+
+    assert isinstance(combined_df, pandas.DataFrame)
+    assert not combined_df.empty
+    assert "count" in combined_df.columns
+    pdt.assert_frame_equal(combined_df, df_assert)
+
+
 # TODO:
-# DataManager Tests
-# NMDBDataHandler Tests
+# NMDBDataHandler Tests - canary
