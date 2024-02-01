@@ -213,15 +213,23 @@ class CacheHandler:
     def __init__(self, config):
         self.config = config
         self._cache_file_path = None
+        self.update_cache_file_path()
 
-    @property
-    def cache_file_path(self):
+    def update_cache_file_path(self):
+        """Update the cache file path based on the current configuration."""
         self._cache_file_path = (
             Path(self.config.cache_dir)
             / f"nmdb_{self.config.station}_resolution_{self.config.resolution}"
             f"_nmdbtable_{self.config.nmdb_table}.csv"
         )
+
+    @property
+    def cache_file_path(self):
         return self._cache_file_path
+
+    @cache_file_path.setter
+    def cache_file_path(self, value):
+        self._cache_file_path = value
 
     def check_cache_file_exists(self):
         """Checks the existence of the cache file

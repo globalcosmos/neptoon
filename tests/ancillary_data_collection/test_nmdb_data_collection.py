@@ -38,7 +38,7 @@ CacheHandler Tests
 """
 
 
-def test_read_cache(monkeypatch):
+def test_read_cache():
     """Test the read cache and make sure the format is as expected"""
     config = NMDBConfig(
         start_date_wanted="2015-10-10",
@@ -48,8 +48,9 @@ def test_read_cache(monkeypatch):
     mock_file_path = (
         Path(__file__).parent / "mock_data" / "example_cache_1516.csv"
     )
-    monkeypatch.setattr(config, "_cache_exists", True)
-    monkeypatch.setattr(cache_handler, "_cache_file_path", mock_file_path)
+    # monkeypatch.setattr(config, "cache_exists", True)
+    config.cache_exists = True
+    cache_handler.cache_file_path = mock_file_path
     df = cache_handler.read_cache()
 
     assert isinstance(df, pandas.DataFrame)
@@ -58,7 +59,7 @@ def test_read_cache(monkeypatch):
     assert isinstance(df.index, pandas.DatetimeIndex)
 
 
-def test_check_cache_range(monkeypatch):
+def test_check_cache_range():
     """Test on logic to collect cache range"""
     config = NMDBConfig(
         start_date_wanted="2015-10-10",
@@ -68,8 +69,8 @@ def test_check_cache_range(monkeypatch):
     mock_file_path = (
         Path(__file__).parent / "mock_data" / "example_cache_1516.csv"
     )
-    monkeypatch.setattr(config, "_cache_exists", True)
-    monkeypatch.setattr(cache_handler, "_cache_file_path", mock_file_path)
+    config.cache_exists = True
+    cache_handler.cache_file_path = mock_file_path
     cache_handler.check_cache_range()
     df = pandas.read_csv(mock_file_path)
     df["datetime"] = pandas.to_datetime(df["datetime"])
