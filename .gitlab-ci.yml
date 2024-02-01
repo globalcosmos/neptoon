@@ -3,17 +3,12 @@ build-job:
   script:
     - echo "Hello, $GITLAB_USER_LOGIN!"
 
-test-job1:
+tests:
   stage: test
   image: python:3.10
   script:
     - pip install .
     - pytest
-
-test-job-actual:
-  stage: test
-  script:
-    - echo "This job tests something too"
 
 lint:
   stage: test
