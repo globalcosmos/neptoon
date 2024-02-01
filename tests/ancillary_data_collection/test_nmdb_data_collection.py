@@ -223,32 +223,32 @@ def test_check_if_need_extra_data(monkeypatch):
 
     data_manager.check_if_need_extra_data()
 
-    assert data_manager.need_data_before_cache == False
-    assert data_manager.need_data_after_cache == False
+    assert data_manager.need_data_before_cache is False
+    assert data_manager.need_data_after_cache is False
 
     config.cache_start_date = pandas.to_datetime("2015-11-10").date()
     config.cache_end_date = pandas.to_datetime("2016-10-10").date()
 
     data_manager.check_if_need_extra_data()
 
-    assert data_manager.need_data_before_cache == True
-    assert data_manager.need_data_after_cache == False
+    assert data_manager.need_data_before_cache is True
+    assert data_manager.need_data_after_cache is False
 
     config.cache_start_date = pandas.to_datetime("2015-11-10").date()
     config.cache_end_date = pandas.to_datetime("2016-09-10").date()
 
     data_manager.check_if_need_extra_data()
 
-    assert data_manager.need_data_before_cache == True
-    assert data_manager.need_data_after_cache == True
+    assert data_manager.need_data_before_cache is True
+    assert data_manager.need_data_after_cache is True
 
     config.cache_start_date = pandas.to_datetime("2015-11-10").date()
     config.cache_end_date = pandas.to_datetime("2016-09-10").date()
 
     data_manager.check_if_need_extra_data()
 
-    assert data_manager.need_data_before_cache == True
-    assert data_manager.need_data_after_cache == True
+    assert data_manager.need_data_before_cache is True
+    assert data_manager.need_data_after_cache is True
 
 
 def test_combine_cache_and_new_data(monkeypatch):
