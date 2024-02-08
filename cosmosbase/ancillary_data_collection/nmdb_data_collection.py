@@ -244,7 +244,7 @@ class CacheHandler:
         Returns
         -------
         DataFrame
-            DF of the cache file
+            DataFrame from the cache file
         """
         if self.config.cache_exists:
             df = pandas.read_csv(self.cache_file_path)
@@ -253,7 +253,8 @@ class CacheHandler:
             return df
 
     def write_cache(self, cache_df):
-        """Write NMDB data to the cache location
+        """
+        Write NMDB data to the cache location
 
         Parameters
         ----------
@@ -265,7 +266,8 @@ class CacheHandler:
         cache_df.to_csv(self.cache_file_path)
 
     def delete_cache(self):
-        """Delete the cache file assigne to the current instance. E.g.
+        """
+        Delete the cache file assigne to the current instance. E.g.
         if downloading data for JUNG it will delete the file
         associated with JUNG from the cache
         """
@@ -275,8 +277,10 @@ class CacheHandler:
         self.config.cache_exists = False
 
     def check_cache_range(self):
-        """Function to find the range of data already available in the
-        cache
+        """
+        Function to find the range of data already available in the
+        cache. Appends the config file with Boolean to represent
+        existance of the cache.
         """
         self.check_cache_file_exists()
         if self.config.cache_exists:
@@ -289,14 +293,17 @@ class CacheHandler:
 
 
 class DataFetcher:
-    """Class concerned with requesting data from NMDB.eu"""
+    """
+    Class concerned with requesting data from NMDB.eu
+    """
 
     def __init__(self, config):
         self.config = config
 
     @staticmethod
     def get_ymd_from_date(date):
-        """Parses a given date into year, month, and day.
+        """
+        Parses a given date into year, month, and day.
 
         Parameters
         ----------
@@ -315,11 +322,12 @@ class DataFetcher:
         return year, month, day
 
     def create_nmdb_url(self):
-        """Creates the URL for obtaining the data using HTTP
+        """
+        Creates the URL for obtaining the data using HTTP
 
         Returns
         -------
-        str
+        url : str
             URL as a string
         """
         if self.config.start_date_needed is None:
@@ -344,12 +352,13 @@ class DataFetcher:
         return url
 
     def fetch_data_http(self):
-        """Fetches the data using http from NMDB.eu and processes it
+        """
+        Fetches the data using http from NMDB.eu and processes it
 
         Returns
         -------
-        DataFrame
-            DataFrame of data
+        Text : str
+            Returns the text from the http site
         """
         url = self.create_nmdb_url()
         response = requests.get(url)
@@ -406,8 +415,11 @@ class DataManager:
         self.need_data_after_cache = None
 
     def check_if_need_extra_data(self):
-        """Returns boolean on whether a download of data is required
-        before or after the desired dates"""
+        """
+        Returns boolean on whether a download of data is required
+        before or after the desired dates.
+        """
+
         self.cache_handler.check_cache_range()
         start_date_wanted = pandas.to_datetime(
             self.config.start_date_wanted
@@ -424,6 +436,10 @@ class DataManager:
         )
 
     def set_dates_for_nmdb_download(self):
+        """
+        Sets the download range for NMDB data based upon the desired
+        data and the available data in the cache.
+        """
         if self.need_data_before_cache and self.need_data_after_cache:
             self.config.start_date_needed = self.config.start_date_wanted
             self.config.end_date_needed = self.config.end_date_wanted
@@ -485,6 +501,16 @@ class NMDBDataHandler:
             The station to collect data from, defaults to "JUNG".
         initializer : NMDBinitializer, optional
             An instance of NMDBinitializer to create necessary components.
+
+        Returns
+        ----------
+
+        df_cache : DataFrame
+            The cached dataframe
+        df_download : DataFrame
+            The downloaded dataframe
+        df_combined : DataFrame
+            A combined dataframe when extra data needed
         """
         self.config = config
         self.cache_handler = CacheHandler(config)
