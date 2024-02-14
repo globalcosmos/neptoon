@@ -1,0 +1,84 @@
+method_signifier:
+  name: # A unique name that will be appended to data
+
+correction:
+  new_neutron_column: N
+  air_humidity:
+    new_humidity_column: ah
+    humidity_method: "Rosolem et al. (2013)"
+    alpha: 0.0054
+    humidity_ref: 0
+  air_pressure:
+    pressure_method: "Zreda et al. (2012)"
+    beta: 136
+    pressure_ref: 1013.25
+  incoming_radiation:
+    new_incoming_column: NM
+    incoming_method: "Zreda et al. (2012)"
+    gamma: 1
+    incoming_ref: 150
+  reference_neutron_monitor:
+    NM_auto_download: yes
+    NM_path: input/NM/
+    NM_station: JUNG
+    NM_resolution: 1hour
+
+
+# clean:
+#   cutting:
+#     start: 
+#     end: 
+#     bbox: 
+#   exclude_areas:
+#     exclude_table: 
+#   scoring:
+#     scoring_method: none
+#     scoring_filters: minus_mean, minus_median, follow_SD, before_SD, wetter_before_and_after, minus_before, minus_follow, minus_mean
+#     scoring_var: moisture
+#     scoring_scope: 12
+#     scoring_std_factor: 1.5
+#     scoring_max_score: 2
+#     scoring_radius: 100
+#     scoring_radius_method: W_r_approx
+#   temporal_aggregation:
+#     aggregate: 1day
+#     aggregate_func: mean
+#     aggregate_minor_vis: 1hour
+#   smoothing:
+#     smooth: 3
+#     smooth_radius: 
+#     smooth_radius_method: W_r_approx
+#     number_locations: 
+#   gridding:
+#     grid_master_file: 
+#     grid_smooth_radius: 100
+#     grid_smooth_method: equal
+#   invalid_data:
+#     invalid_data: replace by NaN
+#     interpolate_neutrons: no
+#     interpolate_neutrons_gapsize: 6
+#     interpolate_coords: no
+#     neutrons_unit: 
+#     pressure_unit: 
+#     missing_pressure: DWD
+#     missing_humidity: DWD
+#     missing_temperature: DWD
+#     altitude_raster: 
+#     resolution_default: 
+#   outlier_filter:
+#     neutron_range_per_tube: 
+#     neutron_range: 1, 2000
+#     neutron_n_sigma: 3
+#     timeres_range: 800, 1000
+#     pressure_range: 1, 1100
+#     humidity_range: 0, 100
+#     temperature_range: -60, 60
+#     sm_range: 0, 1
+#   split_tracks:
+#     split_tracks: no
+#     split_location_A: 
+#     split_location_B: 
+#     split_location_radius: 50
+#     split_min_duration: 10
+#     split_continue_track: 
+

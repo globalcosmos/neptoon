@@ -1,7 +1,8 @@
 import time
 import requests
+from datetime import datetime
 import logging
-import pandas
+import pandas as pd
 from pathlib import Path
 from io import StringIO
 from dateutil import parser
@@ -22,21 +23,33 @@ def timed_function(func):
 
 
 class DateTimeHandler:
-    """Class that holds Date standardization methods"""
+    """
+    Class that holds Date standardization methods.
+
+    This class provides static methods for converting and standardizing date formats
+    to a common format (YYYY-mm-dd) used throughout the NMDB data collection process.
+    """
 
     @staticmethod
     def convert_string_to_standard_date(date_str):
-        """Function to standardize dates given as a string
+        """
+        Converts a string date to the standard format (YYYY-mm-dd).
 
         Parameters
         ----------
         date_str : str
-            Converts a string date to the standard format (YYYY-mm-dd)
+            The date string to convert.
 
         Returns
         -------
-        str
-            Date string in format (YYYY-mm-dd)
+        str or None
+            The standardized date string in format (YYYY-mm-dd), or None if the input
+            date string is not a recognizable date format.
+
+        Raises
+        ------
+        ValueError
+            If the input string cannot be parsed into a valid date.
         """
         try:
             parsed_date = parser.parse(date_str)
@@ -51,31 +64,42 @@ class DateTimeHandler:
 
     @staticmethod
     def format_datetime_to_standard_string(date_datetime):
-        """Standardize dates given as a pandas.DateTime
+        """
+        Converts a datetime or pd.Timestamp date to the standard format
+        (YYYY-mm-dd)
 
         Parameters
         ----------
-        date_datetime : pandas.Datetime
+        date_datetime : datetime.datetime or pandas.Timestamp
+            The datetime object to convert.
 
         Returns
         -------
-        Str: Formatted Datetime
+        str or None The standardized date string in format (YYYY-mm-dd),
+        or None if the input
+            is not a datetime.datetime or pandas.Timestamp instance.
 
         """
-        return date_datetime.strftime("%Y-%m-%d")
+        if isinstance(date_datetime, (datetime, pd.Timestamp)):
+            return date_datetime.strftime("%Y-%m-%d")
+        else:
+            logging.error(f"Input is not a valid datetime object")
+            return None
 
     @staticmethod
     def standardize_date_input(date_input):
-        """Checks datetime input type and converts it to the standard
-            format: YYYY-mm-dd
+        """
+        Takes a date as input, checks type, and converts it to the
+        standard format (YYYY-mm-dd)
+
         Parameters
         ----------
-        date_input : str or DateTime
-            Input date
+        date_input : str or pd.TimeStamp or datetime.datetime
+            Input date to be converted
 
         Returns
         -------
-        Str
+        str
             String of the date as YYYY-mm-dd
 
         Raises
@@ -83,7 +107,7 @@ class DateTimeHandler:
         ValueError
             Raise error when neither str or datetime is given
         """
-        if isinstance(date_input, pandas.Timestamp):
+        if isinstance(date_input, (datetime, pd.Timestamp)):
             logging.info("Date was given as a pandas.Timestamp")
             return DateTimeHandler.format_datetime_to_standard_string(
                 date_input
@@ -97,8 +121,48 @@ class DateTimeHandler:
 
 
 class NMDBConfig:
-    """Config class for shared attributes in NMDB
-    process.(NMDB = Neutron Monitoring Data Base)"""
+    """
+    Configuration class for NMDB data retrieval and processing.
+
+    This class encapsulates configuration settings required for NMDB
+    data retrieval, including date ranges for data collection, station
+    identification, cache management, and data resolution settings. It
+    ensures that all components of the NMDB data collection module use
+    consistent and standardized configuration parameters.
+
+    Parameters
+    ----------
+    start_date_wanted : str
+        Start date for data retrieval, formatted as 'YYYY-MM-DD'.
+    end_date_wanted : str
+        End date for data retrieval, formatted as 'YYYY-MM-DD'.
+    station : str, optional
+        NMDB station code from which data is retrieved. Defaults to
+        'JUNG'.
+    cache_dir : str or None, optional
+        Path to the cache directory for storing retrieved data. If None,
+        uses the default OS cache directory.
+    nmdb_table : str, optional
+        Specific NMDB table to query data from. Defaults to 'revori'.
+    resolution : str, optional
+        Resolution of the data in minutes. Defaults to '60'.
+    cache_exists : bool, optional
+        Indicates whether cached data exists for the given parameters.
+        Defaults to False.
+    cache_start_date : str or None, optional
+        Start date of the available cached data, formatted as
+        'YYYY-MM-DD'. None if no cache exists.
+    cache_end_date : str or None, optional
+        End date of the available cached data, formatted as
+        'YYYY-MM-DD'. None if no cache exists.
+    start_date_needed : str or None, optional
+        Start date for which data needs to be fetched, considering
+        cached data. None if all data is cached.
+    end_date_needed : str or None, optional
+        End date for which data needs to be fetched, considering cached
+        data. None if all data is cached.
+
+    """
 
     def __init__(
         self,
@@ -204,10 +268,54 @@ class NMDBConfig:
 
 
 class CacheHandler:
-    """CacheHandler is the object that handles reading, writing,
-    deleting and checking existance of the cache.
+    """
+    Class to handle cache management using downloaded NMDB data
 
-    Cache directory is store in NMDBConfig, the cache handler handles
+    The cache handler managed file paths, naming of files, storage and
+    deletion of the cache. As default it will be stored in the usual
+    operating system cache location.
+
+    Parameters
+    ----------
+    config : NMDBConfig
+        An instance of the NMDBConfig class containing configuration
+        settings
+
+    Attributes
+    ----------
+    config : NMDBConfig
+        Stores the configuration settings for NMDB data retrieval.
+    _cache_file_path : Path or None
+        The file path to the cache file, dynamically determined based on
+        the NMDBConfig settings.
+
+    Methods
+    -------
+    update_cache_file_path()
+        Updates the cache file path based on the current NMDBConfig
+        settings.
+    check_cache_file_exists()
+        Checks for the existence of the cache file and updates the
+        configuration accordingly.
+    read_cache()
+        Reads the cached NMDB data from the file and returns it as a
+        DataFrame.
+    write_cache(cache_df)
+        Writes a DataFrame to the cache file location.
+    delete_cache()
+        Deletes the cache file associated with the current NMDBConfig
+        settings.
+    check_cache_range()
+        Determines the range of dates available in the cache and updates
+        the NMDBConfig settings.
+
+    Examples
+    --------
+    >>> config = NMDBConfig(start_date_wanted='2023-01-01',
+    >>>             end_date_wanted='2023-01-31', station='JUNG')
+    >>> cache_handler = CacheHandler(config)
+    >>> cache_handler.update_cache_file_path()
+    >>> print(cache_handler.cache_file_path)
     """
 
     def __init__(self, config):
@@ -232,33 +340,44 @@ class CacheHandler:
         self._cache_file_path = value
 
     def check_cache_file_exists(self):
-        """Checks the existence of the cache file
-        and sets property in config
+        """
+        Checks the existence of the cache file and sets the property in
+        config
+
+        Returns
+        -------
+        None
         """
         if self.cache_file_path.exists():
             self.config.cache_exists = True
 
     def read_cache(self):
-        """Reads cache nmdb file and formats index
+        """
+        Reads cache nmdb file and formats index
 
         Returns
         -------
-        DataFrame
+        df : pd.DataFrame
             DataFrame from the cache file
         """
         if self.config.cache_exists:
-            df = pandas.read_csv(self.cache_file_path)
-            df["datetime"] = pandas.to_datetime(df["datetime"])
+            df = pd.read_csv(self.cache_file_path)
+            df["datetime"] = pd.to_datetime(df["datetime"])
             df.set_index("datetime", inplace=True)
             return df
 
     def write_cache(self, cache_df):
         """
-        Write NMDB data to the cache location
+        Write NMDB data to the cache location using the cache_file_path
+        attribute as a name.
 
         Parameters
         ----------
-        cache_df : DataFrame
+        cache_df : pd.DataFrame
+
+        Returns
+        -------
+        None
         """
         if cache_df.empty:
             logging.warning("Attempting to write an empty DataFrame to cache.")
@@ -267,9 +386,13 @@ class CacheHandler:
 
     def delete_cache(self):
         """
-        Delete the cache file assigne to the current instance. E.g.
-        if downloading data for JUNG it will delete the file
-        associated with JUNG from the cache
+        Delete the cache file related to the current instance. E.g. if
+        downloading hourly data for JUNG it will delete the file
+        associated with hourly JUNG from the cache.
+
+        Return
+        ------
+        None
         """
         if self.cache_file_path.exists():
             self.cache_file_path.unlink(missing_ok=True)
@@ -279,8 +402,13 @@ class CacheHandler:
     def check_cache_range(self):
         """
         Function to find the range of data already available in the
-        cache. Appends the config file with Boolean to represent
-        existance of the cache.
+        cache. It updates the config file depending on availability. It
+        will either declare none existance of the cache, or update the
+        start and end date of the cache.
+
+        Returns
+        -------
+        None
         """
         self.check_cache_file_exists()
         if self.config.cache_exists:
@@ -294,7 +422,29 @@ class CacheHandler:
 
 class DataFetcher:
     """
-    Class concerned with requesting data from NMDB.eu
+    Class to handle sending external requests and fetching data.
+
+    Parameters
+    ----------
+    config : NMDBConfig
+        An instance of the configuration file.
+
+    Methods
+    -------
+    get_ymd_from_date(date)
+        static method which parses the date into seperate values to
+        represent year, month and day
+    create_nmdb_url()
+        creates the url to request data from NMDB.eu, based on values in
+        the configuration file
+    fetch_data_http()
+        uses the created url to request data from NMDB.eu and returns
+        the text from the response
+    parse_http_date(raw_data)
+        uses the returned text from fetch_data_http() and parses it into
+        a standard format. The format is a pd.Dataframe with a
+        datetime.datetime index
+
     """
 
     def __init__(self, config):
@@ -367,17 +517,36 @@ class DataFetcher:
         return response.text
 
     def parse_http_data(self, raw_data):
-        """Parse the http data into a dataframe
+        """Parse the HTTP response data into a dataframe
 
         Parameters
         ----------
-        raw_data : HTTP txt file
-            Text file as collected from NMDB.eu
+        raw_data : str
+            The raw text file collected from NMDB.eu
 
         Returns
         -------
-        DataFrame
-            DataFrame with index DateTime and Counts per second
+        pd.DataFrame
+            A DataFrame with index DateTime and Counts per second
+
+        Raises
+        ------
+        ValueError
+            Raised if the requested date is not available at the
+            specified NMDB station, indicated by a specific error
+            message in the raw data.
+        requests.exceptions.RequestException
+            Raised if there's an issue parsing the HTTP response into a
+            DataFrame, such as an incorrect format or network-related
+            errors during the fetch.
+
+        Examples
+        --------
+        Assuming an instance `nmdb_data_handler` of a class that
+        includes this method:
+
+        >>> df = nmdb_data_handler.fetch_and_parse_http_data()
+        >>> print(df.head())
 
         """
         # if date has not been covered we raise an error
@@ -389,10 +558,10 @@ class DataFetcher:
             )
         data = StringIO(raw_data)
         try:
-            data = pandas.read_csv(data, delimiter=";", comment="#")
+            data = pd.read_csv(data, delimiter=";", comment="#")
             data.columns = ["count"]
             data.index.name = "datetime"
-            data.index = pandas.to_datetime(data.index)
+            data.index = pd.to_datetime(data.index)
         except requests.exceptions.RequestException as e:
             logging.error(f"HTTP Request failed: {e}")
         except ValueError as e:
@@ -400,14 +569,92 @@ class DataFetcher:
         return data
 
     def fetch_and_parse_http_data(self):
+        """
+        Fetches raw NMDB data via HTTP and parses it into a pandas
+        DataFrame.
+
+        This method combines the functionalities of fetching NMDB data
+        from the designated HTTP source and subsequently parsing that
+        raw data into a structured DataFrame. It leverages
+        `fetch_data_http` to retrieve the data and `parse_http_data` to
+        transform it into a usable format.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing the NMDB data, indexed by datetime
+            with counts per second.
+
+        Raises
+        ------
+        Refer to documentation for fetch_data_http() and
+        parse_http_data()
+
+        Examples
+        --------
+        Assuming an instance `nmdb_data_handler` of a class that
+        includes this method:
+
+        >>> df = nmdb_data_handler.fetch_and_parse_http_data()
+        >>> print(df.head())
+        """
         raw_data = self.fetch_data_http()
         return self.parse_http_data(raw_data)
 
 
 class DataManager:
-    """Class for managing the data collected from cache and online"""
+    """
+    Manages the integration of cached and newly fetched NMDB data.
+
+    This class is responsible for determining the necessity of fetching
+    new NMDB data based on the existing cache and the desired date
+    range. It also handles the combination of cached data with newly
+    fetched data to provide a complete dataset for analysis.
+
+    Parameters
+    ----------
+    config : NMDBConfig
+        Configuration settings for NMDB data retrieval.
+    cache_handler : CacheHandler
+        Handles operations related to caching of NMDB data.
+    data_fetcher : DataFetcher
+        Responsible for fetching new data from NMDB.
+
+    Attributes
+    ----------
+    need_data_before_cache : bool or None
+        Indicates if data before the cached range is needed.
+    need_data_after_cache : bool or None
+        Indicates if data after the cached range is needed.
+
+    Methods
+    -------
+    check_if_need_extra_data()
+        Evaluates the need for fetching data outside the current cache
+        range.
+    set_dates_for_nmdb_download()
+        Updates the configuration with the date ranges that need to be
+        fetched.
+    combine_cache_and_new_data(df_cache, df_download)
+        Merges newly fetched data with existing cached data, ensuring no
+        duplication.
+
+    """
 
     def __init__(self, config, cache_handler, data_fetcher):
+        """
+        Initializes the DataManager with the given configuration, cache handler, and data fetcher.
+
+        Parameters
+        ----------
+        config : NMDBConfig
+            Configuration settings for NMDB data retrieval.
+        cache_handler : CacheHandler
+            Handles operations related to caching of NMDB data.
+        data_fetcher : DataFetcher
+            Responsible for fetching new data from NMDB.
+        """
+
         self.config = config
         self.cache_handler = cache_handler
         self.data_fetcher = data_fetcher
@@ -416,17 +663,20 @@ class DataManager:
 
     def check_if_need_extra_data(self):
         """
-        Returns boolean on whether a download of data is required
-        before or after the desired dates.
+        Updates configuration instance with boolean values stating
+        whether a download of data is required before or after the
+        desired dates.
+
+        Returns
+        -------
+        None
         """
 
         self.cache_handler.check_cache_range()
-        start_date_wanted = pandas.to_datetime(
+        start_date_wanted = pd.to_datetime(
             self.config.start_date_wanted
         ).date()
-        end_date_wanted = pandas.to_datetime(
-            self.config.end_date_wanted
-        ).date()
+        end_date_wanted = pd.to_datetime(self.config.end_date_wanted).date()
 
         self.need_data_before_cache = (
             start_date_wanted < self.config.cache_start_date
@@ -437,8 +687,13 @@ class DataManager:
 
     def set_dates_for_nmdb_download(self):
         """
-        Sets the download range for NMDB data based upon the desired
-        data and the available data in the cache.
+        Updates the configuration instance with the download range for
+        NMDB data based upon the desired data and the available data in
+        the cache.
+
+        Returns
+        -------
+        None
         """
         if self.need_data_before_cache and self.need_data_after_cache:
             self.config.start_date_needed = self.config.start_date_wanted
@@ -453,21 +708,28 @@ class DataManager:
             self.config.end_date_needed = self.config.end_date_wanted
 
     def combine_cache_and_new_data(self, df_cache, df_download):
-        """Appends new data to cached data and sorts by date.
+        """
+        Combines cached and newly downloaded NMDB data into a single
+        DataFrame, ensuring data continuity and no duplication.
 
-        Args:
-            df_cache (DataFrame): The cached data.
-            dfdownload (DataFrame): The newly downloaded data.
+        Parameters
+        ----------
+        df_cache : pd.DataFrame
+            The DataFrame containing cached data.
+        df_download : pd.DataFrame
+            The DataFrame containing newly downloaded data.
 
-        Returns:
-            DataFrame: The combined and sorted DataFrame.
+        Returns
+        -------
+        pd.DataFrame
+            The combined DataFrame, sorted by datetime.
         """
         if "datetime" not in df_cache.index.names:
             df_cache.set_index("datetime", inplace=True)
         if "datetime" not in df_download.index.names:
             df_download.set_index("datetime", inplace=True)
 
-        combined_df = pandas.concat([df_cache, df_download])
+        combined_df = pd.concat([df_cache, df_download])
         combined_df.reset_index(inplace=True)
         combined_df.drop_duplicates(
             subset="datetime", keep="first", inplace=True
@@ -478,39 +740,59 @@ class DataManager:
 
 
 class NMDBDataHandler:
-    """Overall handler for NMDB functions. Takes the classes and pieces
-    them together to collect data from NMDB. If data is available in the
-    cache it will avoid sending requests to server, if partial data is
-    available it will download what is needed
+    """
+    Orchestrates the retrieval and management of NMDB data.
+
+    This class integrates the `CacheHandler`, `DataFetcher`, and
+    `DataManager` to manage NMDB data efficiently. It ensures that data
+    is fetched from the NMDB source only when necessary, preferring
+    cached data to minimize network requests. The class handles cases
+    where new data needs to be fetched either because it's not present
+    in the cache or only partial data is available.
+
+    Parameters
+    ----------
+    config : NMDBConfig
+        Configuration settings for NMDB data retrieval, including
+        desired date ranges, station information, and caching
+        preferences.
+
+    Attributes
+    ----------
+    config : NMDBConfig
+        Stores the provided NMDB configuration settings.
+    cache_handler : CacheHandler
+        Manages caching operations for NMDB data.
+    data_fetcher : DataFetcher
+        Responsible for fetching new NMDB data when required.
+    data_manager : DataManager
+        Determines the need for and manages the retrieval of new data
+        based on cache status and configuration settings.
+
+    Methods
+    -------
+    collect_nmdb_data()
+        Retrieves NMDB data, prioritizing cached data and fetching new
+        data as needed. Returns a DataFrame containing the relevant NMDB
+        data.
+
+    Examples
+    --------
+    >>> config = NMDBConfig(start_date_wanted='2023-01-01',
+    >>>             end_date_wanted='2023-01-31', station='JUNG')
+    >>> nmdb_handler = NMDBDataHandler(config)
+    >>> nmdb_data = nmdb_handler.collect_nmdb_data()
+    >>> print(nmdb_data.head())
     """
 
-    def __init__(
-        self,
-        config,
-    ):
+    def __init__(self, config):
         """
-        Initialize the NMDBDataHandler Class.
+        Initializes the NMDBDataHandler with the given NMDBConfig instance.
 
         Parameters
         ----------
-        start_date : str
-            The start date for data collection.
-        end_date : str
-            The end date for data collection.
-        station : str, optional
-            The station to collect data from, defaults to "JUNG".
-        initializer : NMDBinitializer, optional
-            An instance of NMDBinitializer to create necessary components.
-
-        Returns
-        ----------
-
-        df_cache : DataFrame
-            The cached dataframe
-        df_download : DataFrame
-            The downloaded dataframe
-        df_combined : DataFrame
-            A combined dataframe when extra data needed
+        config : NMDBConfig
+            Configuration settings for NMDB data retrieval.
         """
         self.config = config
         self.cache_handler = CacheHandler(config)
@@ -520,7 +802,29 @@ class NMDBDataHandler:
         )
 
     def collect_nmdb_data(self):
-        """Wrapper function to collect nmdb data using the supplied info"""
+        """
+        Collects NMDB data based on the specified configuration, using
+        cached data when available and fetching new data as necessary.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing NMDB data for the requested range.
+            This may be a combination of cached and newly fetched data,
+            or solely from one source, depending on availability.
+
+        Examples
+        --------
+        Assuming `config` has been defined and passed to
+        `NMDBDataHandler`:
+
+        >>> nmdb_data = nmdb_handler.collect_nmdb_data()
+        >>> print(nmdb_data.head())
+
+        Note: This example assumes that `nmdb_handler` has been
+        instantiated with a valid `NMDBConfig`.
+        """
+
         self.cache_handler.check_cache_file_exists()
         if self.config.cache_exists:
             self.cache_handler.check_cache_range()

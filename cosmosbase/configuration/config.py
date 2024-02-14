@@ -24,3 +24,10 @@ class GlobalConfig:
             except OSError as error:
                 logging.error(f"Error creating directory: {error}")
                 raise
+
+
+class TestYamlConfig:
+    def __init__(self, config):
+        self.config = config
+        self.value = 1
+        self.station = 2

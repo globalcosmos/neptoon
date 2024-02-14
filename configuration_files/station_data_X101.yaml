@@ -1,0 +1,117 @@
+# This is essential information that will be unique to each sensor
+
+# Below are descriptors of the site itself (think enviornmental)
+site_meta_data:
+  site_name:
+  site_country:
+  site_number:
+  install_date:
+  elevation: 
+  coords:
+    latitude: #e.g: 51.369597
+    longitude: #e.g: 12.557120
+  time_zone: #e.g: -3 or 7
+  cutoff_rigidity: #GV eg: 4.5
+  avg_lattice_water:
+  avg_soil_organic_carbon: #decimal% e.g., 0.2
+  avg_dry_soil_bulk_density: #g/cm^3
+  # Values below here can be supplied, but can also be calculated
+  # using cosmosbase
+  beta_coefficient:
+  reference_pressure:
+  N0: 
+  avg_precipitation:
+  avg_soil_moisture:
+  
+# The collected metadata will be filled out by cosmosbase, using
+# external sources. Most users should leave this to be handled
+# by cosmosbase.
+external_collected_metadata:
+  soil_grids:
+    # Change these to change resolution around the sensor
+    desired_depth: 100 # cm
+    desired_radius: 250 # m
+    
+    # Collected average values based on the above range
+    bulk_density: # g/cm3
+    bulk_density_uncertainty:
+    soil_organic_carbon: #g/dm#
+    soil_organic_carbon_uncertainty:
+    ph_of_water: #pH
+    ph_of_water_uncertainty:
+    cation_exchange_capacity: #mmol(c)/kg
+    cation_exchange_capacity_uncertainty:
+    coarse_fragments_cfvo: #cm3/dm3
+    coarse_fragments_cfvo_uncertainty:
+    nitrogen: #cg/kg
+    nitrogen_uncertainty:
+    sand: #g/kg
+    sand_uncertainty:
+    silt: #g/kg
+    silt_uncertainty:
+    clay: #g/kg
+    clay_uncertainty:
+
+# Data formatting
+data_format:
+  column_names:
+
+# Below is information used for making the output pdf file
+pdf_info:
+  title_page:
+    title: CRNS station 
+    subtitle: operated by Helmholtz Centre for Environmental Research -- UFZ, Leipzig
+    contact: Martin Schrön
+    contact_email: martin.schroen@ufz.de
+    cover_image: input/station.png
+
+update:
+  data_source: None
+  FTP_server:
+    host: host
+    username: username
+    password: password
+    FTP_prefix: CRS_Data
+    FTP_suffix: .txt
+  remote_folder:
+    SD_path: 
+    SD_prefix: 
+    SD_suffix: 
+
+input:
+  local_storage:
+    path: input/station-data.zip
+    prefix: CRS03_Data
+    suffix: .txt
+  cache_data:
+    store_pickle: 
+    restore_from_pickle: no
+  column_names:
+    input_columns: 
+    index_column_number: 
+    timestamp: no
+    sep: 
+    decimal: .
+    skip_lines: 0
+  separate_GPS_file:
+    separate_gps: no
+    gps_prefix: GPS
+    gps_suffix: 
+    gps_input_columns: SCS,Time,NSats, lat, lon, alt, Date, Time1, Datetime
+    gps_index_column_number: 6, 7
+    gps_timestamp: no
+    gps_skip_lines: 0
+  neutron_tube_columns:
+    neutron_columns: N2Cts
+    ignore_neutron_columns: 
+    thermal_neutron_columns: N1Cts
+    resolution_column: N1ET_sec
+    resolution_default: 
+  atmospheric_data_columns:
+    pressure_column: P4_mb
+    humidity_column: RH_CS215
+    temperature_column: T_CS215
+  roving:
+    latitude_column: 
+    longitude_column: 
+    altitude_column: 
