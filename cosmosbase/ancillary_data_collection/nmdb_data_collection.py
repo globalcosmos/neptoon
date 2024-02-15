@@ -26,8 +26,9 @@ class DateTimeHandler:
     """
     Class that holds Date standardization methods.
 
-    This class provides static methods for converting and standardizing date formats
-    to a common format (YYYY-mm-dd) used throughout the NMDB data collection process.
+    This class provides static methods for converting and standardizing
+    date formats to a common format (YYYY-mm-dd) used throughout the
+    NMDB data collection process.
     """
 
     @staticmethod
@@ -43,8 +44,8 @@ class DateTimeHandler:
         Returns
         -------
         str or None
-            The standardized date string in format (YYYY-mm-dd), or None if the input
-            date string is not a recognizable date format.
+            The standardized date string in format (YYYY-mm-dd), or None
+            if the input date string is not a recognizable date format.
 
         Raises
         ------
@@ -643,7 +644,8 @@ class DataManager:
 
     def __init__(self, config, cache_handler, data_fetcher):
         """
-        Initializes the DataManager with the given configuration, cache handler, and data fetcher.
+        Initializes the DataManager with the given configuration, cache
+        handler, and data fetcher.
 
         Parameters
         ----------

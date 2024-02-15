@@ -1,0 +1,4 @@
+# Contains global configuration values for cosmosbase functioning
+
+working_directory:
+  working_directory_path: /path/to/work

@@ -1,0 +1,68 @@
+method_signifier:
+  name: unique_name # A unique name that will be appended to data
+
+correction_steps:
+  air_humidity:
+    absolute_humidity_column_name: absolute_humidity
+    # Methods available: [None, Rosolem et al. (2013), Koehli et al. (2021)]
+    humidity_method: "Rosolem et al. (2013)"
+    alpha: 0.0054
+    humidity_ref: 0
+  air_pressure:
+    # Methods available: [Zreda et al., (2012), Dunai et al., (2020)]
+    pressure_method: "Zreda et al. (2012)"
+    Dunai_inclination:
+  incoming_radiation:
+    new_incoming_column: NMDB_counts
+    incoming_method: "Hawdon et al. (2012)"
+    incoming_ref: 159
+  reference_neutron_monitor:
+    NM_auto_download: yes
+    NM_path: # Leave empty for automatic handling
+    NM_station: JUNG
+    NM_resolution: 1hour
+
+invalid_data:
+  invalid_data: replace by NaN
+  interpolate_neutrons: no
+  interpolate_neutrons_gapsize: 6
+  interpolate_coords: no
+
+interpolation:
+  interpolate_neutrons: no
+  interpolate_neutrons_gapsize : 6 # data points
+
+temporal_aggregation:
+  aggregate: 1day
+  aggregate_func: mean
+  aggregate_minor_vis: 1hour
+#   smoothing:
+#     smooth: 3
+#     smooth_radius: 
+#     smooth_radius_method: W_r_approx
+#     number_locations: 
+
+#     neutrons_unit: 
+#     pressure_unit: 
+#     missing_pressure: DWD
+#     missing_humidity: DWD
+#     missing_temperature: DWD
+#     altitude_raster: 
+#     resolution_default: 
+#   outlier_filter:
+#     neutron_range_per_tube: 
+#     neutron_range: 1, 2000
+#     neutron_n_sigma: 3
+#     timeres_range: 800, 1000
+#     pressure_range: 1, 1100
+#     humidity_range: 0, 100
+#     temperature_range: -60, 60
+#     sm_range: 0, 1
+#   split_tracks:
+#     split_tracks: no
+#     split_location_A: 
+#     split_location_B: 
+#     split_location_radius: 50
+#     split_min_duration: 10
+#     split_continue_track: 
+
