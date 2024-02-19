@@ -84,7 +84,7 @@ class DateTimeHandler:
         if isinstance(date_datetime, (datetime, pd.Timestamp)):
             return date_datetime.strftime("%Y-%m-%d")
         else:
-            logging.error(f"Input is not a valid datetime object")
+            logging.error("Input is not a valid datetime object")
             return None
 
     @staticmethod

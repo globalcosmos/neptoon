@@ -2,14 +2,13 @@
 # Please refer to documentation for descriptions of each data point and its units.
 
 site_meta_data:
-  site_name: Test Site 1
+  site_name: A site somewhere
   site_country: Germany
-  site_identifier: 101 
+  site_identifier: A101 
   install_date: 2016-10-21
   elevation: 300
-  coords:
-    latitude: 51.369597
-    longitude: 12.557120
+  latitude: 51.369597
+  longitude: 12.557120
   time_zone: +1 
   cutoff_rigidity: 3.2 
   avg_lattice_water: 0.01
@@ -21,30 +20,31 @@ site_meta_data:
   avg_precipitation:
   avg_soil_moisture:
 
-time_series_data_format:
-  key_columns:
+crns_sensor_information:
+  sensor_tube_type: HydroInnova C1000
+  sensor_height: 40 
+  multiple_tubes: False
+  tube_column_names: # [tube1, tube2]
+
+timeseries_data_format:
+  data_format: standard #HydroInnova, Styx, Finapp etc.
+  resolution: 1hour
+  key_column_names:
     neutron_counts: MOD
+    thermal_neutrons:
     pressure: P4_mb
     relative_humidity: RH_CS215
     atmospheric_temperature: EX_TEM
-    incoming_neutron_intensity: #Maybe?
-    
-  data_format: #HydroInnova, Styx, Finapp etc.
-      
+    resolution_column: N1ET_sec
+    resolution_default:
+    incoming_neutron_intensity: Jung #Maybe?
+
 calibration_data_format:
-  data_structure: standard
-  key_columns:
+  format: standard #cosmoz, cosmos-usa, cosmos-uk
+  key_column_names: 
     profile: PROF
     sample_depth: DETPH_AVG
     radial_distance: LOC_rad
-
-
-crns_sensor_information:
-  sensor_tube_type: HydroInnova C1000
-  # Brain storm below
-  sensor_height: 40 
-  multiple_tubes: False
-
 
 pdf_configuration:
   title_page:
@@ -53,17 +53,29 @@ pdf_configuration:
     contact: Martin Schrön
     contact_email: martin.schroen@ufz.de
     cover_image: input/station.png
-  
-  
-# The collected metadata will be filled out by cosmosbase, using
-# external sources. Most users should leave this to be handled
-# by cosmosbase.
+
+data_storage:
+  data_source: None
+  local_storage_path: input/station-data.zip
+  local_storage_prefix: CRS03_Data
+  local_storage_suffix: .txt
+  cache_data_pickle_store:
+  cache_data_restore_pickle: 
+  FTP_server_host: host
+  FTP_server_username: username
+  FTP_server_password: password # need to think of a better way to store passwords!
+  FTP_server_data_prefix: CRS_Data
+  FTP_server_data_suffix: .txt
+  remote_folder_SD_path:
+  remote_folder_SD_prefix: 
+  remote_folder_SD_suffix: 
+
+# The collected metadata will be filled out by cosmosbase!
 external_collected_metadata:
   soil_grids:
     # Change these to change resolution around the sensor
     desired_depth: 100 # cm
     desired_radius: 250 # m
-    
     # Collected average values based on the above range
     bulk_density: # g/cm3
     bulk_density_uncertainty:
@@ -84,22 +96,6 @@ external_collected_metadata:
     clay: #g/kg
     clay_uncertainty:
 
-
-
-
-update:
-  data_source: None
-  FTP_server:
-    host: host
-    username: username
-    password: password
-    FTP_prefix: CRS_Data
-    FTP_suffix: .txt
-  remote_folder:
-    SD_path: 
-    SD_prefix: 
-    SD_suffix: 
-
 input:
   local_storage:
     path: input/station-data.zip
@@ -108,32 +104,3 @@ input:
   cache_data:
     store_pickle: 
     restore_from_pickle: no
-  column_names:
-    input_columns: 
-    index_column_number: 
-    timestamp: no
-    sep: 
-    decimal: .
-    skip_lines: 0
-  separate_GPS_file:
-    separate_gps: no
-    gps_prefix: GPS
-    gps_suffix: 
-    gps_input_columns: SCS,Time,NSats, lat, lon, alt, Date, Time1, Datetime
-    gps_index_column_number: 6, 7
-    gps_timestamp: no
-    gps_skip_lines: 0
-  neutron_tube_columns:
-    neutron_columns: N2Cts
-    ignore_neutron_columns: 
-    thermal_neutron_columns: N1Cts
-    resolution_column: N1ET_sec
-    resolution_default: 
-  atmospheric_data_columns:
-    pressure_column: P4_mb
-    humidity_column: RH_CS215
-    temperature_column: T_CS215
-  roving:
-    latitude_column: 
-    longitude_column: 
-    altitude_column: 

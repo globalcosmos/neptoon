@@ -1,6 +1,4 @@
-import pandas as pd
-import logging
-from cosmosbase.data_management import the_yamls  # Placeholder
+# import pandas as pd
 from cosmosbase.data_management.data_wrapper import DataFrameWrapper
 
 """
@@ -15,14 +13,12 @@ Features:
     - Classes are available to convert standard data formats from the
       most common sensors into the internal format required for use in
       cosmosbase
-      
     - A class that will convert the format described in the
       documentation into the internal cosmosbase format. This is
       available in case a data format is not currently supported by the
       classes within the module (NOTE: if you build a class for
       conversion of your own data and feel it will be useful for the
       community make an issue and we can add it in future updates!)
-
     - Change the naming convention to a standard format. Fill in the
       YAML file in sensor config files to allow the code to do this.
 

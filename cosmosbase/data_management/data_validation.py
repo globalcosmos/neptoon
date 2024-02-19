@@ -8,7 +8,7 @@ import logging
       will be unavailable (although processing could still occur). And
       there are extra columns to support data not necessary for CRNS
       processing.
-    - 
+    -
 """
 
 

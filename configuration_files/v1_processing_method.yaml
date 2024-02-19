@@ -1,5 +1,5 @@
 method_signifier:
-  name: unique_name # A unique name that will be appended to data
+  name: v1_power # A unique name that will be appended to data
 
 correction_steps:
   air_humidity:
@@ -16,11 +16,11 @@ correction_steps:
     new_incoming_column: NMDB_counts
     incoming_method: "Hawdon et al. (2012)"
     incoming_ref: 159
-  reference_neutron_monitor:
-    NM_auto_download: yes
-    NM_path: # Leave empty for automatic handling
-    NM_station: JUNG
-    NM_resolution: 1hour
+    reference_neutron_monitor:
+      NM_auto_download: yes
+      NM_path: # Leave empty for automatic handling
+      NM_station: JUNG
+      NM_resolution: 1hour
 
 invalid_data:
   invalid_data: replace by NaN
