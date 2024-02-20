@@ -1,7 +1,7 @@
 # This is essential information that will be unique to each sensor
 # Please refer to documentation for descriptions of each data point and its units.
 
-site_meta_data:
+general_site_metadata:
   site_name: A site somewhere
   site_country: Germany
   site_identifier: A101 
@@ -44,7 +44,7 @@ calibration_data_format:
   key_column_names: 
     profile: PROF
     sample_depth: DETPH_AVG
-    radial_distance: LOC_rad
+    radial_distance_from_sensor: LOC_rad
 
 pdf_configuration:
   title_page:
@@ -71,7 +71,7 @@ data_storage:
   remote_folder_SD_suffix: 
 
 # The collected metadata will be filled out by cosmosbase!
-external_collected_metadata:
+externally_collected_metadata:
   soil_grids:
     # Change these to change resolution around the sensor
     desired_depth: 100 # cm
@@ -96,11 +96,11 @@ external_collected_metadata:
     clay: #g/kg
     clay_uncertainty:
 
-input:
-  local_storage:
-    path: input/station-data.zip
-    prefix: CRS03_Data
-    suffix: .txt
-  cache_data:
-    store_pickle: 
-    restore_from_pickle: no
+# input:
+#   local_storage:
+#     path: input/station-data.zip
+#     prefix: CRS03_Data
+#     suffix: .txt
+#   cache_data:
+#     store_pickle: 
+#     restore_from_pickle: no

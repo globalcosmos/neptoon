@@ -1,7 +1,8 @@
 import os
 import logging
-from platformdirs import PlatformDirs
 import yaml
+from platformdirs import PlatformDirs
+from cosmosbase.configuration import yaml_classes
 
 
 class ConfigurationObject:
@@ -83,6 +84,13 @@ class LoadConfigurationFile:
         self.whole_yaml_file = yaml_file
 
     def load_configuration(self):
+        """Import and load the configuration file
+
+        Returns
+        -------
+        Class
+            Configuration object with attributes
+        """
         self._import_whole_yaml_file()
         return ConfigurationObject(self.whole_yaml_file)
 
