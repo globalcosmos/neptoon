@@ -10,7 +10,6 @@ from cosmosbase.configuration.yaml_classes import (
     CalibrationDataFormat_ColumnNames,
     PDFConfiguration,
     DataStorage,
-    SoilGridsMetadata,
 )
 
 

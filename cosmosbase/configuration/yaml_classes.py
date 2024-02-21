@@ -1,9 +1,9 @@
 """
-This module contains 
+This module contains pydantic tables used for validation when importing
+YAML data
 """
 
 from pydantic import BaseModel
-from dataclasses import dataclass, field
 from typing import Optional, Union
 import datetime
 
