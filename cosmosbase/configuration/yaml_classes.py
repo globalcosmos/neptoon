@@ -1,26 +1,26 @@
 """
-This python module contains dataclasses for storing YAML files in a class format.
-Any updates in YAML files should be added here.
+This module contains 
 """
 
+from pydantic import BaseModel
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Union
+import datetime
 
 ################
 # Station YAML #
 ################
 
 
-@dataclass
-class GeneralSiteMetadata:
+class GeneralSiteMetadata(BaseModel):
     site_name: str
     site_country: str
     site_identifier: str
-    install_data: str
+    install_date: Union[str, datetime.date]
     elevation: int
     latitude: float
     longitude: float
-    time_zone: str
+    time_zone: Union[str, int]
     cutoff_rigidity: float
     avg_lattice_water: float
     avg_soil_organic_carbon: float
@@ -32,22 +32,19 @@ class GeneralSiteMetadata:
     avg_soil_moisture: Optional[float] = None
 
 
-@dataclass
-class CRNSSensorInformation:
+class CRNSSensorInformation(BaseModel):
     sensor_tube_type: str
-    sensor_height: str
+    sensor_height: int
     multiple_tubes: bool
     tube_column_names: Optional[list] = None
 
 
-@dataclass
-class TimeseriesDataFormat:
-    data_format: str
+class TimeseriesDataFormat(BaseModel):
+    data_format: Union[str, datetime.date]
     resolution: str
 
 
-@dataclass
-class TimeseriesDataFormat_ColumnNames:
+class TimeseriesDataFormat_ColumnNames(BaseModel):
     neutron_counts: str
     pressure: str
     relative_humidity: str
@@ -57,25 +54,17 @@ class TimeseriesDataFormat_ColumnNames:
     incoming_neutron_intensity: str
 
 
-@dataclass
-class CalibrationDataFormat:
+class CalibrationDataFormat(BaseModel):
     format: str
 
 
-@dataclass
-class CalibrationDataFormat_ColumnNames:
+class CalibrationDataFormat_ColumnNames(BaseModel):
     profile: str
     sample_depth: str
     radial_distance_from_sensor: str
 
 
-@dataclass
-class PDFConfiguration:
-    pass
-
-
-@dataclass
-class PDF_TitlePage:
+class PDFConfiguration(BaseModel):
     title: str
     subtitle: str
     contact: str
@@ -83,14 +72,13 @@ class PDF_TitlePage:
     cover_image: str
 
 
-@dataclass
-class DataStorage:
+class DataStorage(BaseModel):
     data_source: str
     local_storage_path: str
     local_storage_prefix: str
     local_storage_suffix: str
-    cache_data_pickle_store: str
-    cache_data_restore_pickle: str
+    cache_data_pickle_store: Optional[str]
+    cache_data_restore_pickle: Optional[str]
     FTP_server_host: str
     FTP_server_username: str
     FTP_server_password: str
@@ -101,8 +89,7 @@ class DataStorage:
     remote_folder_SD_suffix: Optional[str]
 
 
-@dataclass
-class SoilGridsMetadata:
+class SoilGridsMetadata(BaseModel):
     desired_depth: int
     desired_radius: int
     bulk_density: Optional[float]

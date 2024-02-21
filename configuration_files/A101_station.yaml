@@ -9,7 +9,7 @@ general_site_metadata:
   elevation: 300
   latitude: 51.369597
   longitude: 12.557120
-  time_zone: +1 
+  time_zone: +1
   cutoff_rigidity: 3.2 
   avg_lattice_water: 0.01
   avg_soil_organic_carbon: 0.05
@@ -46,13 +46,12 @@ calibration_data_format:
     sample_depth: DETPH_AVG
     radial_distance_from_sensor: LOC_rad
 
-pdf_configuration:
-  title_page:
-    title: CRNS station 
-    subtitle: operated by Helmholtz Centre for Environmental Research -- UFZ, Leipzig
-    contact: Martin Schrön
-    contact_email: martin.schroen@ufz.de
-    cover_image: input/station.png
+pdf_formatting:
+  title: CRNS station 
+  subtitle: operated by Helmholtz Centre for Environmental Research -- UFZ, Leipzig
+  contact: Martin Schrön
+  contact_email: martin.schroen@ufz.de
+  cover_image: input/station.png
 
 data_storage:
   data_source: None
@@ -70,37 +69,28 @@ data_storage:
   remote_folder_SD_prefix: 
   remote_folder_SD_suffix: 
 
-# The collected metadata will be filled out by cosmosbase!
-externally_collected_metadata:
-  soil_grids:
-    # Change these to change resolution around the sensor
-    desired_depth: 100 # cm
-    desired_radius: 250 # m
-    # Collected average values based on the above range
-    bulk_density: # g/cm3
-    bulk_density_uncertainty:
-    soil_organic_carbon: #g/dm#
-    soil_organic_carbon_uncertainty:
-    ph_of_water: #pH
-    ph_of_water_uncertainty:
-    cation_exchange_capacity: #mmol(c)/kg
-    cation_exchange_capacity_uncertainty:
-    coarse_fragments_cfvo: #cm3/dm3
-    coarse_fragments_cfvo_uncertainty:
-    nitrogen: #cg/kg
-    nitrogen_uncertainty:
-    sand: #g/kg
-    sand_uncertainty:
-    silt: #g/kg
-    silt_uncertainty:
-    clay: #g/kg
-    clay_uncertainty:
-
-# input:
-#   local_storage:
-#     path: input/station-data.zip
-#     prefix: CRS03_Data
-#     suffix: .txt
-#   cache_data:
-#     store_pickle: 
-#     restore_from_pickle: no
+# # The collected metadata will be filled out by cosmosbase!
+# externally_collected_metadata:
+#   soil_grids:
+#     # Change these to change resolution around the sensor
+#     desired_depth: 100 # cm
+#     desired_radius: 250 # m
+#     # Collected average values based on the above range
+#     bulk_density: # g/cm3
+#     bulk_density_uncertainty:
+#     soil_organic_carbon: #g/dm#
+#     soil_organic_carbon_uncertainty:
+#     ph_of_water: #pH
+#     ph_of_water_uncertainty:
+#     cation_exchange_capacity: #mmol(c)/kg
+#     cation_exchange_capacity_uncertainty:
+#     coarse_fragments_cfvo: #cm3/dm3
+#     coarse_fragments_cfvo_uncertainty:
+#     nitrogen: #cg/kg
+#     nitrogen_uncertainty:
+#     sand: #g/kg
+#     sand_uncertainty:
+#     silt: #g/kg
+#     silt_uncertainty:
+#     clay: #g/kg
+#     clay_uncertainty:
