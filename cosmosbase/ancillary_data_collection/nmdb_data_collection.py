@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 from io import StringIO
 from dateutil import parser
-import cosmosbase.configuration.config as cfg
+import cosmosbase.configuration.configuration_input as cfg
 
 
 def timed_function(func):

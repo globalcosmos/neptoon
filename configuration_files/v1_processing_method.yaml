@@ -1,15 +1,14 @@
 method_signifier:
-  name: v1_power # A unique name that will be appended to data
+  method_name: v1_method # A unique name that will be appended to data
+
 
 correction_steps:
   air_humidity:
     absolute_humidity_column_name: absolute_humidity
-    # Methods available: [None, Rosolem et al. (2013), Koehli et al. (2021)]
     humidity_method: "Rosolem et al. (2013)"
     alpha: 0.0054
     humidity_ref: 0
   air_pressure:
-    # Methods available: [Zreda et al., (2012), Dunai et al., (2020)]
     pressure_method: "Zreda et al. (2012)"
     Dunai_inclination:
   incoming_radiation:
@@ -58,11 +57,4 @@ temporal_aggregation:
 #     humidity_range: 0, 100
 #     temperature_range: -60, 60
 #     sm_range: 0, 1
-#   split_tracks:
-#     split_tracks: no
-#     split_location_A: 
-#     split_location_B: 
-#     split_location_radius: 50
-#     split_min_duration: 10
-#     split_continue_track: 
 

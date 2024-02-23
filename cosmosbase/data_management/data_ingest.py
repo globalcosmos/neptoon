@@ -1,4 +1,5 @@
 # import pandas as pd
+from abc import ABC, abstractmethod
 from cosmosbase.data_management.data_wrapper import DataFrameWrapper
 
 """
@@ -25,13 +26,16 @@ Features:
 """
 
 
-class DataIngestRules:
+class DataIngestRules(ABC):
     def __init__(self, global_config):
         self.global_config = global_config
 
+    @abstractmethod
     def load_data(self) -> DataFrameWrapper:
-        # Implement or define a method that subclasses should override
-        raise NotImplementedError("Subclasses must implement this method.")
+        """
+        Implement or define a method that subclasses should override
+        """
+        pass
 
     pass
 

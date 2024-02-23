@@ -110,3 +110,55 @@ class SoilGridsMetadata(BaseModel):
     silt_uncertainty: Optional[float]
     clay: Optional[float]
     clay_uncertainty: Optional[float]
+
+
+###################
+# Processing YAML #
+###################
+
+
+class MethodSignifier(BaseModel):
+    method_name: str
+
+
+class ReferenceNeutronMonitor(BaseModel):
+    NM_auto_download: bool
+    NM_path: Optional[str]
+    NM_station: str
+    NM_resolution: str
+
+
+class IncomingRadiation(BaseModel):
+    new_incoming_column: str
+    incoming_method: str
+    incoming_ref: int
+
+
+class AirPressure(BaseModel):
+    pressure_method: str
+    Dunai_inclination: Optional[float] = None
+
+
+class AirHumidity(BaseModel):
+    absolute_humidity_column_name: str
+    humidity_method: str
+    alpha: float
+    humidity_ref: int
+
+
+class InvalidData(BaseModel):
+    invalid_data: str
+    interpolate_neutrons: bool
+    interpolate_neutrons_gapsize: Optional[int] = None
+    interpolate_coords: bool
+
+
+class Interpolation(BaseModel):
+    interpolate_neutrons: bool
+    interpolate_neutrons_gapsize: int
+
+
+class TemporalAggregation(BaseModel):
+    aggregate: str
+    aggregate_func: str
+    aggregate_minor_vis: str

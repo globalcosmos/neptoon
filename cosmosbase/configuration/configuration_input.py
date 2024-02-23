@@ -1,6 +1,7 @@
 import os
 import logging
 import yaml
+from abc import ABC, abstractmethod
 from platformdirs import PlatformDirs
 from cosmosbase.configuration.yaml_classes import (
     GeneralSiteMetadata,
@@ -10,6 +11,14 @@ from cosmosbase.configuration.yaml_classes import (
     CalibrationDataFormat_ColumnNames,
     PDFConfiguration,
     DataStorage,
+    ReferenceNeutronMonitor,
+    MethodSignifier,
+    IncomingRadiation,
+    AirPressure,
+    AirHumidity,
+    InvalidData,
+    Interpolation,
+    TemporalAggregation,
 )
 
 
@@ -49,6 +58,34 @@ class ConfigurationObject:
             else:
                 setattr(self, key, value)
 
+    def to_dict(self):
+        """
+        Converts the ConfigurationObject and its nested attributes
+        back into a dictionary.
+
+        This is mainly used for testing.
+
+        Returns
+        -------
+        dict
+            Dictionary representation of the object
+        """
+        output_dict = {}
+        for key, value in self.__dict__.items():
+            if isinstance(value, ConfigurationObject):
+                output_dict[key] = value.to_dict()
+            elif isinstance(value, list):
+                output_list = []
+                for item in value:
+                    if isinstance(item, ConfigurationObject):
+                        output_list.append(item.to_dict())
+                    else:
+                        output_list.append(item)
+                output_dict[key] = output_list
+            else:
+                output_dict[key] = value
+        return output_dict
+
 
 class PreLoadConfigurationYaml:
     """
@@ -81,7 +118,7 @@ class PreLoadConfigurationYaml:
         self.whole_yaml_file = yaml_file
 
 
-class ValidateConfigurationFile:
+class ValidateConfigurationFile(ABC):
     """
     Base class for configuration file validation. Defines the structure
     and required methods for validating different sections of a
@@ -126,11 +163,33 @@ class ValidateConfigurationFile:
         """
         return {k: v for k, v in some_dict.items() if not isinstance(v, dict)}
 
+    @abstractmethod
     def get_sections(self):
-        raise NotImplementedError
+        """
+        Collects the sections of the YAML.
+
+        Implemented individually for each configuration type
+
+        """
+        pass
+
+    @abstractmethod
+    def check_sections(self):
+        """
+        Validates the collected sections of the YAML.
+
+        Implemented individually for each configuration type.
+
+        """
+        pass
 
     def validate_configuration(self):
-        raise NotImplementedError
+        """
+        Enacts both the section extraction as well as the validation of
+        the sections against the pydantic tables.
+        """
+        self.get_sections()
+        self.check_sections()
 
 
 class SensorConfigurationValidation(ValidateConfigurationFile):
@@ -153,6 +212,7 @@ class SensorConfigurationValidation(ValidateConfigurationFile):
         self.crns_sensor_information = full_yaml.get(
             "crns_sensor_information", {}
         )
+
         self.timeseries_data_format = full_yaml.get(
             "timeseries_data_format", {}
         )
@@ -163,15 +223,17 @@ class SensorConfigurationValidation(ValidateConfigurationFile):
             self.timeseries_data_format
         )
 
-        self.calibration_data_format = full_yaml["calibration_data_format"]
+        self.calibration_data_format = full_yaml.get(
+            "calibration_data_format", {}
+        )
         self.calibration_data_format_key_columns = (
             self.calibration_data_format["key_column_names"]
         )
         self.calibration_data_format = self.remove_nested_dicts(
             self.calibration_data_format
         )
-        self.pdf_formatting = full_yaml["pdf_formatting"]
-        self.data_storage = full_yaml["data_storage"]
+        self.pdf_formatting = full_yaml.get("pdf_formatting", {})
+        self.data_storage = full_yaml.get("data_storage", {})
 
     def check_sections(self):
         """
@@ -190,17 +252,33 @@ class SensorConfigurationValidation(ValidateConfigurationFile):
         DataStorage(**self.data_storage)
         # SoilGridsMetadata(**self.)
 
-    def validate_configuration(self):
-        """
-        Enacts both the section extraction as well as the validation of
-        the sections against the pydantic tables.
-        """
-        self.get_sections()
-        self.check_sections()
-
 
 class ProcessConfigurationValidation(ValidateConfigurationFile):
-    pass
+    def get_sections(self):
+        full_yaml = self.config_yaml.whole_yaml_file
+        correction_steps = full_yaml.get("correction_steps", {})
+
+        self.method_signifier = full_yaml.get("method_signifier", {})
+        self.air_humidity = correction_steps.get("air_humidity", {})
+        self.air_pressure = correction_steps.get("air_pressure", {})
+        self.incoming_radiation = correction_steps.get(
+            "incoming_radiation", {}
+        )
+        self.reference_neutron_monitor = self.incoming_radiation.get(
+            "reference_neutron_monitor", {}
+        )
+        self.invalid_data = full_yaml.get("invalid_data", {})
+        self.interpolation = full_yaml.get("interpolation", {})
+        self.temporal_aggregation = full_yaml.get("temoporal_aggregation", {})
+
+    def check_sections(self):
+        MethodSignifier(**self.method_signifier)
+        AirHumidity(**self.air_humidity)
+        AirPressure(**self.air_pressure)
+        IncomingRadiation(**self.incoming_radiation)
+        InvalidData(**self.invalid_data)
+        Interpolation(**self.interpolation)
+        TemporalAggregation(**self.temporal_aggregation)
 
 
 class GlobalSettingsConfigurationValidataion(ValidateConfigurationFile):
@@ -310,7 +388,8 @@ class ConfigurationManager:
 
 
 class GlobalConfig:
-    """Configuration values that are not to be updated by the user.
+    """
+    Configuration values that are not to be updated by the user.
     Should only be updated by developers when required
     """
 
