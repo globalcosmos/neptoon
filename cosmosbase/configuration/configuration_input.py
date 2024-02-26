@@ -11,7 +11,6 @@ from cosmosbase.configuration.yaml_classes import (
     CalibrationDataFormat_ColumnNames,
     PDFConfiguration,
     DataStorage,
-    ReferenceNeutronMonitor,
     MethodSignifier,
     IncomingRadiation,
     AirPressure,
