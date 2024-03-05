@@ -268,7 +268,7 @@ class ProcessConfigurationValidation(ValidateConfigurationFile):
         )
         self.invalid_data = full_yaml.get("invalid_data", {})
         self.interpolation = full_yaml.get("interpolation", {})
-        self.temporal_aggregation = full_yaml.get("temoporal_aggregation", {})
+        self.temporal_aggregation = full_yaml.get("temporal_aggregation", {})
 
     def check_sections(self):
         MethodSignifier(**self.method_signifier)

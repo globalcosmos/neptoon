@@ -4,7 +4,7 @@
 general_site_metadata:
   site_name: A site somewhere
   site_country: Germany
-  site_identifier: A101 
+  site_identifier: A101
   install_date: 2016-10-21
   elevation: 300
   latitude: 51.369597
@@ -30,7 +30,7 @@ timeseries_data_format:
   data_format: standard #HydroInnova, Styx, Finapp etc.
   resolution: 1hour
   key_column_names:
-    neutron_counts: MOD
+    neutron_counts: n1cts, n2cts, n3cts
     thermal_neutrons:
     pressure: P4_mb
     relative_humidity: RH_CS215

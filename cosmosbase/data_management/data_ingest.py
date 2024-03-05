@@ -22,16 +22,15 @@ Features:
       community make an issue and we can add it in future updates!)
     - Change the naming convention to a standard format. Fill in the
       YAML file in sensor config files to allow the code to do this.
-
 """
 
 
 class DataIngestRules(ABC):
-    def __init__(self, global_config):
-        self.global_config = global_config
+    def __init__(self):
+        pass
 
     @abstractmethod
-    def load_data(self) -> DataFrameWrapper:
+    def load_data(self):
         """
         Implement or define a method that subclasses should override
         """
