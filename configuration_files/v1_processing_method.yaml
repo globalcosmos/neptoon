@@ -35,6 +35,8 @@ temporal_aggregation:
   aggregate: 1day
   aggregate_func: mean
   aggregate_minor_vis: 1hour
+
+
 #   smoothing:
 #     smooth: 3
 #     smooth_radius: 

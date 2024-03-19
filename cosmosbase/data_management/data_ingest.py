@@ -1,6 +1,7 @@
 # import pandas as pd
 from abc import ABC, abstractmethod
-from cosmosbase.data_management.data_wrapper import DataFrameWrapper
+
+# from cosmosbase.data_management.data_wrapper import DataFrameWrapper
 
 """
 This module holds time series preperation classes and methods. The

@@ -36,7 +36,6 @@ class CRNSSensorInformation(BaseModel):
     sensor_tube_type: str
     sensor_height: int
     multiple_tubes: bool
-    tube_column_names: Optional[list] = None
 
 
 class TimeseriesDataFormat(BaseModel):

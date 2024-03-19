@@ -28,7 +28,7 @@ class ConfigurationObject:
     recursively add attributes in a nested fasion.
     """
 
-    def __init__(self, dictionary):
+    def __init__(self, dictionary: dict):
         """
         Initialises the object.
 
@@ -103,7 +103,7 @@ class PreLoadConfigurationYaml:
     def whole_yaml_file(self, value):
         self._whole_yaml_file = value
 
-    def import_whole_yaml_file(self, file_path):
+    def import_whole_yaml_file(self, file_path: str):
         """
         Load the yaml file
 
@@ -147,7 +147,7 @@ class ValidateConfigurationFile(ABC):
         self._config_yaml = value
 
     @staticmethod
-    def remove_nested_dicts(some_dict):
+    def remove_nested_dicts(some_dict: dict):
         """Return a new dictionary with nested dictionaries removed.
 
         Parameters
@@ -237,7 +237,8 @@ class SensorConfigurationValidation(ValidateConfigurationFile):
     def check_sections(self):
         """
         Validates the stored sections against pydantic data tables to
-        ensure data types are as expected.
+        ensure data types are as expected. The models are not saved and
+        are only used for validation.
 
         """
         GeneralSiteMetadata(**self.general_site_metadata)
@@ -254,6 +255,10 @@ class SensorConfigurationValidation(ValidateConfigurationFile):
 
 class ProcessConfigurationValidation(ValidateConfigurationFile):
     def get_sections(self):
+        """
+        Extracts the individual sections from the YAML file and stores
+        them as attributes in the object instance.
+        """
         full_yaml = self.config_yaml.whole_yaml_file
         correction_steps = full_yaml.get("correction_steps", {})
 
@@ -271,6 +276,12 @@ class ProcessConfigurationValidation(ValidateConfigurationFile):
         self.temporal_aggregation = full_yaml.get("temporal_aggregation", {})
 
     def check_sections(self):
+        """
+        Validates the stored sections against pydantic data tables to
+        ensure data types are as expected. The models are not saved and
+        are only used for validation.
+
+        """
         MethodSignifier(**self.method_signifier)
         AirHumidity(**self.air_humidity)
         AirPressure(**self.air_pressure)
@@ -305,7 +316,7 @@ class ConfigurationManager:
     def __init__(self):
         self._configs = {}
 
-    def convert_configuration_dictionary(self, dictionary):
+    def convert_configuration_dictionary(self, dictionary: dict):
         """Convert the YAML dict into a ConfigurationObject
 
         Returns
