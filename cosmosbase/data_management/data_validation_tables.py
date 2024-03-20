@@ -1,16 +1,6 @@
-import pandas as pd
 import pandera
-from pandera.typing import Series  # Index
-
-df = pd.DataFrame(
-    {
-        "moderated_count": [2000, 2010, 2001, 1980, 1999],
-        "atmos_pressure": [990, 1000, 999, 956, 1110],
-        # "relative_humidity": [25, 27, 13, 14, 15],
-        "relative_humidity": [0.2, 0.3, 0.3, 0.4, 0.5],
-        "date_time": ["2001", "2001", "2001", "2001", "2001"],
-    }
-)
+from pandera.typing import Series, DataFrame  # Index
+from typing import Optional
 
 
 class RawDataSchema(pandera.DataFrameModel):
@@ -24,12 +14,19 @@ class RawDataSchema(pandera.DataFrameModel):
     pandera.DataFrameModels to ensure it has been converted correctly.
     """
 
+    # Essential Columns
     moderated_count: int = pandera.Field(nullable=True, coerce=True)
     atmos_pressure: float = pandera.Field(coerce=True)
     relative_humidity: float = pandera.Field(
         nullable=True,
         coerce=True,
     )
+    air_temperature: float = pandera.Field(nullable=True, coerce=True)
+
+    # Optional columns
+    precipitation: Optional[float] = pandera.Field(nullable=True, coerce=True)
+    snow_depth: Optional[float] = pandera.Field(nullable=True, coerce=True)
+    thermal_count: Optional[int] = pandera.Field(nullable=True, coerce=True)
 
 
 class RawDataSchemaAfterFirstQA(RawDataSchema):
@@ -47,6 +44,10 @@ class RawDataSchemaAfterFirstQA(RawDataSchema):
         coerce=True,
     )
 
+    incoming_neutron_intensity: float = pandera.Field(
+        nullable=True, coerce=True
+    )
+
     @pandera.check("relative_humidity")
     def relative_humidity_validation(cls, series: Series[float]) -> bool:
         """
@@ -62,5 +63,10 @@ class RawDataSchemaAfterFirstQA(RawDataSchema):
             return False
         return True
 
-
-RawDataSchema(df)
+    @pandera.check()
+    def check_date_time_removed_and_indexed(cls, df: DataFrame) -> bool:
+        """
+        Checks that the date_time column has been assigned to index and
+        removed from the dataframe as a column.
+        """
+        return "date_time" not in df.columns
