@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import pandas as pd
-from cosmosbase.data_management.data_wrapper import CRNSDataHub
 
 
 class QualityAssessmentOfDataFrame(ABC):
@@ -20,8 +19,8 @@ class QualityAssessmentOfDataFrame(ABC):
 
     """
 
-    def __init__(self, crns_data_manager: CRNSDataHub):
-        self.crns_data = crns_data_manager
+    def __init__(self):
+        pass
 
     def create_shadow_flag_table(self):
         self.crns_data.crns_flag_data = pd.DataFrame(

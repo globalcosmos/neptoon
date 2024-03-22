@@ -6,12 +6,13 @@ from typing import Optional
 class RawDataSchema(pandera.DataFrameModel):
     """
     This is the validation table which is used to check that the time
-    series data has been correctly formatted for use in cosmosbase. The
-    concept is that when data is read in it must either be in this
-    format, or it must be pre-formatted using another script into this
-    format. The exact rules may change with time. When changes are made
-    on the data it will always be validated by one of these
-    pandera.DataFrameModels to ensure it has been converted correctly.
+    series data has been correctly formatted for use in cosmosbase.
+
+    When data is read in it must either validate against this format, or
+    it must be pre-formatted using another script into this format.
+
+    This initial step checks the column names are as expected and that
+    the data types are as expected.
     """
 
     # Essential Columns
@@ -32,7 +33,7 @@ class RawDataSchema(pandera.DataFrameModel):
 class RawDataSchemaAfterFirstQA(RawDataSchema):
     """
     This is an extension of the RawDataSchema to check data after the
-    first formatting and validation steps
+    first formatting and validation steps.
     """
 
     moderated_count: int = pandera.Field(nullable=True, gt=0, coerce=True)
