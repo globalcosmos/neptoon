@@ -1,10 +1,9 @@
 import pandas as pd
 from configuration.configuration_input import ConfigurationManager
 from cosmosbase.data_management.data_audit import DataAuditLog
-
-"""
-This
-"""
+from cosmosbase.data_management.data_validation_tables import (
+    RawDataSchemaAfterFirstQA,
+)
 
 
 class CRNSDataHub:
@@ -18,22 +17,35 @@ class CRNSDataHub:
       values (to keep things clean)
     - As we progress through the steps, data can be added to the
       DataFrame and the shadow DataFrame's updated.
+
+    Raw data is checked against the RawDataSchema which is a first line
+    of defense against incorrectly formatted tables. Should a fail
+    happen here data must be either reformatted using one of the
+    provided routines or manually formatted to match the standard.
     """
 
     def __init__(
         self,
-        raw_data_frame: pd.DataFrame,
-        column_names: dict = None,
+        raw_data_frame: pd.DataFrame[RawDataSchemaAfterFirstQA],
         data_audit_log: DataAuditLog = None,
+        configuration_manager: ConfigurationManager = None,
     ):
-        """_summary_
+        """
+        Possible inputs to the CRNSDataHub.
 
         Parameters
         ----------
-        raw_data_frame : pd.DataFrame
-            _description_
-        column_names : dict, optional
-            _description_, by default None
+        raw_data_frame : pd.DataFrame[RawDataSchemaAfterFirstQA]
+            CRNS data in a dataframe format. It will be validated to
+            ensure it has been formatted correctly.
+        data_audit_log : DataAuditLog, optional
+            A DataAuditLog instance which, when present, will keep a log
+            of all data transformation and processing steps to provide
+            line of site to users with how data has been processed, by
+            default None
+        configuration_manager : ConfigurationManager, optional
+            A ConfigurationManager instance storing configuration YAML
+            information, by default None
         """
 
         self._raw_data_frame = raw_data_frame
@@ -41,7 +53,11 @@ class CRNSDataHub:
             0, index=raw_data_frame.index, columns=raw_data_frame.columns
         )
         self._dataframe_uncertanties = pd.DataFrame(index=raw_data_frame.index)
-        self._processing_meta_data = None
+
+        if data_audit_log is not None:
+            self._data_audit_log = data_audit_log
+        if configuration_manager is not None:
+            self._configuration_manager = configuration_manager
 
     def expand_dataframe_flags(self):
         """
@@ -63,6 +79,21 @@ class CRNSDataHub:
         the data_validation_table.py module
 
         scheme will be a str to know what stage is being validated.
+        """
+        pass
+
+    def replace_dataframe(self, dataframe):
+        """
+        Function to replace the dataframe when manual adjustments have
+        been made. Not recommended for general processing, but can be
+        used when testing new features or theories.
+
+        TODO: How does this impact uncertainty/flags??
+
+        Parameters
+        ----------
+        dataframe : pd.DataFrame
+            DataFrame that has been changed and you wish to replace
         """
         pass
 
