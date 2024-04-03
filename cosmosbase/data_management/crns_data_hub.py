@@ -132,3 +132,16 @@ class CRNSDataHub:
         file_name : _type_
             _description_
         """
+
+    def save_data_audit_log(self, folder_path, file_name):
+        """
+        Output the DataAuditLog into a YAML format for human reading
+
+        Parameters
+        ----------
+        folder_path : str
+            Path to folder where it should be saved
+        file_name : str
+            Desired name of the file
+        """
+        pass
