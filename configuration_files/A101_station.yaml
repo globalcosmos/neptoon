@@ -10,7 +10,7 @@ general_site_metadata:
   latitude: 51.369597
   longitude: 12.557120
   time_zone: +1
-  cutoff_rigidity: 3.2 
+  cutoff_rigidity: 3.2
   avg_lattice_water: 0.01
   avg_soil_organic_carbon: 0.05
   avg_dry_soil_bulk_density: 1.42
@@ -22,7 +22,7 @@ general_site_metadata:
 
 crns_sensor_information:
   sensor_tube_type: HydroInnova C1000
-  sensor_height: 40 
+  sensor_height: 40
   multiple_tubes: True
 
 timeseries_data_format:
@@ -47,7 +47,7 @@ calibration_data_format:
     radial_distance_from_sensor: LOC_rad
 
 pdf_formatting:
-  title: CRNS station 
+  title: CRNS station
   subtitle: operated by Helmholtz Centre for Environmental Research -- UFZ, Leipzig
   contact: Martin Schrön
   contact_email: martin.schroen@ufz.de
@@ -59,16 +59,15 @@ data_storage:
   local_storage_prefix: CRS03_Data
   local_storage_suffix: .txt
   cache_data_pickle_store:
-  cache_data_restore_pickle: 
+  cache_data_restore_pickle:
   FTP_server_host: host
   FTP_server_username: username
   FTP_server_password: password # need to think of a better way to store passwords!
   FTP_server_data_prefix: CRS_Data
   FTP_server_data_suffix: .txt
   remote_folder_SD_path:
-  remote_folder_SD_prefix: 
-  remote_folder_SD_suffix: 
-
+  remote_folder_SD_prefix:
+  remote_folder_SD_suffix:
 # # The collected metadata will be filled out by cosmosbase!
 # externally_collected_metadata:
 #   soil_grids:

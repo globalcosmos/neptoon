@@ -3,7 +3,7 @@ from pandera.typing import Series, DataFrame  # Index
 from typing import Optional
 
 
-class RawDataSchema(pandera.DataFrameModel):
+class FormatCheck(pandera.DataFrameModel):
     """
     This is the validation table which is used to check that the time
     series data has been correctly formatted for use in cosmosbase.
@@ -16,38 +16,35 @@ class RawDataSchema(pandera.DataFrameModel):
     """
 
     # Essential Columns
-    moderated_count: int = pandera.Field(nullable=True, coerce=True)
-    atmos_pressure: float = pandera.Field(coerce=True)
-    relative_humidity: float = pandera.Field(
+    # pandera.Int is a nullable Integer type
+    epithermal_neutrons: float = pandera.Field(nullable=True)
+    air_pressure: float = pandera.Field(nullable=True)
+    air_relative_humidity: float = pandera.Field(
         nullable=True,
-        coerce=True,
     )
-    air_temperature: float = pandera.Field(nullable=True, coerce=True)
+    air_temperature: float = pandera.Field(nullable=True)
 
     # Optional columns
-    precipitation: Optional[float] = pandera.Field(nullable=True, coerce=True)
-    snow_depth: Optional[float] = pandera.Field(nullable=True, coerce=True)
-    thermal_count: Optional[int] = pandera.Field(nullable=True, coerce=True)
+    precipitation: Optional[float] = pandera.Field(nullable=True)
+    snow_depth: Optional[float] = pandera.Field(nullable=True)
+    thermal_neutrons: Optional[int] = pandera.Field(nullable=True)
 
 
-class RawDataSchemaAfterFirstQA(RawDataSchema):
+class RawDataSchemaAfterFirstQA(FormatCheck):
     """
     This is an extension of the RawDataSchema to check data after the
     first formatting and validation steps.
     """
 
-    moderated_count: int = pandera.Field(nullable=True, gt=0, coerce=True)
-    atmos_pressure: float = pandera.Field(gt=600, coerce=True)
-    relative_humidity: float = pandera.Field(
+    epithermal_neutrons: int = pandera.Field(nullable=True, gt=0)
+    air_pressure: float = pandera.Field(gt=600)
+    air_relative_humidity: float = pandera.Field(
         nullable=True,
         ge=0,
         le=100,
-        coerce=True,
     )
 
-    incoming_neutron_intensity: float = pandera.Field(
-        nullable=True, coerce=True
-    )
+    incoming_neutron_intensity: float = pandera.Field(nullable=True)
 
     @pandera.check("relative_humidity")
     def relative_humidity_validation(cls, series: Series[float]) -> bool:

@@ -99,6 +99,11 @@ class NoOperationDataAuditLog(DataAuditLogBase):
 
 
 def key_steps_log(*log_args):
+    """
+    Decorator which is used to record functions and values used in such
+    functions.
+    """
+
     def decorator(func):
         def wrapper(self, *args, **kwargs):
             # Access the audit_log from the 'self' argument
@@ -113,19 +118,19 @@ def key_steps_log(*log_args):
     return decorator
 
 
-# class DataProcessor:
-#     def __init__(self, audit_log=None):
-#         self.audit_log = audit_log if audit_log else NoOperationDataAuditLog()
+class DataProcessor:
+    def __init__(self, audit_log=None):
+        self.audit_log = audit_log if audit_log else NoOperationDataAuditLog()
 
-#     @key_steps_log("style", "a1")
-#     def theta_calc(self, style="first", N0=2000, a1=2.5):
-#         # logic
-#         pass
+    @key_steps_log("style", "a1")
+    def theta_calc(self, style="first", N0=2000, a1=2.5):
+        # logic
+        pass
 
-#     @key_steps_log("type", "window")
-#     def smooth_neutrons(type="SG", window=12):
-#         # logic
-#         pass
+    @key_steps_log("type", "window")
+    def smooth_neutrons(type="SG", window=12):
+        # logic
+        pass
 
 
 # audit_log = DataAuditLog()

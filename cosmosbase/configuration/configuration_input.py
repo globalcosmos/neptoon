@@ -381,7 +381,8 @@ class ConfigurationManager:
         )
 
     def get_configuration(self, name):
-        """Get the configuration file
+        """
+        Get the configuration file
 
         Parameters
         ----------

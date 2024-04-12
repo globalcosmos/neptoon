@@ -1,8 +1,10 @@
 import pandas as pd
-from configuration.configuration_input import ConfigurationManager
+import logging
+import numpy as np
+from cosmosbase.configuration.configuration_input import ConfigurationManager
 from cosmosbase.data_management.data_audit import DataAuditLog
 from cosmosbase.data_management.data_validation_tables import (
-    RawDataSchemaAfterFirstQA,
+    FormatCheck,
 )
 
 
@@ -26,16 +28,17 @@ class CRNSDataHub:
 
     def __init__(
         self,
-        raw_data_frame: pd.DataFrame[RawDataSchemaAfterFirstQA],
+        crns_data_frame: pd.DataFrame,
         data_audit_log: DataAuditLog = None,
         configuration_manager: ConfigurationManager = None,
+        validation: bool = True,
     ):
         """
         Possible inputs to the CRNSDataHub.
 
         Parameters
         ----------
-        raw_data_frame : pd.DataFrame[RawDataSchemaAfterFirstQA]
+        crns_data_frame : pd.DataFrame
             CRNS data in a dataframe format. It will be validated to
             ensure it has been formatted correctly.
         data_audit_log : DataAuditLog, optional
@@ -46,18 +49,40 @@ class CRNSDataHub:
         configuration_manager : ConfigurationManager, optional
             A ConfigurationManager instance storing configuration YAML
             information, by default None
+        validation : bool
+            Toggle for enforcement of continuous validation of data
+            tables during processing (see
+            data_management>data_validation_tables.py for examples of
+            tables being validated). This is recommended to stay on but
+            can be turned off for debugging or testing.
         """
 
-        self._raw_data_frame = raw_data_frame
-        self._dataframe_flags = pd.DataFrame(
-            0, index=raw_data_frame.index, columns=raw_data_frame.columns
-        )
-        self._dataframe_uncertanties = pd.DataFrame(index=raw_data_frame.index)
-
+        self._crns_data_frame = crns_data_frame
+        self._validation = validation
+        if self._crns_data_frame is not self._crns_data_frame.empty:
+            self.flags_data_frame = pd.DataFrame(
+                0, index=crns_data_frame.index, columns=crns_data_frame.columns
+            )
+        if self._crns_data_frame is not self._crns_data_frame.empty:
+            self._uncertainty_data_frame = pd.DataFrame(
+                index=crns_data_frame.index
+            )
         if data_audit_log is not None:
             self._data_audit_log = data_audit_log
         if configuration_manager is not None:
             self._configuration_manager = configuration_manager
+
+    @property
+    def crns_data_frame(self):
+        return self._crns_data_frame
+
+    @crns_data_frame.setter
+    def crns_data_frame(self, df):
+        self._crns_data_frame = df
+
+    @property
+    def validation(self):
+        return self._validation
 
     def expand_dataframe_flags(self):
         """
@@ -65,6 +90,7 @@ class CRNSDataHub:
         dataframe. This could be a comparison of columns, and then add
         columns missing from flags.
         """
+
         pass
 
     def attach_flags(self, flag_series):
@@ -73,14 +99,24 @@ class CRNSDataHub:
         """
         pass
 
-    def validate_dataframe(self, scheme: str):
+    def validate_dataframe(self, schema: str, table: str = None):
         """
-        Validates the dataframe against a validation scheme from within
+        Validates the dataframe against a validation schema from within
         the data_validation_table.py module
 
-        scheme will be a str to know what stage is being validated.
+        schema will be a str to know what stage is being validated.
         """
-        pass
+
+        if schema == "initial_check":
+            tmpdf = self.crns_data_frame
+            FormatCheck.validate(tmpdf)
+        else:
+            validation_error_message = (
+                "Incorrect schema or table name given "
+                "when validating the crns_data_frame"
+            )
+            logging.error(validation_error_message)
+            print(validation_error_message)
 
     def replace_dataframe(self, dataframe):
         """
@@ -97,6 +133,11 @@ class CRNSDataHub:
             DataFrame that has been changed and you wish to replace
         """
         pass
+
+    def return_cleaned_dataframe(self):
+        mask = self.flags_data_frame != 0
+        clean_df = self.crns_data_frame.where(~mask, np.nan)
+        return clean_df
 
     def save_data(self, folder_path, file_name):
         """
