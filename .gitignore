@@ -1,7 +1,7 @@
 # Others
 play_area.py
 .vscode
-
+.DS_Store
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

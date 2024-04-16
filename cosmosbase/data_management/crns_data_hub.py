@@ -29,7 +29,6 @@ class CRNSDataHub:
     def __init__(
         self,
         crns_data_frame: pd.DataFrame,
-        data_audit_log: DataAuditLog = None,
         configuration_manager: ConfigurationManager = None,
         validation: bool = True,
     ):
@@ -67,8 +66,6 @@ class CRNSDataHub:
             self._uncertainty_data_frame = pd.DataFrame(
                 index=crns_data_frame.index
             )
-        if data_audit_log is not None:
-            self._data_audit_log = data_audit_log
         if configuration_manager is not None:
             self._configuration_manager = configuration_manager
 
@@ -139,7 +136,7 @@ class CRNSDataHub:
         clean_df = self.crns_data_frame.where(~mask, np.nan)
         return clean_df
 
-    def save_data(self, folder_path, file_name):
+    def save_data(self, folder_path, file_name, step):  #
         """
         Saves the file to a specified location. It must contain the
         correct folder_path and file_name.
