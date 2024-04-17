@@ -2,7 +2,6 @@ import pandas as pd
 import logging
 import numpy as np
 from cosmosbase.configuration.configuration_input import ConfigurationManager
-from cosmosbase.data_management.data_audit import DataAuditLog
 from cosmosbase.data_management.data_validation_tables import (
     FormatCheck,
 )

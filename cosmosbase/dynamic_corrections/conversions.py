@@ -1,10 +1,8 @@
 """
 Pseudo:
 
-Bring in the 
+Bring in the
 """
-
-import pandas as pd
 
 
 class CalculateNeutronCorrectionFactors:

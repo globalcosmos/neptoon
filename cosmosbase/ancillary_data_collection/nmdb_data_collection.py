@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 from io import StringIO
 from dateutil import parser
-import cosmosbase.configuration.configuration_input as cfg
+from cosmosbase.configuration.global_configuration import GlobalConfig
 
 
 def timed_function(func):
@@ -209,11 +209,11 @@ class NMDBConfig:
 
     @property
     def cache_dir(self):
-        cfg.GlobalConfig.create_cache_dir()
+        GlobalConfig.create_cache_dir()
         if self._cache_dir is not None:
             return self._cache_dir
         else:
-            return cfg.GlobalConfig.get_cache_dir()
+            return GlobalConfig.get_cache_dir()
 
     @property
     def station(self):

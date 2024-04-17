@@ -46,7 +46,7 @@ class RawDataSchemaAfterFirstQA(FormatCheck):
 
     incoming_neutron_intensity: float = pandera.Field(nullable=True)
 
-    @pandera.check("relative_humidity")
+    @pandera.check("air_relative_humidity")
     def relative_humidity_validation(cls, series: Series[float]) -> bool:
         """
         Check to ensure that relative humidity is given a percentage

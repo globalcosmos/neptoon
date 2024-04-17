@@ -1,6 +1,5 @@
 # import pandas as pd
 from abc import ABC, abstractmethod
-import pandas as pd
 
 """
 This module holds time series preperation classes and methods. The
@@ -43,18 +42,16 @@ class DataFormatFactory:
 
     @staticmethod
     def get_loader(format_identifier=None, data=None):
-        if format_identifier is "Standard":
+        if format_identifier == "Standard":
             return StandardToDataFrame
-        elif format_identifier is "HydroInnova":
+        elif format_identifier == "HydroInnova":
             return HydroInnovaToDataFrame
-        elif format_identifier is "FTP":
+        elif format_identifier == "FTP":
             return FTPToDataFrame
         elif data is not None:
             return DataFormatFactory.auto_detect_format(data)
         else:
-            raise ValueError(
-                f"Unsupported format or data" f" for Autodetection"
-            )
+            raise ValueError("Unsupported format or data for Autodetection")
 
     @staticmethod
     def auto_detect_format(data):

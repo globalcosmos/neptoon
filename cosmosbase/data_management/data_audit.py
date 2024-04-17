@@ -1,11 +1,24 @@
-from abc import ABC, abstractmethod
 import logging
-import yaml
+from cosmosbase.data_management.logging import get_logger
+from pathlib import Path
+
+core_logger = get_logger()
+
+"""
+IDEAS:
+
+The DataAuditLog is currently named by the user and a warning tells the
+user when multiple logs of same name are shown (it would add logging to
+old file). Perhaps in the final form it uses a universal name and gets
+auto deleted when it is parsed into a YAML. That way the DataAuditLog
+only there for the instance? For now I'll leave in the naming part but
+perhaps do this.
+"""
 
 
 class DataAuditLog:
     """
-    The Data Audit Log
+    The DataAuditLog in a singleton pattern
     """
 
     _instance = None
@@ -30,10 +43,13 @@ class DataAuditLog:
             cls._instance = cls()
             cls._instance.init_data_audit_log(filename)
         else:
-            raise Exception(
-                "DataAuditLog instance already exists. Only one instance can be created."
+            message = (
+                "DataAuditLog instance already exists./n "
+                "Only one instance can be created. /n"
                 "Use DataAuditLog.delete_instance to remove it"
             )
+            core_logger.warning(message)
+            raise Exception(message)
         return cls._instance
 
     @classmethod
@@ -49,18 +65,24 @@ class DataAuditLog:
             raise Exception("No instance exists for deletion")
 
     def init_data_audit_log(self, filename):
-        self.filename = filename
-        ### TODO:
-        """
-        ADD A CHECK HERE
-        add a check for the filename with option to delete log file?
-        """
+        self.filename = filename + ".log"
+        file_path = Path.cwd() / self.filename
+        if file_path.exists():
+            message = (
+                f"A log file called {filename} already "
+                "exists in the working directory. It is recommended "
+                "to refresh this when making new runs. Use "
+                "DataAuditLog.delete_log_file() to do this"
+            )
+            core_logger.warning(message)
+
         self.logger = logging.getLogger("DataAuditLog")
+        self.logger.propagate = False
         self.logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(filename)
+        data_audit_log_handler = logging.FileHandler(self.filename)
         formatter = logging.Formatter("%(message)s")
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
+        data_audit_log_handler.setFormatter(formatter)
+        self.logger.addHandler(data_audit_log_handler)
 
     def add_step(self, function_name, parameters):
         """
@@ -105,17 +127,30 @@ def log_key_step(*log_args):
     def decorator(func):
         def wrapper(self, *args, **kwargs):
             try:
-                log = DataAuditLog.get_instance()
-            except:
-                logging.warning("No DataAuditLog found")
-                log = None
+                data_audit_log = DataAuditLog.get_instance()
+            except Exception as e:
+                core_logger.warning(
+                    f"No DataAuditLog found: {e}/n"
+                    "No DataAuditLog taking place"
+                )
+                data_audit_log = None
 
-            if log is not None:
-                log_info = {arg: kwargs.get(arg) for arg in log_args}
-                log.add_step(func.__name__, log_info)
+            if data_audit_log is not None:
+                data_audit_log_info = {
+                    arg: kwargs.get(arg) for arg in log_args
+                }
+                data_audit_log.add_step(func.__name__, data_audit_log_info)
 
             return func(self, *args, **kwargs)
 
         return wrapper
 
     return decorator
+
+
+class ParseDataAuditLog:
+    """
+    Parse the DataAuditLog file into a YAML
+    """
+
+    pass

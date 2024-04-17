@@ -1,8 +1,7 @@
-import os
 import logging
 import yaml
 from abc import ABC, abstractmethod
-from platformdirs import PlatformDirs
+from cosmosbase.data_management.logging import get_logger
 from cosmosbase.configuration.yaml_classes import (
     GeneralSiteMetadata,
     CRNSSensorInformation,
@@ -19,6 +18,8 @@ from cosmosbase.configuration.yaml_classes import (
     Interpolation,
     TemporalAggregation,
 )
+
+corelogger = get_logger()
 
 
 class ConfigurationObject:
@@ -396,27 +397,3 @@ class ConfigurationManager:
             ConfigurationObject of the specified name
         """
         return self._configs.get(name)
-
-
-class GlobalConfig:
-    """
-    Configuration values that are not to be updated by the user.
-    Should only be updated by developers when required
-    """
-
-    _dirs = PlatformDirs("cosmosbase", "CRNS")
-
-    @staticmethod
-    def get_cache_dir():
-        return GlobalConfig._dirs.user_cache_dir
-
-    @staticmethod
-    def create_cache_dir():
-        directory = GlobalConfig.get_cache_dir()
-        if not os.path.exists(directory):
-            try:
-                os.makedirs(directory)
-                logging.info(f"Directory created: {directory}")
-            except OSError as error:
-                logging.error(f"Error creating directory: {error}")
-                raise
