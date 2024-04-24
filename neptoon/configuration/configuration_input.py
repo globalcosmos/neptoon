@@ -1,8 +1,8 @@
 import logging
 import yaml
 from abc import ABC, abstractmethod
-from cosmosbase.data_management.logging import get_logger
-from cosmosbase.configuration.yaml_classes import (
+from neptoon.data_management.logging import get_logger
+from neptoon.configuration.yaml_classes import (
     GeneralSiteMetadata,
     CRNSSensorInformation,
     TimeseriesDataFormat,

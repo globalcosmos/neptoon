@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 from io import StringIO
 from dateutil import parser
-from cosmosbase.configuration.global_configuration import GlobalConfig
+from neptoon.configuration.global_configuration import GlobalConfig
 
 
 def timed_function(func):

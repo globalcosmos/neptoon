@@ -27,7 +27,7 @@ class FormatCheck(pandera.DataFrameModel):
     # Optional columns
     precipitation: Optional[float] = pandera.Field(nullable=True)
     snow_depth: Optional[float] = pandera.Field(nullable=True)
-    thermal_neutrons: Optional[int] = pandera.Field(nullable=True)
+    thermal_neutrons: Optional[float] = pandera.Field(nullable=True)
 
 
 class RawDataSchemaAfterFirstQA(FormatCheck):

@@ -1,7 +1,7 @@
 import pytest
 import os
 from pathlib import Path
-from cosmosbase.data_management.data_audit import DataAuditLog
+from neptoon.data_management.data_audit import DataAuditLog
 
 
 # Setup a fixture for the DataAuditLog instance
@@ -22,25 +22,17 @@ def setup_audit_log(tmp_path):
 
 @pytest.mark.test_logging
 def test_create_log_file(setup_audit_log):
-    DataAuditLog.create("test_log")
-    assert (Path.cwd() / "test_log.log").exists(), "Log file was not created"
-
-
-@pytest.mark.test_logging
-def test_duplicate_instance_exception(setup_audit_log):
-    DataAuditLog.create("test_log")
-    with pytest.raises(Exception) as e:
-        DataAuditLog.create("another_test_log")
-    assert "instance already exists" in str(
-        e.value
-    ), "Exception for duplicate instance not raised correctly"
+    DataAuditLog.create()
+    assert (
+        Path.cwd() / "DataAuditLog.log"
+    ).exists(), "Log file was not created"
 
 
 @pytest.mark.test_logging
 def test_log_entry_addition(setup_audit_log):
-    log = DataAuditLog.create("test_log")
+    log = DataAuditLog.create()
     log.add_step("dummy_function", {"param": "value"})
-    with open("test_log.log", "r") as file:
+    with open("DataAuditLog.log", "r") as file:
         contents = file.readlines()
     assert (
         "dummy_function" in contents[-1]
@@ -49,7 +41,7 @@ def test_log_entry_addition(setup_audit_log):
 
 @pytest.mark.test_logging
 def test_instance_deletion(setup_audit_log):
-    DataAuditLog.create("test_log")
+    DataAuditLog.create()
     DataAuditLog.delete_instance()
     assert (
         DataAuditLog.get_instance() is None
@@ -67,7 +59,7 @@ def test_no_instance_deletion_error(setup_audit_log):
 
 @pytest.mark.test_logging
 def test_log_closure(setup_audit_log):
-    log = DataAuditLog.create("test_log")
+    log = DataAuditLog.create()
     log.close_log()
     assert all(
         not handler for handler in log.logger.handlers

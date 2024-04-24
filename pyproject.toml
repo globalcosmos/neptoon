@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "cosmosbase"
+name = "neptoon"
 version = "0.1.0"
-description = "The cosmosbase package serves as the building blocks for other CRNS flavoured python packages. This ensure consistency between tools and prevents redundant packages being installed when not necessary."
+description = "The neptoon package serves as the building blocks for other CRNS flavoured python packages. This ensure consistency between developed tools."
 authors = [
     "Daniel Power <daniel.power@ufz.de>",
     "Martin Schroen <martin.schroen@ufz.de>",

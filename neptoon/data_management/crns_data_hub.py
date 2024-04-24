@@ -1,10 +1,13 @@
 import pandas as pd
 import logging
 import numpy as np
-from cosmosbase.configuration.configuration_input import ConfigurationManager
-from cosmosbase.data_management.data_validation_tables import (
+from neptoon.configuration.configuration_input import ConfigurationManager
+from neptoon.data_management.data_validation_tables import (
     FormatCheck,
 )
+from neptoon.data_management.logging import get_logger
+
+core_logger = get_logger()
 
 
 class CRNSDataHub:
@@ -13,9 +16,6 @@ class CRNSDataHub:
     the processing steps. Some key features:
 
     - It stores a DataFrame for a site
-    - It creates a shadow DataFrame which stores flag values
-    - It creates another shadow DataFrame which stores uncertainty
-      values (to keep things clean)
     - As we progress through the steps, data can be added to the
       DataFrame and the shadow DataFrame's updated.
 
@@ -30,6 +30,7 @@ class CRNSDataHub:
         crns_data_frame: pd.DataFrame,
         configuration_manager: ConfigurationManager = None,
         validation: bool = True,
+        dictionary_of_flags: dict = None,
     ):
         """
         Possible inputs to the CRNSDataHub.
@@ -39,11 +40,6 @@ class CRNSDataHub:
         crns_data_frame : pd.DataFrame
             CRNS data in a dataframe format. It will be validated to
             ensure it has been formatted correctly.
-        data_audit_log : DataAuditLog, optional
-            A DataAuditLog instance which, when present, will keep a log
-            of all data transformation and processing steps to provide
-            line of site to users with how data has been processed, by
-            default None
         configuration_manager : ConfigurationManager, optional
             A ConfigurationManager instance storing configuration YAML
             information, by default None
@@ -53,20 +49,19 @@ class CRNSDataHub:
             data_management>data_validation_tables.py for examples of
             tables being validated). This is recommended to stay on but
             can be turned off for debugging or testing.
+        dictionary_of_flags: dict
+            A dictionary who's keys corresponds to the index of the
+            dataframe. When QA flags data it is recorded here.
         """
-
         self._crns_data_frame = crns_data_frame
-        self._validation = validation
-        if self._crns_data_frame is not self._crns_data_frame.empty:
-            self.flags_data_frame = pd.DataFrame(
-                0, index=crns_data_frame.index, columns=crns_data_frame.columns
-            )
-        if self._crns_data_frame is not self._crns_data_frame.empty:
-            self._uncertainty_data_frame = pd.DataFrame(
-                index=crns_data_frame.index
-            )
         if configuration_manager is not None:
             self._configuration_manager = configuration_manager
+        self._validation = validation
+        if self._crns_data_frame is not self._crns_data_frame.empty:
+            index_dict = dict()
+            for index in crns_data_frame.index:
+                index_dict[index] = "No Issues with Data"
+            self._flags_dictionary = index_dict
 
     @property
     def crns_data_frame(self):
@@ -80,21 +75,6 @@ class CRNSDataHub:
     def validation(self):
         return self._validation
 
-    def expand_dataframe_flags(self):
-        """
-        Code which expands the dataframe_flags when new data is in the
-        dataframe. This could be a comparison of columns, and then add
-        columns missing from flags.
-        """
-
-        pass
-
-    def attach_flags(self, flag_series):
-        """
-        This code will replace a column with flags.
-        """
-        pass
-
     def validate_dataframe(self, schema: str, table: str = None):
         """
         Validates the dataframe against a validation schema from within
@@ -105,7 +85,13 @@ class CRNSDataHub:
 
         if schema == "initial_check":
             tmpdf = self.crns_data_frame
-            FormatCheck.validate(tmpdf)
+            FormatCheck.validate(tmpdf, lazy=True)
+        elif schema == "before_corrections_check":
+            pass
+        elif schema == "after_corrections_check":
+            pass
+        elif schema == "final_check":
+            pass
         else:
             validation_error_message = (
                 "Incorrect schema or table name given "
@@ -154,6 +140,7 @@ class CRNSDataHub:
         file_name : str
             Name of the file
         """
+
         file_name_and_save_location = folder_path + file_name + ".csv"
         self.dataframe.to_csv(file_name_and_save_location)
 

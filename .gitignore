@@ -6,6 +6,7 @@ play_area.py
 __pycache__/
 *.py[cod]
 *$py.class
+data_audit_log/
 
 # C extensions
 *.so

@@ -1,5 +1,5 @@
 import logging
-from cosmosbase.data_management.logging import get_logger
+from neptoon.data_management.logging import get_logger
 from pathlib import Path
 import yaml
 import hashlib
@@ -115,14 +115,14 @@ class DataAuditLog:
     @classmethod
     def create_log_folder(cls, site_name=None, custom_log_location=None):
         if cls._instance and hasattr(cls._instance, "log_file_path"):
-            if site_name == None:
+            if site_name is None:
                 raise Exception(
                     "You must select a name for the log (recommend: a site identifier)"
                 )
             timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
 
             folder_name = f"{site_name} {timestamp}"
-            if custom_log_location == None:
+            if custom_log_location is None:
                 log_location = Path.cwd()
             else:
                 log_location = custom_log_location
@@ -206,9 +206,6 @@ class ParseDataAuditLog:
     """
     Parse the DataAuditLog file into a YAML
     """
-
-    def __init__(self, data_audit_log: DataAuditLog = None):
-        self.data_audit_log = data_audit_log
 
     @staticmethod
     def parse_log_to_yaml_string(log_file_path):

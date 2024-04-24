@@ -10,7 +10,7 @@ def get_log_path():
     pathlib.Path
         The full Path (including filename) of the log file
     """
-    from cosmosbase.configuration.global_configuration import GlobalConfig
+    from neptoon.configuration.global_configuration import GlobalConfig
 
     cache_file_path = GlobalConfig.get_cache_dir()
     log_file_path = cache_file_path / "logs" / "core_log.log"
