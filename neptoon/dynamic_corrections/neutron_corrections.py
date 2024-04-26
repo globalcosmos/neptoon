@@ -1,78 +1,6 @@
 import numpy as np
 
 
-class PressureCorrections:
-    """
-    This class stores correction methods associated with pressure
-    corrections as static methods.
-    """
-
-    @staticmethod
-    def zreda_2012_l(
-        current_pressure: float, reference_pressure: float, l_coeff: float
-    ):
-        """
-        Pressure correction factor which accounts for the influence
-        changes in atmopsheric pressure has on neutron counting rates.
-
-        Parameters
-        ----------
-        current_pressure : float
-            pressure at the specific site
-        reference_pressure : float
-            reference pressure - recommended to use long term average to
-            keep correction factors around 1
-        l_coeff : float
-            mass attenuation length for high-energy neutrons in g/cm^-2.
-            varies progressively between 128 g/cm^-2 (high latitude) and
-            142 g/cm^-2 (equator).
-
-        Returns
-        -------
-        c_factor
-            correction factor to account for change in pressure, raw
-            count rate is mutiplied by this number e.g., 1.04
-        """
-        c_factor = np.exp((current_pressure - reference_pressure) / l_coeff)
-        return c_factor
-
-    @staticmethod
-    def zreda_2012_beta(
-        current_pressure: float, reference_pressure: float, beta_coeff: float
-    ):
-        """_summary_
-
-        Parameters
-        ----------
-        current_pressure : float
-            pressure at the specific site
-        reference_pressure : float
-            reference pressure - recommended to use long term average to
-            keep correction factors around 1
-        beta_coeff : float
-            _description_
-
-        Returns
-        -------
-        _type_
-            _description_
-        """
-        c_factor = np.exp(beta_coeff * (current_pressure - reference_pressure))
-        return c_factor
-
-    @staticmethod
-    def dunai_2020(
-        current_pressure: float,
-        reference_pressure: float,
-        beta_coeff: float,
-        inclination: float,
-    ):
-        """
-        !!!Speak with Martin about this method from corny!!!
-        """
-        pass
-
-
 class AtmosphericHumidityCorrections:
 
     @staticmethod
@@ -93,6 +21,48 @@ class AtmosphericHumidityCorrections:
             factor to multiply neutrons by
         """
         return 1 + 0.0054 * (absolute_humidity - reference_absolute_humidity)
+
+    @staticmethod
+    def calc_absolute_humidity(vapour_pressure, temperature):
+        """
+        calculates out absolute humidity using temperature (C) and
+        vapour pressure unit (Pascals)
+
+        Parameters
+        ----------
+        vapour_pressure : float
+            Vapour Presure (Pascals)
+        temperature : float
+            air temperature (C)
+
+        Returns
+        -------
+        float
+            absolute humidity (ouput as kg/m^3)
+        """
+        return vapour_pressure / (461.5 * (temperature + 273.15))
+
+    @staticmethod
+    def calc_vapour_pressure_from_dewpoint_temp(dewpoint_temp):
+        """
+        Calculates vapour pressure from dewpoint temperature. Useful if
+        using ERA5-Land data (which gives dewpoint temperature values)
+        to correct for humidity such as when sensors are missing.
+
+        Parameters
+        ----------
+        dewpoint_temp : float
+            Dewpoint temperature (Celcius)
+
+        Returns
+        -------
+        vapour_pressure: float
+            Vapour pressure (kPA)
+        """
+        vapour_pressure = np.exp(
+            (0.0707 * dewpoint_temp - 0.49299) / (1 + 0.00421 * dewpoint_temp)
+        )
+        return vapour_pressure
 
 
 class IncomingIntensityCorrections:
