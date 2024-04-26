@@ -1,7 +1,7 @@
 import logging
 import yaml
 from abc import ABC, abstractmethod
-from neptoon.data_management.logging import get_logger
+from neptoon.logging import get_logger
 from neptoon.configuration.yaml_classes import (
     GeneralSiteMetadata,
     CRNSSensorInformation,

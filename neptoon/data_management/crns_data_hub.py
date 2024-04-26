@@ -5,7 +5,7 @@ from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.data_management.data_validation_tables import (
     FormatCheck,
 )
-from neptoon.data_management.logging import get_logger
+from neptoon.logging import get_logger
 
 core_logger = get_logger()
 

@@ -1,5 +1,5 @@
 import logging
-from neptoon.data_management.logging import get_logger
+from neptoon.logging import get_logger
 from pathlib import Path
 import yaml
 import hashlib

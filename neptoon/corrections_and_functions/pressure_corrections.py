@@ -2,17 +2,16 @@
 Functions related to neutron corrections for changes to atmospheric
 pressure.
 
-Inside:
+Functions in this module:
 
     pressure_correction_l_coeff
     pressure_correction_beta_coeff
     calc_mean_pressure
     calc_beta_coefficient
-
 """
 
 import numpy as np
-from neptoon.data_management.logging import get_logger
+from neptoon.logging import get_logger
 
 core_logger = get_logger()
 
