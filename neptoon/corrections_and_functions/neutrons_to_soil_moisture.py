@@ -1,3 +1,8 @@
+"""
+
+"""
+
+
 def convert_neutrons_to_soil_moisture(
     a0: float,
     a1: float,
@@ -19,9 +24,9 @@ def convert_neutrons_to_soil_moisture(
         constant
     a2 : float
         constant
-    bd : float
+    bulk_density : float
         dry soil bulk density of the soil in grams per cubic centimer
-        e.g. 1.4
+        e.g. 1.4 (g/cm^3)
     neutron_count : int
         Neutron count in counts per hour (cph)
     n0 : int
@@ -59,24 +64,24 @@ def convert_neutrons_to_soil_moisture_kohli(
 
     Parameters
     ----------
-        a0 : float constant
+    a0 : float
+        Constant
     a1 : float
-        constant
+        Constant
     a2 : float
-        constant
-    bd : float
-        dry soil bulk density of the soil in grams per cubic centimer
-        e.g. 1.4
+        Constant
+    bulk_density : float
+        Dry soil bulk density of the soil in grams per cubic centimer
+        e.g. 1.4 (g/cm^3)
     neutron_count : int
         Neutron count in counts per hour (cph)
     n0 : int
-        N0 number
+        N0 number given as maximum number of neutrons possible over a 1
+        hour integration.
     lattice_water : float
-        lattice water - decimal percent e.g. 0.002
+        Lattice water - decimal percent e.g. 0.002
     water_equiv_soil_organic_carbon : float
-        water equivelant soil organic carbon - decimal percent e.g, 0.02
-
-
+        Water equivelant soil organic carbon - decimal percent e.g, 0.02
     """
     nmax = n0 * ((a0 + (a1 * a2)) / (a2))
     ah0 = -a2

@@ -72,7 +72,7 @@ def saturation_vapour_pressure(temperature: float):
 
     Parameters
     ----------
-    temp : float
+    temperature : float
         temperature (C)
 
     Returns
