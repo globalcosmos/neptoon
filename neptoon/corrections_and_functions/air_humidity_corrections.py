@@ -49,7 +49,7 @@ def calc_absolute_humidity(vapour_pressure: float, temperature: float):
     Parameters
     ----------
     vapour_pressure : float
-        Vapour presure in pascals (hPa)
+        Vapour pressure in pascals (hPa)
     temperature : float
         Air temperature in Celsius (C)
 
