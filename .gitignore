@@ -1,10 +1,12 @@
 # Others
-testing_area.py
-
+play_area.py
+.vscode
+.DS_Store
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+data_audit_log/
 
 # C extensions
 *.so
