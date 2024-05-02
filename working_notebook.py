@@ -6,15 +6,16 @@ from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBConfig,
     NMDBDataHandler,
 )
+from neptoon.data_management.data_audit import (
+    DataAuditLog,
+)
+from neptoon.data_management.data_audit import log_key_step
 
 """ Test later
 # from neptoon.configuration.configuration_input import (
 #     ConfigurationManager,
 # )
-# from neptoon.data_management.data_audit import (
-#     DataAuditLog,
-# )
-# from neptoon.data_management.data_audit import log_key_step
+
 """
 
 """Step 1: Create correct format of dataframe
@@ -39,6 +40,7 @@ These include:
     - Columns of the correct type (ensure they are read in as floats and
       not objects!)
 """
+DataAuditLog.create()
 
 
 def import_crns_dataframe_and_format(filename):
@@ -107,12 +109,16 @@ config = NMDBConfig(
     start_date_wanted=start_date_from_data,
     end_date_wanted=end_date_from_data,
     station="JUNG",
+    resolution="60",
+    # nmdb_table="revori",
 )
 handler = NMDBDataHandler(config)
 tmp = handler.collect_nmdb_data()
 data_hub.add_column_to_crns_data_frame(
     tmp, column_name="count", new_column_name="incoming_neutron_intensity"
 )
+DataAuditLog.archive_and_delete_log(site_name="Test Site")
+DataAuditLog.delete_instance()
 
 """Step 4: Perform first QA steps
 

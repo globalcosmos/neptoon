@@ -31,6 +31,7 @@ class CRNSDataHub:
         configuration_manager: ConfigurationManager = None,
         validation: bool = True,
         dictionary_of_flags: dict = None,
+        journalist: bool = True,
     ):
         """
         Possible inputs to the CRNSDataHub.
@@ -49,9 +50,12 @@ class CRNSDataHub:
             data_management>data_validation_tables.py for examples of
             tables being validated). This is recommended to stay on but
             can be turned off for debugging or testing.
-        dictionary_of_flags: dict
+        dictionary_of_flags : dict
             A dictionary who's keys corresponds to the index of the
             dataframe. When QA flags data it is recorded here.
+        journalist : bool
+            Whether the journalist class will be used to collect info on
+            key data throughout processing. Default is True.
         """
         self._crns_data_frame = crns_data_frame
         if configuration_manager is not None:

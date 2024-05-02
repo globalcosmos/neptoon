@@ -7,19 +7,7 @@ from pathlib import Path
 from io import StringIO
 from dateutil import parser
 from neptoon.configuration.global_configuration import GlobalConfig
-
-
-def timed_function(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        print(
-            f"Function '{func.__name__}' took {end_time - start_time} seconds to run."
-        )
-        return result
-
-    return wrapper
+from neptoon.data_management.data_audit import log_key_step
 
 
 class DateTimeHandler:
@@ -121,6 +109,7 @@ class DateTimeHandler:
             raise ValueError(f"Invalid date format: {date_input}")
 
 
+@log_key_step("station", "nmdb_table", "resolution")
 class NMDBConfig:
     """
     Configuration class for NMDB data retrieval and processing.

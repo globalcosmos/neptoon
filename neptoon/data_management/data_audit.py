@@ -26,7 +26,7 @@ def log_key_step(*log_args):
     """
 
     def decorator(func):
-        def wrapper(self, *args, **kwargs):
+        def wrapper(*args, **kwargs):
             try:
                 data_audit_log = DataAuditLog.get_instance()
             except Exception as e:
@@ -42,7 +42,7 @@ def log_key_step(*log_args):
                 }
                 data_audit_log.add_step(func.__name__, data_audit_log_info)
 
-            return func(self, *args, **kwargs)
+            return func(*args, **kwargs)
 
         return wrapper
 
