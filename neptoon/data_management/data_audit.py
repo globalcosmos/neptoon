@@ -1,4 +1,6 @@
 import logging
+from functools import wraps
+from inspect import signature
 from neptoon.logging import get_logger
 from pathlib import Path
 import yaml
@@ -26,6 +28,7 @@ def log_key_step(*log_args):
     """
 
     def decorator(func):
+        @wraps(func)
         def wrapper(*args, **kwargs):
             try:
                 data_audit_log = DataAuditLog.get_instance()
@@ -37,8 +40,14 @@ def log_key_step(*log_args):
                 data_audit_log = None
 
             if data_audit_log is not None:
+                sig = signature(func)
+                bound_arguments = sig.bind(*args, **kwargs)
+                bound_arguments.apply_defaults()
+
                 data_audit_log_info = {
-                    arg: kwargs.get(arg) for arg in log_args
+                    arg: bound_arguments.arguments[arg]
+                    for arg in log_args
+                    if arg in bound_arguments.arguments
                 }
                 data_audit_log.add_step(func.__name__, data_audit_log_info)
 
