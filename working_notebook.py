@@ -110,6 +110,9 @@ config = NMDBConfig(
 )
 handler = NMDBDataHandler(config)
 tmp = handler.collect_nmdb_data()
+data_hub.add_column_to_crns_data_frame(
+    tmp, column_name="count", new_column_name="incoming_neutron_intensity"
+)
 
 """Step 4: Perform first QA steps
 

@@ -169,3 +169,33 @@ class CRNSDataHub:
             Desired name of the file
         """
         pass
+
+    def add_column_to_crns_data_frame(
+        self, source, column_name: str = None, new_column_name: str = None
+    ):
+        if isinstance(source, pd.DataFrame):
+            if column_name is None:
+                raise ValueError(
+                    "Must specify a column name "
+                    "when the source is DataFrame"
+                )
+            if new_column_name is None:
+                new_column_name = column_name
+            if not isinstance(source.index, pd.DatetimeIndex):
+                raise ValueError("DataFrame source must have a DatetimeIndex.")
+            mapped_data = source[column_name].reindex(
+                self.crns_data_frame.index, method="nearest"
+            )
+        elif isinstance(source, dict):
+            if new_column_name is None:
+                raise ValueError(
+                    "New column name must be specified when source is a dictionary"
+                )
+            mapped_data = pd.Series(source).reindex(
+                self.crns_data_frame.index, method="nearest"
+            )
+        else:
+            raise TypeError(
+                "Source must be either a DataFrame or a dictionary"
+            )
+        self.crns_data_frame[new_column_name] = mapped_data
