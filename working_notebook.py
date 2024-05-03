@@ -5,6 +5,7 @@ from neptoon.data_management.crns_data_hub import CRNSDataHub
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBConfig,
     NMDBDataHandler,
+    AttachNMDBDataToDataHub,
 )
 from neptoon.data_management.data_audit import (
     DataAuditLog,
@@ -16,6 +17,12 @@ from neptoon.data_management.data_audit import log_key_step
 #     ConfigurationManager,
 # )
 
+"""
+DataAuditLog.create()
+
+# ProcessCRNSWithConfig(conigmanager)
+
+"""Step 0: Collect data from source
 """
 
 """Step 1: Create correct format of dataframe
@@ -40,7 +47,6 @@ These include:
     - Columns of the correct type (ensure they are read in as floats and
       not objects!)
 """
-DataAuditLog.create()
 
 
 def import_crns_dataframe_and_format(filename):
@@ -100,8 +106,10 @@ Important step in preperation of data. Collect the NMDB data for
 intensity corrections.
 
 """
-# Idea for a pseudo class to abstract this step away
-# DownloadNMDBData(data_hub, station="JUNG")
+
+AttachNMDBDataToDataHub(data_hub, station="JUNG")
+
+"""Above class runs the following:
 
 start_date_from_data = data_hub.crns_data_frame.index[0]
 end_date_from_data = data_hub.crns_data_frame.index[-1]
@@ -110,15 +118,14 @@ config = NMDBConfig(
     end_date_wanted=end_date_from_data,
     station="JUNG",
     resolution="60",
-    # nmdb_table="revori",
 )
 handler = NMDBDataHandler(config)
 tmp = handler.collect_nmdb_data()
 data_hub.add_column_to_crns_data_frame(
     tmp, column_name="count", new_column_name="incoming_neutron_intensity"
-)
-DataAuditLog.archive_and_delete_log(site_name="Test Site")
-DataAuditLog.delete_instance()
+# )
+"""
+
 
 """Step 4: Perform first QA steps
 
@@ -126,6 +133,7 @@ Here we would perform QA. This requires creating QA routines and
 applying them. The flags would be updated. Validation with another
 schema to ensure the QA was succesfully implemented.
 """
+
 
 """Step 5: Correct Neutrons
 """
@@ -140,7 +148,24 @@ schema to ensure the QA was succesfully implemented.
 """
 
 """Step 9: PDF/Figure outputs
+
+Here we could do some analysis based on data from processing. Some of
+this will be like the Journalist class in corny. So maybe things like
+data removed, number of days with good data or other hydrological
+information. Make some figures maybe using the data.
+
+
 """
 
-"""Step 10: Create AuditLog/Update YAML and close 
+"""Step 10: Create AuditLog/Update YAML and close
+
+At the very end we would want to organise the audit log by saving and
+archiving it. I also imagine some steps here to update the YAML file
+(particularly the site yaml file) with new information collated in the
+previous step. So we could have a section of average values or
+something?
+
 """
+# DataAuditLog.file_delete()
+
+DataAuditLog.archive_and_delete_log(site_name="Site From Somewhere")

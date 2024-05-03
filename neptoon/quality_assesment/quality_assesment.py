@@ -21,14 +21,3 @@ class QualityAssessmentOfDataFrame(ABC):
 
     def __init__(self):
         pass
-
-    def create_shadow_flag_table(self):
-        self.crns_data.crns_flag_data = pd.DataFrame(
-            0,
-            index=self.crns_data.dataframe.index,
-            columns=self.crns_data.dataframe.columns,
-        )
-
-    @abstractmethod
-    def assess_data(self):
-        pass

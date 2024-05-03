@@ -128,7 +128,7 @@ class DataAuditLog:
                 raise Exception(
                     "You must select a name for the log (recommend: a site identifier)"
                 )
-            timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+            timestamp = time.strftime("%Y-%m-%d %H-%M-%S")
 
             folder_name = f"{site_name} {timestamp}"
             if custom_log_location is None:
@@ -165,8 +165,8 @@ class DataAuditLog:
         cls._instance.archive_data_audit(
             site_name=site_name, custom_log_location=custom_log_location
         )
-        cls._instance.delete_log_file
-        cls._instance.delete_instance
+        cls._instance.delete_log_file()
+        cls._instance.delete_instance()
 
     def init_data_audit_log(self):
         self.log_file_path = Path.cwd() / "DataAuditLog.log"
