@@ -15,9 +15,9 @@ class AttachNMDBDataToDataHub:
     def __init__(
         self,
         data_hub: CRNSDataHub,
-        station=None,
-        resolution=None,
-        nmdb_table=None,
+        station="JUNG",
+        resolution="60",
+        nmdb_table="revori",
     ):
         self.data_hub = data_hub
         start_date_from_data = data_hub.crns_data_frame.index[0]
@@ -137,7 +137,6 @@ class DateTimeHandler:
             raise ValueError(f"Invalid date format: {date_input}")
 
 
-@log_key_step("station", "nmdb_table", "resolution")
 class NMDBConfig:
     """
     Configuration class for NMDB data retrieval and processing.
@@ -182,6 +181,7 @@ class NMDBConfig:
 
     """
 
+    @log_key_step("station", "nmdb_table", "resolution")
     def __init__(
         self,
         start_date_wanted,

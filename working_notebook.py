@@ -20,6 +20,24 @@ from neptoon.data_management.data_audit import log_key_step
 """
 DataAuditLog.create()
 
+
+class PseudoDataProcessor:
+    def __init__(self):
+        pass
+
+    @log_key_step("style", "a1")
+    def theta_calc(self, style="first", N0=2000, a1=2.5):
+        pass
+
+    @log_key_step("method", "window")
+    def smooth_neutrons(self, method="SG", window=12):
+        # logic
+        pass
+
+
+processor = PseudoDataProcessor()
+processor.theta_calc(style="second")
+processor.smooth_neutrons(method="SG", window=12)
 # ProcessCRNSWithConfig(conigmanager)
 
 """Step 0: Collect data from source

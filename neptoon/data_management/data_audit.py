@@ -1,7 +1,8 @@
 import logging
 from functools import wraps
-from inspect import signature
+from inspect import signature, Parameter
 from neptoon.logging import get_logger
+from inspect import signature
 from pathlib import Path
 import yaml
 import hashlib
@@ -44,12 +45,18 @@ def log_key_step(*log_args):
                 bound_arguments = sig.bind(*args, **kwargs)
                 bound_arguments.apply_defaults()
 
+                func_name = func.__name__
+                if func_name == "__init__":
+                    class_name = args[0].__class__.__name__
+                    func_name = class_name
+
                 data_audit_log_info = {
                     arg: bound_arguments.arguments[arg]
                     for arg in log_args
                     if arg in bound_arguments.arguments
                 }
-                data_audit_log.add_step(func.__name__, data_audit_log_info)
+
+                data_audit_log.add_step(func_name, data_audit_log_info)
 
             return func(*args, **kwargs)
 
