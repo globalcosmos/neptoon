@@ -20,6 +20,22 @@ from neptoon.data_management.data_audit import log_key_step
 """
 DataAuditLog.create()
 
+"""IDEA ON SIMPLE ONE LINE RUN
+# Import Config files to ConfigManager
+station_config_path = "/Users/power/Documents/code/cosmosbase/configuration_files/A101_station.yaml"
+process_config_path = "/Users/power/Documents/code/cosmosbase/configuration_files/v1_processing_method.yaml"
+
+config_manager = ConfigurationManager()
+config_manager.load_and_validate_configuration("station", station_config_path)
+config_manager.load_and_validate_configuration(
+    "processing", process_config_path
+)
+
+# Run process with one line!
+ProcessCRNSWithConfig(config_manager)
+
+"""
+
 
 class PseudoDataProcessor:
     def __init__(self):
@@ -38,7 +54,7 @@ class PseudoDataProcessor:
 processor = PseudoDataProcessor()
 processor.theta_calc(style="second")
 processor.smooth_neutrons(method="SG", window=12)
-# ProcessCRNSWithConfig(conigmanager)
+
 
 """Step 0: Collect data from source
 """
@@ -48,11 +64,6 @@ processor.smooth_neutrons(method="SG", window=12)
 This section will eventually be replaced by the full ingest routine. The
 ingest routine will handle how we take raw data and convert it to a
 format that fits what we decide is the "standard". 
-
-This could be:
-    - provide an FTP server address and collect and format raw files
-    - provide a folder on the computer with any number of formats inside
-      (SD card, COSMOS-EUROPE, CosmOz etc.).
 
 The point is that data should eventually fit some set of standards for
 use in the software.
@@ -98,6 +109,29 @@ def import_crns_dataframe_and_format(filename):
 
 crns_df = import_crns_dataframe_and_format("CUC001.csv")
 
+# ### TEMP
+
+from saqc import SaQC
+
+qc = SaQC(crns_df, scheme="simple")
+qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
+qc = qc.flagRaise()
+qc.flags.to_pandas()
+qc.data.to_pandas()
+qc.plot("epithermal_neutrons")
+
+
+def fancy_new_function():
+    pass
+
+
+qc.flagGeneric(
+    field="epithermal_neutrons", func=fancy_new_function, flag="BAD"
+)
+
+
+#### END TEMP
+
 """Step 2: Create the initial CRNSDataHub and validate
 
 The next step is adding the correctly formatted dataframe to the
@@ -118,7 +152,14 @@ data_hub.crns_data_frame
 # It auto creates a flags dictionary (perhaps change to table??)
 data_hub._flags_dictionary
 
-"""Step 3: Attach the NMDB data
+"""Step 3: Perform first QA steps
+
+Here we would perform QA. This requires creating QA routines and
+applying them. The flags would be updated. Validation with another
+schema to ensure the QA was succesfully implemented.
+"""
+
+"""Step 4: Attach the NMDB data
 
 Important step in preperation of data. Collect the NMDB data for
 intensity corrections.
@@ -126,32 +167,6 @@ intensity corrections.
 """
 
 AttachNMDBDataToDataHub(data_hub, station="JUNG")
-
-"""Above class runs the following:
-
-start_date_from_data = data_hub.crns_data_frame.index[0]
-end_date_from_data = data_hub.crns_data_frame.index[-1]
-config = NMDBConfig(
-    start_date_wanted=start_date_from_data,
-    end_date_wanted=end_date_from_data,
-    station="JUNG",
-    resolution="60",
-)
-handler = NMDBDataHandler(config)
-tmp = handler.collect_nmdb_data()
-data_hub.add_column_to_crns_data_frame(
-    tmp, column_name="count", new_column_name="incoming_neutron_intensity"
-# )
-"""
-
-
-"""Step 4: Perform first QA steps
-
-Here we would perform QA. This requires creating QA routines and
-applying them. The flags would be updated. Validation with another
-schema to ensure the QA was succesfully implemented.
-"""
-
 
 """Step 5: Correct Neutrons
 """
@@ -184,6 +199,5 @@ previous step. So we could have a section of average values or
 something?
 
 """
-# DataAuditLog.file_delete()
 
 DataAuditLog.archive_and_delete_log(site_name="Site From Somewhere")
