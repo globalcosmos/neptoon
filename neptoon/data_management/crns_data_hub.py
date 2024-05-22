@@ -30,7 +30,6 @@ class CRNSDataHub:
         crns_data_frame: pd.DataFrame,
         configuration_manager: ConfigurationManager = None,
         validation: bool = True,
-        dictionary_of_flags: dict = None,
         journalist: bool = True,
     ):
         """
@@ -50,9 +49,6 @@ class CRNSDataHub:
             data_management>data_validation_tables.py for examples of
             tables being validated). This is recommended to stay on but
             can be turned off for debugging or testing.
-        dictionary_of_flags : dict
-            A dictionary who's keys corresponds to the index of the
-            dataframe. When QA flags data it is recorded here.
         journalist : bool
             Whether the journalist class will be used to collect info on
             key data throughout processing. Default is True.
@@ -61,11 +57,6 @@ class CRNSDataHub:
         if configuration_manager is not None:
             self._configuration_manager = configuration_manager
         self._validation = validation
-        if self._crns_data_frame is not self._crns_data_frame.empty:
-            index_dict = dict()
-            for index in crns_data_frame.index:
-                index_dict[index] = "No Issues with Data"
-            self._flags_dictionary = index_dict
 
     @property
     def crns_data_frame(self):
@@ -121,9 +112,7 @@ class CRNSDataHub:
         pass
 
     def return_cleaned_dataframe(self):
-        mask = self.flags_data_frame != 0
-        clean_df = self.crns_data_frame.where(~mask, np.nan)
-        return clean_df
+        pass
 
     def save_data(self, folder_path, file_name, step):  #
         """

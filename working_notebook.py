@@ -3,9 +3,7 @@ import math
 import pandas as pd
 from neptoon.data_management.crns_data_hub import CRNSDataHub
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
-    NMDBConfig,
-    NMDBDataHandler,
-    AttachNMDBDataToDataHub,
+    NMDBDataAttacher,
 )
 from neptoon.data_management.data_audit import (
     DataAuditLog,
@@ -111,23 +109,23 @@ crns_df = import_crns_dataframe_and_format("CUC001.csv")
 
 # ### TEMP
 
-from saqc import SaQC
+# from saqc import SaQC
 
-qc = SaQC(crns_df, scheme="simple")
-qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
-qc = qc.flagRaise()
-qc.flags.to_pandas()
-qc.data.to_pandas()
-qc.plot("epithermal_neutrons")
-
-
-def fancy_new_function():
-    pass
+# qc = SaQC(crns_df, scheme="simple")
+# qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
+# qc = qc.flagRaise()
+# qc.flags.to_pandas()
+# qc.data.to_pandas()
+# qc.plot("epithermal_neutrons")
 
 
-qc.flagGeneric(
-    field="epithermal_neutrons", func=fancy_new_function, flag="BAD"
-)
+# def fancy_new_function():
+#     pass
+
+
+# qc.flagGeneric(
+#     field="epithermal_neutrons", func=fancy_new_function, flag="BAD"
+# )
 
 
 #### END TEMP
@@ -149,8 +147,7 @@ data_hub = CRNSDataHub(crns_data_frame=crns_df)
 data_hub.validate_dataframe(schema="initial_check")
 # The dataframe can be accessed here.
 data_hub.crns_data_frame
-# It auto creates a flags dictionary (perhaps change to table??)
-data_hub._flags_dictionary
+
 
 """Step 3: Perform first QA steps
 
@@ -159,6 +156,7 @@ applying them. The flags would be updated. Validation with another
 schema to ensure the QA was succesfully implemented.
 """
 
+
 """Step 4: Attach the NMDB data
 
 Important step in preperation of data. Collect the NMDB data for
@@ -166,10 +164,37 @@ intensity corrections.
 
 """
 
-AttachNMDBDataToDataHub(data_hub, station="JUNG")
+attacher = NMDBDataAttacher(data_hub)
+attacher.configure(station="JUNG")
+attacher.fetch_data()
+attacher.attach_data()
 
 """Step 5: Correct Neutrons
 """
+
+
+class CorrectNeutrons:
+    """
+    This class takes as input a CRNSDataHub and applies neutron
+    corrections to the data attached to it.
+    """
+
+    def __init__(
+        self,
+        data_hub: CRNSDataHub = None,
+    ):
+        self._data_hub = data_hub
+
+    @property
+    def data_hub(self):
+        return self._data_hub
+
+    @data_hub.setter
+    def data_hub(self, data_hub):
+        self._data_hub = data_hub
+
+
+CorrectNeutrons(data_hub)
 
 """Step 6: Calibration [Optional]
 """
@@ -200,4 +225,4 @@ something?
 
 """
 
-DataAuditLog.archive_and_delete_log(site_name="Site From Somewhere")
+DataAuditLog.archive_and_delete_log(site_name="A test site")
