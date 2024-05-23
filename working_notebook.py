@@ -112,6 +112,8 @@ crns_df = import_crns_dataframe_and_format("CUC001.csv")
 # from saqc import SaQC
 
 # qc = SaQC(crns_df, scheme="simple")
+
+
 # qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
 # qc = qc.flagRaise()
 # qc.flags.to_pandas()
@@ -173,7 +175,7 @@ attacher.attach_data()
 """
 
 
-class CorrectNeutrons:
+class NeutronCorrector:
     """
     This class takes as input a CRNSDataHub and applies neutron
     corrections to the data attached to it.
@@ -183,21 +185,55 @@ class CorrectNeutrons:
         self,
         data_hub: CRNSDataHub = None,
     ):
-        self._data_hub = data_hub
+        self.data_hub = data_hub
 
-    @property
-    def data_hub(self):
-        return self._data_hub
+    def select_steps(
+        self,
+        pressure_correction,
+        water_vapour_correction,
+        above_ground_biomass_correction,
+        incoming_neutron_intensity_correction,
+    ):
+        """
+        TODO: Pandera check here depending on steps
 
-    @data_hub.setter
-    def data_hub(self, data_hub):
-        self._data_hub = data_hub
+        Parameters
+        ----------
+        steps_to_implement : _type_
+            _description_
+        """
+        pass
+
+    def validate_data_is_suitable():
+        pass
+
+    def correct_neutrons():
+        pass
 
 
-CorrectNeutrons(data_hub)
+corrector = NeutronCorrector(data_hub)
+corrector.choose_steps("steps")
 
 """Step 6: Calibration [Optional]
 """
+
+
+class SiteCalibrator:
+    def __init__(
+        self,
+        data_hub: CRNSDataHub,
+    ):
+        pass
+
+
+def assess_data(crns_data_hub):
+    qc = SaQC(crns_data_hub.crns_df, scheme="simple")
+    qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
+    qc = qc.flagRaise()
+    crns_data_hub.flags_table = qc.flags.to_pandas()
+    crns_data_hub.crns_df = qc.data.to_pandas()
+    qc.plot("epithermal_neutrons")
+
 
 """Step 7: Convert to theta
 """
