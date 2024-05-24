@@ -9,6 +9,23 @@ class TimeStampAligner:
     common set. When data is read in it is added to an SaQC object which
     is stored as an internal feature. Data can then be aligned and
     converted back to a pd.DataFrame.
+
+    Example
+    -------
+    >>> import pandas as pd
+    >>> from neptoon.data_ingest_and_formatting.timestamp_alignment import (
+    >>>    TimeStampAligner
+    >>>    )
+    >>> data = {'value': [1, 2, 3, 4]}
+    >>> index = pd.date_range(start='2021-01-01', periods=4, freq='H')
+    >>> df = pd.DataFrame(data, index=index)
+    >>> # Initialize the TimeStampAligner
+    >>> tsa = TimeStampAligner(df)
+    >>> # Align timestamps
+    >>> tsa.align_timestamps(method='nshift', freq='1H')
+    >>> # Get the aligned dataframe
+    >>> aligned_df = tsa.return_dataframe()
+    >>> print(aligned_df)
     """
 
     def __init__(self, data_frame: pd.DataFrame):
