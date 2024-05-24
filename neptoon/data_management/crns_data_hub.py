@@ -1,6 +1,5 @@
 import pandas as pd
 import logging
-import numpy as np
 from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.data_management.data_validation_tables import (
     FormatCheck,

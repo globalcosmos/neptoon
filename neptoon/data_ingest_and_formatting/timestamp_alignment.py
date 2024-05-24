@@ -2,13 +2,6 @@ from saqc import SaQC
 import pandas as pd
 from neptoon.data_management.data_audit import log_key_step
 
-"""
-We can use SaQC to align timestamps, this could be using same method for
-all cols, or vary the method based on the value (e.g., interpolate for
-SM, floor for Precipt etc.). We can use nshift (nearest shift) to begin
-with?
-"""
-
 
 class TimeStampAligner:
     """
@@ -47,6 +40,7 @@ class TimeStampAligner:
         if not pd.api.types.is_datetime64_any_dtype(data_frame.index):
             raise ValueError("The DataFrame index must be of datetime type")
 
+    @log_key_step("method", "freq")
     def align_timestamps(self, method: str = "nshift", freq: str = "1Hour"):
         """
         Aligns the time stamp of the SaQC feature. Will automatically do
