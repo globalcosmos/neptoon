@@ -65,7 +65,9 @@ class TimeStampAligner:
             The frequency of time stamps wanted, by default "1Hour"
         """
 
-        self.qc = self.qc.align(field=data.columns, freq=freq, method=method)
+        self.qc = self.qc.align(
+            field=self.data_frame.columns, freq=freq, method=method
+        )
 
     def return_dataframe(self):
         """
@@ -79,15 +81,3 @@ class TimeStampAligner:
         """
         df = self.qc.data.to_pandas()
         return df
-
-
-# # Remove when ready
-# data = pd.read_csv(
-#     "https://git.ufz.de/rdm-software/saqc/raw/develop/docs/resources/data/data.csv",
-#     index_col=0,
-#     parse_dates=True,
-# )
-
-# tsa = TimeStampAligner(data)
-# tsa.align_timestamps()
-# tsa.return_dataframe()
