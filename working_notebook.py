@@ -1,3 +1,4 @@
+# %%
 from pathlib import Path
 import math
 import pandas as pd
@@ -11,6 +12,8 @@ from neptoon.data_management.data_audit import (
     DataAuditLog,
 )
 from neptoon.data_management.data_audit import log_key_step
+
+# %%
 
 """ Test later
 # from neptoon.configuration.configuration_input import (
@@ -55,7 +58,7 @@ processor = PseudoDataProcessor()
 processor.theta_calc(style="second")
 processor.smooth_neutrons(method="SG", window=12)
 
-
+# %% 
 """Step 0: Collect data from source
 """
 
@@ -108,7 +111,9 @@ def import_crns_dataframe_and_format(filename):
 
 
 crns_df = import_crns_dataframe_and_format("CUC001.csv")
+crns_df
 
+# %%
 # ### TEMP
 
 from saqc import SaQC
@@ -116,11 +121,12 @@ from saqc import SaQC
 qc = SaQC(crns_df, scheme="simple")
 qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
 qc = qc.flagRaise()
+# OutliersMixin.flagRaise() missing 1 required positional argument: 'field'
 qc.flags.to_pandas()
 qc.data.to_pandas()
 qc.plot("epithermal_neutrons")
 
-
+# %%
 def fancy_new_function():
     pass
 
@@ -131,7 +137,7 @@ qc.flagGeneric(
 
 
 #### END TEMP
-
+# %%
 """Step 2: Create the initial CRNSDataHub and validate
 
 The next step is adding the correctly formatted dataframe to the
@@ -152,6 +158,7 @@ data_hub.crns_data_frame
 # It auto creates a flags dictionary (perhaps change to table??)
 data_hub._flags_dictionary
 
+# %%
 """Step 3: Perform first QA steps
 
 Here we would perform QA. This requires creating QA routines and
@@ -159,6 +166,7 @@ applying them. The flags would be updated. Validation with another
 schema to ensure the QA was succesfully implemented.
 """
 
+# %%
 """Step 4: Attach the NMDB data
 
 Important step in preperation of data. Collect the NMDB data for
@@ -168,6 +176,7 @@ intensity corrections.
 
 AttachNMDBDataToDataHub(data_hub, station="JUNG")
 
+# %%
 """Step 5: Correct Neutrons
 """
 
@@ -201,3 +210,6 @@ something?
 """
 
 DataAuditLog.archive_and_delete_log(site_name="Site From Somewhere")
+# Cant access file, file is in use (self._accessor.unlink(self))
+
+# %%
