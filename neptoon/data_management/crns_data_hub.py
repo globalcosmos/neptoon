@@ -5,6 +5,7 @@ from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.data_management.data_validation_tables import (
     FormatCheck,
 )
+from saqc import SaQC
 from neptoon.logging import get_logger
 
 core_logger = get_logger()
@@ -29,12 +30,12 @@ class CRNSDataHub:
         self,
         crns_data_frame: pd.DataFrame,
         configuration_manager: ConfigurationManager = None,
+        quality_assessor: SaQC = None,
         validation: bool = True,
-        dictionary_of_flags: dict = None,
         journalist: bool = True,
     ):
         """
-        Possible inputs to the CRNSDataHub.
+        Inputs to the CRNSDataHub.
 
         Parameters
         ----------
@@ -44,15 +45,15 @@ class CRNSDataHub:
         configuration_manager : ConfigurationManager, optional
             A ConfigurationManager instance storing configuration YAML
             information, by default None
+        quality_assessor : SaQC
+            SaQC object which is used for quality assessment. Used for
+            the creation of flags to define poor data.
         validation : bool
-            Toggle for enforcement of continuous validation of data
+            Toggle for whether to have continued validation of data
             tables during processing (see
             data_management>data_validation_tables.py for examples of
-            tables being validated). This is recommended to stay on but
-            can be turned off for debugging or testing.
-        dictionary_of_flags : dict
-            A dictionary who's keys corresponds to the index of the
-            dataframe. When QA flags data it is recorded here.
+            tables being validated). These checks ensure data is
+            correctly formatted for internal processing.
         journalist : bool
             Whether the journalist class will be used to collect info on
             key data throughout processing. Default is True.
@@ -61,11 +62,7 @@ class CRNSDataHub:
         if configuration_manager is not None:
             self._configuration_manager = configuration_manager
         self._validation = validation
-        if self._crns_data_frame is not self._crns_data_frame.empty:
-            index_dict = dict()
-            for index in crns_data_frame.index:
-                index_dict[index] = "No Issues with Data"
-            self._flags_dictionary = index_dict
+        self._quality_assessor = quality_assessor
 
     @property
     def crns_data_frame(self):
@@ -79,12 +76,23 @@ class CRNSDataHub:
     def validation(self):
         return self._validation
 
-    def validate_dataframe(self, schema: str, table: str = None):
-        """
-        Validates the dataframe against a validation schema from within
-        the data_validation_table.py module
+    @property
+    def quality_assessor(self):
+        return self._quality_assessor
 
-        schema will be a str to know what stage is being validated.
+    @quality_assessor.setter
+    def quality_assessor(self, assessor):
+        self._quality_assessor = assessor
+
+    def validate_dataframe(self, schema: str):
+        """
+        Validates the dataframe against a pandera schema See
+        data_validation_table.py for schemas.
+
+        Parameters
+        ----------
+        schema : str
+            The name of the schema to use for the check.
         """
 
         if schema == "initial_check":
@@ -121,9 +129,7 @@ class CRNSDataHub:
         pass
 
     def return_cleaned_dataframe(self):
-        mask = self.flags_data_frame != 0
-        clean_df = self.crns_data_frame.where(~mask, np.nan)
-        return clean_df
+        pass
 
     def save_data(self, folder_path, file_name, step):  #
         """

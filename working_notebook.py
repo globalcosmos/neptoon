@@ -4,9 +4,7 @@ import math
 import pandas as pd
 from neptoon.data_management.crns_data_hub import CRNSDataHub
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
-    NMDBConfig,
-    NMDBDataHandler,
-    AttachNMDBDataToDataHub,
+    NMDBDataAttacher,
 )
 from neptoon.data_management.data_audit import (
     DataAuditLog,
@@ -116,7 +114,7 @@ crns_df
 # %%
 # ### TEMP
 
-from saqc import SaQC
+# from saqc import SaQC
 
 qc = SaQC(crns_df, scheme="simple")
 qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
@@ -131,9 +129,9 @@ def fancy_new_function():
     pass
 
 
-qc.flagGeneric(
-    field="epithermal_neutrons", func=fancy_new_function, flag="BAD"
-)
+# qc.flagGeneric(
+#     field="epithermal_neutrons", func=fancy_new_function, flag="BAD"
+# )
 
 
 #### END TEMP
@@ -155,8 +153,7 @@ data_hub = CRNSDataHub(crns_data_frame=crns_df)
 data_hub.validate_dataframe(schema="initial_check")
 # The dataframe can be accessed here.
 data_hub.crns_data_frame
-# It auto creates a flags dictionary (perhaps change to table??)
-data_hub._flags_dictionary
+
 
 # %%
 """Step 3: Perform first QA steps
@@ -174,14 +171,75 @@ intensity corrections.
 
 """
 
-AttachNMDBDataToDataHub(data_hub, station="JUNG")
+attacher = NMDBDataAttacher(data_hub)
+attacher.configure(station="JUNG")
+attacher.fetch_data()
+attacher.attach_data()
 
 # %%
 """Step 5: Correct Neutrons
 """
 
+
+class NeutronCorrector:
+    """
+    This class takes as input a CRNSDataHub and applies neutron
+    corrections to the data attached to it.
+    """
+
+    def __init__(
+        self,
+        data_hub: CRNSDataHub = None,
+    ):
+        self.data_hub = data_hub
+
+    def select_steps(
+        self,
+        pressure_correction,
+        water_vapour_correction,
+        above_ground_biomass_correction,
+        incoming_neutron_intensity_correction,
+    ):
+        """
+        TODO: Pandera check here depending on steps
+
+        Parameters
+        ----------
+        steps_to_implement : _type_
+            _description_
+        """
+        pass
+
+    def validate_data_is_suitable():
+        pass
+
+    def correct_neutrons():
+        pass
+
+
+corrector = NeutronCorrector(data_hub)
+corrector.choose_steps("steps")
+
 """Step 6: Calibration [Optional]
 """
+
+
+class SiteCalibrator:
+    def __init__(
+        self,
+        data_hub: CRNSDataHub,
+    ):
+        pass
+
+
+def assess_data(crns_data_hub):
+    qc = SaQC(crns_data_hub.crns_df, scheme="simple")
+    qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
+    qc = qc.flagRaise()
+    crns_data_hub.flags_table = qc.flags.to_pandas()
+    crns_data_hub.crns_df = qc.data.to_pandas()
+    qc.plot("epithermal_neutrons")
+
 
 """Step 7: Convert to theta
 """

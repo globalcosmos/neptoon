@@ -11,28 +11,31 @@ from neptoon.data_management.data_audit import log_key_step
 from neptoon.data_management.crns_data_hub import CRNSDataHub
 
 
-class AttachNMDBDataToDataHub:
+class NMDBDataAttacher:
     def __init__(
         self,
         data_hub: CRNSDataHub,
-        station="JUNG",
-        resolution="60",
-        nmdb_table="revori",
     ):
         self.data_hub = data_hub
-        start_date_from_data = data_hub.crns_data_frame.index[0]
-        end_date_from_data = data_hub.crns_data_frame.index[-1]
-        config = NMDBConfig(
+
+    def configure(self, station="JUNG", resolution="60", nmdb_table="revori"):
+        start_date_from_data = self.data_hub.crns_data_frame.index[0]
+        end_date_from_data = self.data_hub.crns_data_frame.index[-1]
+        self.config = NMDBConfig(
             start_date_wanted=start_date_from_data,
             end_date_wanted=end_date_from_data,
             station=station,
             resolution=resolution,
             nmdb_table=nmdb_table,
         )
-        handler = NMDBDataHandler(config)
-        tmp = handler.collect_nmdb_data()
-        data_hub.add_column_to_crns_data_frame(
-            tmp,
+
+    def fetch_data(self):
+        handler = NMDBDataHandler(self.config)
+        self.tmp_data = handler.collect_nmdb_data()
+
+    def attach_data(self):
+        self.data_hub.add_column_to_crns_data_frame(
+            self.tmp_data,
             column_name="count",
             new_column_name="incoming_neutron_intensity",
         )
