@@ -2,6 +2,7 @@
 from pathlib import Path
 import math
 import pandas as pd
+
 from neptoon.data_management.crns_data_hub import CRNSDataHub
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataAttacher,
@@ -114,7 +115,7 @@ crns_df
 # %%
 # ### TEMP
 
-# from saqc import SaQC
+from saqc import SaQC
 
 qc = SaQC(crns_df, scheme="simple")
 qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
@@ -218,8 +219,9 @@ class NeutronCorrector:
 
 
 corrector = NeutronCorrector(data_hub)
-corrector.choose_steps("steps")
+corrector.select_steps("steps")
 
+# %%
 """Step 6: Calibration [Optional]
 """
 
@@ -240,7 +242,7 @@ def assess_data(crns_data_hub):
     crns_data_hub.crns_df = qc.data.to_pandas()
     qc.plot("epithermal_neutrons")
 
-
+# %%
 """Step 7: Convert to theta
 """
 
