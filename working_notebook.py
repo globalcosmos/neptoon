@@ -273,3 +273,21 @@ DataAuditLog.archive_and_delete_log(site_name="Site From Somewhere")
 # Cant access file, file is in use (self._accessor.unlink(self))
 
 # %%
+# Here testing the TimeStampAligner
+import pandas as pd
+from neptoon.data_ingest_and_formatting.timestamp_alignment import (
+   TimeStampAligner
+   )
+data = {'value': [1, 2, 3, 4]}
+index = pd.date_range(start='2021-01-01', periods=4, freq='h')
+df = pd.DataFrame(data, index=index)
+df
+# %%
+# Initialize the TimeStampAligner
+tsa = TimeStampAligner(df)
+# Align timestamps
+tsa.align_timestamps(method='nshift', freq='1h')
+# Get the aligned dataframe
+aligned_df = tsa.return_dataframe()
+aligned_df
+# %%
