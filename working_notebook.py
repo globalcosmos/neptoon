@@ -1,6 +1,8 @@
+# %%
 from pathlib import Path
 import math
 import pandas as pd
+
 from neptoon.data_management.crns_data_hub import CRNSDataHub
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataAttacher,
@@ -9,6 +11,8 @@ from neptoon.data_management.data_audit import (
     DataAuditLog,
 )
 from neptoon.data_management.data_audit import log_key_step
+
+# %%
 
 """ Test later
 # from neptoon.configuration.configuration_input import (
@@ -53,7 +57,7 @@ processor = PseudoDataProcessor()
 processor.theta_calc(style="second")
 processor.smooth_neutrons(method="SG", window=12)
 
-
+# %% 
 """Step 0: Collect data from source
 """
 
@@ -106,23 +110,24 @@ def import_crns_dataframe_and_format(filename):
 
 
 crns_df = import_crns_dataframe_and_format("CUC001.csv")
+crns_df
 
+# %%
 # ### TEMP
 
-# from saqc import SaQC
+from saqc import SaQC
 
-# qc = SaQC(crns_df, scheme="simple")
+qc = SaQC(crns_df, scheme="simple")
+qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
+qc = qc.flagRaise()
+# OutliersMixin.flagRaise() missing 1 required positional argument: 'field'
+qc.flags.to_pandas()
+qc.data.to_pandas()
+qc.plot("epithermal_neutrons")
 
-
-# qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
-# qc = qc.flagRaise()
-# qc.flags.to_pandas()
-# qc.data.to_pandas()
-# qc.plot("epithermal_neutrons")
-
-
-# def fancy_new_function():
-#     pass
+# %%
+def fancy_new_function():
+    pass
 
 
 # qc.flagGeneric(
@@ -131,7 +136,7 @@ crns_df = import_crns_dataframe_and_format("CUC001.csv")
 
 
 #### END TEMP
-
+# %%
 """Step 2: Create the initial CRNSDataHub and validate
 
 The next step is adding the correctly formatted dataframe to the
@@ -151,6 +156,7 @@ data_hub.validate_dataframe(schema="initial_check")
 data_hub.crns_data_frame
 
 
+# %%
 """Step 3: Perform first QA steps
 
 Here we would perform QA. This requires creating QA routines and
@@ -158,7 +164,7 @@ applying them. The flags would be updated. Validation with another
 schema to ensure the QA was succesfully implemented.
 """
 
-
+# %%
 """Step 4: Attach the NMDB data
 
 Important step in preperation of data. Collect the NMDB data for
@@ -171,6 +177,7 @@ attacher.configure(station="JUNG")
 attacher.fetch_data()
 attacher.attach_data()
 
+# %%
 """Step 5: Correct Neutrons
 """
 
@@ -212,8 +219,9 @@ class NeutronCorrector:
 
 
 corrector = NeutronCorrector(data_hub)
-corrector.choose_steps("steps")
+corrector.select_steps("steps")
 
+# %%
 """Step 6: Calibration [Optional]
 """
 
@@ -234,7 +242,7 @@ def assess_data(crns_data_hub):
     crns_data_hub.crns_df = qc.data.to_pandas()
     qc.plot("epithermal_neutrons")
 
-
+# %%
 """Step 7: Convert to theta
 """
 
@@ -261,4 +269,7 @@ something?
 
 """
 
-DataAuditLog.archive_and_delete_log(site_name="A test site")
+DataAuditLog.archive_and_delete_log(site_name="Site From Somewhere")
+# Cant access file, file is in use (self._accessor.unlink(self))
+
+# %%
