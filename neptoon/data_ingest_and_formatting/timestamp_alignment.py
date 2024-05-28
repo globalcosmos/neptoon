@@ -14,10 +14,17 @@ class TimeStampAligner:
     -------
     >>> import pandas as pd
     >>> from neptoon.data_ingest_and_formatting.timestamp_alignment import (
-    >>>    TimeStampAligner
-    >>>    )
+    ...    TimeStampAligner
+    ... )
     >>> data = {'value': [1, 2, 3, 4]}
-    >>> index = pd.date_range(start='2021-01-01', periods=4, freq='H')
+    >>> index = pd.to_datetime(
+    ...     [
+    ...         "2021-01-01 00:04:00",
+    ...         "2021-01-01 01:10:00",
+    ...         "2021-01-01 02:05:00",
+    ...         "2021-01-01 02:58:00",
+    ...     ]
+    ... )
     >>> df = pd.DataFrame(data, index=index)
     >>> # Initialize the TimeStampAligner
     >>> tsa = TimeStampAligner(df)

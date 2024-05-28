@@ -57,7 +57,7 @@ processor = PseudoDataProcessor()
 processor.theta_calc(style="second")
 processor.smooth_neutrons(method="SG", window=12)
 
-# %% 
+# %%
 """Step 0: Collect data from source
 """
 
@@ -124,6 +124,7 @@ qc = qc.flagRaise()
 qc.flags.to_pandas()
 qc.data.to_pandas()
 qc.plot("epithermal_neutrons")
+
 
 # %%
 def fancy_new_function():
@@ -242,6 +243,7 @@ def assess_data(crns_data_hub):
     crns_data_hub.crns_df = qc.data.to_pandas()
     qc.plot("epithermal_neutrons")
 
+
 # %%
 """Step 7: Convert to theta
 """
@@ -275,18 +277,27 @@ DataAuditLog.archive_and_delete_log(site_name="Site From Somewhere")
 # %%
 # Here testing the TimeStampAligner
 import pandas as pd
+import numpy as np
 from neptoon.data_ingest_and_formatting.timestamp_alignment import (
-   TimeStampAligner
-   )
-data = {'value': [1, 2, 3, 4]}
-index = pd.date_range(start='2021-01-01', periods=4, freq='h')
+    TimeStampAligner,
+)
+
+data = {"value": [1, 2, 3, 4]}
+index = pd.to_datetime(
+    [
+        "2021-01-01 00:04:00",
+        "2021-01-01 01:10:00",
+        "2021-01-01 02:05:00",
+        "2021-01-01 02:58:00",
+    ]
+)
 df = pd.DataFrame(data, index=index)
 df
 # %%
 # Initialize the TimeStampAligner
 tsa = TimeStampAligner(df)
 # Align timestamps
-tsa.align_timestamps(method='nshift', freq='1h')
+tsa.align_timestamps(method="nshift", freq="1h")
 # Get the aligned dataframe
 aligned_df = tsa.return_dataframe()
 aligned_df
