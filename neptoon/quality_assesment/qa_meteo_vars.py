@@ -1,5 +1,5 @@
-from saqc import SaQC
-import pandas as pd
+# from saqc import SaQC
+# import pandas as pd
 
 """
 What to assess:
