@@ -116,15 +116,15 @@ crns_df
 # %%
 # ### TEMP
 
-from saqc import SaQC
+# from saqc import SaQC
 
-qc = SaQC(crns_df, scheme="simple")
-qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
-qc = qc.flagRaise()
-# OutliersMixin.flagRaise() missing 1 required positional argument: 'field'
-qc.flags.to_pandas()
-qc.data.to_pandas()
-qc.plot("epithermal_neutrons")
+# qc = SaQC(crns_df, scheme="simple")
+# qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
+
+# # OutliersMixin.flagRaise() missing 1 required positional argument: 'field'
+# qc.flags.to_pandas()
+# qc.data.to_pandas()
+# qc.plot("epithermal_neutrons")
 
 
 # %%
@@ -165,6 +165,24 @@ Here we would perform QA. This requires creating QA routines and
 applying them. The flags would be updated. Validation with another
 schema to ensure the QA was succesfully implemented.
 """
+from neptoon.quality_assesment.quality_assesment import (
+    QualityAssessmentFlagBuilder,
+    FlagRangeCheck,
+    DataQualityAssessor,
+)
+
+assessor = DataQualityAssessor(data_hub.crns_data_frame, saqc_scheme="simple")
+
+assessor.add_quality_check(
+    FlagRangeCheck("air_relative_humidity", min_val=50, max_val=62)
+)
+assessor.add_quality_check(
+    FlagRangeCheck("precipitation", min_val=0, max_val=20)
+)
+assessor.apply_quality_assessment()
+assessor.output_data()
+tmp = assessor.output_flags()
+
 
 # %%
 """Step 4: Attach the NMDB data
@@ -184,44 +202,44 @@ attacher.attach_data()
 """
 
 
-class NeutronCorrector:
-    """
-    This class takes as input a CRNSDataHub and applies neutron
-    corrections to the data attached to it.
-    """
+# class NeutronCorrector:
+#     """
+#     This class takes as input a CRNSDataHub and applies neutron
+#     corrections to the data attached to it.
+#     """
 
-    def __init__(
-        self,
-        data_hub: CRNSDataHub = None,
-    ):
-        self.data_hub = data_hub
+#     def __init__(
+#         self,
+#         data_hub: CRNSDataHub = None,
+#     ):
+#         self.data_hub = data_hub
 
-    def select_steps(
-        self,
-        pressure_correction,
-        water_vapour_correction,
-        above_ground_biomass_correction,
-        incoming_neutron_intensity_correction,
-    ):
-        """
-        TODO: Pandera check here depending on steps
+#     def select_steps(
+#         self,
+#         pressure_correction,
+#         water_vapour_correction,
+#         above_ground_biomass_correction,
+#         incoming_neutron_intensity_correction,
+#     ):
+#         """
+#         TODO: Pandera check here depending on steps
 
-        Parameters
-        ----------
-        steps_to_implement : _type_
-            _description_
-        """
-        pass
+#         Parameters
+#         ----------
+#         steps_to_implement : _type_
+#             _description_
+#         """
+#         pass
 
-    def validate_data_is_suitable():
-        pass
+#     def validate_data_is_suitable():
+#         pass
 
-    def correct_neutrons():
-        pass
+#     def correct_neutrons():
+#         pass
 
 
-corrector = NeutronCorrector(data_hub)
-corrector.select_steps("steps")
+# corrector = NeutronCorrector(data_hub)
+# corrector.select_steps("steps")
 
 # %%
 """Step 6: Calibration [Optional]
@@ -236,13 +254,13 @@ class SiteCalibrator:
         pass
 
 
-def assess_data(crns_data_hub):
-    qc = SaQC(crns_data_hub.crns_df, scheme="simple")
-    qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
-    qc = qc.flagRaise()
-    crns_data_hub.flags_table = qc.flags.to_pandas()
-    crns_data_hub.crns_df = qc.data.to_pandas()
-    qc.plot("epithermal_neutrons")
+# def assess_data(crns_data_hub):
+#     qc = SaQC(crns_data_hub.crns_df, scheme="simple")
+#     qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
+#     qc = qc.flagRaise()
+#     crns_data_hub.flags_table = qc.flags.to_pandas()
+#     crns_data_hub.crns_df = qc.data.to_pandas()
+#     qc.plot("epithermal_neutrons")
 
 
 # %%
@@ -272,34 +290,5 @@ something?
 
 """
 
-DataAuditLog.archive_and_delete_log(site_name="Site From Somewhere")
+DataAuditLog.archive_and_delete_log(site_name="TestQA")
 # Cant access file, file is in use (self._accessor.unlink(self))
-
-# %%
-# Here testing the TimeStampAligner
-import pandas as pd
-import numpy as np
-from neptoon.data_ingest_and_formatting.timestamp_alignment import (
-    TimeStampAligner,
-)
-
-data = {"value": [1, 2, 3, 4]}
-index = pd.to_datetime(
-    [
-        "2021-01-01 00:04:00",
-        "2021-01-01 01:10:00",
-        "2021-01-01 02:05:00",
-        "2021-01-01 02:58:00",
-    ]
-)
-df = pd.DataFrame(data, index=index)
-df
-# %%
-# Initialize the TimeStampAligner
-tsa = TimeStampAligner(df)
-# Align timestamps
-tsa.align_timestamps(method="nshift", freq="1h")
-# Get the aligned dataframe
-aligned_df = tsa.return_dataframe()
-aligned_df
-# %%
