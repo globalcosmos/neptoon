@@ -1,6 +1,9 @@
 from saqc import SaQC
 import pandas as pd
 from neptoon.data_management.data_audit import log_key_step
+from neptoon.logging import get_logger
+
+core_logger = get_logger()
 
 
 class TimeStampAligner:

@@ -108,7 +108,7 @@ class CRNSDataHub:
                 "Incorrect schema or table name given "
                 "when validating the crns_data_frame"
             )
-            logging.error(validation_error_message)
+            core_logger.error(validation_error_message)
             print(validation_error_message)
 
     def replace_dataframe(self, dataframe):
