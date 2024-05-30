@@ -1,7 +1,8 @@
 from saqc import SaQC
 import pandas as pd
-from neptoon.logging import get_logger
 from abc import abstractmethod, ABC
+from typing import Union
+from neptoon.logging import get_logger
 from neptoon.data_management.data_audit import log_key_step
 
 core_logger = get_logger()
@@ -34,23 +35,52 @@ class DateTimeIndexValidator:
 class QualityCheck(ABC):
     """
     Base method for quality check wrappers.
+
+    Ensures they all have an apply function.
     """
 
     @abstractmethod
     def apply(self, qc):
+        """
+        Apply the flagging
+
+        Parameters
+        ----------
+        qc : SaQC
+            SaQC to flag with
+
+        Returns
+        -------
+        qc : SaQC
+            SaQC after flagging
+        """
         pass
 
 
 class FlagRangeCheck(QualityCheck):
     """
-    Creates a check using the flagRange check from SaQC. By wrapping the
-    check in this way we can implement the log_key_step for
-    DataAuditLog.
+    Creates a check using the flagRange check from SaQC.
 
+    Returns
+    -------
+    qc
+        SaQC object after flagging
     """
 
     @log_key_step("column", "min_val", "max_val")
-    def __init__(self, column, min_val, max_val):
+    def __init__(self, column: str, min_val: float, max_val: float):
+        """
+        Variables
+
+        Parameters
+        ----------
+        column : str
+            Column to flag
+        min_val : float
+            Minimum value allowed
+        max_val : float
+            Maximum value allowed
+        """
         self.column = column
         self.min_val = min_val
         self.max_val = max_val
@@ -59,6 +89,79 @@ class FlagRangeCheck(QualityCheck):
         return qc.flagRange(
             field=self.column, min=self.min_val, max=self.max_val
         )
+
+
+class FlagNeutronGreaterThanN0(QualityCheck):
+    """
+    Flag neutron count rates that are greater than N0.
+
+    Returns
+    -------
+    qc
+        Returns the SaQC file after applying flags.
+    """
+
+    @log_key_step("neutron_col_name")
+    def __init__(self, neutron_col_name: str, N0: Union[int | float]):
+        """
+        Init Values
+
+        Parameters
+        ----------
+        neutron_col_name : str
+            Column name to flag
+        N0 : int | float
+            The N0 number neutrons cannot exceed.
+        """
+        self.column = neutron_col_name
+        self.N0 = N0
+
+    def apply(self, qc: SaQC):
+        return qc.flagGeneric(field=self.column, func=lambda x: x > self.N0)
+
+
+class FlagBelowMinimumPercentN0(QualityCheck):
+    """
+    Flag neutron count rates that are below a threshold percentage of
+    N0.
+
+    Neutron
+
+    Returns
+    -------
+    qc
+        Returns the SaQC file after applying flags.
+    """
+
+    @log_key_step("neutron_col_name", "percent_minimum")
+    def __init__(
+        self,
+        neutron_col_name: str,
+        N0: Union[int | float],
+        percent_minimum: float,
+    ):
+        """
+        Init Values
+
+        Parameters
+        ----------
+        neutron_col_name : str
+            Column name to flag
+        N0 : int | float
+            The N0 number neutrons cannot exceed.
+        """
+        self.column = neutron_col_name
+        self.N0 = N0
+        self.percent_minimum = percent_minimum
+
+    def apply(self, qc: SaQC):
+        return qc.flagGeneric(
+            field=self.column,
+            func=lambda x: x > (self.N0 / self.percent_minimum),
+        )
+
+
+# class FlagSpikeDetection
 
 
 class QualityAssessmentFlagBuilder:

@@ -168,6 +168,7 @@ schema to ensure the QA was succesfully implemented.
 from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     FlagRangeCheck,
+    FlagNeutronGreaterThanN0,
     DataQualityAssessor,
 )
 
@@ -179,8 +180,12 @@ assessor.add_quality_check(
 assessor.add_quality_check(
     FlagRangeCheck("precipitation", min_val=0, max_val=20)
 )
+assessor.add_quality_check(
+    FlagNeutronGreaterThanN0("epithermal_neutrons", N0=2000)
+)
+FlagNeutronGreaterThanN0.apply
 assessor.apply_quality_assessment()
-assessor.output_data()
+# assessor.output_data()
 tmp = assessor.output_flags()
 
 
