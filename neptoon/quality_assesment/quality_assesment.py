@@ -157,7 +157,7 @@ class FlagBelowMinimumPercentN0(QualityCheck):
     def apply(self, qc: SaQC):
         return qc.flagGeneric(
             field=self.column,
-            func=lambda x: x > (self.N0 / self.percent_minimum),
+            func=lambda x: x < (self.N0 * self.percent_minimum),
         )
 
 

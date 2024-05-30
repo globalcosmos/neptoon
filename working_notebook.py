@@ -169,6 +169,7 @@ from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     FlagRangeCheck,
     FlagNeutronGreaterThanN0,
+    FlagBelowMinimumPercentN0,
     DataQualityAssessor,
 )
 
@@ -182,6 +183,11 @@ assessor.add_quality_check(
 )
 assessor.add_quality_check(
     FlagNeutronGreaterThanN0("epithermal_neutrons", N0=2000)
+)
+assessor.add_quality_check(
+    FlagBelowMinimumPercentN0(
+        "epithermal_neutrons", N0=2000, percent_minimum=0.3
+    )
 )
 FlagNeutronGreaterThanN0.apply
 assessor.apply_quality_assessment()
