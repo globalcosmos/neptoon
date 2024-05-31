@@ -2,19 +2,35 @@
 load_data function will be a big logic heavy function to abstract away a
 lot of internal checks. The idea is that the same function is used.
 """
+
 import os
 import pandas
-from glob import glob1 # filter file names in folders
-import tarfile # only needed for unpacking tar files
-import zipfile # only needed for unpacking zip files
+from glob import glob1  # filter file names in folders
+import tarfile  # only needed for unpacking tar files
+import zipfile  # only needed for unpacking zip files
 from pathlib import Path
 import io
 from datetime import datetime, timezone, timedelta
 
-def collect_files_from_folder(path : str) -> list:
-    """_summary_
+
+def collect_list_of_files_from_folder(path: str) -> list:
+    """
     Collects a list of files from a folder.
-    
+
+    Parameters
+    ----------
+    path : str
+        full path of the folder
+
+    Returns
+    -------
+    list
+        list of files contained in the folder
+    """
+
+    """
+    Collects a list of files from a folder.
+
     Args:
         path (str): full path of the folder
 
@@ -28,21 +44,22 @@ def collect_files_from_folder(path : str) -> list:
         try:
             items = os.listdir(path)
             files = [
-                item for item in items
+                item
+                for item in items
                 if os.path.isfile(os.path.join(path, item))
             ]
 
         except Exception as err:
             # TODO logging: throw an error?
             print(f"! No files found in folder {path}.")
-    
-    return(files)
+
+    return files
 
 
-def collect_files_from_archive(filename : str) -> list:
+def collect_files_from_archive(filename: str) -> list:
     """_summary_
     Collects a list of files from an archive.
-    
+
     Args:
         filename (str): file name of the archive
 
@@ -52,9 +69,9 @@ def collect_files_from_archive(filename : str) -> list:
     # Open archive
     # TODO What error should we throw when FileNotFoundError?
     if tarfile.is_tarfile(filename):
-        archive = tarfile.TarFile(filename, 'r')
+        archive = tarfile.TarFile(filename, "r")
     elif zipfile.is_zipfile(filename):
-        archive = zipfile.ZipFile(filename, 'r')
+        archive = zipfile.ZipFile(filename, "r")
 
     # Create list of containing files
     files = []
@@ -63,18 +80,19 @@ def collect_files_from_archive(filename : str) -> list:
     except Exception as err:
         # TODO logging: throw an error?
         print(f"! No files found in archive {filename}.")
-    
+
     if archive:
         archive.close()
 
-    return(files)
+    return files
+
 
 def filter_files(
-        files: list,
-        prefix: str = "",
-        suffix: str = "",
-        # TODO maybe add regexp or * functionality
-        verbose: bool = True, # TODO is that a good practice?
+    files: list,
+    prefix: str = "",
+    suffix: str = "",
+    # TODO maybe add regexp or * functionality
+    verbose: bool = True,  # TODO is that a good practice?
 ) -> list:
     """_summary_
     Filter a list of files based on a given pattern.
@@ -96,18 +114,21 @@ def filter_files(
     files_filtered = [
         filename for filename in files_filtered if filename.endswith(suffix)
     ]
-    
+
     # Output
     if verbose:
-        print("i Files matched the pattern: {:.0f} out of {:.0f}.".format(
-            len(files_filtered), len(files)
-        ))
+        print(
+            "i Files matched the pattern: {:.0f} out of {:.0f}.".format(
+                len(files_filtered), len(files)
+            )
+        )
 
-    return(files_filtered)
+    return files_filtered
+
 
 def parse_file_line(
     line: str,
-    encoding: str = "cp850", 
+    encoding: str = "cp850",
     strip_left: bool = True,
     digit_first: bool = True,
 ) -> str:
@@ -127,28 +148,29 @@ def parse_file_line(
         line = line.lstrip()
 
     if isinstance(line, bytes) and encoding != "":
-        line = line.decode(encoding, errors='ignore')
+        line = line.decode(encoding, errors="ignore")
 
     # If the line starts with a number, it likely is actual data
     if digit_first and not line[:1].isdigit():
-        return("")
-    
-    return(line)
+        return ""
+
+    return line
+
 
 def guess_header(
     folder_or_archive: str,
     filename: str,
     encoding: str = "cp850",
     sep: str = ",",
-    skip_lines: int = 0, 
+    skip_lines: int = 0,
     startswith: any = "",
-    multiheader: bool = False, # look for multiple lines
+    multiheader: bool = False,  # look for multiple lines
     strip_names: bool = True,
-    remove_prefix: str = "//"
+    remove_prefix: str = "//",
 ) -> list:
     """_summary_
     Reads a file and tries to find the column headers.
-    
+
     Args:
         folder_or_archive (str): folder path or archive filename
         filename (str): name of the file to read
@@ -167,23 +189,26 @@ def guess_header(
     if os.path.isdir(folder_or_archive):
         folder = folder_or_archive
     elif tarfile.is_tarfile(folder_or_archive):
-        archive = tarfile.TarFile(folder_or_archive, 'r')
+        archive = tarfile.TarFile(folder_or_archive, "r")
     elif zipfile.is_zipfile(folder_or_archive):
-        archive = zipfile.ZipFile(folder_or_archive, 'r')
+        archive = zipfile.ZipFile(folder_or_archive, "r")
     else:
         # TODO logging?
-        print("! Cannot read files, the source is neither a folder nor an archive.")
-        return("")
+        print(
+            "! Cannot read files, the source is neither a folder nor an archive."
+        )
+        return ""
 
     # Open file in either folder or archive
-    with \
-    archive.open(filename, 'r') if archive else \
-    open(Path(folder) / filename, encoding=encoding) \
-    as file:
-    
+    with (
+        archive.open(filename, "r")
+        if archive
+        else open(Path(folder) / filename, encoding=encoding)
+    ) as file:
+
         # Skip first lines
         for _ in range(skip_lines):
-            next(file) # seek to next line
+            next(file)  # seek to next line
 
         # Look for header lines
         headers = []
@@ -193,14 +218,14 @@ def guess_header(
 
                 if line.startswith(startswith):
                     # headers must start with certain letters
-                    # Uses the first line if no letter given  
+                    # Uses the first line if no letter given
 
                     headers.append(line)
 
                     if not multiheader:
                         # Stops after first found header, else browse the whole file
                         break
-        
+
     # Join multiheaders and create a joint list
     header_line = sep.join(headers)
     header_list = header_line.split(sep)
@@ -210,8 +235,8 @@ def guess_header(
     if remove_prefix != "":
         # Remove spaces around names
         header_list = [s.removeprefix(remove_prefix) for s in header_list]
-    
-    return(header_list)
+
+    return header_list
 
 
 def merge_files(
@@ -223,14 +248,14 @@ def merge_files(
     parser_kw: dict = dict(
         # These could be defined in a specific YAML file
         strip_left=True,
-        digit_first=True
-    )
+        digit_first=True,
+    ),
 ) -> str:
     """_summary_
     Reads all selected files in a folder or archive,
     applies a basic parsing of the lines using `parse_file_line()`,
     and merges all valid lines into a single large data string.
-    
+
     Args:
         folder_or_archive (str): either folder path or archive filename
         files (list): list of file names to read
@@ -252,13 +277,15 @@ def merge_files(
     if os.path.isdir(folder_or_archive):
         folder = folder_or_archive
     elif tarfile.is_tarfile(folder_or_archive):
-        archive = tarfile.TarFile(folder_or_archive, 'r')
+        archive = tarfile.TarFile(folder_or_archive, "r")
     elif zipfile.is_zipfile(folder_or_archive):
-        archive = zipfile.ZipFile(folder_or_archive, 'r')
+        archive = zipfile.ZipFile(folder_or_archive, "r")
     else:
         # TODO logging?
-        print("! Cannot read files, the source is neither a folder nor an archive.")
-        return("")
+        print(
+            "! Cannot read files, the source is neither a folder nor an archive."
+        )
+        return ""
 
     data_str = ""
     len_files = len(files)
@@ -267,27 +294,25 @@ def merge_files(
     # Loop through filtered files
     for filename in files:
         if verbose:
-            print("> {:3.0f}%, {:}".format(
-                i/len_files*100,
-                filename
-            ), end="\r")
+            print(
+                "> {:3.0f}%, {:}".format(i / len_files * 100, filename),
+                end="\r",
+            )
 
         # Open file in either folder or archive
-        with \
-        archive.open(filename, 'r') if archive else \
-        open(Path(folder) / filename, encoding=encoding) \
-        as file:
-            
+        with (
+            archive.open(filename, "r")
+            if archive
+            else open(Path(folder) / filename, encoding=encoding)
+        ) as file:
+
             # Skip first lines
             for _ in range(skip_lines):
-                next(file) # seek to next line
+                next(file)  # seek to next line
 
             # Parse the remaining lines
             for line in file:
-                data_str += parse_file_line(
-                    line,
-                    encoding,
-                    **parser_kw)
+                data_str += parse_file_line(line, encoding, **parser_kw)
         i += 1
 
     if archive:
@@ -297,7 +322,8 @@ def merge_files(
         len_filenames = len(max(files, key=len))
         print("> 100%  {:}".format(" " * len_filenames))
 
-    return(data_str)
+    return data_str
+
 
 def make_dataframe(
     data_str: str,
@@ -323,7 +349,7 @@ def make_dataframe(
     Returns:
         pandas.DataFrame: DataFrame
     """
-    
+
     # Convert string to DataFrame
     data = pandas.read_csv(
         io.StringIO(data_str),
@@ -333,21 +359,21 @@ def make_dataframe(
         skipinitialspace=skipinitialspace,
         sep=sep,
         decimal=decimal,
-        on_bad_lines="skip", # ignore all lines will bad columns
-        dtype=object # Allows for reading strings
+        on_bad_lines="skip",  # ignore all lines will bad columns
+        dtype=object,  # Allows for reading strings
     )
 
-    return(data)
+    return data
 
 
 def make_datetime(
     data: pandas.DataFrame,
-    columns = 0, # Can be int, column_name, or a list these
-    fmt: str = None, 
+    columns=0,  # Can be int, column_name, or a list these
+    fmt: str = None,
     tz: str = "utc",
     tz_convert: str = "utc",
     timestamp: bool = False,
-    dt_column: str = "_datetime" 
+    dt_column: str = "_datetime",
     # **datetime_kw # pass any parameters to pandas_to_datetime
 ) -> pandas.DataFrame:
     """_summary_
@@ -363,7 +389,7 @@ def make_datetime(
         dt_column (str, optional): New datetime column name. Defaults to "_datetime".
 
     Returns:
-        pandas.DataFrame: data including a Datetime column. 
+        pandas.DataFrame: data including a Datetime column.
     """
     # Define the index column
     if isinstance(columns, int):
@@ -373,41 +399,40 @@ def make_datetime(
     elif isinstance(columns, list):
         # Join multiple columns
         column_names = []
-        for i in columns:        
+        for i in columns:
             if isinstance(i, int):
                 column_names.append(data.columns[i])
             elif isinstance(i, str):
                 column_names.append(data[i])
         # Join columns together separated with a space
-        dt_series = data[column_names].apply(lambda x : '{} {}'.format(x[0],x[1]), axis=1)
-    
+        dt_series = data[column_names].apply(
+            lambda x: "{} {}".format(x[0], x[1]), axis=1
+        )
+
     data[dt_column] = pandas.to_datetime(
-        dt_series,
-        errors="coerce",
-        unit="s" if timestamp else None,
-        format=fmt
+        dt_series, errors="coerce", unit="s" if timestamp else None, format=fmt
     )
 
     # Convert time zones
-    if data[dt_column][0].tzinfo is None: # or d.tzinfo.utcoffset(d) is None
+    if data[dt_column][0].tzinfo is None:  # or d.tzinfo.utcoffset(d) is None
         data[dt_column] = data[dt_column].dt.tz_localize(tz)
     if tz_convert != tz:
         data[dt_column] = data[dt_column].dt.tz_convert(tz_convert)
 
-    return(data)
+    return data
 
 
 def datetime_as_index(
     data: pandas.DataFrame,
     dt_column: str = "_datetime",
-    drop_nan: bool = True, 
+    drop_nan: bool = True,
     sort: bool = True,
     drop_duplicates: bool = True,
     drop_future: bool = True,
-    verbose: bool = True
+    verbose: bool = True,
 ) -> pandas.DataFrame:
     """_summary_
-    Set a datetime column as the index of the DataFrame 
+    Set a datetime column as the index of the DataFrame
     Args:
         data (pandas.DataFrame): data
         dt_column (str, optional): Name of the datetime column. Defaults to "_datetime".
@@ -420,34 +445,36 @@ def datetime_as_index(
     Returns:
         pandas.DataFrame: data with a DatetimeIndex
     """
-    
+
     # Quality checks
     len_0 = len(data)
     if drop_nan:
         # Remove NaT
         data = data.dropna(subset=[dt_column])
-    
+
     # Set as index
     data.set_index(dt_column, inplace=True)
-    
+
     if sort:
         data = data.sort_index()
-    
+
     len_1 = len(data)
     if drop_duplicates:
-        data = data[~data.index.duplicated(keep='first')]
-    
+        data = data[~data.index.duplicated(keep="first")]
+
     len_2 = len(data)
     if drop_future:
         # remove dates in the future
-        data = data[data.index <= datetime.now(timezone.utc)+timedelta(1)]
-    
+        data = data[data.index <= datetime.now(timezone.utc) + timedelta(1)]
+
     len_3 = len(data)
-    if verbose and 0 < len_0-len_1+len_1-len_2+len_2-len_3:
-        print("i Dropped indices: {:} invalid, {:} duplicated, {:} in the future.".format(
-            len_0-len_1, len_1-len_2, len_2-len_3
-        ))
-    return(data)
+    if verbose and 0 < len_0 - len_1 + len_1 - len_2 + len_2 - len_3:
+        print(
+            "i Dropped indices: {:} invalid, {:} duplicated, {:} in the future.".format(
+                len_0 - len_1, len_1 - len_2, len_2 - len_3
+            )
+        )
+    return data
 
 
 def dataframe_to_numeric(
@@ -463,13 +490,13 @@ def dataframe_to_numeric(
     """
     # Cases when decimal is not ., replace them by .
     decimal = decimal.strip()
-    if decimal != '.':
-        data = data.apply(lambda x: x.str.replace(decimal, '.'))
-    
-    # Convert all the regular columns to numeric and drop any failures
-    data = data.apply(pandas.to_numeric, errors='coerce')
+    if decimal != ".":
+        data = data.apply(lambda x: x.str.replace(decimal, "."))
 
-    return(data)
+    # Convert all the regular columns to numeric and drop any failures
+    data = data.apply(pandas.to_numeric, errors="coerce")
+
+    return data
 
 
 def load_data(**kwargs):
