@@ -19,20 +19,31 @@ core_logger = get_logger()
 
 class ManageFileCollection:
     def __init__(self, data_location: Union[str, Path], prefix=None):
-        self._folder_location = self._validate_and_convert_folder_location(
+        self._data_location = self._validate_and_convert_data_location(
             data_location=data_location
         )
+        self.files = []
         self._prefix = prefix
-        self.folder_or_archive = None
-        self._archive_or_folder()
+        self._source_type = None
+
+        # init functions
+        self._determine_source_type()
 
     @property
-    def folder_location(self):
-        return self._folder_location
+    def data_location(self):
+        return self._data_location
 
     @property
     def prefix(self):
         return self._prefix
+
+    @property
+    def source_type(self):
+        return self._source_type
+
+    @source_type.setter
+    def source_type(self, value: str):
+        self._source_type = value
 
     def _validate_and_convert_data_location(
         self, data_location: Union[str, Path]
@@ -44,12 +55,13 @@ class ManageFileCollection:
         else:
             message = (
                 "data_location must be of type str or pathlib.Path. \n"
-                f"{type(data_location).__name__} provided, please change this."
+                f"{type(data_location).__name__} provided, "
+                "please change this."
             )
             core_logger.error(message)
             raise ValueError(message)
 
-    def _archive_or_folder(self):
+    def _determine_source_type(self):
         """
         Checks if the folder is a normal folder or an archive and sets
         the internal attribute reflecting this.
@@ -69,9 +81,9 @@ class ManageFileCollection:
             )
             return ""
 
-    def return_list_of_files_in_folder(self) -> list:
+    def _return_list_of_files_from_folder(self) -> list:
         """
-        Returns the list of files from the given folder.
+        Returns the list of files from a given folder.
 
         Returns
         -------
@@ -79,71 +91,115 @@ class ManageFileCollection:
             list of files contained in the folder
         """
 
-        # Open archive
-        # TODO What error should we throw when FileNotFoundError?
         files = []
-
         if self.folder_location.is_dir():
             try:
                 item_list = self.folder_location.glob("**/*")
                 files = [x for x in item_list if x.is_file()]
 
-            except Exception as err:
+            except FileNotFoundError as fnf_error:
                 message = (
-                    f"! No files found in folder {self.folder_location}.\n",
-                    f"The following error occured {err}",
+                    f"! Folder not found: {self.folder_location}."
+                    f"Error: {fnf_error}"
                 )
                 core_logger.error(message)
+                raise
+            except Exception as err:
+                message = (
+                    f"! Error accessing folder {self.folder_location}."
+                    f" Error: {err}"
+                )
+                core_logger.error(message)
+                raise
 
         return files
 
-    def collect_files_from_archive(filename: Path) -> list:
+    def _return_list_of_files_from_zip(self) -> list:
         """
-        Collects a list of files from an archive.
-
-        Parameters
-        ----------
-        filename : Path
-            file name of the archive
+        Returns a list of files from an zip.
 
         Returns
         -------
         list
-            _description_
+            list of files contained in the zip
         """
-
-        # Open archive
-        # TODO What error should we throw when FileNotFoundError?
-        if tarfile.is_tarfile(filename):
-            archive = tarfile.TarFile(filename, "r")
-        elif zipfile.is_zipfile(filename):
-            archive = zipfile.ZipFile(filename, "r")
-
-        # Create list of containing files
         files = []
         try:
-            files = archive.namelist()
-        except Exception as err:
-            # TODO logging: throw an error?
-            print(f"! No files found in archive {filename}.")
+            with zipfile.ZipFile(self.data_location, "r") as archive:
+                files = archive.namelist()
 
-        if archive:
-            archive.close()
+        except FileNotFoundError as fnf_error:
+            message = (
+                f"! Archive file not found: {self.data_location}."
+                f"Error: {fnf_error}"
+            )
+
+            raise
+        except Exception as err:
+            message = (
+                f"! Error accessing archive {self.data_location}. "
+                f"Error: {err}"
+            )
+            core_logger.error(message)
+            raise
 
         return files
 
+    def _return_list_of_files_from_tar(self) -> list:
+        """
+        Returns a list of files from an tar.
+
+        Returns
+        -------
+        list
+            list of files contained in the tar
+        """
+        files = []
+        try:
+            with tarfile.TarFile(self.data_location, "r") as archive:
+                files = archive.getnames()
+
+        except FileNotFoundError as fnf_error:
+            message = (
+                f"! Archive file not found: {self.data_location}."
+                f"Error: {fnf_error}"
+            )
+
+            raise
+        except Exception as err:
+            message = (
+                f"! Error accessing archive {self.data_location}. "
+                f"Error: {err}"
+            )
+            core_logger.error(message)
+            raise
+
+        return files
+
+    def return_list_of_files(self):
+        if self.source_type == "folder":
+            self.files = self._return_list_of_files_from_folder()
+        elif self.source_type == "zipfile":
+            self.files = self._return_list_of_files_from_zip()
+        elif self.source_type == "tarfile":
+            self.files = self._return_list_of_files_from_tar()
+        else:
+            message = (
+                "Data source appears to not be folder, zip or tar file.\n"
+                "Cannot collect file names."
+            )
+            core_logger.error(message)
+
     def filter_files(
-        files: list,
+        self,
         prefix: str = "",
         suffix: str = "",
         # TODO maybe add regexp or * functionality
-        verbose: bool = True,  # TODO is that a good practice?
     ) -> list:
         """
         Filter a list of files based on a given pattern.
 
         Args:
-            files (list): list of file names
             prefix (str, optional): start of file name. Defaults to "".
             suffix (str, optional): end of file name. Defaults to "".
             verbose (bool, optional): Print number of files filtered. Defaults to True.
@@ -153,7 +209,7 @@ class ManageFileCollection:
         """
         # Start with ...
         files_filtered = [
-            filename for filename in files if filename.startswith(prefix)
+            filename for filename in self.files if filename.startswith(prefix)
         ]
         # End with ...
         files_filtered = [
@@ -161,16 +217,16 @@ class ManageFileCollection:
             for filename in files_filtered
             if filename.endswith(suffix)
         ]
+        self.files = files_filtered
 
-        # Output
-        if verbose:
-            print(
-                "i Files matched the pattern: {:.0f} out of {:.0f}.".format(
-                    len(files_filtered), len(files)
-                )
-            )
-
-        return files_filtered
+        """# # Output
+        # if verbose:
+        #     print(
+        #         "i Files matched the pattern: {:.0f} out of {:.0f}.".format(
+        #             len(files_filtered), len(files)
+        #         )
+        #     )
+"""
 
 
 class ParseFilesIntoDataFrame:
