@@ -19,6 +19,18 @@ core_logger = get_logger()
 
 
 class ManageFileCollection:
+    """
+    Manages the collection of files in preperation for parsing them into
+    a DataFrame for the CRNSDataHub.
+
+    Example:
+    --------
+    >>> from neptoon.data_ingest_and_formatting.data_ingest import ManageFileCollection
+    >>> data_location_folder = "/path/to/folder"
+    >>> file_manager = ManageFileCollection(data_location_folder)
+    >>> file_manager.get_list_of_files()
+    """
+
     def __init__(self, data_location: Union[str, Path], prefix=None):
         self._data_location = self._validate_and_convert_data_location(
             data_location=data_location
@@ -177,7 +189,7 @@ class ManageFileCollection:
 
         return files
 
-    def return_list_of_files(self):
+    def get_list_of_files(self):
         if self.source_type == "folder":
             self.files = self._return_list_of_files_from_folder()
         elif self.source_type == "zipfile":
