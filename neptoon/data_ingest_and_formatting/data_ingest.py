@@ -5,14 +5,15 @@ lot of internal checks. The idea is that the same function is used.
 
 import os
 import pandas
+import tarfile
+import zipfile
+import io
+from pathlib import Path
 from typing import Union
 from glob import glob1  # filter file names in folders
-import tarfile  # only needed for unpacking tar files
-import zipfile  # only needed for unpacking zip files
-from pathlib import Path
-import io
-from neptoon.logging import get_logger
 from datetime import datetime, timezone, timedelta
+
+from neptoon.logging import get_logger
 
 core_logger = get_logger()
 
