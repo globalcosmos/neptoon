@@ -157,9 +157,20 @@ data_hub.validate_dataframe(schema="initial_check")
 # The dataframe can be accessed here.
 data_hub.crns_data_frame
 
+"""Step 3: Attach the NMDB data
+
+Important step in preperation of data. Collect the NMDB data for
+intensity corrections.
+
+"""
+
+attacher = NMDBDataAttacher(data_hub)
+attacher.configure(station="JUNG")
+attacher.fetch_data()
+attacher.attach_data()
 
 # %%
-"""Step 3: Perform first QA steps
+"""Step 4: Perform first QA steps
 
 Here we would perform QA. This requires creating QA routines and
 applying them. The flags would be updated. Validation with another
@@ -195,18 +206,21 @@ assessor.apply_quality_assessment()
 tmp = assessor.output_flags()
 
 
+# crns_data
+
+# dataingest
+
+# CRNSDataHub(crns_data)
+# CRNSDataHub.quality_assessment()
+# CRNSDataHub.neutron_correction()
+# CRNSDataHub.calculate_theta()
+# CRNSDataHub.figures_tables_close
+
+# DataQualityAssesment(CRNSDataHub)
+# Processing(CRNSDAtaHub)
+# Figures(CRN)
 # %%
-"""Step 4: Attach the NMDB data
 
-Important step in preperation of data. Collect the NMDB data for
-intensity corrections.
-
-"""
-
-attacher = NMDBDataAttacher(data_hub)
-attacher.configure(station="JUNG")
-attacher.fetch_data()
-attacher.attach_data()
 
 # %%
 """Step 5: Correct Neutrons
