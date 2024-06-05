@@ -1,4 +1,8 @@
 """
+TODO: infer_column_names still has some parameter options to add. add
+these to the ManageFileCollection object?
+
+TODO: 
 """
 
 import os
@@ -33,25 +37,64 @@ class ManageFileCollection:
         self,
         data_location: Union[str, Path],
         prefix=None,
+        suffix=None,
         encoding="cp850",
         skip_lines: int = 0,
         seperator: str = ",",
         decimal: str = ".",
+        skipinitialspace: bool = True,
         parser_kw: dict = dict(
             # These could be defined in a specific YAML file
             strip_left=True,
             digit_first=True,
         ),
     ):
+        """
+        Initial parameters for data collection and merging
+
+        Parameters
+        ----------
+        data_location : Union[str, Path]
+            The location of the data files. Can be either a string
+            representing folder/file location or a Path object (it will
+            be converted to a Path object if a string is presented).
+        prefix : str, optional
+            start of file name - used for file filtering, by default
+            None
+        suffix : str, optional
+            end of file name - used for file filtering, by default None
+        encoding : str, optional
+            encoder used for file encoding, by default "cp850"
+        skip_lines : int, optional
+            Whether lines should be skipped when parsing files, by
+            default 0
+        seperator : str, optional
+            The default seperator used to divide columns, by default ","
+        decimal : str, optional
+            The default decimal character for floating point numbers ,
+            by default "."
+        skipinitialspace : bool, optional
+            whether to skip intial space when creating dataframe, by
+            default True
+        parser_kw : dict, optional
+            dictionary with parser values to use when parsing data, by
+            default
+            dict(
+                strip_left=True,
+                digit_first=True,
+                )
+        """
         self._data_location = self._validate_and_convert_data_location(
             data_location=data_location
         )
         self._prefix = prefix
+        self._suffix = suffix
         self._encoding = encoding
         self._skip_lines = skip_lines
         self._parser_kw = parser_kw
         self._seperator = seperator
         self._decimal = decimal
+        self._skipinitialspace = skipinitialspace
         self._source_type = None
         self.files = []
 
@@ -67,8 +110,16 @@ class ManageFileCollection:
         return self._prefix
 
     @property
+    def suffix(self):
+        return self._suffix
+
+    @property
     def encoding(self):
         return self._encoding
+
+    @property
+    def skipinitialspace(self):
+        return self._skipinitialspace
 
     @property
     def decimal(self):
@@ -97,6 +148,27 @@ class ManageFileCollection:
     def _validate_and_convert_data_location(
         self, data_location: Union[str, Path]
     ) -> Path:
+        """
+        Used when initialising the object. If a string is given as a
+        data_location, it is converted to a pathlib.Path object. If a
+        pathlib.Path object is given this is returned. Other types will
+        cause an error.
+
+        Parameters
+        ----------
+        data_location : Union[str, Path]
+            The data_location attribute from initialisation.
+
+        Returns
+        -------
+        pathlib.Path
+            The data_location as a pathlib.Path object.
+
+        Raises
+        ------
+        ValueError
+            Error if string or pathlib.Path given.
+        """
         if isinstance(data_location, str):
             return Path(data_location)
         elif isinstance(data_location, Path):
@@ -165,7 +237,7 @@ class ManageFileCollection:
 
     def _return_list_of_files_from_zip(self) -> list:
         """
-        Returns a list of files from an zip.
+        Returns a list of files from a zip.
 
         Returns
         -------
@@ -196,7 +268,7 @@ class ManageFileCollection:
 
     def _return_list_of_files_from_tar(self) -> list:
         """
-        Returns a list of files from an tar.
+        Returns a list of files from a tar.
 
         Returns
         -------
@@ -226,6 +298,10 @@ class ManageFileCollection:
         return files
 
     def get_list_of_files(self):
+        """
+        Lists the files found at the data_source and assigns these to
+        the file attribute.
+        """
         if self.source_type == "folder":
             self.files = self._return_list_of_files_from_folder()
         elif self.source_type == "zipfile":
@@ -241,80 +317,112 @@ class ManageFileCollection:
 
     def filter_files(
         self,
-        prefix: str = "",
-        suffix: str = "",
-        # TODO maybe add regexp or * functionality
     ) -> list:
         """
-        Filter a list of files based on a given pattern.
+        Filters the files found in the data location using the prefix or
+        suffix given during initialisation. Both of these default to
+        None.
 
-        Args:
-            prefix (str, optional): start of file name. Defaults to "".
-            suffix (str, optional): end of file name. Defaults to "".
-            verbose (bool, optional): Print number of files filtered. Defaults to True.
-
-        Returns:
-            list: filtered list of file names that matched the pattern.
+        TODO maybe add regexp or * functionality
         """
-        # Start with ...
         files_filtered = [
-            filename for filename in self.files if filename.startswith(prefix)
+            filename
+            for filename in self.files
+            if filename.startswith(self.prefix)
         ]
         # End with ...
         files_filtered = [
             filename
             for filename in files_filtered
-            if filename.endswith(suffix)
+            if filename.endswith(self.suffix)
         ]
         self.files = files_filtered
 
-        """# # Output
-        # if verbose:
-        #     print(
-        #         "i Files matched the pattern: {:.0f} out of {:.0f}.".format(
-        #             len(files_filtered), len(files)
-        #         )
-        #     )
-"""
-
 
 class ParseFilesIntoDataFrame:
+    """
+    Take's an instance of the ManageFileColletion class which defines
+    data location and parsing parameters. Uses this to parse the raw
+    files into a single dataframe.
+
+    Example
+    -------
+    >>> file_manager = ManageFileCollection(data_location='/path/to/data/folder/')
+    >>> file_parser = ParseFilesIntoDataFrame(file_manager)
+    >>> df = file_parser.make_dataframe()
+    """
+
     def __init__(self, file_manager: ManageFileCollection):
+        """
+        Initialisation files.
+
+        Parameters
+        ----------
+        file_manager : ManageFileCollection
+            An instance fo the ManageFileCollection class
+        """
         self.file_manager = file_manager
 
-    def merge_files(
+    def make_dataframe(
+        self,
+        column_names: list = None,
+    ) -> pd.DataFrame:
+        """
+        Merges, parses and converts data it to a single DataFrame.
+
+        Parameters
+        ----------
+        column_names : list, optional
+            Can supply custom column_names for saving file, by default
+            None
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with all data
+        """
+        if column_names is None:
+            column_names = self.infer_column_names()
+        data_str = self.merge_files()
+        data = pd.read_csv(
+            io.StringIO(data_str),
+            names=column_names,
+            encoding=self.file_manager.encoding,
+            skiprows=self.file_manager.skip_lines,
+            skipinitialspace=self.file_manager.skipinitialspace,
+            sep=self.file_manager.seperator,
+            decimal=self.file_manager.decimal,
+            on_bad_lines="skip",  # ignore all lines with bad columns
+            # dtype=object,  # Allows for reading strings
+        )
+
+        return data
+
+    def _merge_files(
         self,
     ) -> str:
         """
-        Reads all selected files in a folder or archive,
-        applies a basic parsing of the lines using `parse_file_line()`,
-        and merges all valid lines into a single large data string.
+        Reads all selected files in a folder or archive, applies a basic
+        parsing of the lines using `_parse_file_line()`, and merges all
+        valid lines into a single large data string.
 
-        Args:
-            folder_or_archive (str): either folder path or archive filename
-            files (list): list of file names to read
-            encoding (str, optional): Decode text. Defaults to "cp850".
-            skip_lines (int, optional): Skip first lines per file. Defaults to 0.
-            verbose (bool, optional): Print progress. Defaults to True.
-            parser_kw (dict, optional): Keywords for `parse_file_line()`. Defaults to dict( strip_left=True, digit_first=True ).
-
-        Returns:
-            str: A single large string containing all data lines
-
-        Example:
-            merge_files("archive.zip", ["a.csv", "b.csv"])
+        Returns
+        -------
+        str
+            A single large string containing all data lines
         """
         data_str = ""
         for filename in self.file_manager.files:
             data_str += self._process_file(filename)
 
     def _process_file(self, filename):
-        """_summary_
+        """
+        Opens file and extracts each file line into a large data string.
 
         Returns
         -------
-        _type_
-            _description_
+        data_str: str
+            Returns a large string containing data
         """
         data_str = ""
 
@@ -396,9 +504,8 @@ class ParseFilesIntoDataFrame:
 
         return line
 
-    def infer_column_names(
+    def _infer_column_names(
         self,
-        filename: str,
         startswith: any = "",
         multiheader: bool = False,  # look for multiple lines
         strip_names: bool = True,
@@ -459,40 +566,6 @@ class ParseFilesIntoDataFrame:
             header_list = [s.removeprefix(remove_prefix) for s in header_list]
 
         return header_list
-
-    def make_dataframe(
-        self,
-        data_str: str,
-        column_names: list = None,
-        skipinitialspace: bool = True,
-    ) -> pd.DataFrame:
-        """
-        Reads in a string and converts it to a DataFrame.
-
-        Args:
-            data_str (str): A multiline string previously read from merged files.
-            column_names (list, optional): Names of the columns. Defaults to None.
-            skipinitialspace (bool, optional): Skip initial spaces. Defaults to True.
-
-        Returns:
-            pd.DataFrame: DataFrame
-        """
-        if column_names is None:
-            column_names = self.infer_column_names()
-        # Convert string to DataFrame
-        data = pd.read_csv(
-            io.StringIO(data_str),
-            names=column_names,
-            encoding=self.file_manager.encoding,
-            skiprows=self.file_manager.skip_lines,
-            skipinitialspace=skipinitialspace,
-            sep=self.file_manager.seperator,
-            decimal=decimal,
-            on_bad_lines="skip",  # ignore all lines with bad columns
-            dtype=object,  # Allows for reading strings
-        )
-
-        return data
 
 
 class FormatDataForCRNSDataHub:
