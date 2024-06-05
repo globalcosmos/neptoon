@@ -5,16 +5,16 @@ these to the ManageFileCollection object?
 TODO: 
 """
 
-import os
 import pandas as pd
 import tarfile
 import zipfile
 import io
+from saqc import SaQC
 from pathlib import Path
 from typing import Union
 from glob import glob1  # filter file names in folders
 from datetime import datetime, timezone, timedelta
-
+from neptoon.data_management.data_audit import log_key_step
 from neptoon.logging import get_logger
 
 core_logger = get_logger()
@@ -570,126 +570,172 @@ class ParseFilesIntoDataFrame:
 
 class FormatDataForCRNSDataHub:
 
-    def make_datetime(
-        data: pd.DataFrame,
+    def __init__(
+        self,
+        data_frame: pd.DataFrame,
         columns=0,  # Can be int, column_name, or a list these
-        fmt: str = None,
-        tz: str = "utc",
-        tz_convert: str = "utc",
-        timestamp: bool = False,
-        dt_column: str = "_datetime",
-    ) -> pd.DataFrame:
-        """_summary_
-        Create a Datetime column, merge columns if necessary.
+        datetime_format: str = None,
+        initial_time_zone: str = "utc",
+        convert_time_zone_to: str = "utc",
+        is_timestamp: bool = False,
+        datetime_column: str = "_datetime",
+        decimal: str = ".",
+    ):
+        self._data_frame = data_frame
+        self._columns = columns
+        self._datatime_format = datetime_format
+        self._initial_time_zone = initial_time_zone
+        self._convert_time_zone_to = convert_time_zone_to
+        self._is_timestamp = is_timestamp
+        self._dt_column = datetime_column
+        self._decimal = decimal
 
-        Args:
-            data (pd.DataFrame): data
-            columns (int, optional): column index, column name, or list of these. Defaults to 0.
-            fmt (str, optional): Datetime format, or guess. Defaults to None.
-            tz (str, optional): Initial time zone. Defaults to "utc".
-            tz_convert (str, optional): Timezone to convert to. Defaults to "utc".
-            timestamp (bool, optional): Is the initial format a timestamp? Defaults to False.
-            dt_column (str, optional): New datetime column name. Defaults to "_datetime".
+    @property
+    def data_frame(self):
+        return self._data_frame
+
+    @property
+    def columns(self):
+        return self._columns
+
+    @property
+    def datetime_format(self):
+        return self._datatime_format
+
+    @property
+    def initial_time_zone(self):
+        return self._initial_time_zone
+
+    @property
+    def convert_time_zone_to(self):
+        return self._convert_time_zone_to
+
+    @property
+    def is_timestamp(self):
+        return self._is_timestamp
+
+    @property
+    def decimal(self):
+        return self._decimal
+
+    @property
+    def datetime_column(self):
+        return self._data_time_format
+
+    @data_frame.setter
+    def data_frame(self, df: pd.DataFrame):
+        self._data_frame = df
+
+    def extract_datetime_column(
+        self,
+    ) -> pd.Series:
+        """
+        TODO docstring
+
+        Create a Datetime column, merge columns if necessary.
 
         Returns:
             pd.DataFrame: data including a Datetime column.
         """
+
         # Define the index column
-        if isinstance(columns, int):
-            dt_series = data.iloc[:, columns]
-        elif isinstance(columns, str):
-            dt_series = data[columns]
-        elif isinstance(columns, list):
+        if isinstance(self.columns, int):
+            dt_series = self.data_frame.iloc[:, self.columns]
+        elif isinstance(self.columns, str):
+            dt_series = self.data_frame[self.columns]
+        elif isinstance(self.columns, list):
             # Join multiple columns
             column_names = []
-            for i in columns:
+            for i in self.columns:
                 if isinstance(i, int):
-                    column_names.append(data.columns[i])
+                    column_names.append(self.data_frame.columns[i])
                 elif isinstance(i, str):
-                    column_names.append(data[i])
+                    column_names.append(self.data_frame[i])
             # Join columns together separated with a space
-            dt_series = data[column_names].apply(
+            dt_series = self.data_frame[column_names].apply(
                 lambda x: "{} {}".format(x[0], x[1]), axis=1
             )
-
-        data[dt_column] = pd.to_datetime(
+        dt_series = pd.to_datetime(
             dt_series,
             errors="coerce",
-            unit="s" if timestamp else None,
-            format=fmt,
+            unit="s" if self.is_timestamp else None,
+            format=self.datetime_format,
         )
+        return dt_series
 
-        # Convert time zones
-        if (
-            data[dt_column][0].tzinfo is None
-        ):  # or d.tzinfo.utcoffset(d) is None
-            data[dt_column] = data[dt_column].dt.tz_localize(tz)
-        if tz_convert != tz:
-            data[dt_column] = data[dt_column].dt.tz_convert(tz_convert)
+    def convert_time_zone(self, datetime_series):
+        """
+        Convert the timezone of a date time time series. Uses the
+        attributes initial_time_zone (the actual time zone the data is
+        currently in) and convert_time_zone_to which is the desired time
+        zone. This is default set the UTC time.
 
-        return data
+        Parameters
+        ----------
+        datetime_series : pd.Series
+            The datetime_series that is converted
+
+        Returns
+        -------
+        pd.Series
+            The converted datetime series in the correct time zone
+        """
+        if datetime_series[0].tzinfo is None:
+            datetime_series = datetime_series.dt.tz_localize(
+                self.initial_time_zone
+            )
+        if self.initial_time_zone != self.convert_time_zone_to:
+            datetime_series = datetime_series.dt.tz_convert(
+                self.convert_time_zone_to
+            )
+        return datetime_series
+
+    def align_time_stamps(self, method: str = "nshift", freq: str = "1H"):
+        """
+        Aligns timestamps to occur on the hour. E.g., 01:00 not 01:05.
+
+        Uses the TimeStampAligner class.
+
+        Parameters
+        ----------
+        method : str, optional
+            method to use for shifting, defaults to shifting to nearest
+            hour, by default "nshift"
+        freq : str, optional
+            Define how regular the timestamps should be, 1 hour by
+            default, by default "1H"
+        """
+        try:
+            timestamp_aligner = TimeStampAligner(self.data_frame)
+        except Exception as e:
+            message = (
+                "Could not align timestamps of dataframe. First the "
+                "dataframe must have a datetime index.\n"
+                f"Exception: {e}"
+            )
+            print(message)
+            core_logger.error(message)
+        timestamp_aligner.align_timestamps(method=method, freq=freq)
+        self.data_frame = timestamp_aligner.return_dataframe()
 
     def datetime_as_index(
-        data: pd.DataFrame,
-        dt_column: str = "_datetime",
-        drop_nan: bool = True,
-        sort: bool = True,
-        drop_duplicates: bool = True,
-        drop_future: bool = True,
-        verbose: bool = True,
+        self,
     ) -> pd.DataFrame:
-        """_summary_
-        Set a datetime column as the index of the DataFrame
-        Args:
-            data (pd.DataFrame): data
-            dt_column (str, optional): Name of the datetime column. Defaults to "_datetime".
-            drop_nan (bool, optional): Drop invalid datetimes. Defaults to True.
-            sort (bool, optional): Sort the index. Defaults to True.
-            drop_duplicates (bool, optional): Drop duplicate datetimes. Defaults to True.
-            drop_future (bool, optional): Drop datetimes in the future. Defaults to True.
-            verbose (bool, optional): Report about droppings. Defaults to True.
+        """
+        Sets a datetime column as the index of the contained DataFrame
 
         Returns:
             pd.DataFrame: data with a DatetimeIndex
         """
 
-        # Quality checks
-        len_0 = len(data)
-        if drop_nan:
-            # Remove NaT
-            data = data.dropna(subset=[dt_column])
-
-        # Set as index
-        data.set_index(dt_column, inplace=True)
-
-        if sort:
-            data = data.sort_index()
-
-        len_1 = len(data)
-        if drop_duplicates:
-            data = data[~data.index.duplicated(keep="first")]
-
-        len_2 = len(data)
-        if drop_future:
-            # remove dates in the future
-            data = data[
-                data.index <= datetime.now(timezone.utc) + timedelta(1)
-            ]
-
-        len_3 = len(data)
-        if verbose and 0 < len_0 - len_1 + len_1 - len_2 + len_2 - len_3:
-            print(
-                "i Dropped indices: {:} invalid, {:} duplicated, {:} in the future.".format(
-                    len_0 - len_1, len_1 - len_2, len_2 - len_3
-                )
-            )
-        return data
+        date_time_column = self.extract_datetime_column()
+        date_time_column = self.convert_time_zone()
+        self.data_frame.index = date_time_column
 
     def dataframe_to_numeric(
         data: pd.DataFrame,
-        decimal: str = ".",
     ):
-        """_summary_
+        """
         Convert DataFrame to numeric values
 
         Args:
@@ -705,3 +751,101 @@ class FormatDataForCRNSDataHub:
         data = data.apply(pd.to_numeric, errors="coerce")
 
         return data
+
+
+class TimeStampAligner:
+    """
+    Uses routines from SaQC to align the time stamps of the data to a
+    common set. When data is read in it is added to an SaQC object which
+    is stored as an internal feature. Data can then be aligned and
+    converted back to a pd.DataFrame.
+
+    Example
+    -------
+    >>> import pandas as pd
+    >>> from neptoon.data_ingest_and_formatting.timestamp_alignment import (
+    ...    TimeStampAligner
+    ... )
+    >>> data = {'value': [1, 2, 3, 4]}
+    >>> index = pd.to_datetime(
+    ...     [
+    ...         "2021-01-01 00:04:00",
+    ...         "2021-01-01 01:10:00",
+    ...         "2021-01-01 02:05:00",
+    ...         "2021-01-01 02:58:00",
+    ...     ]
+    ... )
+    >>> df = pd.DataFrame(data, index=index)
+    >>> # Initialize the TimeStampAligner
+    >>> time_stamp_aligner = TimeStampAligner(df)
+    >>> # Align timestamps
+    >>> time_stamp_aligner.align_timestamps(method='nshift', freq='1H')
+    >>> # Get the aligned dataframe
+    >>> aligned_df = time_stamp_aligner.return_dataframe()
+    >>> print(aligned_df)
+    """
+
+    def __init__(self, data_frame: pd.DataFrame):
+        """
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame containing time series data.
+        """
+        self._validate_timestamp_index(data_frame)
+        self.data_frame = data_frame
+        self.qc = SaQC(self.data_frame, scheme="simple")
+
+    def _validate_timestamp_index(self, data_frame):
+        """
+        Checks that the index of the dataframe is timestamp (essential
+        for aligning the time stamps and using SaQC)
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            The data frame imported into the TimeStampAligner
+
+        Raises
+        ------
+        ValueError
+            If the index is not datetime type
+        """
+        if not pd.api.types.is_datetime64_any_dtype(data_frame.index):
+            raise ValueError("The DataFrame index must be of datetime type")
+
+    @log_key_step("method", "freq")
+    def align_timestamps(self, method: str = "nshift", freq: str = "1Hour"):
+        """
+        Aligns the time stamp of the SaQC feature. Will automatically do
+        this for all data columns. For more information on the values
+        for method and freq see:
+
+        https://rdm-software.pages.ufz.de/saqc/
+
+        Parameters
+        ----------
+        method : str, optional
+            Defaults to the nearest shift method to align time stamps.
+            This means data is adjusted to the nearest time stamp
+            without interpolation, by default "nshift".
+        freq : str, optional
+            The frequency of time stamps wanted, by default "1Hour"
+        """
+
+        self.qc = self.qc.align(
+            field=self.data_frame.columns, freq=freq, method=method
+        )
+
+    def return_dataframe(self):
+        """
+        Returns a pd.DataFrame from the SaQC object. Run this after
+        alignment to return the aligned dataframe
+
+        Returns
+        -------
+        df: pd.DataFrame
+            DataFrame of time series data
+        """
+        df = self.qc.data.to_pandas()
+        return df
