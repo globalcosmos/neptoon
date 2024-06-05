@@ -569,6 +569,12 @@ class ParseFilesIntoDataFrame:
 
 
 class FormatDataForCRNSDataHub:
+    """
+    TODO datetime column has two very similar version. Need to fix this.
+    TODO double check extract_datetime_column for logic
+    TODO Other formatting??
+    TODO One Click Function that compiles the formatting
+    """
 
     def __init__(
         self,
@@ -630,7 +636,7 @@ class FormatDataForCRNSDataHub:
         self,
     ) -> pd.Series:
         """
-        TODO docstring
+        TODO: docstring
 
         Create a Datetime column, merge columns if necessary.
 
@@ -733,24 +739,33 @@ class FormatDataForCRNSDataHub:
         self.data_frame.index = date_time_column
 
     def dataframe_to_numeric(
-        data: pd.DataFrame,
+        self,
     ):
         """
-        Convert DataFrame to numeric values
+        Convert DataFrame to numeric values.
 
-        Args:
-            data (pd.DataFrame): data
-            decimal (str, optional): Decimal character. Defaults to ".".
         """
         # Cases when decimal is not ., replace them by .
+        decimal = self.decimal
         decimal = decimal.strip()
         if decimal != ".":
-            data = data.apply(lambda x: x.str.replace(decimal, "."))
+            self.data_frame = self.data_frame.apply(
+                lambda x: x.str.replace(decimal, ".")
+            )
 
         # Convert all the regular columns to numeric and drop any failures
-        data = data.apply(pd.to_numeric, errors="coerce")
+        self.data_frame = self.data_frame.apply(pd.to_numeric, errors="coerce")
 
-        return data
+    def return_data_frame(self):
+        """
+        Returns the contained DataFrame
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame
+        """
+        return self.data_frame
 
 
 class TimeStampAligner:
