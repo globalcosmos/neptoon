@@ -1,10 +1,8 @@
 """
-load_data function will be a big logic heavy function to abstract away a
-lot of internal checks. The idea is that the same function is used.
 """
 
 import os
-import pandas
+import pandas as pd
 import tarfile
 import zipfile
 import io
@@ -31,13 +29,31 @@ class ManageFileCollection:
     >>> file_manager.get_list_of_files()
     """
 
-    def __init__(self, data_location: Union[str, Path], prefix=None):
+    def __init__(
+        self,
+        data_location: Union[str, Path],
+        prefix=None,
+        encoding="cp850",
+        skip_lines: int = 0,
+        seperator: str = ",",
+        decimal: str = ".",
+        parser_kw: dict = dict(
+            # These could be defined in a specific YAML file
+            strip_left=True,
+            digit_first=True,
+        ),
+    ):
         self._data_location = self._validate_and_convert_data_location(
             data_location=data_location
         )
-        self.files = []
         self._prefix = prefix
+        self._encoding = encoding
+        self._skip_lines = skip_lines
+        self._parser_kw = parser_kw
+        self._seperator = seperator
+        self._decimal = decimal
         self._source_type = None
+        self.files = []
 
         # init functions
         self._determine_source_type()
@@ -49,6 +65,26 @@ class ManageFileCollection:
     @property
     def prefix(self):
         return self._prefix
+
+    @property
+    def encoding(self):
+        return self._encoding
+
+    @property
+    def decimal(self):
+        return self._decimal
+
+    @property
+    def skip_lines(self):
+        return self._skip_lines
+
+    @property
+    def parser_kw(self):
+        return self._parser_kw
+
+    @property
+    def seperator(self):
+        return self._seperator
 
     @property
     def source_type(self):
@@ -246,131 +282,10 @@ class ParseFilesIntoDataFrame:
     def __init__(self, file_manager: ManageFileCollection):
         self.file_manager = file_manager
 
-    def parse_file_line(
-        self,
-        line: str,
-        encoding: str = "cp850",
-        strip_left: bool = True,
-        digit_first: bool = True,
-    ) -> str:
-        """_summary_
-        Parses a single line
-
-        Args:
-            line (str): line of potential data
-            encoding (str, optional): How to decode. Defaults to "cp850".
-            strip_left (bool, optional): Remove starting spaces. Defaults to True.
-            digit_first (bool, optional): Valid data always starts with a digit. Defaults to True.
-
-        Returns:
-            str: a valid line or an empty string
-        """
-        if strip_left:
-            line = line.lstrip()
-
-        if isinstance(line, bytes) and encoding != "":
-            line = line.decode(encoding, errors="ignore")
-
-        # If the line starts with a number, it likely is actual data
-        if digit_first and not line[:1].isdigit():
-            return ""
-
-        return line
-
-    def guess_header(
-        folder_or_archive: str,
-        filename: str,
-        encoding: str = "cp850",
-        sep: str = ",",
-        skip_lines: int = 0,
-        startswith: any = "",
-        multiheader: bool = False,  # look for multiple lines
-        strip_names: bool = True,
-        remove_prefix: str = "//",
-    ) -> list:
-        """_summary_
-        Reads a file and tries to find the column headers.
-
-        Args:
-            folder_or_archive (str): folder path or archive filename
-            filename (str): name of the file to read
-            encoding (str, optional): how to decode. Defaults to "cp850".
-            sep (str, optional): column separator. Defaults to ",".
-            skip_lines (int, optional): lines to skip from top. Defaults to 0.
-            startswith (any, optional): headers start with a string, can be a list of multiple strings. Defaults to "".
-            multiheader (bool, optional): look for more than one headers which will eventually be joined. Defaults to False.
-
-        Returns:
-            list: List of column names
-        """
-        # Check for folder or archive
-        folder = None
-        archive = None
-        if os.path.isdir(folder_or_archive):
-            folder = folder_or_archive
-        elif tarfile.is_tarfile(folder_or_archive):
-            archive = tarfile.TarFile(folder_or_archive, "r")
-        elif zipfile.is_zipfile(folder_or_archive):
-            archive = zipfile.ZipFile(folder_or_archive, "r")
-        else:
-            # TODO logging?
-            print(
-                "! Cannot read files, the source is neither a folder nor an archive."
-            )
-            return ""
-
-        # Open file in either folder or archive
-        with (
-            archive.open(filename, "r")
-            if archive
-            else open(Path(folder) / filename, encoding=encoding)
-        ) as file:
-
-            # Skip first lines
-            for _ in range(skip_lines):
-                next(file)  # seek to next line
-
-            # Look for header lines
-            headers = []
-            for line in file:
-                if sep in line:
-                    # headers must contain at least one separator
-
-                    if line.startswith(startswith):
-                        # headers must start with certain letters
-                        # Uses the first line if no letter given
-
-                        headers.append(line)
-
-                        if not multiheader:
-                            # Stops after first found header, else browse the whole file
-                            break
-
-        # Join multiheaders and create a joint list
-        header_line = sep.join(headers)
-        header_list = header_line.split(sep)
-        if strip_names:
-            # Remove spaces around names
-            header_list = [s.strip() for s in header_list]
-        if remove_prefix != "":
-            # Remove spaces around names
-            header_list = [s.removeprefix(remove_prefix) for s in header_list]
-
-        return header_list
-
     def merge_files(
-        folder_or_archive: str,
-        files: list,
-        encoding: str = "cp850",
-        skip_lines: int = 0,
-        verbose: bool = True,
-        parser_kw: dict = dict(
-            # These could be defined in a specific YAML file
-            strip_left=True,
-            digit_first=True,
-        ),
+        self,
     ) -> str:
-        """_summary_
+        """
         Reads all selected files in a folder or archive,
         applies a basic parsing of the lines using `parse_file_line()`,
         and merges all valid lines into a single large data string.
@@ -389,83 +304,191 @@ class ParseFilesIntoDataFrame:
         Example:
             merge_files("archive.zip", ["a.csv", "b.csv"])
         """
-
-        # Check for folder or archive
-        folder = None
-        archive = None
-
         data_str = ""
-        len_files = len(files)
-        i = 0
+        for filename in self.file_manager.files:
+            data_str += self._process_file(filename)
 
-        # Loop through filtered files
-        for filename in files:
-            if verbose:
-                print(
-                    "> {:3.0f}%, {:}".format(i / len_files * 100, filename),
-                    end="\r",
+    def _process_file(self, filename):
+        """_summary_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+        data_str = ""
+
+        with self._open_file(filename, self.data_manager.encoding) as file:
+
+            for _ in range(self.data_manager.skip_lines):
+                next(file)
+            for line in file:
+                data_str += self._parse_file_line(
+                    line,
                 )
-
-            # Open file in either folder or archive
-            with (
-                archive.open(filename, "r")
-                if archive
-                else open(Path(folder) / filename, encoding=encoding)
-            ) as file:
-
-                # Skip first lines
-                for _ in range(skip_lines):
-                    next(file)  # seek to next line
-
-                # Parse the remaining lines
-                for line in file:
-                    data_str += parse_file_line(line, encoding, **parser_kw)
-            i += 1
-
-        if archive:
-            archive.close()
-
-        if verbose:
-            len_filenames = len(max(files, key=len))
-            print("> 100%  {:}".format(" " * len_filenames))
 
         return data_str
 
+    def _open_file(self, filename):
+        """
+        Opens an individual file from either a folder, zipfile, or
+        tarfile.
+
+        Parameters
+        ----------
+        filename : str
+            The filename to be opened
+        encoding : str
+            Encoding of the file
+
+        Returns
+        -------
+        file
+            returns the open file
+        """
+
+        if self.data_manager.source_type == "folder":
+            return open(
+                self.data_manager.data_location / filename,
+                encoding=self.file_manager.encoding,
+            )
+        elif self.data_manager.source_type == "tarfile":
+            archive = tarfile.open(self.file_manager.data_location, "r")
+            return archive.extractfile(filename)
+        elif self.data_manager.source_type == "zipfile":
+            archive = zipfile.ZipFile(self.file_manager.data_location, "r")
+            return archive.open(filename)
+        else:
+            message = (
+                "Unsupported data type at source folder. It must be "
+                "a folder, zipfile, or tarfile."
+            )
+            core_logger.error(message)
+
+    def _parse_file_line(
+        self,
+        line: str,
+    ) -> str:
+        """
+        Parses a single line
+
+        Args:
+            line (str): line of potential data
+            encoding (str, optional): How to decode. Defaults to "cp850".
+            strip_left (bool, optional): Remove starting spaces. Defaults to True.
+            digit_first (bool, optional): Valid data always starts with a digit. Defaults to True.
+
+        Returns:
+            str: a valid line or an empty string
+        """
+        if self.file_manager.parser_kw["strip_left"]:
+            line = line.lstrip()
+
+        if isinstance(line, bytes) and self.data_manager.encoding != "":
+            line = line.decode(self.data_manager.encoding, errors="ignore")
+
+        # If the line starts with a number, it likely is actual data
+        if (
+            self.file_manager.parser_kw["digit_first"]
+            and not line[:1].isdigit()
+        ):
+            return ""
+
+        return line
+
+    def infer_column_names(
+        self,
+        filename: str,
+        startswith: any = "",
+        multiheader: bool = False,  # look for multiple lines
+        strip_names: bool = True,
+        remove_prefix: str = "//",
+    ) -> list:
+        """
+        Reads a file and tries to infer the column headers.
+
+        Parameters
+        ----------
+        filename : str
+            name of the file to read
+        seperator : str, optional
+            column separator, by default ","
+        startswith : any, optional
+            headers start with a string, can be a list of multiple
+            strings. by default ""
+        multiheader : bool, optional
+            look for more than one headers which will eventually be
+            joined, by default False
+        remove_prefix : str, optional
+            _description_, by default "//"
+
+        Returns
+        -------
+        list
+            List of column names
+        """
+        # Open file in either folder or archive
+        with self._open_file(
+            self.file_manager.files[0], self.data_manager.encoding
+        ) as file:
+
+            for _ in range(self.file_manager.skip_lines):
+                next(file)
+
+            headers = []
+            for line in file:
+                if self.file_manager.seperator in line:
+                    # headers must contain at least one separator
+
+                    if line.startswith(startswith):
+                        # headers must start with certain letters
+                        # Uses the first line if no letter given
+
+                        headers.append(line)
+
+                        if not multiheader:
+                            # Stops after first found header, else browse the whole file
+                            break
+
+        # Join multiheaders and create a joint list
+        header_line = self.file_manager.seperator.join(headers)
+        header_list = header_line.split(self.file_manager.seperator)
+        if strip_names:
+            header_list = [s.strip() for s in header_list]
+        if remove_prefix != "":
+            header_list = [s.removeprefix(remove_prefix) for s in header_list]
+
+        return header_list
+
     def make_dataframe(
+        self,
         data_str: str,
         column_names: list = None,
-        encoding: str = "cp850",
-        skip_lines: int = 0,
         skipinitialspace: bool = True,
-        seperator: str = ",",
-        decimal: str = ".",
-    ) -> pandas.DataFrame:
-        """_summary_
+    ) -> pd.DataFrame:
+        """
         Reads in a string and converts it to a DataFrame.
 
         Args:
             data_str (str): A multiline string previously read from merged files.
             column_names (list, optional): Names of the columns. Defaults to None.
-            encoding (str, optional): How to decode. Defaults to "cp850".
-            skip_lines (int, optional): Skip lines from top. Defaults to 0.
             skipinitialspace (bool, optional): Skip initial spaces. Defaults to True.
-            sep (str, optional): Column separator. Defaults to ",".
-            decimal (str, optional): Decimal character. Defaults to ".".
 
         Returns:
-            pandas.DataFrame: DataFrame
+            pd.DataFrame: DataFrame
         """
-
+        if column_names is None:
+            column_names = self.infer_column_names()
         # Convert string to DataFrame
-        data = pandas.read_csv(
+        data = pd.read_csv(
             io.StringIO(data_str),
             names=column_names,
-            encoding=encoding,
-            skiprows=skip_lines,
+            encoding=self.file_manager.encoding,
+            skiprows=self.file_manager.skip_lines,
             skipinitialspace=skipinitialspace,
-            sep=seperator,
+            sep=self.file_manager.seperator,
             decimal=decimal,
-            on_bad_lines="skip",  # ignore all lines will bad columns
+            on_bad_lines="skip",  # ignore all lines with bad columns
             dtype=object,  # Allows for reading strings
         )
 
@@ -475,20 +498,19 @@ class ParseFilesIntoDataFrame:
 class FormatDataForCRNSDataHub:
 
     def make_datetime(
-        data: pandas.DataFrame,
+        data: pd.DataFrame,
         columns=0,  # Can be int, column_name, or a list these
         fmt: str = None,
         tz: str = "utc",
         tz_convert: str = "utc",
         timestamp: bool = False,
         dt_column: str = "_datetime",
-        # **datetime_kw # pass any parameters to pandas_to_datetime
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """_summary_
         Create a Datetime column, merge columns if necessary.
 
         Args:
-            data (pandas.DataFrame): data
+            data (pd.DataFrame): data
             columns (int, optional): column index, column name, or list of these. Defaults to 0.
             fmt (str, optional): Datetime format, or guess. Defaults to None.
             tz (str, optional): Initial time zone. Defaults to "utc".
@@ -497,7 +519,7 @@ class FormatDataForCRNSDataHub:
             dt_column (str, optional): New datetime column name. Defaults to "_datetime".
 
         Returns:
-            pandas.DataFrame: data including a Datetime column.
+            pd.DataFrame: data including a Datetime column.
         """
         # Define the index column
         if isinstance(columns, int):
@@ -517,7 +539,7 @@ class FormatDataForCRNSDataHub:
                 lambda x: "{} {}".format(x[0], x[1]), axis=1
             )
 
-        data[dt_column] = pandas.to_datetime(
+        data[dt_column] = pd.to_datetime(
             dt_series,
             errors="coerce",
             unit="s" if timestamp else None,
@@ -535,18 +557,18 @@ class FormatDataForCRNSDataHub:
         return data
 
     def datetime_as_index(
-        data: pandas.DataFrame,
+        data: pd.DataFrame,
         dt_column: str = "_datetime",
         drop_nan: bool = True,
         sort: bool = True,
         drop_duplicates: bool = True,
         drop_future: bool = True,
         verbose: bool = True,
-    ) -> pandas.DataFrame:
+    ) -> pd.DataFrame:
         """_summary_
         Set a datetime column as the index of the DataFrame
         Args:
-            data (pandas.DataFrame): data
+            data (pd.DataFrame): data
             dt_column (str, optional): Name of the datetime column. Defaults to "_datetime".
             drop_nan (bool, optional): Drop invalid datetimes. Defaults to True.
             sort (bool, optional): Sort the index. Defaults to True.
@@ -555,7 +577,7 @@ class FormatDataForCRNSDataHub:
             verbose (bool, optional): Report about droppings. Defaults to True.
 
         Returns:
-            pandas.DataFrame: data with a DatetimeIndex
+            pd.DataFrame: data with a DatetimeIndex
         """
 
         # Quality checks
@@ -591,14 +613,14 @@ class FormatDataForCRNSDataHub:
         return data
 
     def dataframe_to_numeric(
-        data: pandas.DataFrame,
+        data: pd.DataFrame,
         decimal: str = ".",
     ):
         """_summary_
         Convert DataFrame to numeric values
 
         Args:
-            data (pandas.DataFrame): data
+            data (pd.DataFrame): data
             decimal (str, optional): Decimal character. Defaults to ".".
         """
         # Cases when decimal is not ., replace them by .
@@ -607,6 +629,6 @@ class FormatDataForCRNSDataHub:
             data = data.apply(lambda x: x.str.replace(decimal, "."))
 
         # Convert all the regular columns to numeric and drop any failures
-        data = data.apply(pandas.to_numeric, errors="coerce")
+        data = data.apply(pd.to_numeric, errors="coerce")
 
         return data
