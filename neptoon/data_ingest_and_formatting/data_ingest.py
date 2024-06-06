@@ -352,7 +352,14 @@ class ParseFilesIntoDataFrame:
     >>> df = file_parser.make_dataframe()
     """
 
-    def __init__(self, file_manager: ManageFileCollection):
+    def __init__(
+        self,
+        file_manager: ManageFileCollection,
+        startswith: any = "",
+        multiheader: bool = False,  # look for multiple lines
+        strip_names: bool = True,
+        remove_prefix: str = "//",
+    ):
         """
         Initialisation files.
 
@@ -360,8 +367,35 @@ class ParseFilesIntoDataFrame:
         ----------
         file_manager : ManageFileCollection
             An instance fo the ManageFileCollection class
+        seperator : str, optional
+            column separator, by default ","
+        startswith : any, optional
+            headers start with a string, can be a list of multiple
+            strings. by default ""
+        multiheader : bool, optional
+            look for more than one headers which will eventually be
+            joined, by default False
+        remove_prefix : str, optional
+            remove first characters of a line, by default "//"
         """
         self.file_manager = file_manager
+        self._startswith = startswith
+        self._multiheader = multiheader
+        self._strip_names = strip_names
+        self._remove_prefix = remove_prefix
+
+    @property
+    def startswith(self):
+        return self._startswith
+    @property
+    def multiheader(self):
+        return self._multiheader
+    @property
+    def strip_names(self):
+        return self._strip_names
+    @property
+    def remove_prefix(self):
+        return self._remove_prefix
 
     def make_dataframe(
         self,
@@ -382,7 +416,8 @@ class ParseFilesIntoDataFrame:
             DataFrame with all data
         """
         if column_names is None:
-            column_names = self.infer_column_names()
+            column_names = self._infer_column_names()
+
         data_str = self.merge_files()
         data = pd.read_csv(
             io.StringIO(data_str),
@@ -393,7 +428,7 @@ class ParseFilesIntoDataFrame:
             sep=self.file_manager.seperator,
             decimal=self.file_manager.decimal,
             on_bad_lines="skip",  # ignore all lines with bad columns
-            # dtype=object,  # Allows for reading strings
+            dtype=object,  # Allows for reading strings
         )
 
         return data
@@ -506,10 +541,6 @@ class ParseFilesIntoDataFrame:
 
     def _infer_column_names(
         self,
-        startswith: any = "",
-        multiheader: bool = False,  # look for multiple lines
-        strip_names: bool = True,
-        remove_prefix: str = "//",
     ) -> list:
         """
         Reads a file and tries to infer the column headers.
@@ -518,16 +549,6 @@ class ParseFilesIntoDataFrame:
         ----------
         filename : str
             name of the file to read
-        seperator : str, optional
-            column separator, by default ","
-        startswith : any, optional
-            headers start with a string, can be a list of multiple
-            strings. by default ""
-        multiheader : bool, optional
-            look for more than one headers which will eventually be
-            joined, by default False
-        remove_prefix : str, optional
-            _description_, by default "//"
 
         Returns
         -------
@@ -547,26 +568,35 @@ class ParseFilesIntoDataFrame:
                 if self.file_manager.seperator in line:
                     # headers must contain at least one separator
 
-                    if line.startswith(startswith):
+                    if line.startswith(self.startswith):
                         # headers must start with certain letters
                         # Uses the first line if no letter given
 
                         headers.append(line)
 
-                        if not multiheader:
+                        if not self.multiheader:
                             # Stops after first found header, else browse the whole file
                             break
 
         # Join multiheaders and create a joint list
         header_line = self.file_manager.seperator.join(headers)
         header_list = header_line.split(self.file_manager.seperator)
-        if strip_names:
+        if self.strip_names:
             header_list = [s.strip() for s in header_list]
-        if remove_prefix != "":
-            header_list = [s.removeprefix(remove_prefix) for s in header_list]
+        if self.remove_prefix != "":
+            header_list = [s.removeprefix(self.remove_prefix) for s in header_list]
 
         return header_list
 
+# Concept
+# formatter = FormatDataForCRNSDataHub(df)
+# formatter.format_data_frame()
+# df = formatter.return_data_frame()
+# formats reduces the df to the main columns, use this column, average those columns
+# crnsdatahub = CRNSDataHub(df) # expectes certain format
+# validation
+# quality checks
+# crnsdatahub.align_time()
 
 class FormatDataForCRNSDataHub:
     """
