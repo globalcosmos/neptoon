@@ -191,7 +191,7 @@ class DataQualityAssessor:
 
     """
 
-    def __init__(self, data_frame: pd.DataFrame, saqc_scheme: str = "scheme"):
+    def __init__(self, data_frame: pd.DataFrame, saqc_scheme: str = "simple"):
         """
         Parameters
         ----------
@@ -231,22 +231,31 @@ class DataQualityAssessor:
     def add_quality_check(self, check: QualityCheck):
         self.builder.add_check(check)
 
+    def import_checks_from_config(self):
+        """
+        Here could be a function for building the quality checks from a
+        supplied config file
+        """
+        pass
+
     def output_data(self):
-        """_summary_
+        """
+        Returns the timeseries DataFrame
 
         Returns
         -------
-        _type_
-            _description_
+        pd.DataFrame
+            The main DataFrame
         """
         return self.qc.data.to_pandas()
 
     def output_flags(self):
-        """_summary_
+        """
+        Returns the flag dataframe
 
         Returns
         -------
-        _type_
-            _description_
+        pd.DataFrame
+            The DataFrame with assigned flags
         """
         return self.qc.flags.to_pandas()
