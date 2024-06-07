@@ -161,7 +161,45 @@ class FlagBelowMinimumPercentN0(QualityCheck):
         )
 
 
-# class FlagSpikeDetection
+class FlagSpikeDetectionUniLOF(QualityCheck):
+    """
+    Build the flag routine to detect outliers
+
+    Returns
+    -------
+    SaQC
+        SaQC object with flags
+    """
+
+    @log_key_step("column_name", "periods_in_calculation", "threshold")
+    def __init__(
+        self,
+        column_name: str,
+        periods_in_calculation: int = 24,
+        threshold: float = 1.5,
+    ):
+        """
+        Initialisation parameters
+
+        Parameters
+        ----------
+        column_name : str
+            Name of the column to flag
+        periods_in_calculation : int
+            Number of nearest neightbours to calculate flagging
+        threshold : float
+            Threshold value (default 1.5 based on SaQC recommendation)
+        """
+        self.column = column_name
+        self.periods_in_calculation = periods_in_calculation
+        self.threshold = threshold
+
+    def apply(self, qc=SaQC):
+        return qc.flagUniLOF(
+            self.column,
+            n=self.periods_in_calculation,
+            thresh=self.threshold,
+        )
 
 
 class QualityAssessmentFlagBuilder:

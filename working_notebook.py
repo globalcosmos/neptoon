@@ -182,6 +182,7 @@ from neptoon.quality_assesment.quality_assesment import (
     FlagNeutronGreaterThanN0,
     FlagBelowMinimumPercentN0,
     DataQualityAssessor,
+    FlagSpikeDetectionUniLOF,
 )
 
 assessor = DataQualityAssessor(data_hub.crns_data_frame, saqc_scheme="simple")
@@ -200,10 +201,15 @@ assessor.add_quality_check(
         "epithermal_neutrons", N0=2000, percent_minimum=0.3
     )
 )
+
+assessor.add_quality_check(
+    FlagSpikeDetectionUniLOF("epithermal_neutrons", threshold=1.5)
+)
 FlagNeutronGreaterThanN0.apply
 assessor.apply_quality_assessment()
 # assessor.output_data()
 tmp = assessor.output_flags()
+assessor.qc.plot("epithermal_neutrons")
 
 
 # crns_data
