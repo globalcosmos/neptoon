@@ -209,7 +209,6 @@ FlagNeutronGreaterThanN0.apply
 assessor.apply_quality_assessment()
 # assessor.output_data()
 tmp = assessor.output_flags()
-assessor.qc.plot("epithermal_neutrons")
 
 
 # crns_data

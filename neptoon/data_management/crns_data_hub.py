@@ -110,6 +110,21 @@ class CRNSDataHub:
             core_logger.error(validation_error_message)
             print(validation_error_message)
 
+    def flag_data(self, pre_made_flag_scheme=None, self_made_flag_system=None):
+        """
+        Flags data based on quality assessment. A user can supply a
+        DataQualityAssessment object that has been built, or they can
+        select a pre made flag scheme from the selection.
+
+        Parameters
+        ----------
+        pre_made_flag_scheme : _type_, optional
+            _description_, by default None
+        self_made_flag_system : _type_, optional
+            _description_, by default None
+        """
+        pass
+
     def replace_dataframe(self, dataframe):
         """
         Function to replace the dataframe when manual adjustments have
@@ -163,18 +178,6 @@ class CRNSDataHub:
             _description_
         file_name : _type_
             _description_
-        """
-
-    def save_data_audit_log(self, folder_path, file_name):
-        """
-        Output the DataAuditLog into a YAML format for human reading
-
-        Parameters
-        ----------
-        folder_path : str
-            Path to folder where it should be saved
-        file_name : str
-            Desired name of the file
         """
         pass
 
