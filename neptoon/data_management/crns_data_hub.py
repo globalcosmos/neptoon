@@ -3,6 +3,9 @@ from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.data_management.data_validation_tables import (
     FormatCheck,
 )
+from neptoon.quality_assesment.quality_assesment import (
+    QualityAssessmentFlagBuilder,
+)
 from saqc import SaQC
 from neptoon.logging import get_logger
 
@@ -110,7 +113,27 @@ class CRNSDataHub:
             core_logger.error(validation_error_message)
             print(validation_error_message)
 
-    def flag_data(self, pre_made_flag_scheme=None, self_made_flag_system=None):
+    def apply_quality_flags_config(self):
+        """
+        Flags data based on quality assessment. A user can supply a
+        DataQualityAssessment object that has been built, or they can
+        select a pre made flag scheme from the selection.
+
+        Parameters
+        ----------
+        pre_made_flag_scheme : _type_, optional
+            _description_, by default None
+        self_made_flag_system : _type_, optional
+            _description_, by default None
+        """
+        # check config exists in object
+        # compile flag_builder using config object
+        # apply flags
+        pass
+
+    def apply_quality_flags_custom(
+        self, flag_builder: QualityAssessmentFlagBuilder
+    ):
         """
         Flags data based on quality assessment. A user can supply a
         DataQualityAssessment object that has been built, or they can
@@ -125,20 +148,17 @@ class CRNSDataHub:
         """
         pass
 
-    def replace_dataframe(self, dataframe):
-        """
-        Function to replace the dataframe when manual adjustments have
-        been made. Not recommended for general processing, but can be
-        used when testing new features or theories.
+    def apply_quality_flags_default(self):
+        # Apply QA flags based on
+        pass
 
-        TODO: How does this impact uncertainty/flags??
-        CHANGES MUST BE CHECKED
+    def correct_neutrons_config(self):
+        pass
 
-        Parameters
-        ----------
-        dataframe : pd.DataFrame
-            DataFrame that has been changed and you wish to replace
-        """
+    def correct_neutrons_custom(self):
+        pass
+
+    def correct_neutrons_default(self):
         pass
 
     def return_cleaned_dataframe(self):
@@ -210,3 +230,19 @@ class CRNSDataHub:
                 "Source must be either a DataFrame or a dictionary"
             )
         self.crns_data_frame[new_column_name] = mapped_data
+
+    def replace_dataframe(self, dataframe):
+        """
+        Function to replace the dataframe when manual adjustments have
+        been made. Not recommended for general processing, but can be
+        used when testing new features or theories.
+
+        TODO: How does this impact uncertainty/flags??
+        CHANGES MUST BE CHECKED
+
+        Parameters
+        ----------
+        dataframe : pd.DataFrame
+            DataFrame that has been changed and you wish to replace
+        """
+        pass

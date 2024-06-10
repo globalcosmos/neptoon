@@ -229,7 +229,12 @@ class DataQualityAssessor:
 
     """
 
-    def __init__(self, data_frame: pd.DataFrame, saqc_scheme: str = "simple"):
+    def __init__(
+        self,
+        data_frame: pd.DataFrame,
+        saqc_scheme: str = "simple",
+        saqc: SaQC = None,
+    ):
         """
         Parameters
         ----------
@@ -239,8 +244,30 @@ class DataQualityAssessor:
         DateTimeIndexValidator(data_frame=data_frame)
         self.data_frame = data_frame
         self.saqc_scheme = saqc_scheme
-        self.qc = SaQC(self.data_frame, scheme=self.saqc_scheme)
         self.builder = QualityAssessmentFlagBuilder()
+        self._check_for_saqc(saqc)
+
+    def _check_for_saqc(self, saqc):
+        """
+        Checks the saqc object. If None provided it will create one,
+        otherwise it will use the supplied SaQC object.
+
+        Parameters
+        ----------
+        saqc : SaQC | None
+            An SaQC object or None
+        """
+        if saqc == None:
+            self.qc = SaQC(self.data_frame, scheme=self.saqc_scheme)
+        elif isinstance(saqc, SaQC):
+            self.qc = saqc
+        else:
+            message = (
+                f"{saqc} does not appear to be an SaQC object."
+                " Please leave saqc as blank or import an SaQC object"
+            )
+            core_logger.error(message)
+            print(message)
 
     def change_saqc_scheme(self, scheme: str):
         """
