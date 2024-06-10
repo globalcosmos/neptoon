@@ -259,7 +259,7 @@ class DataQualityAssessor:
         saqc : SaQC | None
             An SaQC object or None
         """
-        if saqc == None:
+        if saqc is None:
             self.qc = SaQC(self.data_frame, scheme=self.saqc_scheme)
         elif isinstance(saqc, SaQC):
             self.qc = saqc
@@ -306,11 +306,14 @@ class DataQualityAssessor:
         """
         self.builder.add_check(check)
 
-    def import_checks_from_config(self):
+    def import_checks_from_config(self, config):
         """
         Here could be a function for building the quality checks from a
         supplied config file
         """
+        # Check config has correct values
+        # Build Flag Builder
+        # Apply flags
         pass
 
     def output_data(self):

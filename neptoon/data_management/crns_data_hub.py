@@ -7,7 +7,7 @@ from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
-from saqc import SaQC
+
 from neptoon.logging import get_logger
 
 core_logger = get_logger()
@@ -135,19 +135,30 @@ class CRNSDataHub:
         self,
         custom_flags: QualityAssessmentFlagBuilder = None,
         flags_from_config: bool = False,
+        flags_default: str = None,
     ):
         """
         Flags data based on quality assessment. A user can supply a
-        DataQualityAssessment object that has been built, or they can
-        select a pre made flag scheme from the selection.
+        QualityAssessmentFlagBuilder object that has been custom built,
+        they can flag from the config file (if supplied), or they can
+        choose a standard
 
         Parameters
         ----------
-        pre_made_flag_scheme : _type_, optional
-            _description_, by default None
-        self_made_flag_system : _type_, optional
-            _description_, by default None
+        custom_flags : QualityAssessmentFlagBuilder, optional
+            A custom built set of Flags , by default None
+        flags_from_config : bool, optional
+            State if to conduct QA using config supplied configuration,
+            by default False
+        flags_default : str, optional
+            A string representing a default version of flagging, by
+            default None
         """
+        if self.quality_assessor is None:
+            self.quality_assessor = DataQualityAssessor(
+                data_frame=self.crns_data_frame
+            )
+
         # if flags_from_config:
         # check config flags section is complete
         # compile flag_builder using config object
@@ -160,30 +171,10 @@ class CRNSDataHub:
         # self.flags_data_frame = assessor.output_flags()
         pass
 
-    def apply_quality_flags_custom(
-        self, flag_builder: QualityAssessmentFlagBuilder
-    ):
-        """
-        Flags data based on quality assessment. A user can supply a
-        DataQualityAssessment object that has been built, or they can
-        select a pre made flag scheme from the selection.
-
-        Parameters
-        ----------
-        pre_made_flag_scheme : _type_, optional
-            _description_, by default None
-        self_made_flag_system : _type_, optional
-            _description_, by default None
-        """
-        assessor = DataQualityAssessor(
-            data_frame=self.crns_data_frame, saqc=self.quality_assessor
-        )
-        assessor.apply_quality_flags_custom
-
     def correct_neutrons(self):
         pass
 
-    def calculate_theta(self):
+    def produce_soil_moisture_estimates(self):
         pass
 
     def mask_flagged_data(self):
