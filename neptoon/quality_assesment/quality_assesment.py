@@ -211,8 +211,10 @@ class QualityAssessmentFlagBuilder:
     def __init__(self):
         self.checks = []
 
-    def add_check(self, check: QualityCheck):
-        self.checks.append(check)
+    def add_check(self, *checks):
+        for check in checks:
+            if isinstance(check, QualityCheck):
+                self.checks.append(check)
         return self
 
     def apply_checks(self, qc):
@@ -293,7 +295,15 @@ class DataQualityAssessor:
     def apply_quality_assessment(self):
         self.qc = self.builder.apply_checks(self.qc)
 
-    def add_quality_check(self, check: QualityCheck):
+    def add_quality_check(self, check):
+        """
+        Can be a check or a list of checks
+
+        Parameters
+        ----------
+        check : QualityCheck | List of QualityCheck
+            Quality checks
+        """
         self.builder.add_check(check)
 
     def import_checks_from_config(self):

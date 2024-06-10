@@ -148,13 +148,16 @@ class CRNSDataHub:
         self_made_flag_system : _type_, optional
             _description_, by default None
         """
-        # if config_present:
-        # check config exists in object
+        # if flags_from_config:
+        # check config flags section is complete
         # compile flag_builder using config object
         # apply flags
 
         # if custom_flags:
-        #
+        # self.quality_assessor(custom_flags)
+        # self.quality_assessor.apply_quality_assessment()
+
+        # self.flags_data_frame = assessor.output_flags()
         pass
 
     def apply_quality_flags_custom(
