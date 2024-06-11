@@ -246,8 +246,26 @@ class DataQualityAssessor:
         DateTimeIndexValidator(data_frame=data_frame)
         self.data_frame = data_frame
         self.saqc_scheme = saqc_scheme
-        self.builder = QualityAssessmentFlagBuilder()
+        self._builder = QualityAssessmentFlagBuilder()
         self._check_for_saqc(saqc)
+
+        @property
+        def builder(self):
+            return self._builder
+
+        @builder.setter
+        def builder(self, builder: QualityAssessmentFlagBuilder):
+            """
+            Enforce the self.builder to be a QualityAssessmentFlagBuilder.
+            """
+            if not isinstance(builder, QualityAssessmentFlagBuilder):
+                message = (
+                    "Expected QualityAssessmentFlagBuilder, "
+                    f" got {type(builder).__name__}"
+                )
+                core_logger.error(message)
+                raise ValueError(message)
+            self._builder = builder
 
     def _check_for_saqc(self, saqc):
         """
@@ -295,6 +313,17 @@ class DataQualityAssessor:
     def apply_quality_assessment(self):
         self.qc = self.builder.apply_checks(self.qc)
 
+    def add_custom_flag_builder(self, builder: QualityAssessmentFlagBuilder):
+        """
+        Add a custom built flag builder to the object.
+
+        Parameters
+        ----------
+        builder : QualityAssessmentFlagBuilder
+            A flag builder - presumed to be pre-constructed
+        """
+        self.builder = builder
+
     def add_quality_check(self, check):
         """
         Can be a check or a list of checks
@@ -316,9 +345,14 @@ class DataQualityAssessor:
         # Apply flags
         pass
 
-    def output_data(self):
+    def return_data_frame(self):
         """
-        Returns the timeseries DataFrame
+        Returns the timeseries DataFrame.
+
+        TODO:
+            - Placeholder as currently don't change the DF in
+              CRNSDataHub
+            - Should decide if to remove?
 
         Returns
         -------
@@ -327,7 +361,7 @@ class DataQualityAssessor:
         """
         return self.qc.data.to_pandas()
 
-    def output_flags(self):
+    def return_flags_data_frame(self):
         """
         Returns the flag dataframe
 

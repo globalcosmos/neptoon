@@ -185,7 +185,7 @@ from neptoon.quality_assesment.quality_assesment import (
 )
 
 # Option 1
-data_hub.apply_quality_flags_config()
+# data_hub.apply_quality_flags_config()
 
 # Option 2
 qa_flags = QualityAssessmentFlagBuilder()
@@ -194,31 +194,31 @@ qa_flags.add_check(
     FlagRangeCheck("precipitation", min_val=0, max_val=20),
     # ...
 )
-data_hub.apply_quality_flags_custom(custom_checks=qa_flags)
+data_hub.apply_quality_flags(custom_flags=qa_flags)
 
 
-assessor = DataQualityAssessor(data_hub.crns_data_frame, saqc_scheme="simple")
-assessor.add_quality_check(
-    FlagRangeCheck("air_relative_humidity", min_val=50, max_val=62)
-)
-assessor.add_quality_check(
-    FlagRangeCheck("precipitation", min_val=0, max_val=20)
-)
-assessor.add_quality_check(
-    FlagNeutronGreaterThanN0("epithermal_neutrons", N0=2000)
-)
-assessor.add_quality_check(
-    FlagBelowMinimumPercentN0(
-        "epithermal_neutrons", N0=2000, percent_minimum=0.3
-    )
-)
-assessor.add_quality_check(
-    FlagSpikeDetectionUniLOF("epithermal_neutrons", threshold=1.5)
-)
-FlagNeutronGreaterThanN0.apply
-assessor.apply_quality_assessment()
-# assessor.output_data()
-tmp = assessor.output_flags()
+# assessor = DataQualityAssessor(data_hub.crns_data_frame, saqc_scheme="simple")
+# assessor.add_quality_check(
+#     FlagRangeCheck("air_relative_humidity", min_val=50, max_val=62)
+# )
+# assessor.add_quality_check(
+#     FlagRangeCheck("precipitation", min_val=0, max_val=20)
+# )
+# assessor.add_quality_check(
+#     FlagNeutronGreaterThanN0("epithermal_neutrons", N0=2000)
+# )
+# assessor.add_quality_check(
+#     FlagBelowMinimumPercentN0(
+#         "epithermal_neutrons", N0=2000, percent_minimum=0.3
+#     )
+# )
+# assessor.add_quality_check(
+#     FlagSpikeDetectionUniLOF("epithermal_neutrons", threshold=1.5)
+# )
+# FlagNeutronGreaterThanN0.apply
+# assessor.apply_quality_assessment()
+# # assessor.output_data()
+# tmp = assessor.output_flags()
 
 
 # crns_data
@@ -286,12 +286,12 @@ tmp = assessor.output_flags()
 """
 
 
-class SiteCalibrator:
-    def __init__(
-        self,
-        data_hub: CRNSDataHub,
-    ):
-        pass
+# class SiteCalibrator:
+#     def __init__(
+#         self,
+#         data_hub: CRNSDataHub,
+#     ):
+#         pass
 
 
 # def assess_data(crns_data_hub):

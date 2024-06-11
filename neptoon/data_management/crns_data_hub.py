@@ -140,8 +140,10 @@ class CRNSDataHub:
         """
         Flags data based on quality assessment. A user can supply a
         QualityAssessmentFlagBuilder object that has been custom built,
-        they can flag from the config file (if supplied), or they can
-        choose a standard
+        they can flag using the config file (if supplied), or they can
+        choose a standard flagging routine.
+
+        Everything is off by default so a user must choose.
 
         Parameters
         ----------
@@ -159,17 +161,23 @@ class CRNSDataHub:
                 data_frame=self.crns_data_frame
             )
 
-        # if flags_from_config:
-        # check config flags section is complete
-        # compile flag_builder using config object
-        # apply flags
+        if flags_from_config:
+            # validate config flags section is complete
+            # compile flag_builder using config object
+            # apply flags
+            pass
 
-        # if custom_flags:
-        # self.quality_assessor(custom_flags)
-        # self.quality_assessor.apply_quality_assessment()
+        if custom_flags:
+            self.quality_assessor.add_custom_flag_builder(custom_flags)
+            self.quality_assessor.apply_quality_assessment()
+            self.flags_data_frame = (
+                self.quality_assessor.return_flags_data_frame()
+            )
+            message = "Flagging of data complete using Custom Flags"
+            core_logger.info(message)
 
-        # self.flags_data_frame = assessor.output_flags()
-        pass
+        if flags_default:
+            pass
 
     def correct_neutrons(self):
         pass
