@@ -340,7 +340,7 @@ class DataQualityAssessor:
         Here could be a function for building the quality checks from a
         supplied config file
         """
-        # Check config has correct values
+        # Check config has correct values with pydantic validation
         # Build Flag Builder
         # Apply flags
         pass

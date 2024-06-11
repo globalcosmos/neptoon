@@ -190,8 +190,9 @@ from neptoon.quality_assesment.quality_assesment import (
 # Option 2
 qa_flags = QualityAssessmentFlagBuilder()
 qa_flags.add_check(
-    FlagRangeCheck("air_relative_humidity", min_val=50, max_val=62),
+    FlagRangeCheck("air_relative_humidity", min_val=0, max_val=100),
     FlagRangeCheck("precipitation", min_val=0, max_val=20),
+    FlagSpikeDetectionUniLOF("epithermal_neutrons"),
     # ...
 )
 data_hub.apply_quality_flags(custom_flags=qa_flags)
