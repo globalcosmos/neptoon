@@ -249,23 +249,23 @@ class DataQualityAssessor:
         self._builder = QualityAssessmentFlagBuilder()
         self._check_for_saqc(saqc)
 
-        @property
-        def builder(self):
-            return self._builder
+    @property
+    def builder(self):
+        return self._builder
 
-        @builder.setter
-        def builder(self, builder: QualityAssessmentFlagBuilder):
-            """
-            Enforce the self.builder to be a QualityAssessmentFlagBuilder.
-            """
-            if not isinstance(builder, QualityAssessmentFlagBuilder):
-                message = (
-                    "Expected QualityAssessmentFlagBuilder, "
-                    f" got {type(builder).__name__}"
-                )
-                core_logger.error(message)
-                raise ValueError(message)
-            self._builder = builder
+    @builder.setter
+    def builder(self, builder: QualityAssessmentFlagBuilder):
+        """
+        Enforce the self.builder to be a QualityAssessmentFlagBuilder.
+        """
+        if not isinstance(builder, QualityAssessmentFlagBuilder):
+            message = (
+                "Expected QualityAssessmentFlagBuilder, "
+                f" got {type(builder).__name__}"
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+        self._builder = builder
 
     def _check_for_saqc(self, saqc):
         """
