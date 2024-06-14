@@ -62,12 +62,13 @@ class IncomingIntensityDesilets(Correction):
         _type_
             _description_
         """
-        # validation here??
+        # TODO validation here??
         data_frame["intensity_correction"] = data_frame.apply(
             lambda row: incoming_intensity_zreda_2012(
                 row[self.incoming_neutron_column_name],
                 self.reference_incoming_neutron_value,
-            )
+            ),
+            axis=1,
         )
 
         return data_frame
@@ -84,10 +85,10 @@ class CorrectionBuilder:
 
     def add_correction(self, correction):
         if isinstance(correction, Correction):
-            self.checks.append(correction)
+            self.correction.append(correction)
         return self
 
-    def apply_correction(self, df):
+    def apply_corrections(self, df):
         for correction in self.correction:
             df = correction.apply(df)
         return df
@@ -101,6 +102,7 @@ class CorrectNeutrons:
         correction_steps: CorrectionBuilder,
     ):
         self._crns_data_frame = crns_data_frame
+        self._correction_steps = correction_steps
 
     @property
     def crns_data_frame(self):
@@ -108,8 +110,45 @@ class CorrectNeutrons:
 
     @crns_data_frame.setter
     def crns_Data_frame(self, df: pd.DataFrame):
-        # TODO add checks it is df
+        # TODO add checks that it is df
         self._crns_data_frame = df
 
+    @property
+    def correction_steps(self):
+        return self._correction_steps
+
+    @correction_steps.setter
+    def correction_steps(self, steps: CorrectionBuilder):
+        if isinstance(steps, CorrectionBuilder):
+            self._correction_steps = steps
+        else:
+            message = f"It appears {steps} is not a CorrectionBuilder object"
+            core_logger.error(message)
+
+    def add_correction(self, new_correction: Correction):
+        """
+        Add an invidual correction to the CorrectionBuilder
+
+        Parameters
+        ----------
+        new_correction : Correction
+            The new correction to apply
+        """
+        self.correction_steps.add_correction(new_correction)
+
+    def add_correction_builder(
+        self, new_correction_builder: CorrectionBuilder
+    ):
+        """
+        Add a whole correction builder. Useful if a correction builder
+        has been built somewhere in the code and you want to read it in.
+
+        Parameters
+        ----------
+        new_correction_builder : CorrectionBuilder
+            A pre-compiled correction builder.
+        """
+        self.correction_steps = new_correction_builder
+
     def correct_neutrons(self):
-        pass
+        return self.correction_steps.apply_corrections(self.crns_data_frame)

@@ -7,6 +7,11 @@ from neptoon.data_management.crns_data_hub import CRNSDataHub
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataAttacher,
 )
+from neptoon.neutron_correction.neutron_correction import (
+    CorrectionBuilder,
+    IncomingIntensityDesilets,
+    CorrectNeutrons,
+)
 from neptoon.data_management.data_audit import (
     DataAuditLog,
 )
@@ -113,32 +118,6 @@ def import_crns_dataframe_and_format(filename):
 crns_df = import_crns_dataframe_and_format("CUC001.csv")
 crns_df
 
-# %%
-# ### TEMP
-
-# from saqc import SaQC
-
-# qc = SaQC(crns_df, scheme="simple")
-# qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
-
-# # OutliersMixin.flagRaise() missing 1 required positional argument: 'field'
-# qc.flags.to_pandas()
-# qc.data.to_pandas()
-# qc.plot("epithermal_neutrons")
-
-
-# %%
-def fancy_new_function():
-    pass
-
-
-# qc.flagGeneric(
-#     field="epithermal_neutrons", func=fancy_new_function, flag="BAD"
-# )
-
-
-#### END TEMP
-# %%
 """Step 2: Create the initial CRNSDataHub and validate
 
 The next step is adding the correctly formatted dataframe to the
@@ -198,110 +177,17 @@ qa_flags.add_check(
 data_hub.apply_quality_flags(custom_flags=qa_flags)
 
 
-# assessor = DataQualityAssessor(data_hub.crns_data_frame, saqc_scheme="simple")
-# assessor.add_quality_check(
-#     FlagRangeCheck("air_relative_humidity", min_val=50, max_val=62)
-# )
-# assessor.add_quality_check(
-#     FlagRangeCheck("precipitation", min_val=0, max_val=20)
-# )
-# assessor.add_quality_check(
-#     FlagNeutronGreaterThanN0("epithermal_neutrons", N0=2000)
-# )
-# assessor.add_quality_check(
-#     FlagBelowMinimumPercentN0(
-#         "epithermal_neutrons", N0=2000, percent_minimum=0.3
-#     )
-# )
-# assessor.add_quality_check(
-#     FlagSpikeDetectionUniLOF("epithermal_neutrons", threshold=1.5)
-# )
-# FlagNeutronGreaterThanN0.apply
-# assessor.apply_quality_assessment()
-# # assessor.output_data()
-# tmp = assessor.output_flags()
-
-
-# crns_data
-
-# dataingest
-
-# CRNSDataHub(crns_data)
-# CRNSDataHub.quality_assessment()
-# CRNSDataHub.neutron_correction()
-# CRNSDataHub.calculate_theta()
-# CRNSDataHub.figures_tables_close
-
-# DataQualityAssesment(CRNSDataHub)
-# Processing(CRNSDAtaHub)
-# Figures(CRN)
-# %%
-
-
 # %%
 """Step 5: Correct Neutrons
 """
-
-
-# class NeutronCorrector:
-#     """
-#     This class takes as input a CRNSDataHub and applies neutron
-#     corrections to the data attached to it.
-#     """
-
-#     def __init__(
-#         self,
-#         data_hub: CRNSDataHub = None,
-#     ):
-#         self.data_hub = data_hub
-
-#     def select_steps(
-#         self,
-#         pressure_correction,
-#         water_vapour_correction,
-#         above_ground_biomass_correction,
-#         incoming_neutron_intensity_correction,
-#     ):
-#         """
-#         TODO: Pandera check here depending on steps
-
-#         Parameters
-#         ----------
-#         steps_to_implement : _type_
-#             _description_
-#         """
-#         pass
-
-#     def validate_data_is_suitable():
-#         pass
-
-#     def correct_neutrons():
-#         pass
-
-
-# corrector = NeutronCorrector(data_hub)
-# corrector.select_steps("steps")
+steps = CorrectionBuilder()
+steps.add_correction(IncomingIntensityDesilets(120))
+corrector = CorrectNeutrons(data_hub.crns_data_frame, steps)
+corrector.correct_neutrons()
 
 # %%
 """Step 6: Calibration [Optional]
 """
-
-
-# class SiteCalibrator:
-#     def __init__(
-#         self,
-#         data_hub: CRNSDataHub,
-#     ):
-#         pass
-
-
-# def assess_data(crns_data_hub):
-#     qc = SaQC(crns_data_hub.crns_df, scheme="simple")
-#     qc = qc.flagRange("epithermal_neutrons", min=400, max=900)
-#     qc = qc.flagRaise()
-#     crns_data_hub.flags_table = qc.flags.to_pandas()
-#     crns_data_hub.crns_df = qc.data.to_pandas()
-#     qc.plot("epithermal_neutrons")
 
 
 # %%
