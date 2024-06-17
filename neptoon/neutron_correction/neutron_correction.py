@@ -14,7 +14,6 @@ class Correction(ABC):
     """
     Expects a dataframe as input and then applies corrections and
     updates df
-
     """
 
     def __init__(self):
@@ -216,7 +215,8 @@ class CorrectNeutrons:
 
         Returns
         -------
-        pd.DataFrame
+        df: pd.DataFrame
             DataFrame returned with additional columns.
         """
-        return self.correction_steps.apply_corrections(self.crns_data_frame)
+        df = self.correction_steps.apply_corrections(self.crns_data_frame)
+        return df
