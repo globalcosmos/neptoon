@@ -32,8 +32,18 @@ class Correction(ABC):
         data_frame : pd.DataFrame
             The crns_data_frame
         """
-
         pass
+
+    @property
+    @abstractmethod
+    def correction_factor_column_name(self):
+        return self.correction_factor_column_name
+
+    def get_correction_factor_column_name(self):
+        """
+        Declare the name of the correction factor column
+        """
+        return self.correction_factor_column_name
 
 
 class IncomingIntensityDesilets(Correction):
@@ -41,12 +51,14 @@ class IncomingIntensityDesilets(Correction):
     def __init__(
         self,
         reference_incoming_neutron_value: float,
+        correction_factor_column_name: str = "correction_factor_column_name",
         incoming_neutron_column_name: str = "incoming_neutron_intensity",
     ):
         self.incoming_neutron_column_name = incoming_neutron_column_name
         self.reference_incoming_neutron_value = (
             reference_incoming_neutron_value
         )
+        self.correction_factor_column_name = correction_factor_column_name
 
     def apply(self, data_frame):
         """
@@ -63,7 +75,7 @@ class IncomingIntensityDesilets(Correction):
             _description_
         """
         # TODO validation here??
-        data_frame["intensity_correction"] = data_frame.apply(
+        data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_zreda_2012(
                 row[self.incoming_neutron_column_name],
                 self.reference_incoming_neutron_value,
@@ -82,15 +94,59 @@ class CorrectionBuilder:
 
     def __init__(self):
         self.correction = []
+        self.correction_columns = []
 
-    def add_correction(self, correction):
+    def add_correction(self, correction: Correction):
+        """
+        Adds a correction to the CorrectionBuilder
+
+        Parameters
+        ----------
+        correction : Correction
+            A Correction object
+        """
         if isinstance(correction, Correction):
             self.correction.append(correction)
-        return self
 
-    def apply_corrections(self, df):
+    def create_correction_factors(self, df: pd.DataFrame):
+        """
+        Cycles through all the corrections which have been staged using
+        the add_correction method. Returns the DataFrame with additional
+        columns.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            DataFrame which is prepared for correction.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with additional columns applied during correction.
+        """
         for correction in self.correction:
             df = correction.apply(df)
+            correction_column_name = (
+                correction.get_correction_factor_column_name()
+            )
+            self.correction_columns.append(correction_column_name)
+
+        return df
+
+    def create_corrected_neutron_column(self, df):
+
+        df["corrected_epithermal_neutron_count"] = df[
+            "epithermal_neutron_count"
+        ]
+        for column_name in self.correction_columns:
+            df["corrected_epithermal_neutron_count"] = (
+                df["corrected_epithermal_neutron_count"] * df[column_name]
+            )
+        return df
+
+    def apply_corrections(self, df):
+        df = self.create_correction_factors(df)
+        df = self.create_corrected_neutron_column(df)
         return df
 
 
@@ -151,4 +207,13 @@ class CorrectNeutrons:
         self.correction_steps = new_correction_builder
 
     def correct_neutrons(self):
+        """
+        Corrects neutrons using the CorrectionBuilder. Returns the
+        DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame returned with additional columns.
+        """
         return self.correction_steps.apply_corrections(self.crns_data_frame)
