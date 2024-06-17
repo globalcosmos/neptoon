@@ -18,7 +18,7 @@ class Correction(ABC):
     """
 
     def __init__(self):
-        pass
+        self._correction_factor_column_name = None
 
     @abstractmethod
     def apply(self, data_frame: pd.DataFrame):
@@ -35,9 +35,14 @@ class Correction(ABC):
         pass
 
     @property
-    @abstractmethod
-    def correction_factor_column_name(self):
-        return self.correction_factor_column_name
+    def correction_factor_column_name(self) -> str:
+        if self._correction_factor_column_name is None:
+            raise ValueError("correction_factor_column_name has not been set.")
+        return self._correction_factor_column_name
+
+    @correction_factor_column_name.setter
+    def correction_factor_column_name(self, value: str):
+        self._correction_factor_column_name = value
 
     def get_correction_factor_column_name(self):
         """
@@ -51,7 +56,7 @@ class IncomingIntensityDesilets(Correction):
     def __init__(
         self,
         reference_incoming_neutron_value: float,
-        correction_factor_column_name: str = "correction_factor_column_name",
+        correction_factor_column_name: str = "correction_for_intensity",
         incoming_neutron_column_name: str = "incoming_neutron_intensity",
     ):
         self.incoming_neutron_column_name = incoming_neutron_column_name
@@ -135,9 +140,7 @@ class CorrectionBuilder:
 
     def create_corrected_neutron_column(self, df):
 
-        df["corrected_epithermal_neutron_count"] = df[
-            "epithermal_neutron_count"
-        ]
+        df["corrected_epithermal_neutron_count"] = df["epithermal_neutrons"]
         for column_name in self.correction_columns:
             df["corrected_epithermal_neutron_count"] = (
                 df["corrected_epithermal_neutron_count"] * df[column_name]
