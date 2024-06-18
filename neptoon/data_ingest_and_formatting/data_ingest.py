@@ -36,8 +36,8 @@ class ManageFileCollection:
     def __init__(
         self,
         data_location: Union[str, Path],
-        prefix=None,
-        suffix=None,
+        prefix="",
+        suffix="",
         encoding="cp850",
         skip_lines: int = 0,
         seperator: str = ",",
@@ -774,7 +774,7 @@ class FormatDataForCRNSDataHub:
         """
 
         date_time_column = self.extract_datetime_column()
-        date_time_column = self.convert_time_zone()
+        date_time_column = self.convert_time_zone(date_time_column)
         self.data_frame.index = date_time_column
 
     def dataframe_to_numeric(
