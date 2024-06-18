@@ -419,7 +419,8 @@ class ParseFilesIntoDataFrame:
         if column_names is None:
             column_names = self._infer_column_names()
 
-        data_str = self.merge_files()
+        data_str = self._merge_files()
+        
         data = pd.read_csv(
             io.StringIO(data_str),
             names=column_names,
@@ -451,6 +452,8 @@ class ParseFilesIntoDataFrame:
         for filename in self.file_manager.files:
             data_str += self._process_file(filename)
 
+        return data_str
+
     def _process_file(self, filename):
         """
         Opens file and extracts each file line into a large data string.
@@ -462,9 +465,9 @@ class ParseFilesIntoDataFrame:
         """
         data_str = ""
 
-        with self._open_file(filename, self.data_manager.encoding) as file:
+        with self._open_file(filename, self.file_manager.encoding) as file:
 
-            for _ in range(self.data_manager.skip_lines):
+            for _ in range(self.file_manager.skip_lines):
                 next(file)
             for line in file:
                 data_str += self._parse_file_line(
@@ -473,7 +476,7 @@ class ParseFilesIntoDataFrame:
 
         return data_str
 
-    def _open_file(self, filename):
+    def _open_file(self, filename, encoding):
         """
         Opens an individual file from either a folder, zipfile, or
         tarfile.
@@ -490,16 +493,15 @@ class ParseFilesIntoDataFrame:
         file
             returns the open file
         """
-
-        if self.data_manager.source_type == "folder":
+        if self.file_manager.source_type == "folder":
             return open(
-                self.data_manager.data_location / filename,
-                encoding=self.file_manager.encoding,
+                self.file_manager.data_location / filename,
+                encoding=encoding,
             )
-        elif self.data_manager.source_type == "tarfile":
+        elif self.file_manager.source_type == "tarfile":
             archive = tarfile.open(self.file_manager.data_location, "r")
             return archive.extractfile(filename)
-        elif self.data_manager.source_type == "zipfile":
+        elif self.file_manager.source_type == "zipfile":
             archive = zipfile.ZipFile(self.file_manager.data_location, "r")
             return archive.open(filename)
         else:
@@ -525,11 +527,11 @@ class ParseFilesIntoDataFrame:
         Returns:
             str: a valid line or an empty string
         """
+        if isinstance(line, bytes) and self.file_manager.encoding != "":
+            line = line.decode(self.file_manager.encoding, errors="ignore")
+
         if self.file_manager.parser_kw["strip_left"]:
             line = line.lstrip()
-
-        if isinstance(line, bytes) and self.data_manager.encoding != "":
-            line = line.decode(self.data_manager.encoding, errors="ignore")
 
         # If the line starts with a number, it likely is actual data
         if (
@@ -556,9 +558,10 @@ class ParseFilesIntoDataFrame:
         list
             List of column names
         """
+
         # Open file in either folder or archive
         with self._open_file(
-            self.file_manager.files[0], self.data_manager.encoding
+            self.file_manager.files[0], self.file_manager.encoding
         ) as file:
 
             for _ in range(self.file_manager.skip_lines):
