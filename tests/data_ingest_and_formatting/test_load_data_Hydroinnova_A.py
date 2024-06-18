@@ -2,7 +2,6 @@
 import pandas
 import datetime
 from pathlib import Path
-import pytest
 import pandas.api.types as ptypes
 
 from neptoon.data_ingest_and_formatting.data_ingest import (
@@ -177,8 +176,6 @@ def test_make_dataframe(
 
     file_parser = ParseFilesIntoDataFrame(file_manager)
     data = file_parser.make_dataframe()
-
-    data_formatter = FormatDataForCRNSDataHub(data)
 
     assert isinstance(data, pandas.DataFrame)
     assert data.shape == (96, 24)

@@ -2,7 +2,6 @@
 TODO: infer_column_names still has some parameter options to add. add
 these to the ManageFileCollection object?
 
-TODO: 
 """
 
 import pandas as pd
@@ -12,8 +11,6 @@ import io
 from saqc import SaQC
 from pathlib import Path
 from typing import Union
-from glob import glob1  # filter file names in folders
-from datetime import datetime, timezone, timedelta
 from neptoon.data_management.data_audit import log_key_step
 from neptoon.logging import get_logger
 
@@ -314,8 +311,7 @@ class ManageFileCollection:
                 "Cannot collect file names."
             )
             core_logger.error(message)
-        
-        
+
     def filter_files(
         self,
     ) -> list:
@@ -388,12 +384,15 @@ class ParseFilesIntoDataFrame:
     @property
     def startswith(self):
         return self._startswith
+
     @property
     def multiheader(self):
         return self._multiheader
+
     @property
     def strip_names(self):
         return self._strip_names
+
     @property
     def remove_prefix(self):
         return self._remove_prefix
@@ -420,7 +419,7 @@ class ParseFilesIntoDataFrame:
             column_names = self._infer_column_names()
 
         data_str = self._merge_files()
-        
+
         data = pd.read_csv(
             io.StringIO(data_str),
             names=column_names,
@@ -518,14 +517,15 @@ class ParseFilesIntoDataFrame:
         """
         Parses a single line
 
-        Args:
-            line (str): line of potential data
-            encoding (str, optional): How to decode. Defaults to "cp850".
-            strip_left (bool, optional): Remove starting spaces. Defaults to True.
-            digit_first (bool, optional): Valid data always starts with a digit. Defaults to True.
+        Parameters
+        ----------
+        line : str
+            line of potential dat
 
-        Returns:
-            str: a valid line or an empty string
+        Returns
+        -------
+        str
+            a valid line or an empty string
         """
         if isinstance(line, bytes) and self.file_manager.encoding != "":
             line = line.decode(self.file_manager.encoding, errors="ignore")
@@ -570,8 +570,13 @@ class ParseFilesIntoDataFrame:
             headers = []
             for line in file:
 
-                if isinstance(line, bytes) and self.file_manager.encoding != "":
-                    line = line.decode(self.file_manager.encoding, errors="ignore")
+                if (
+                    isinstance(line, bytes)
+                    and self.file_manager.encoding != ""
+                ):
+                    line = line.decode(
+                        self.file_manager.encoding, errors="ignore"
+                    )
 
                 if self.file_manager.seperator in line:
                     # headers must contain at least one separator
@@ -592,10 +597,13 @@ class ParseFilesIntoDataFrame:
         if self.strip_names:
             header_list = [s.strip() for s in header_list]
         if self.remove_prefix != "":
-            header_list = [s.removeprefix(self.remove_prefix) for s in header_list]
+            header_list = [
+                s.removeprefix(self.remove_prefix) for s in header_list
+            ]
 
         self.column_names = header_list
         return header_list
+
 
 # Concept
 # formatter = FormatDataForCRNSDataHub(df)
@@ -606,6 +614,7 @@ class ParseFilesIntoDataFrame:
 # validation
 # quality checks
 # crnsdatahub.align_time()
+
 
 class FormatDataForCRNSDataHub:
     """
