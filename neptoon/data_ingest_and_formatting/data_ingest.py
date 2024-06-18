@@ -569,6 +569,10 @@ class ParseFilesIntoDataFrame:
 
             headers = []
             for line in file:
+
+                if isinstance(line, bytes) and self.file_manager.encoding != "":
+                    line = line.decode(self.file_manager.encoding, errors="ignore")
+
                 if self.file_manager.seperator in line:
                     # headers must contain at least one separator
 
@@ -590,6 +594,7 @@ class ParseFilesIntoDataFrame:
         if self.remove_prefix != "":
             header_list = [s.removeprefix(self.remove_prefix) for s in header_list]
 
+        self.column_names = header_list
         return header_list
 
 # Concept
