@@ -187,14 +187,14 @@ class ManageFileCollection:
         Checks if the folder is a normal folder or an archive and sets
         the internal attribute reflecting this.
         """
-        if self.folder_location.is_dir():
-            self.folder_or_archive = "folder"
+        if self.data_location.is_dir():
+            self.source_type = "folder"
             core_logger.info("Extracting data from a folder")
-        elif tarfile.is_tarfile(self.folder_location):
-            self.folder_or_archive = "tarfile"
+        elif tarfile.is_tarfile(self.data_location):
+            self.source_type = "tarfile"
             core_logger.info("Extracting data from a tarfile")
-        elif zipfile.is_zipfile(self.folder_location):
-            self.folder_or_archive = "zipfile"
+        elif zipfile.is_zipfile(self.data_location):
+            self.source_type = "zipfile"
         else:
             # TODO logging?
             print(
@@ -213,21 +213,21 @@ class ManageFileCollection:
         """
 
         files = []
-        if self.folder_location.is_dir():
+        if self.data_location.is_dir():
             try:
-                item_list = self.folder_location.glob("**/*")
-                files = [x for x in item_list if x.is_file()]
+                item_list = self.data_location.glob("**/*")
+                files = [x.name for x in item_list if x.is_file()]
 
             except FileNotFoundError as fnf_error:
                 message = (
-                    f"! Folder not found: {self.folder_location}."
+                    f"! Folder not found: {self.data_location}."
                     f"Error: {fnf_error}"
                 )
                 core_logger.error(message)
                 raise
             except Exception as err:
                 message = (
-                    f"! Error accessing folder {self.folder_location}."
+                    f"! Error accessing folder {self.data_location}."
                     f" Error: {err}"
                 )
                 core_logger.error(message)
@@ -314,7 +314,8 @@ class ManageFileCollection:
                 "Cannot collect file names."
             )
             core_logger.error(message)
-
+        
+        
     def filter_files(
         self,
     ) -> list:
