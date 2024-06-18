@@ -2,7 +2,7 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from neptoon.logging import get_logger
 
-# we read in the specific functions here
+# read in the specific functions here
 from neptoon.corrections_and_functions.incoming_intensity_corrections import (
     incoming_intensity_zreda_2012,
 )
@@ -16,8 +16,9 @@ class Correction(ABC):
     updates df
     """
 
-    def __init__(self):
+    def __init__(self, correction_type: str):
         self._correction_factor_column_name = None
+        self.correction_type = correction_type
 
     @abstractmethod
     def apply(self, data_frame: pd.DataFrame):
@@ -55,6 +56,7 @@ class IncomingIntensityDesilets(Correction):
     def __init__(
         self,
         reference_incoming_neutron_value: float,
+        correction_type: str = "intensity",
         correction_factor_column_name: str = "correction_for_intensity",
         incoming_neutron_column_name: str = "incoming_neutron_intensity",
     ):
@@ -63,6 +65,7 @@ class IncomingIntensityDesilets(Correction):
             reference_incoming_neutron_value
         )
         self.correction_factor_column_name = correction_factor_column_name
+        self.correction_type = correction_type
 
     def apply(self, data_frame):
         """
@@ -97,7 +100,7 @@ class CorrectionBuilder:
     """
 
     def __init__(self):
-        self.correction = []
+        self.corrections = {}
         self.correction_columns = []
 
     def add_correction(self, correction: Correction):
@@ -110,46 +113,35 @@ class CorrectionBuilder:
             A Correction object
         """
         if isinstance(correction, Correction):
-            self.correction.append(correction)
+            correction_type = correction.correction_type
+            self.corrections[correction_type] = correction
 
-    def create_correction_factors(self, df: pd.DataFrame):
+    def remove_correction_by_type(self, correction_type: str):
         """
-        Cycles through all the corrections which have been staged using
-        the add_correction method. Returns the DataFrame with additional
-        columns.
+        Removes a correction from the CorrectionBuilder based on its type
 
         Parameters
         ----------
-        df : pd.DataFrame
-            DataFrame which is prepared for correction.
-
-        Returns
-        -------
-        pd.DataFrame
-            DataFrame with additional columns applied during correction.
+        correction_type : str
+            The type of correction to be removed
         """
-        for correction in self.correction:
-            df = correction.apply(df)
+        if correction_type in self.corrections:
+            correction = self.corrections.pop(correction_type)
             correction_column_name = (
                 correction.get_correction_factor_column_name()
             )
-            self.correction_columns.append(correction_column_name)
-
-        return df
-
-    def create_corrected_neutron_column(self, df):
-
-        df["corrected_epithermal_neutron_count"] = df["epithermal_neutrons"]
-        for column_name in self.correction_columns:
-            df["corrected_epithermal_neutron_count"] = (
-                df["corrected_epithermal_neutron_count"] * df[column_name]
+            if correction_column_name in self.correction_columns:
+                self.correction_columns.remove(correction_column_name)
+        else:
+            raise ValueError(
+                f"Correction type '{correction_type}' not found in the builder."
             )
-        return df
 
-    def apply_corrections(self, df):
-        df = self.create_correction_factors(df)
-        df = self.create_corrected_neutron_column(df)
-        return df
+    def get_corrections(self):
+        """
+        Returns the corrections stored in the builder
+        """
+        return self.corrections.values()
 
 
 class CorrectNeutrons:
@@ -157,10 +149,11 @@ class CorrectNeutrons:
     def __init__(
         self,
         crns_data_frame: pd.DataFrame,
-        correction_steps: CorrectionBuilder,
+        correction_builder: CorrectionBuilder,
     ):
         self._crns_data_frame = crns_data_frame
-        self._correction_steps = correction_steps
+        self._correction_builder = correction_builder
+        self._correction_columns = []
 
     @property
     def crns_data_frame(self):
@@ -172,16 +165,20 @@ class CorrectNeutrons:
         self._crns_data_frame = df
 
     @property
-    def correction_steps(self):
-        return self._correction_steps
+    def correction_builder(self):
+        return self._correction_builder
 
-    @correction_steps.setter
-    def correction_steps(self, steps: CorrectionBuilder):
-        if isinstance(steps, CorrectionBuilder):
-            self._correction_steps = steps
+    @correction_builder.setter
+    def correction_builder(self, builder: CorrectionBuilder):
+        if isinstance(builder, CorrectionBuilder):
+            self._correction_builder = builder
         else:
-            message = f"It appears {steps} is not a CorrectionBuilder object"
+            message = f"It appears {builder} is not a CorrectionBuilder object"
             core_logger.error(message)
+
+    @property
+    def correction_columns(self):
+        return self._correction_columns
 
     def add_correction(self, new_correction: Correction):
         """
@@ -192,7 +189,7 @@ class CorrectNeutrons:
         new_correction : Correction
             The new correction to apply
         """
-        self.correction_steps.add_correction(new_correction)
+        self.correction_builder.add_correction(new_correction)
 
     def add_correction_builder(
         self, new_correction_builder: CorrectionBuilder
@@ -206,7 +203,40 @@ class CorrectNeutrons:
         new_correction_builder : CorrectionBuilder
             A pre-compiled correction builder.
         """
-        self.correction_steps = new_correction_builder
+        self.correction_builder = new_correction_builder
+
+    def create_correction_factors(self, df: pd.DataFrame):
+        """
+        Cycles through all the corrections in the CorrectionBuilder and
+        applies them to the DataFrame. Returns the DataFrame with additional
+        columns.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            DataFrame which is prepared for correction.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with additional columns applied during correction.
+        """
+        for correction in self.correction_builder.get_corrections():
+            df = correction.apply(df)
+            correction_column_name = (
+                correction.get_correction_factor_column_name()
+            )
+            self.correction_columns.append(correction_column_name)
+
+        return df
+
+    def create_corrected_neutron_column(self, df):
+        df["corrected_epithermal_neutron_count"] = df["epithermal_neutrons"]
+        for column_name in self.correction_columns:
+            df["corrected_epithermal_neutron_count"] = (
+                df["corrected_epithermal_neutron_count"] * df[column_name]
+            )
+        return df
 
     def correct_neutrons(self):
         """
@@ -218,5 +248,6 @@ class CorrectNeutrons:
         df: pd.DataFrame
             DataFrame returned with additional columns.
         """
-        df = self.correction_steps.apply_corrections(self.crns_data_frame)
+        df = self.create_correction_factors(self.crns_data_frame)
+        df = self.create_corrected_neutron_column(df)
         return df
