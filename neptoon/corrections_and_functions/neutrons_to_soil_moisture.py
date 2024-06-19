@@ -4,14 +4,14 @@
 
 
 def convert_neutrons_to_soil_moisture(
-    a0: float,
-    a1: float,
-    a2: float,
-    bulk_density: float,
+    dry_soil_bulk_density: float,
     neutron_count: float,
     n0: float,
     lattice_water: float,
     water_equiv_soil_organic_carbon: float,
+    a0: float = 0.0808,
+    a1: float = 0.372,
+    a2: float = 0.115,
 ):
     """
     Converts corrected neutrons counts into volumetric soil moisture
@@ -43,18 +43,18 @@ def convert_neutrons_to_soil_moisture(
         - (a2)
         - lattice_water
         - water_equiv_soil_organic_carbon
-    ) * bulk_density
+    ) * dry_soil_bulk_density
 
 
 def convert_neutrons_to_soil_moisture_kohli(
-    a0: float,
-    a1: float,
-    a2: float,
     bulk_density: float,
     neutron_count: float,
     n0: float,
     lattice_water: float,
     water_equiv_soil_organic_carbon: float,
+    a0: float = 0.0808,
+    a1: float = 0.372,
+    a2: float = 0.115,
 ):
     """
     Converts corrected neutrons counts into volumetric soil moisture
