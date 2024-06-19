@@ -1,4 +1,3 @@
-import time
 import requests
 from datetime import datetime
 import logging
@@ -7,19 +6,38 @@ from pathlib import Path
 from io import StringIO
 from dateutil import parser
 from neptoon.configuration.global_configuration import GlobalConfig
+from neptoon.data_management.data_audit import log_key_step
+from neptoon.data_management.crns_data_hub import CRNSDataHub
 
 
-def timed_function(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        print(
-            f"Function '{func.__name__}' took {end_time - start_time} seconds to run."
+class NMDBDataAttacher:
+    def __init__(
+        self,
+        data_hub: CRNSDataHub,
+    ):
+        self.data_hub = data_hub
+
+    def configure(self, station="JUNG", resolution="60", nmdb_table="revori"):
+        start_date_from_data = self.data_hub.crns_data_frame.index[0]
+        end_date_from_data = self.data_hub.crns_data_frame.index[-1]
+        self.config = NMDBConfig(
+            start_date_wanted=start_date_from_data,
+            end_date_wanted=end_date_from_data,
+            station=station,
+            resolution=resolution,
+            nmdb_table=nmdb_table,
         )
-        return result
 
-    return wrapper
+    def fetch_data(self):
+        handler = NMDBDataHandler(self.config)
+        self.tmp_data = handler.collect_nmdb_data()
+
+    def attach_data(self):
+        self.data_hub.add_column_to_crns_data_frame(
+            self.tmp_data,
+            column_name="count",
+            new_column_name="incoming_neutron_intensity",
+        )
 
 
 class DateTimeHandler:
@@ -165,6 +183,7 @@ class NMDBConfig:
 
     """
 
+    @log_key_step("station", "nmdb_table", "resolution")
     def __init__(
         self,
         start_date_wanted,
@@ -182,9 +201,9 @@ class NMDBConfig:
         self._start_date_wanted = start_date_wanted
         self._end_date_wanted = end_date_wanted
         self._cache_dir = cache_dir
-        self._station = station
-        self._nmdb_table = nmdb_table
-        self._resolution = resolution
+        self._station = station if station is not None else "JUNG"
+        self._nmdb_table = nmdb_table if nmdb_table is not None else "revori"
+        self._resolution = resolution if resolution is not None else "60"
         self._cache_exists = cache_exists
         self._cache_start_date = cache_start_date
         self._cache_end_date = cache_end_date

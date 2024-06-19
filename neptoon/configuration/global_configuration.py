@@ -8,7 +8,7 @@ class GlobalConfig:
     Should only be updated by developers when required
     """
 
-    _dirs = PlatformDirs("cosmosbase", "CRNS")
+    _dirs = PlatformDirs("neptoon", "CRNS")
 
     @staticmethod
     def get_cache_dir(create_if_missing=True):

@@ -1,4 +1,6 @@
 import logging
+from functools import wraps
+from inspect import signature
 from neptoon.logging import get_logger
 from pathlib import Path
 import yaml
@@ -26,7 +28,8 @@ def log_key_step(*log_args):
     """
 
     def decorator(func):
-        def wrapper(self, *args, **kwargs):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
             try:
                 data_audit_log = DataAuditLog.get_instance()
             except Exception as e:
@@ -37,12 +40,24 @@ def log_key_step(*log_args):
                 data_audit_log = None
 
             if data_audit_log is not None:
-                data_audit_log_info = {
-                    arg: kwargs.get(arg) for arg in log_args
-                }
-                data_audit_log.add_step(func.__name__, data_audit_log_info)
+                sig = signature(func)
+                bound_arguments = sig.bind(*args, **kwargs)
+                bound_arguments.apply_defaults()
 
-            return func(self, *args, **kwargs)
+                func_name = func.__name__
+                if func_name == "__init__":
+                    class_name = args[0].__class__.__name__
+                    func_name = class_name
+
+                data_audit_log_info = {
+                    arg: bound_arguments.arguments[arg]
+                    for arg in log_args
+                    if arg in bound_arguments.arguments
+                }
+
+                data_audit_log.add_step(func_name, data_audit_log_info)
+
+            return func(*args, **kwargs)
 
         return wrapper
 
@@ -119,7 +134,7 @@ class DataAuditLog:
                 raise Exception(
                     "You must select a name for the log (recommend: a site identifier)"
                 )
-            timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+            timestamp = time.strftime("%Y-%m-%d %H-%M-%S")
 
             folder_name = f"{site_name} {timestamp}"
             if custom_log_location is None:
@@ -156,8 +171,8 @@ class DataAuditLog:
         cls._instance.archive_data_audit(
             site_name=site_name, custom_log_location=custom_log_location
         )
-        cls._instance.delete_log_file
-        cls._instance.delete_instance
+        cls._instance.delete_log_file()
+        cls._instance.delete_instance()
 
     def init_data_audit_log(self):
         self.log_file_path = Path.cwd() / "DataAuditLog.log"
