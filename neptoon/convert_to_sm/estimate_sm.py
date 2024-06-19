@@ -93,7 +93,6 @@ class NeutronsToSM:
                 axis=1,
             )
         )
-        pass
 
     def calculate_uncertainty_of_sm_estimates(self):
         """
@@ -113,6 +112,12 @@ class NeutronsToSM:
         """
         pass
 
+    def smooth_soil_moisture(self):
+        """
+        TODO Create smoothed SM values (12h or 24h?)
+        """
+        pass
+
     def _convert_som_to_wsom(self):
         """
         TODO: Convert soil organic matter to water equivelant
@@ -125,6 +130,7 @@ class NeutronsToSM:
         methods to produce a fully developed DataFrame.
         """
         self.calculate_sm_estimates()
+        self.smooth_soil_moisture()
         self.calculate_depth_of_measurement()
         self.calculate_horizontal_footprint()
         self.calculate_uncertainty_of_sm_estimates()
