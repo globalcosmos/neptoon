@@ -61,8 +61,8 @@ class NeutronsToSM:
         return self._lattice_water
 
     @property
-    def soil_organic_matter(self):
-        return self._soil_organice_matter
+    def soil_organic_carbon(self):
+        return self._soil_organic_carbon
 
     @property
     def water_equiv_of_soil_organic_matter(self):
