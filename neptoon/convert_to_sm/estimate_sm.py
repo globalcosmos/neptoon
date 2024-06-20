@@ -20,7 +20,7 @@ class NeutronsToSM:
         n0: float,
         dry_soil_bulk_density: float = 1.4,
         lattice_water: float = 0,
-        soil_organic_matter: float = 0,
+        soil_organic_carbon: float = 0,
         corrected_neutrons_col_name: str = "epithermal_neutrons_corrected",
         smoothed_neutrons_col_name: str = "epithermal_neutrons_smoothed",
         soil_moisture_col_name: str = "soil_moisture_crns",
@@ -30,9 +30,9 @@ class NeutronsToSM:
         self._n0 = n0
         self._dry_soil_bulk_density = dry_soil_bulk_density
         self._lattice_water = lattice_water
-        self._soil_organic_matter = soil_organic_matter
-        self._water_equiv_of_soil_organic_matter = self._convert_som_to_wsom(
-            soil_organic_matter
+        self._soil_organic_carbon = soil_organic_carbon
+        self._water_equiv_of_soil_organic_matter = self._convert_soc_to_wsom(
+            soil_organic_carbon
         )
         self._corrected_neutrons_col_name = corrected_neutrons_col_name
         self._smoothed_neutrons_col_name = smoothed_neutrons_col_name
@@ -88,11 +88,16 @@ class NeutronsToSM:
         """
         pass
 
-    def _convert_som_to_wsom(self):
+    @staticmethod
+    def _convert_soc_to_wsom(soc):
         """
-        TODO: Convert soil organic matter to water equivelant
+        Converts soil organic carbon values into water equivelant soil
+        organic matter.
+
+        doi: https://doi.org/10.1002/2013WR015138
+
         """
-        pass
+        return soc * 0.556
 
     def calculate_sm_estimates(
         self,
