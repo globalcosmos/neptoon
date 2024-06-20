@@ -21,7 +21,7 @@ class NeutronsToSM:
         dry_soil_bulk_density: float = 1.4,
         lattice_water: float = 0,
         soil_organic_carbon: float = 0,
-        corrected_neutrons_col_name: str = "epithermal_neutrons_corrected",
+        corrected_neutrons_col_name: str = "corrected_epithermal_neutron_count",
         smoothed_neutrons_col_name: str = "epithermal_neutrons_smoothed",
         soil_moisture_col_name: str = "soil_moisture_crns",
         depth_column_name: str = "crns_measurement_depth",
@@ -80,6 +80,10 @@ class NeutronsToSM:
     def depth_column_name(self):
         return self._depth_column_name
 
+    @property
+    def smoothed_neutrons_col_name(self):
+        return self._smoothed_neutrons_col_name
+
     def _validate_crns_data_frame(self):
         """
         TODO: Internal method to validate the dataframe can be used:
@@ -106,18 +110,19 @@ class NeutronsToSM:
         Calculates soil moisture and adds a column to the dataframe with
         the soil moisture estimate.
 
-        TODO: when we implement kholi method this could be divided into
+        TODO: when we implement khöli method this could be divided into
         two internal routines, and then a user can select which method
         to apply.
         """
+        # TODO add check if smoothing has been done.
         self.crns_data_frame[self.soil_moisture_col_name] = (
             self.crns_data_frame.apply(
                 lambda row: convert_neutrons_to_soil_moisture(
                     dry_soil_bulk_density=self.dry_soil_bulk_density,
-                    neutron_count=row[self.corrected_neutrons_col_name],
+                    neutron_count=row[self.smoothed_neutrons_col_name],
                     n0=self.n0,
                     lattice_water=self.lattice_water,
-                    water_equiv_soil_organic_carbon=self.water_equiv_of_soil_organic_matter,
+                    water_equiv_soil_organic_matter=self.water_equiv_of_soil_organic_matter,
                 ),
                 axis=1,
             )
@@ -161,21 +166,30 @@ class NeutronsToSM:
         """
         pass
 
-    def smooth_soil_moisture(self):
+    def smooth_neutron_count(self, smooth_window=12):
         """
-        TODO Create smoothed SM values (12h or 24h?) what Algorithm?
+        Smooth the neutron count to remove noise
+
+        Parameters
+        ----------
+        smooth_window : int, optional
+            The number of hours to smooth by, by default 12
         """
-        pass
+        self.crns_data_frame[self.smoothed_neutrons_col_name] = (
+            self.crns_data_frame[self.corrected_neutrons_col_name]
+            .rolling(window=smooth_window)
+            .mean()
+        )
 
     def process_data(self):
         """
         TODO: Overall process method which will chain together the other
         methods to produce a fully developed DataFrame.
         """
+        self.smooth_neutron_count()
         self.calculate_sm_estimates()
-        self.smooth_soil_moisture()
         self.calculate_depth_of_measurement()
-        self.calculate_horizontal_footprint()
+        # self.calculate_horizontal_footprint()
         self.calculate_uncertainty_of_sm_estimates()
 
     def return_data_frame(self):

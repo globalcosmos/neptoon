@@ -8,7 +8,7 @@ def convert_neutrons_to_soil_moisture(
     neutron_count: float,
     n0: float,
     lattice_water: float,
-    water_equiv_soil_organic_carbon: float,
+    water_equiv_soil_organic_matter: float,
     a0: float = 0.0808,
     a1: float = 0.372,
     a2: float = 0.115,
@@ -44,7 +44,7 @@ def convert_neutrons_to_soil_moisture(
         ((a0) / ((neutron_count / n0) - a1))
         - (a2)
         - lattice_water
-        - water_equiv_soil_organic_carbon
+        - water_equiv_soil_organic_matter
     ) * dry_soil_bulk_density
 
 
