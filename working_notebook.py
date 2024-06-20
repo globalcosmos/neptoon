@@ -181,7 +181,7 @@ data_hub.apply_quality_flags(custom_flags=qa_flags)
 """Step 5: Correct Neutrons
 """
 steps = CorrectionBuilder()
-steps.add_correction(IncomingIntensityDesilets(120))
+steps.add_correction(IncomingIntensityDesilets(150))
 corrector = CorrectNeutrons(data_hub.crns_data_frame, steps)
 corrector.correct_neutrons()
 

@@ -3,7 +3,11 @@ import pandas as pd
 from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
     convert_neutrons_to_soil_moisture,
 )
+from neptoon.corrections_and_functions.calibration_functions import (
+    Schroen2017CalibrationFunctions,
+)
 from neptoon.logging import get_logger
+from neptoon.data_management.data_audit import log_key_step
 
 core_logger = get_logger()
 
@@ -14,10 +18,13 @@ class NeutronsToSM:
         self,
         crns_data_frame: pd.DataFrame,
         n0: float,
-        dry_soil_bulk_density: float = 0,
+        dry_soil_bulk_density: float = 1.4,
         lattice_water: float = 0,
         soil_organic_matter: float = 0,
         corrected_neutrons_col_name: str = "epithermal_neutrons_corrected",
+        smoothed_neutrons_col_name: str = "epithermal_neutrons_smoothed",
+        soil_moisture_col_name: str = "soil_moisture_crns",
+        depth_column_name: str = "crns_measurement_depth",
     ):
         self._crns_data_frame = crns_data_frame
         self._n0 = n0
@@ -28,6 +35,9 @@ class NeutronsToSM:
             soil_organic_matter
         )
         self._corrected_neutrons_col_name = corrected_neutrons_col_name
+        self._smoothed_neutrons_col_name = smoothed_neutrons_col_name
+        self._soil_moisture_col_name = soil_moisture_col_name
+        self._depth_column_name = depth_column_name
 
     @property
     def crns_data_frame(self):
@@ -62,6 +72,14 @@ class NeutronsToSM:
     def corrected_neutrons_col_name(self):
         return self._corrected_neutrons_col_name
 
+    @property
+    def soil_moisture_col_name(self):
+        return self._soil_moisture_col_name
+
+    @property
+    def depth_column_name(self):
+        return self._depth_column_name
+
     def _validate_crns_data_frame(self):
         """
         TODO: Internal method to validate the dataframe can be used:
@@ -70,18 +88,24 @@ class NeutronsToSM:
         """
         pass
 
+    def _convert_som_to_wsom(self):
+        """
+        TODO: Convert soil organic matter to water equivelant
+        """
+        pass
+
     def calculate_sm_estimates(
-        self, soil_moisture_column_name: str = "soil_moisture_crns"
+        self,
     ):
         """
         Calculates soil moisture and adds a column to the dataframe with
         the soil moisture estimate.
 
         TODO: when we implement kholi method this could be divided into
-        internal routines, and then a user can select which method to
-        apply.
+        two internal routines, and then a user can select which method
+        to apply.
         """
-        self.crns_data_frame[soil_moisture_column_name] = (
+        self.crns_data_frame[self.soil_moisture_col_name] = (
             self.crns_data_frame.apply(
                 lambda row: convert_neutrons_to_soil_moisture(
                     dry_soil_bulk_density=self.dry_soil_bulk_density,
@@ -100,11 +124,31 @@ class NeutronsToSM:
         """
         pass
 
-    def calculate_depth_of_measurement(self):
+    @log_key_step("radius")
+    def calculate_depth_of_measurement(
+        self,
+        radius: float = 50,
+    ):
         """
-        TODO Adds D86 column
+        Creates a column with the calculated depth of measurement
+
+        TODO: what radius to set as standard?
+
+        Parameters
+        ----------
+        radius : float, optional
+            The default radius of measurement (avg), by default 50
         """
-        pass
+        self.crns_data_frame[self.depth_column_name] = (
+            self.crns_data_frame.apply(
+                lambda row: Schroen2017CalibrationFunctions.calculate_measurement_depth(
+                    rescaled_distance=radius,
+                    bulk_density=self.dry_soil_bulk_density,
+                    soil_moisture=row[self.soil_moisture_col_name],
+                ),
+                axis=1,
+            )
+        )
 
     def calculate_horizontal_footprint(self):
         """
@@ -114,13 +158,7 @@ class NeutronsToSM:
 
     def smooth_soil_moisture(self):
         """
-        TODO Create smoothed SM values (12h or 24h?)
-        """
-        pass
-
-    def _convert_som_to_wsom(self):
-        """
-        TODO: Convert soil organic matter to water equivelant
+        TODO Create smoothed SM values (12h or 24h?) what Algorithm?
         """
         pass
 
