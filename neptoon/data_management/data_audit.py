@@ -256,7 +256,12 @@ class ParseDataAuditLog:
                     if value.replace(".", "", 1).isdigit():
                         value = float(value) if "." in value else int(value)
                     params_dict[key] = value
-                functions_dict[function_name] = params_dict
+
+                if function_name not in functions_dict:
+                    functions_dict[function_name] = []
+                functions_dict[function_name].append(params_dict)
+
+                # functions_dict[function_name] = params_dict
         yaml_str = yaml.dump(functions_dict)
         return yaml_str
 

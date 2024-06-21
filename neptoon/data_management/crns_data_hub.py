@@ -1,10 +1,13 @@
 import pandas as pd
-import logging
 from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.data_management.data_validation_tables import (
     FormatCheck,
 )
-from saqc import SaQC
+from neptoon.quality_assesment.quality_assesment import (
+    QualityAssessmentFlagBuilder,
+    DataQualityAssessor,
+)
+
 from neptoon.logging import get_logger
 
 core_logger = get_logger()
@@ -28,10 +31,11 @@ class CRNSDataHub:
     def __init__(
         self,
         crns_data_frame: pd.DataFrame,
+        flags_data_frame: pd.DataFrame = None,
         configuration_manager: ConfigurationManager = None,
-        quality_assessor: SaQC = None,
+        quality_assessor: DataQualityAssessor = None,
         validation: bool = True,
-        journalist: bool = True,
+        process_with_config: bool = False,
     ):
         """
         Inputs to the CRNSDataHub.
@@ -53,23 +57,32 @@ class CRNSDataHub:
             data_management>data_validation_tables.py for examples of
             tables being validated). These checks ensure data is
             correctly formatted for internal processing.
-        journalist : bool
-            Whether the journalist class will be used to collect info on
-            key data throughout processing. Default is True.
         """
         self._crns_data_frame = crns_data_frame
+        self._flags_data_frame = flags_data_frame
         if configuration_manager is not None:
             self._configuration_manager = configuration_manager
         self._validation = validation
         self._quality_assessor = quality_assessor
+        self._process_with_config = process_with_config
 
     @property
     def crns_data_frame(self):
         return self._crns_data_frame
 
     @crns_data_frame.setter
-    def crns_data_frame(self, df):
+    def crns_data_frame(self, df: pd.DataFrame):
+        # TODO checks on df
         self._crns_data_frame = df
+
+    @property
+    def flags_data_frame(self):
+        return self._flags_data_frame
+
+    @flags_data_frame.setter
+    def flags_data_frame(self, df: pd.DataFrame):
+        # TODO checks on df
+        self._flags_data_frame = df
 
     @property
     def validation(self):
@@ -80,8 +93,15 @@ class CRNSDataHub:
         return self._quality_assessor
 
     @quality_assessor.setter
-    def quality_assessor(self, assessor):
+    def quality_assessor(self, assessor: DataQualityAssessor):
         self._quality_assessor = assessor
+
+    @property
+    def process_with_config(self):
+        return self._process_with_config
+
+    def _create_quality_assessor(self):
+        pass
 
     def validate_dataframe(self, schema: str):
         """
@@ -108,26 +128,68 @@ class CRNSDataHub:
                 "Incorrect schema or table name given "
                 "when validating the crns_data_frame"
             )
-            logging.error(validation_error_message)
+            core_logger.error(validation_error_message)
             print(validation_error_message)
 
-    def replace_dataframe(self, dataframe):
+    def apply_quality_flags(
+        self,
+        custom_flags: QualityAssessmentFlagBuilder = None,
+        flags_from_config: bool = False,
+        flags_default: str = None,
+    ):
         """
-        Function to replace the dataframe when manual adjustments have
-        been made. Not recommended for general processing, but can be
-        used when testing new features or theories.
+        Flags data based on quality assessment. A user can supply a
+        QualityAssessmentFlagBuilder object that has been custom built,
+        they can flag using the config file (if supplied), or they can
+        choose a standard flagging routine.
 
-        TODO: How does this impact uncertainty/flags??
-        CHANGES MUST BE CHECKED
+        Everything is off by default so a user must choose.
 
         Parameters
         ----------
-        dataframe : pd.DataFrame
-            DataFrame that has been changed and you wish to replace
+        custom_flags : QualityAssessmentFlagBuilder, optional
+            A custom built set of Flags , by default None
+        flags_from_config : bool, optional
+            State if to conduct QA using config supplied configuration,
+            by default False
+        flags_default : str, optional
+            A string representing a default version of flagging, by
+            default None
         """
+        if self.quality_assessor is None:
+            self.quality_assessor = DataQualityAssessor(
+                data_frame=self.crns_data_frame
+            )
+
+        if flags_from_config:
+            # validate config flags section is complete
+            # compile flag_builder using config object
+            # apply flags
+            pass
+
+        if custom_flags:
+            self.quality_assessor.add_custom_flag_builder(custom_flags)
+            self.quality_assessor.apply_quality_assessment()
+            self.flags_data_frame = (
+                self.quality_assessor.return_flags_data_frame()
+            )
+            message = "Flagging of data complete using Custom Flags"
+            core_logger.info(message)
+
+        if flags_default:
+            pass
+
+    def correct_neutrons(self):
         pass
 
-    def return_cleaned_dataframe(self):
+    def produce_soil_moisture_estimates(self):
+        pass
+
+    def mask_flagged_data(self):
+        """
+        Returns a pd.DataFrame() where flagged data has been replaced
+        with NaN values
+        """
         pass
 
     def save_data(self, folder_path, file_name, step):  #
@@ -164,18 +226,6 @@ class CRNSDataHub:
             _description_
         file_name : _type_
             _description_
-        """
-
-    def save_data_audit_log(self, folder_path, file_name):
-        """
-        Output the DataAuditLog into a YAML format for human reading
-
-        Parameters
-        ----------
-        folder_path : str
-            Path to folder where it should be saved
-        file_name : str
-            Desired name of the file
         """
         pass
 
