@@ -68,7 +68,12 @@ class FlagRangeCheck(QualityCheck):
     """
 
     @log_key_step("column", "min_val", "max_val")
-    def __init__(self, column: str, min_val: float, max_val: float):
+    def __init__(
+        self,
+        column: str,
+        min_val: Union[int | float],
+        max_val: Union[int | float],
+    ):
         """
         Variables
 
@@ -138,7 +143,7 @@ class FlagBelowMinimumPercentN0(QualityCheck):
         self,
         neutron_col_name: str,
         N0: Union[int | float],
-        percent_minimum: float,
+        percent_minimum: Union[int | float],
     ):
         """
         Init Values
@@ -175,8 +180,8 @@ class FlagSpikeDetectionUniLOF(QualityCheck):
     def __init__(
         self,
         column_name: str,
-        periods_in_calculation: int = 24,
-        threshold: float = 1.5,
+        periods_in_calculation: Union[int | float] = 24,
+        threshold: Union[int | float] = 1.5,
     ):
         """
         Initialisation parameters
