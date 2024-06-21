@@ -1,6 +1,17 @@
 method_signifier:
   method_name: v1_method # A unique name that will be appended to data
 
+quality_assessment:
+  air_humidity:
+    flag_range:
+      min: 0
+      max: 100
+    flag_spikes:
+      method: "spikedetector"
+  air_pressure:
+    flag_range:
+      min: 800
+      max: 1100
 
 correction_steps:
   air_humidity:
@@ -29,29 +40,27 @@ invalid_data:
 
 interpolation:
   interpolate_neutrons: no
-  interpolate_neutrons_gapsize : 6 # data points
+  interpolate_neutrons_gapsize: 6 # data points
 
 temporal_aggregation:
   aggregate: 1day
   aggregate_func: mean
   aggregate_minor_vis: 1hour
-
-
 #   smoothing:
 #     smooth: 3
-#     smooth_radius: 
+#     smooth_radius:
 #     smooth_radius_method: W_r_approx
-#     number_locations: 
+#     number_locations:
 
-#     neutrons_unit: 
-#     pressure_unit: 
+#     neutrons_unit:
+#     pressure_unit:
 #     missing_pressure: DWD
 #     missing_humidity: DWD
 #     missing_temperature: DWD
-#     altitude_raster: 
-#     resolution_default: 
+#     altitude_raster:
+#     resolution_default:
 #   outlier_filter:
-#     neutron_range_per_tube: 
+#     neutron_range_per_tube:
 #     neutron_range: 1, 2000
 #     neutron_n_sigma: 3
 #     timeres_range: 800, 1000
