@@ -12,12 +12,22 @@ core_logger = get_logger()
 
 class Correction(ABC):
     """
-    Expects a dataframe as input and then applies corrections and
-    updates df
+    Abstract class for the Correction classes. Ensures that all
+    corrections have an apply method which takes a DataFrame as an
+    argument. The return of the apply function should be a DataFrame
+    with the correction factor calculated and added as a column. The
+    correction_factor_column_name should be set which is the name of the
+    column the correction factor will be recorded into.
+
+    The CorrectionBuilder class will then store the name of columns
+    where correction factors are stored. This enables the creation of
+    the overall corrected neutron count column.
     """
 
-    def __init__(self, correction_type: str):
-        self._correction_factor_column_name = None
+    def __init__(
+        self, correction_type: str, correction_factor_column_name: str = None
+    ):
+        self._correction_factor_column_name = correction_factor_column_name
         self.correction_type = correction_type
 
     @abstractmethod
@@ -51,7 +61,13 @@ class Correction(ABC):
         return self.correction_factor_column_name
 
 
-class IncomingIntensityDesilets(Correction):
+class IncomingIntensityZreda(Correction):
+    """
+    Corrects neutrons for incoming neutron intensity according to the
+    original Zreda et al. (2012) equation.
+
+    https://doi.org/10.5194/hess-16-4079-2012
+    """
 
     def __init__(
         self,
@@ -60,6 +76,24 @@ class IncomingIntensityDesilets(Correction):
         correction_factor_column_name: str = "correction_for_intensity",
         incoming_neutron_column_name: str = "incoming_neutron_intensity",
     ):
+        """
+        Required attributes for creation.
+
+        Parameters
+        ----------
+        reference_incoming_neutron_value : float
+            reference count of incoming neutron intensity at a point in
+            time.
+        correction_type : str, optional
+            correction type, by default "intensity"
+        correction_factor_column_name : str, optional
+            name of column corrections will be written to, by default
+            "correction_for_intensity"
+        incoming_neutron_column_name : str, optional
+            name of column where incoming neutron intensity values are
+            stored in the dataframe, by default
+            "incoming_neutron_intensity"
+        """
         self.incoming_neutron_column_name = incoming_neutron_column_name
         self.reference_incoming_neutron_value = (
             reference_incoming_neutron_value
@@ -73,13 +107,13 @@ class IncomingIntensityDesilets(Correction):
 
         Parameters
         ----------
-        data_frame : _type_
-            _description_
+        data_frame : pd.DataFrame
+            DataFrame with appropriate data
 
         Returns
         -------
-        _type_
-            _description_
+        pd.DataFrame
+            DataFrame now corrected
         """
         # TODO validation here??
         data_frame[self.correction_factor_column_name] = data_frame.apply(
@@ -97,11 +131,19 @@ class CorrectionBuilder:
     """
     Staging place for the corrections as they are built. First a user
     adds a check using the add_check method.
+
+    Parameters
+    ----------
+
+    corrections : dict
+        dictionary which contains the corrections. The key is the
+        correction_type assigned in each correction, the value is the
+        correction itself.
+
     """
 
     def __init__(self):
         self.corrections = {}
-        self.correction_columns = []
 
     def add_correction(self, correction: Correction):
         """
@@ -118,7 +160,8 @@ class CorrectionBuilder:
 
     def remove_correction_by_type(self, correction_type: str):
         """
-        Removes a correction from the CorrectionBuilder based on its type
+        Removes a correction from the CorrectionBuilder based on its
+        type
 
         Parameters
         ----------
@@ -126,12 +169,7 @@ class CorrectionBuilder:
             The type of correction to be removed
         """
         if correction_type in self.corrections:
-            correction = self.corrections.pop(correction_type)
-            correction_column_name = (
-                correction.get_correction_factor_column_name()
-            )
-            if correction_column_name in self.correction_columns:
-                self.correction_columns.remove(correction_column_name)
+            self.corrections.pop(correction_type)
         else:
             raise ValueError(
                 f"Correction type '{correction_type}' not found in the builder."
@@ -145,12 +183,40 @@ class CorrectionBuilder:
 
 
 class CorrectNeutrons:
+    """
+    CorrectNeutrons class handles correcting neutrons for additional
+    influences beyond soil moisture. It takes in a crns_data_frame which
+    is a pd.DataFrame which stores the required data.
+
+    Methods are available for staging a series of corrections which are
+    applied to remove additional influences on the neutron signal. A
+    user can add corrections individually, or create a CorrectionBuilder
+    class seperately that has been pre-compiled and inject that into the
+    CorrectNeutrons instance.
+
+    Once the CorrectionBuilder has been appropriately staged with
+    desired corrections, the correct_neutrons method will apply each
+    correction, record the correction factor and create a corrected
+    epithermal neutron count column with the correction factors applied.
+    """
 
     def __init__(
         self,
         crns_data_frame: pd.DataFrame,
         correction_builder: CorrectionBuilder,
     ):
+        """
+        Attributes for using the CorrectNeutrons class
+
+        Parameters
+        ----------
+        crns_data_frame : pd.DataFrame
+            A DataFrame which contains the appropriate information to
+            apply corrections.
+        correction_builder : CorrectionBuilder
+            Staging area for corrections. Can be built or supplied
+            completed.
+        """
         self._crns_data_frame = crns_data_frame
         self._correction_builder = correction_builder
         self._correction_columns = []
@@ -160,7 +226,7 @@ class CorrectNeutrons:
         return self._crns_data_frame
 
     @crns_data_frame.setter
-    def crns_Data_frame(self, df: pd.DataFrame):
+    def crns_data_frame(self, df: pd.DataFrame):
         # TODO add checks that it is df
         self._crns_data_frame = df
 
@@ -175,6 +241,7 @@ class CorrectNeutrons:
         else:
             message = f"It appears {builder} is not a CorrectionBuilder object"
             core_logger.error(message)
+            raise AttributeError
 
     @property
     def correction_columns(self):
@@ -231,6 +298,22 @@ class CorrectNeutrons:
         return df
 
     def create_corrected_neutron_column(self, df):
+        """
+        Calculates the corrected neutron count rate after applying all
+        the corrections.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            DataFrame with the corrections applied and recorded in the
+            columns
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with the corrected epithermal neutron count
+            recorded in a column
+        """
         df["corrected_epithermal_neutron_count"] = df["epithermal_neutrons"]
         for column_name in self.correction_columns:
             df["corrected_epithermal_neutron_count"] = (
