@@ -24,8 +24,10 @@ class Correction(ABC):
     the overall corrected neutron count column.
     """
 
-    def __init__(self, correction_type: str):
-        self._correction_factor_column_name = None
+    def __init__(
+        self, correction_type: str, correction_factor_column_name: str = None
+    ):
+        self._correction_factor_column_name = correction_factor_column_name
         self.correction_type = correction_type
 
     @abstractmethod
@@ -224,7 +226,7 @@ class CorrectNeutrons:
         return self._crns_data_frame
 
     @crns_data_frame.setter
-    def crns_Data_frame(self, df: pd.DataFrame):
+    def crns_data_frame(self, df: pd.DataFrame):
         # TODO add checks that it is df
         self._crns_data_frame = df
 
@@ -239,6 +241,7 @@ class CorrectNeutrons:
         else:
             message = f"It appears {builder} is not a CorrectionBuilder object"
             core_logger.error(message)
+            raise AttributeError
 
     @property
     def correction_columns(self):
