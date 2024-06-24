@@ -16,6 +16,7 @@ from neptoon.data_management.data_audit import (
     DataAuditLog,
 )
 from neptoon.data_management.data_audit import log_key_step
+from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
 
 # %%
 
@@ -181,9 +182,9 @@ data_hub.apply_quality_flags(custom_flags=qa_flags)
 """Step 5: Correct Neutrons
 """
 steps = CorrectionBuilder()
-steps.add_correction(IncomingIntensityDesilets(120))
+steps.add_correction(IncomingIntensityDesilets(150))
 corrector = CorrectNeutrons(data_hub.crns_data_frame, steps)
-corrector.correct_neutrons()
+df = corrector.correct_neutrons()
 
 # %%
 """Step 6: Calibration [Optional]
@@ -193,6 +194,9 @@ corrector.correct_neutrons()
 # %%
 """Step 7: Convert to theta
 """
+soil_moisture_calculator = NeutronsToSM(crns_data_frame=df, n0=700)
+soil_moisture_calculator.process_data()
+soil_moisture_calculator.return_data_frame()
 
 """Step 8: Final QA
 """
@@ -219,3 +223,5 @@ something?
 
 DataAuditLog.archive_and_delete_log(site_name="TestQA")
 # Cant access file, file is in use (self._accessor.unlink(self))
+
+# %%

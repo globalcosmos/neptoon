@@ -1,5 +1,5 @@
 [flake8]
 ignore = E226,E302,E41,E203,W503,E266
-max-line-length = 89
+max-line-length = 92
 exclude = .gitignore,build,dist,README.md,documentation,play_area.py,working_notebook.py
 max-complexity = 10

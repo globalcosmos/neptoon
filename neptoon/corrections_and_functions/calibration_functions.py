@@ -259,7 +259,9 @@ class Schroen2017CalibrationFunctions:
         return weight
 
     @staticmethod
-    def calculate_d86(rescaled_distance, bulk_density, soil_moisture):
+    def calculate_measurement_depth(
+        rescaled_distance, bulk_density, soil_moisture
+    ):
         """
         Calculates the depth of sensor measurement (taken as the
         depth from which 86% of neutrons originate)
