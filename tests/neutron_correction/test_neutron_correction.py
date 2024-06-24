@@ -27,7 +27,7 @@ def test_incorrectly_applied_correction():
     """
 
     with pytest.raises(TypeError):
-        test = WrongCorrection("test")
+        WrongCorrection("test")
 
 
 def test_get_correction_factor_column_name():
@@ -85,7 +85,7 @@ class MockCorrection2(Correction):
         return data_frame
 
 
-def test_add_correction():
+def test_add_correction_to_builder():
     """Test adding a correction to the builder."""
     builder = CorrectionBuilder()
     correction = MockCorrection2("test", 1.5)
@@ -147,7 +147,7 @@ def test_init(sample_df, correction_builder):
     assert corrector.correction_columns == []
 
 
-def test_add_correction(sample_df, correction_builder):
+def test_add_correction_to_corrector(sample_df, correction_builder):
     """Test adding a single correction."""
     corrector = CorrectNeutrons(sample_df, correction_builder)
     new_correction = MockCorrection2("test3", 1.2)
@@ -155,7 +155,7 @@ def test_add_correction(sample_df, correction_builder):
     assert "test3" in corrector.correction_builder.corrections
 
 
-def test_add_correction_builder(sample_df):
+def test_add_complete_correction_builder(sample_df):
     """Test adding a whole new correction builder."""
     corrector = CorrectNeutrons(sample_df, CorrectionBuilder())
     new_builder = CorrectionBuilder()
