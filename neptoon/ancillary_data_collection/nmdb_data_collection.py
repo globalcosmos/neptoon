@@ -14,11 +14,32 @@ core_logger = get_logger()
 
 
 class NMDBDataAttacher:
+    """
+    This is the core class that a user interacts with when wanting to
+    attach data from the NMDB.eu database to a dataframe. It includes
+    methods for configuring the NMDBConfig class which is then used by
+    other classes for fetching and parsing data from the NMDB.eu API.
+
+    TODO - add validation steps to ensure dataframe is correct format
+    """
+
     def __init__(
         self,
         data_frame: pd.DataFrame,
         new_column_name="incoming_neutron_intensity",
     ):
+        """
+        Initialisation parameters
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame which requires data to be attached. It must have a
+            datetime index.
+        new_column_name : str, optional
+            column name for the new column were neutron count data is
+            appended, by default "incoming_neutron_intensity"
+        """
         self.data_frame = data_frame
         self._new_column_name = new_column_name
 
@@ -38,10 +59,23 @@ class NMDBDataAttacher:
         )
 
     def fetch_data(self):
+        """
+        Creates a NMDBDataHandler using the config and collects the data
+        whilst storing it under self.tmp_data
+        """
         handler = NMDBDataHandler(self.config)
         self.tmp_data = handler.collect_nmdb_data()
 
     def attach_data(self):
+        """
+        Attaches the data stored in self.tmp_data to self.data_frame.
+        This occurs inplace.
+
+        Raises
+        ------
+        ValueError
+            When index of the data is not Datetime an error occurs
+        """
         if not isinstance(self.tmp_data.index, pd.DatetimeIndex):
             raise ValueError("DataFrame source must have a DatetimeIndex.")
         mapped_data = self.tmp_data["count"].reindex(
@@ -49,10 +83,16 @@ class NMDBDataAttacher:
         )
         self.data_frame[self.new_column_name] = mapped_data
 
-        # self.data_hub.add_column_to_crns_data_frame(
-        #     self.tmp_data,
-        #     column_name="count",
-        # )
+    def return_data_frame(self):
+        """
+        Returns the DataFrame attached in the object.
+
+        Returns
+        -------
+        pd.DataFrame
+            The DataFrame
+        """
+        return self.data_frame
 
 
 class DateTimeHandler:
@@ -778,14 +818,14 @@ class DataManager:
 
 class NMDBDataHandler:
     """
-    Orchestrates the retrieval and management of NMDB data.
+    Handles the retrieval and management of NMDB data.
 
     This class integrates the `CacheHandler`, `DataFetcher`, and
-    `DataManager` to manage NMDB data efficiently. It ensures that data
-    is fetched from the NMDB source only when necessary, preferring
-    cached data to minimize network requests. The class handles cases
-    where new data needs to be fetched either because it's not present
-    in the cache or only partial data is available.
+    `DataManager` to manage NMDB data. It ensures that data is fetched
+    from the NMDB source only when necessary, preferring cached data to
+    minimize network requests. The class handles cases where new data
+    needs to be fetched either because it's not present in the cache or
+    only partial data is available.
 
     Parameters
     ----------
