@@ -230,19 +230,22 @@ class CRNSDataHub:
         pass
 
     def add_column_to_crns_data_frame(
-        self, source, column_name: str = None, new_column_name: str = None
+        self,
+        source,
+        source_column_name: str = None,
+        new_column_name: str = None,
     ):
         if isinstance(source, pd.DataFrame):
-            if column_name is None:
+            if source_column_name is None:
                 raise ValueError(
                     "Must specify a column name "
                     "when the source is DataFrame"
                 )
             if new_column_name is None:
-                new_column_name = column_name
+                new_column_name = source_column_name
             if not isinstance(source.index, pd.DatetimeIndex):
                 raise ValueError("DataFrame source must have a DatetimeIndex.")
-            mapped_data = source[column_name].reindex(
+            mapped_data = source[source_column_name].reindex(
                 self.crns_data_frame.index, method="nearest"
             )
         elif isinstance(source, dict):

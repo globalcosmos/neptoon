@@ -1,4 +1,3 @@
-# %%
 from pathlib import Path
 import math
 import pandas as pd
@@ -9,7 +8,7 @@ from neptoon.ancillary_data_collection.nmdb_data_collection import (
 )
 from neptoon.neutron_correction.neutron_correction import (
     CorrectionBuilder,
-    IncomingIntensityDesilets,
+    IncomingIntensityZreda,
     CorrectNeutrons,
 )
 from neptoon.data_management.data_audit import (
@@ -17,8 +16,6 @@ from neptoon.data_management.data_audit import (
 )
 from neptoon.data_management.data_audit import log_key_step
 from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
-
-# %%
 
 """ Test later
 # from neptoon.configuration.configuration_input import (
@@ -64,7 +61,6 @@ processor = PseudoDataProcessor()
 processor.theta_calc(style="second")
 processor.smooth_neutrons(method="SG", window=12)
 
-# %%
 """Step 0: Collect data from source
 """
 
@@ -143,12 +139,11 @@ Important step in preperation of data. Collect the NMDB data for
 intensity corrections.
 """
 
-attacher = NMDBDataAttacher(data_hub)
+attacher = NMDBDataAttacher(data_hub.crns_data_frame)
 attacher.configure(station="JUNG")
 attacher.fetch_data()
 attacher.attach_data()
 
-# %%
 """Step 4: Perform first QA steps
 
 Here we would perform QA. This requires creating QA routines and
@@ -178,20 +173,17 @@ qa_flags.add_check(
 data_hub.apply_quality_flags(custom_flags=qa_flags)
 
 
-# %%
 """Step 5: Correct Neutrons
 """
 steps = CorrectionBuilder()
-steps.add_correction(IncomingIntensityDesilets(150))
+steps.add_correction(IncomingIntensityZreda(150))
 corrector = CorrectNeutrons(data_hub.crns_data_frame, steps)
 df = corrector.correct_neutrons()
 
-# %%
 """Step 6: Calibration [Optional]
 """
 
 
-# %%
 """Step 7: Convert to theta
 """
 soil_moisture_calculator = NeutronsToSM(crns_data_frame=df, n0=700)
@@ -223,5 +215,3 @@ something?
 
 DataAuditLog.archive_and_delete_log(site_name="TestQA")
 # Cant access file, file is in use (self._accessor.unlink(self))
-
-# %%
