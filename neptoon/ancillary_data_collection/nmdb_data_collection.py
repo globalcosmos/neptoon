@@ -7,19 +7,28 @@ from io import StringIO
 from dateutil import parser
 from neptoon.configuration.global_configuration import GlobalConfig
 from neptoon.data_management.data_audit import log_key_step
-from neptoon.data_management.crns_data_hub import CRNSDataHub
+from neptoon.logging import get_logger
+
+# from neptoon.data_management.crns_data_hub import CRNSDataHub
+core_logger = get_logger()
 
 
 class NMDBDataAttacher:
     def __init__(
         self,
-        data_hub: CRNSDataHub,
+        data_frame: pd.DataFrame,
+        new_column_name="incoming_neutron_intensity",
     ):
-        self.data_hub = data_hub
+        self.data_frame = data_frame
+        self._new_column_name = new_column_name
+
+    @property
+    def new_column_name(self):
+        return self._new_column_name
 
     def configure(self, station="JUNG", resolution="60", nmdb_table="revori"):
-        start_date_from_data = self.data_hub.crns_data_frame.index[0]
-        end_date_from_data = self.data_hub.crns_data_frame.index[-1]
+        start_date_from_data = self.data_frame.index[0]
+        end_date_from_data = self.data_frame.index[-1]
         self.config = NMDBConfig(
             start_date_wanted=start_date_from_data,
             end_date_wanted=end_date_from_data,
@@ -33,11 +42,17 @@ class NMDBDataAttacher:
         self.tmp_data = handler.collect_nmdb_data()
 
     def attach_data(self):
-        self.data_hub.add_column_to_crns_data_frame(
-            self.tmp_data,
-            column_name="count",
-            new_column_name="incoming_neutron_intensity",
+        if not isinstance(self.tmp_data.index, pd.DatetimeIndex):
+            raise ValueError("DataFrame source must have a DatetimeIndex.")
+        mapped_data = self.tmp_data["count"].reindex(
+            self.data_frame.index, method="nearest"
         )
+        self.data_frame[self.new_column_name] = mapped_data
+
+        # self.data_hub.add_column_to_crns_data_frame(
+        #     self.tmp_data,
+        #     column_name="count",
+        # )
 
 
 class DateTimeHandler:
@@ -537,7 +552,8 @@ class DataFetcher:
         return response.text
 
     def parse_http_data(self, raw_data):
-        """Parse the HTTP response data into a dataframe
+        """
+        Parse the HTTP response data into a dataframe
 
         Parameters
         ----------
@@ -854,7 +870,7 @@ class NMDBDataHandler:
                 self.data_manager.need_data_before_cache is False
                 and self.data_manager.need_data_after_cache is False
             ):
-                logging.info("All data is present in the cache.")
+                core_logger.info("All data is present in the cache.")
                 df_cache = self.cache_handler.read_cache()
                 return df_cache
 
@@ -868,7 +884,7 @@ class NMDBDataHandler:
                 self.cache_handler.write_cache(df_combined)
                 return df_combined
         else:
-            logging.info(
+            core_logger.info(
                 f"No cache file found at"
                 f" {self.cache_handler.cache_file_path}."
             )

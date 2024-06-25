@@ -9,7 +9,7 @@ from neptoon.ancillary_data_collection.nmdb_data_collection import (
 )
 from neptoon.neutron_correction.neutron_correction import (
     CorrectionBuilder,
-    IncomingIntensityDesilets,
+    IncomingIntensityZreda,
     CorrectNeutrons,
 )
 from neptoon.data_management.data_audit import (
@@ -143,7 +143,7 @@ Important step in preperation of data. Collect the NMDB data for
 intensity corrections.
 """
 
-attacher = NMDBDataAttacher(data_hub)
+attacher = NMDBDataAttacher(data_hub.crns_data_frame)
 attacher.configure(station="JUNG")
 attacher.fetch_data()
 attacher.attach_data()
