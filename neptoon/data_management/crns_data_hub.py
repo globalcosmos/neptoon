@@ -1,5 +1,8 @@
 import pandas as pd
 from neptoon.configuration.configuration_input import ConfigurationManager
+from neptoon.ancillary_data_collection.nmdb_data_collection import (
+    NMDBDataAttacher,
+)
 from neptoon.data_management.data_validation_tables import (
     FormatCheck,
 )
@@ -102,6 +105,41 @@ class CRNSDataHub:
 
     def _create_quality_assessor(self):
         pass
+
+    def attach_nmdb_data(
+        self,
+        station="JUNG",
+        new_column_name="incoming_neutron_intensity",
+        resolution="60",
+        nmdb_table="revori",
+    ):
+        """
+        Utilises the NMDBDataAttacher class to attach NMDB incoming
+        intensity data to the crns_data_frame. Collects data using
+        www.NMDB.eu
+
+        See NMDBDataAttacher documentation for more information.
+
+        Parameters
+        ----------
+        station : str, optional
+            The station to collect data from, by default "JUNG"
+        new_column_name : str, optional
+            The name of the column were data will be written to, by
+            default "incoming_neutron_intensity"
+        resolution : str, optional
+            The resolution in minutes, by default "60"
+        nmdb_table : str, optional
+            The table to pull data from, by default "revori"
+        """
+        attacher = NMDBDataAttacher(
+            data_frame=self.crns_data_frame, new_column_name=new_column_name
+        )
+        attacher.configure(
+            station=station, resolution=resolution, nmdb_table=nmdb_table
+        )
+        attacher.fetch_data()
+        attacher.attach_data()
 
     def validate_dataframe(self, schema: str):
         """
