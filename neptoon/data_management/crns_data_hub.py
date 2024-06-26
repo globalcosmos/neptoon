@@ -16,6 +16,17 @@ from neptoon.logging import get_logger
 core_logger = get_logger()
 
 
+class SiteInformation:
+    """
+    This class should store key info needed for site processing. For
+    example, bulk density, lat/lon, lattice water, reference values. A
+    user can then define this and add it to the hub. We can also
+    automate building of it using config information.
+    """
+
+    pass
+
+
 class CRNSDataHub:
     """
     The CRNSDataHub is used to manage the time series data throughout
@@ -106,6 +117,34 @@ class CRNSDataHub:
     def _create_quality_assessor(self):
         pass
 
+    def validate_dataframe(self, schema: str):
+        """
+        Validates the dataframe against a pandera schema See
+        data_validation_table.py for schemas.
+
+        Parameters
+        ----------
+        schema : str
+            The name of the schema to use for the check.
+        """
+
+        if schema == "initial_check":
+            tmpdf = self.crns_data_frame
+            FormatCheck.validate(tmpdf, lazy=True)
+        elif schema == "before_corrections_check":
+            pass
+        elif schema == "after_corrections_check":
+            pass
+        elif schema == "final_check":
+            pass
+        else:
+            validation_error_message = (
+                "Incorrect schema or table name given "
+                "when validating the crns_data_frame"
+            )
+            core_logger.error(validation_error_message)
+            print(validation_error_message)
+
     def attach_nmdb_data(
         self,
         station="JUNG",
@@ -140,34 +179,6 @@ class CRNSDataHub:
         )
         attacher.fetch_data()
         attacher.attach_data()
-
-    def validate_dataframe(self, schema: str):
-        """
-        Validates the dataframe against a pandera schema See
-        data_validation_table.py for schemas.
-
-        Parameters
-        ----------
-        schema : str
-            The name of the schema to use for the check.
-        """
-
-        if schema == "initial_check":
-            tmpdf = self.crns_data_frame
-            FormatCheck.validate(tmpdf, lazy=True)
-        elif schema == "before_corrections_check":
-            pass
-        elif schema == "after_corrections_check":
-            pass
-        elif schema == "final_check":
-            pass
-        else:
-            validation_error_message = (
-                "Incorrect schema or table name given "
-                "when validating the crns_data_frame"
-            )
-            core_logger.error(validation_error_message)
-            print(validation_error_message)
 
     def apply_quality_flags(
         self,
@@ -215,6 +226,7 @@ class CRNSDataHub:
             core_logger.info(message)
 
         if flags_default:
+            # Do we include a default system here? Is this possible?
             pass
 
     def correct_neutrons(self):
@@ -230,7 +242,7 @@ class CRNSDataHub:
         """
         pass
 
-    def save_data(self, folder_path, file_name, step):  #
+    def save_data(self, folder_path, file_name, step):
         """
         Saves the file to a specified location. It must contain the
         correct folder_path and file_name.
