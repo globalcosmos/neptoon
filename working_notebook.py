@@ -3,26 +3,21 @@ import math
 import pandas as pd
 
 from neptoon.data_management.crns_data_hub import CRNSDataHub
-from neptoon.ancillary_data_collection.nmdb_data_collection import (
-    NMDBDataAttacher,
-)
+
+from neptoon.data_management.site_information import SiteInformation
+
 from neptoon.neutron_correction.neutron_correction import (
-    CorrectionBuilder,
-    IncomingIntensityZreda,
-    CorrectNeutrons,
+    CorrectionType,
+    CorrectionTheory,
 )
+
 from neptoon.data_management.data_audit import (
     DataAuditLog,
 )
 from neptoon.data_management.data_audit import log_key_step
 from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
 
-""" Test later
-# from neptoon.configuration.configuration_input import (
-#     ConfigurationManager,
-# )
 
-"""
 DataAuditLog.create()
 
 
@@ -126,8 +121,18 @@ NOTE: It will be possible to work without the DataHub. We could perhaps
 even show this in a notebook? This would just be using the functions in
 a workbook.
 """
-
-data_hub = CRNSDataHub(crns_data_frame=crns_df)
+site_information = SiteInformation(
+    latitude=90,
+    longitude=90,
+    elevation=0,
+    reference_incoming_neutron_value=150,
+    bulk_density=1.4,
+    lattice_water=0.01,
+    soil_organic_carbon=0,
+)
+data_hub = CRNSDataHub(
+    crns_data_frame=crns_df, site_information=site_information
+)
 # Validate the dataframe to check for initial errors
 data_hub.validate_dataframe(schema="initial_check")
 # The dataframe can be accessed here.
@@ -138,11 +143,8 @@ data_hub.crns_data_frame
 Important step in preperation of data. Collect the NMDB data for
 intensity corrections.
 """
+data_hub.attach_nmdb_data()
 
-attacher = NMDBDataAttacher(data_hub.crns_data_frame)
-attacher.configure(station="JUNG")
-attacher.fetch_data()
-attacher.attach_data()
 
 """Step 4: Perform first QA steps
 
@@ -170,15 +172,26 @@ qa_flags.add_check(
     FlagSpikeDetectionUniLOF("epithermal_neutrons"),
     # ...
 )
+
 data_hub.apply_quality_flags(custom_flags=qa_flags)
 
 
 """Step 5: Correct Neutrons
 """
-steps = CorrectionBuilder()
-steps.add_correction(IncomingIntensityZreda(150))
-corrector = CorrectNeutrons(data_hub.crns_data_frame, steps)
-df = corrector.correct_neutrons()
+# steps = CorrectionBuilder()
+# steps.add_correction(IncomingIntensityZreda(150))
+# corrector = CorrectNeutrons(data_hub.crns_data_frame, steps)
+# df = corrector.correct_neutrons()
+
+
+data_hub.select_correction(
+    correction_type=CorrectionType.INCOMING_INTENSITY,
+    correction_theory=CorrectionTheory.ZREDA_2012,
+)
+data_hub.correct_neutrons(correct_flagged_values_too=True)
+
+data_hub.crns_data_frame
+
 
 """Step 6: Calibration [Optional]
 """

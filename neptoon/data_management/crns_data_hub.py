@@ -1,11 +1,20 @@
 import pandas as pd
+from typeguard import typechecked
 from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataAttacher,
 )
+from neptoon.neutron_correction.neutron_correction import (
+    CorrectionBuilder,
+    CorrectionFactory,
+    CorrectionType,
+    CorrectionTheory,
+    CorrectNeutrons,
+)
 from neptoon.data_management.data_validation_tables import (
     FormatCheck,
 )
+from neptoon.data_management.site_information import SiteInformation
 from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
@@ -14,17 +23,6 @@ from neptoon.quality_assesment.quality_assesment import (
 from neptoon.logging import get_logger
 
 core_logger = get_logger()
-
-
-class SiteInformation:
-    """
-    This class should store key info needed for site processing. For
-    example, bulk density, lat/lon, lattice water, reference values. A
-    user can then define this and add it to the hub. We can also
-    automate building of it using config information.
-    """
-
-    pass
 
 
 class CRNSDataHub:
@@ -49,6 +47,7 @@ class CRNSDataHub:
         configuration_manager: ConfigurationManager = None,
         quality_assessor: DataQualityAssessor = None,
         validation: bool = True,
+        site_information: SiteInformation = None,
         process_with_config: bool = False,
     ):
         """
@@ -71,7 +70,11 @@ class CRNSDataHub:
             data_management>data_validation_tables.py for examples of
             tables being validated). These checks ensure data is
             correctly formatted for internal processing.
+        site_information : SiteInformation
+            Object which contains information about a site necessary for
+            processing crns data. e.g., bulk density data
         """
+
         self._crns_data_frame = crns_data_frame
         self._flags_data_frame = flags_data_frame
         if configuration_manager is not None:
@@ -79,14 +82,17 @@ class CRNSDataHub:
         self._validation = validation
         self._quality_assessor = quality_assessor
         self._process_with_config = process_with_config
+        self._site_information = site_information
+        self._correction_factory = CorrectionFactory(self._site_information)
+        self._correction_builder = CorrectionBuilder()
 
     @property
     def crns_data_frame(self):
         return self._crns_data_frame
 
+    @typechecked
     @crns_data_frame.setter
     def crns_data_frame(self, df: pd.DataFrame):
-        # TODO checks on df
         self._crns_data_frame = df
 
     @property
@@ -106,6 +112,7 @@ class CRNSDataHub:
     def quality_assessor(self):
         return self._quality_assessor
 
+    @typechecked
     @quality_assessor.setter
     def quality_assessor(self, assessor: DataQualityAssessor):
         self._quality_assessor = assessor
@@ -113,6 +120,23 @@ class CRNSDataHub:
     @property
     def process_with_config(self):
         return self._process_with_config
+
+    @property
+    def site_information(self):
+        return self._site_information
+
+    @property
+    def correction_factory(self):
+        return self._correction_factory
+
+    @property
+    def correction_builder(self):
+        return self._correction_builder
+
+    @typechecked
+    @correction_builder.setter
+    def correction_builder(self, builder: CorrectionBuilder):
+        self._correction_builder = builder
 
     def _create_quality_assessor(self):
         pass
@@ -144,6 +168,21 @@ class CRNSDataHub:
             )
             core_logger.error(validation_error_message)
             print(validation_error_message)
+
+    @typechecked
+    def update_site_information(self, new_site_information: SiteInformation):
+        """
+        When a user wants to update the hub with a SiteInformation
+        object it must be done with this method.
+
+        Parameters
+        ----------
+        site_information : SiteInformation
+            SiteInformation object
+        """
+        self._site_information = new_site_information
+        self._correction_factory = CorrectionFactory(self._site_information)
+        core_logger.info("Site information updated sucessfully")
 
     def attach_nmdb_data(
         self,
@@ -229,8 +268,38 @@ class CRNSDataHub:
             # Do we include a default system here? Is this possible?
             pass
 
-    def correct_neutrons(self):
-        pass
+    def select_correction(
+        self,
+        use_all_default_corrections=False,
+        correction_type: CorrectionType = "empty",
+        correction_theory: CorrectionTheory = None,
+    ):
+
+        if use_all_default_corrections:
+            pass  # TODO build default corrections
+        else:
+            correction = self.correction_factory.create_correction(
+                correction_type=correction_type,
+                correction_theory=correction_theory,
+            )
+            self.correction_builder.add_correction(correction=correction)
+
+    def correct_neutrons(
+        self,
+        correct_flagged_values_too=False,
+    ):
+        if correct_flagged_values_too:
+            corrector = CorrectNeutrons(
+                crns_data_frame=self.crns_data_frame,
+                correction_builder=self.correction_builder,
+            )
+            self.crns_data_frame = corrector.correct_neutrons()
+        else:
+            corrector = CorrectNeutrons(
+                crns_data_frame=self.mask_flagged_data(),
+                correction_builder=self.correction_builder,
+            )
+            self.crns_data_frame = corrector.correct_neutrons()
 
     def produce_soil_moisture_estimates(self):
         pass

@@ -1,6 +1,8 @@
 import pandas as pd
+from enum import Enum
 from abc import ABC, abstractmethod
 from neptoon.logging import get_logger
+from neptoon.data_management.site_information import SiteInformation
 
 # read in the specific functions here
 from neptoon.corrections_and_functions.incoming_intensity_corrections import (
@@ -334,3 +336,101 @@ class CorrectNeutrons:
         df = self.create_correction_factors(self.crns_data_frame)
         df = self.create_corrected_neutron_column(df)
         return df
+
+
+class CorrectionType(Enum):
+    """
+    The types of correction avaiable to implement.
+    """
+
+    INCOMING_INTENSITY = "incoming_intensity"
+    ABOVE_GROUND_BIOMASS = "above_ground_biomass"
+    PRESSURE = "pressure"
+    HUMIDITY = "humidity"
+
+
+class CorrectionTheory(Enum):
+    """
+    The corrections theories for correcting influence on neutron signal
+    beyond soil moisture
+    """
+
+    ZREDA_2012 = "zreda_2012"
+    ROSOLEM_2012 = "rosolem_2012"
+
+
+class CorrectionFactory:
+    """ """
+
+    def __init__(self, site_information: SiteInformation):
+        self._site_information = site_information
+
+    @property
+    def site_information(self):
+        return self._site_information
+
+    def create_correction(
+        self,
+        correction_type: CorrectionType,
+        correction_theory: CorrectionTheory = None,
+    ):
+        """
+        Creates a particular Correction object using the
+        site_information. CorrectionType and CorrectionTheory enums are
+        used for selection. If CorrectionTheory is left empty the
+        default correction is selected.
+
+        Parameters
+        ----------
+        correction_type : CorrectionType
+            The correction type to stage can be:
+                - CorrectionType.INCOMING_INTENSITY
+                - CorrectionType.ABOVE_GROUND_BIOMASS
+                - CorrectionType.PRESSURE
+                - CorrectionType.HUMIDITY
+        correction_theory : CorrectionTheory, optional
+            The theory to apply leave blank to use the default format,
+            otherwise see CorrectionTheory for options, by default None
+
+        Returns
+        -------
+        Correction
+            Returns a correction object with the site specific values
+            read in from the SiteInformation class
+        """
+        if correction_type == CorrectionType.ABOVE_GROUND_BIOMASS:
+            return self.create_biomass_correction(
+                correction_theory=correction_theory
+            )
+
+        if correction_type == CorrectionType.INCOMING_INTENSITY:
+            return self.create_intensity_correction(
+                correction_theory=correction_theory
+            )
+        if correction_type == CorrectionType.PRESSURE:
+            return self.create_pressure_correction(
+                correction_theory=correction_theory
+            )
+        if correction_type == CorrectionType.HUMIDITY:
+            return self.create_humidity_correction(
+                correction_theory=correction_theory
+            )
+
+    def create_intensity_correction(self, correction_theory: CorrectionTheory):
+        if correction_theory == None:
+            # Apply default correction theory
+            # TODO decide and add the default correction type
+            pass
+        elif correction_theory == CorrectionTheory.ZREDA_2012:
+            return IncomingIntensityZreda(
+                self.site_information.reference_incoming_neutron_value
+            )
+
+    def create_biomass_correction(self, correction_theory: CorrectionTheory):
+        pass
+
+    def create_pressure_correction(self, correction_theory: CorrectionTheory):
+        pass
+
+    def create_humidity_correction(self, correction_theory: CorrectionTheory):
+        pass
