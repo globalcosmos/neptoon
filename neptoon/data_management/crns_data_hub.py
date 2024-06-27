@@ -1,5 +1,5 @@
 import pandas as pd
-from typeguard import typechecked
+import numpy as np
 from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataAttacher,
@@ -90,7 +90,6 @@ class CRNSDataHub:
     def crns_data_frame(self):
         return self._crns_data_frame
 
-    @typechecked
     @crns_data_frame.setter
     def crns_data_frame(self, df: pd.DataFrame):
         self._crns_data_frame = df
@@ -112,10 +111,17 @@ class CRNSDataHub:
     def quality_assessor(self):
         return self._quality_assessor
 
-    @typechecked
     @quality_assessor.setter
     def quality_assessor(self, assessor: DataQualityAssessor):
-        self._quality_assessor = assessor
+        if isinstance(assessor, DataQualityAssessor):
+            self._quality_assessor = assessor
+        else:
+            message = (
+                f"{assessor} is not a DataQualityAssessor class. "
+                "Cannot assign to self.quality_assessor"
+            )
+            core_logger.error(message)
+            raise TypeError(message)
 
     @property
     def process_with_config(self):
@@ -133,7 +139,6 @@ class CRNSDataHub:
     def correction_builder(self):
         return self._correction_builder
 
-    @typechecked
     @correction_builder.setter
     def correction_builder(self, builder: CorrectionBuilder):
         self._correction_builder = builder
@@ -169,7 +174,6 @@ class CRNSDataHub:
             core_logger.error(validation_error_message)
             print(validation_error_message)
 
-    @typechecked
     def update_site_information(self, new_site_information: SiteInformation):
         """
         When a user wants to update the hub with a SiteInformation
@@ -274,6 +278,26 @@ class CRNSDataHub:
         correction_type: CorrectionType = "empty",
         correction_theory: CorrectionTheory = None,
     ):
+        """
+        Method to select corrections to be applied to data. If
+        use_all_default_corrections is True then it will apply the
+        default correction methods. These will periodically be updated
+        to the most current and agreed best methods.
+
+        Individual corrections can be applied using a CorrectionType and
+        CorrectionTheory. If a user assignes a CorrectionType without a
+        CorrectionTheory, then the default correction for that
+        CorrectionType is applied.
+
+        Parameters
+        ----------
+        use_all_default_corrections : bool, optional
+            decision to use defaults, by default False
+        correction_type : CorrectionType, optional
+            A CorrectionType, by default "empty"
+        correction_theory : CorrectionTheory, optional
+            A CorrectionTheory, by default None
+        """
 
         if use_all_default_corrections:
             pass  # TODO build default corrections
@@ -288,6 +312,18 @@ class CRNSDataHub:
         self,
         correct_flagged_values_too=False,
     ):
+        """
+        Create correction factors as well as the corrected epithermal
+        neutrons column. By default it will collect apply corrections
+        only on data that has been left unflagged during QA. Opionally
+        this can be turned off.
+
+        Parameters
+        ----------
+        correct_flagged_values_too : bool, optional
+            Whether to turn off the masking of data defined as poor in
+            QA, by default False
+        """
         if correct_flagged_values_too:
             corrector = CorrectNeutrons(
                 crns_data_frame=self.crns_data_frame,
@@ -309,7 +345,10 @@ class CRNSDataHub:
         Returns a pd.DataFrame() where flagged data has been replaced
         with NaN values
         """
-        pass
+        mask = self.flags_data_frame == "UNFLAGGED"
+        masked_df = self.crns_data_frame.copy()
+        masked_df[~mask] = np.nan
+        return masked_df
 
     def save_data(self, folder_path, file_name, step):
         """

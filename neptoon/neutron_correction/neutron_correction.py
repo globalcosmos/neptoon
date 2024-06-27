@@ -357,6 +357,7 @@ class CorrectionTheory(Enum):
 
     ZREDA_2012 = "zreda_2012"
     ROSOLEM_2012 = "rosolem_2012"
+    # TODO the rest
 
 
 class CorrectionFactory:
@@ -364,6 +365,7 @@ class CorrectionFactory:
 
     def __init__(self, site_information: SiteInformation):
         self._site_information = site_information
+        self.custom_corrections = []
 
     @property
     def site_information(self):
@@ -398,6 +400,10 @@ class CorrectionFactory:
             Returns a correction object with the site specific values
             read in from the SiteInformation class
         """
+        if (correction_type, correction_theory) in self.custom_correction:
+            return self.custom_corrections[
+                (correction_type, correction_theory)
+            ](self.site_information)
         if correction_type == CorrectionType.ABOVE_GROUND_BIOMASS:
             return self.create_biomass_correction(
                 correction_theory=correction_theory
@@ -434,3 +440,43 @@ class CorrectionFactory:
 
     def create_humidity_correction(self, correction_theory: CorrectionTheory):
         pass
+
+    def register_custom_correction(
+        self, correction_type: CorrectionType, theory: str, correction_class
+    ):
+        """
+        Used to register a custom correction theory. Without
+        registration the correction cannot be used.
+
+        The correction_class must be an object which inherits the
+        Correction class and follows the same principles as other
+        Correction type objects. This means it requires an apply method,
+        which takes in a dataframe and returns a dataframe along with
+        updates calulcated along the way.
+
+        The key difference of a custom Correction class is that it must
+        take a SiteInformation object. The logic under apply() will then
+        use this SiteInformation object to collect relevant information
+        for processing.
+
+        Parameters
+        ----------
+        correction_type : CorrectionType
+            The type of correction being registered
+        theory : str
+            A name for the custom correction
+        correction_class : Correction
+            A custom Correction class. See documentation on how to make
+            this.
+
+        Raises
+        ------
+        ValueError
+            If the correction class is not a Correction type object it
+            throws an error
+        """
+        if not issubclass(correction_class, Correction):
+            message = "Custom correction must inherit from Correction class"
+            core_logger.error(message)
+            raise ValueError(message)
+        self.custom_corrections[(correction_type, theory)] = correction_class
