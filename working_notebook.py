@@ -17,6 +17,7 @@ from neptoon.data_management.site_information import SiteInformation
 from neptoon.neutron_correction.neutron_correction import (
     CorrectionType,
     CorrectionTheory,
+    Correction,
 )
 
 from neptoon.data_management.data_audit import (
@@ -185,10 +186,47 @@ data_hub.apply_quality_flags(custom_flags=qa_flags)
 """
 
 
+class NewIdeaForBiomass(Correction):
+    """
+    My new idea to correct for biomass with humidity
+    """
+
+    def __init__(self, site_information):
+        self.site_information = site_information
+        self.correction_factor_column_name = "biomass_correction_dp"
+        self.humidity_column_name = "air_atmospheric_humidity"
+
+    def new_func(biomass, humidity):
+        return biomass / humidity
+
+    def apply(self, data_frame: pd.DataFrame):
+
+        data_frame[self.correction_factor_column_name] = data_frame.apply(
+            lambda row: self.new_func(
+                row[self.humidity_column_name],
+                self.site_information.biomass,
+            ),
+            axis=1,
+        )
+        return data_frame
+
+
+data_hub.correction_factory.register_custom_correction(
+    CorrectionType=CorrectionType.ABOVE_GROUND_BIOMASS,
+    theory="my_new_idea",
+    correction_class=NewIdeaForBiomass,
+)
+
 data_hub.select_correction(
     correction_type=CorrectionType.INCOMING_INTENSITY,
     correction_theory=CorrectionTheory.ZREDA_2012,
 )
+
+data_hub.select_correction(
+    correction_theory=CorrectionType.ABOVE_GROUND_BIOMASS,
+    correction_type="my_new_idea",
+)
+
 
 data_hub.correct_neutrons(correct_flagged_values_too=False)
 
@@ -206,7 +244,9 @@ data_hub.flags_data_frame
 
 data_hub.produce_soil_moisture_estimates()
 
-soil_moisture_calculator = NeutronsToSM(crns_data_frame=df, n0=700)
+soil_moisture_calculator = NeutronsToSM(
+    crns_data_frame=data_hub.crns_data_frame, n0=700
+)
 soil_moisture_calculator.process_data()
 soil_moisture_calculator.return_data_frame()
 

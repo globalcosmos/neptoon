@@ -343,7 +343,7 @@ class CRNSDataHub:
     def mask_flagged_data(self):
         """
         Returns a pd.DataFrame() where flagged data has been replaced
-        with NaN values
+        with np.nan values
         """
         mask = self.flags_data_frame == "UNFLAGGED"
         masked_df = self.crns_data_frame.copy()
