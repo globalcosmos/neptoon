@@ -27,7 +27,7 @@ class Correction(ABC):
     """
 
     def __init__(
-        self, correction_type: str, correction_factor_column_name: str = None
+        self, correction_type: str, correction_factor_column_name: str
     ):
         self._correction_factor_column_name = correction_factor_column_name
         self.correction_type = correction_type
