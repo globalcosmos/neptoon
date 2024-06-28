@@ -11,6 +11,7 @@ from neptoon.neutron_correction.neutron_correction import (
     CorrectionTheory,
     CorrectNeutrons,
 )
+from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
 from neptoon.data_management.data_validation_tables import (
     FormatCheck,
 )
@@ -301,6 +302,7 @@ class CRNSDataHub:
 
         if use_all_default_corrections:
             pass  # TODO build default corrections
+
         else:
             correction = self.correction_factory.create_correction(
                 correction_type=correction_type,
@@ -337,8 +339,20 @@ class CRNSDataHub:
             )
             self.crns_data_frame = corrector.correct_neutrons()
 
-    def produce_soil_moisture_estimates(self):
-        pass
+    def produce_soil_moisture_estimates(self, n0=None):
+        if n0 is None:
+            soil_moisture_calculator = NeutronsToSM(
+                crns_data_frame=self.crns_data_frame,
+                n0=self.site_information.n0,
+            )
+            soil_moisture_calculator.process_data()
+            soil_moisture_calculator.return_data_frame()
+        else:
+            soil_moisture_calculator = NeutronsToSM(
+                crns_data_frame=self.crns_data_frame, n0=n0
+            )
+            soil_moisture_calculator.process_data()
+            self.crns_data_frame = soil_moisture_calculator.return_data_frame()
 
     def mask_flagged_data(self):
         """

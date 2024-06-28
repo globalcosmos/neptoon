@@ -141,6 +141,7 @@ site_information = SiteInformation(
     soil_organic_carbon=0,
 )
 site_information.add_custom_value("n0", 2000)
+site_information.add_custom_value("biomass", 1)
 
 data_hub = CRNSDataHub(
     crns_data_frame=crns_df, site_information=site_information
@@ -193,11 +194,13 @@ class NewIdeaForBiomass(Correction):
 
     def __init__(self, site_information):
         self.site_information = site_information
+        self.correction_type = CorrectionType.ABOVE_GROUND_BIOMASS
         self.correction_factor_column_name = "biomass_correction_dp"
-        self.humidity_column_name = "air_atmospheric_humidity"
+        self.humidity_column_name = "air_relative_humidity"
 
+    @staticmethod
     def new_func(biomass, humidity):
-        return biomass / humidity
+        return (biomass / humidity) / 100
 
     def apply(self, data_frame: pd.DataFrame):
 
@@ -212,7 +215,7 @@ class NewIdeaForBiomass(Correction):
 
 
 data_hub.correction_factory.register_custom_correction(
-    CorrectionType=CorrectionType.ABOVE_GROUND_BIOMASS,
+    correction_type=CorrectionType.ABOVE_GROUND_BIOMASS,
     theory="my_new_idea",
     correction_class=NewIdeaForBiomass,
 )
@@ -223,11 +226,11 @@ data_hub.select_correction(
 )
 
 data_hub.select_correction(
-    correction_theory=CorrectionType.ABOVE_GROUND_BIOMASS,
-    correction_type="my_new_idea",
+    correction_type=CorrectionType.ABOVE_GROUND_BIOMASS,
+    correction_theory="my_new_idea",
 )
 
-
+data_hub.correction_builder.get_corrections()
 data_hub.correct_neutrons(correct_flagged_values_too=False)
 
 
@@ -244,11 +247,11 @@ data_hub.flags_data_frame
 
 data_hub.produce_soil_moisture_estimates()
 
-soil_moisture_calculator = NeutronsToSM(
-    crns_data_frame=data_hub.crns_data_frame, n0=700
-)
-soil_moisture_calculator.process_data()
-soil_moisture_calculator.return_data_frame()
+# soil_moisture_calculator = NeutronsToSM(
+#     crns_data_frame=data_hub.crns_data_frame, n0=700
+# )
+# soil_moisture_calculator.process_data()
+# soil_moisture_calculator.return_data_frame()
 
 """Step 8: Final QA
 """

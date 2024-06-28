@@ -156,9 +156,12 @@ class CorrectionBuilder:
         correction : Correction
             A Correction object
         """
+
         if isinstance(correction, Correction):
             correction_type = correction.correction_type
             self.corrections[correction_type] = correction
+        else:
+            print(f"{correction}No")
 
     def remove_correction_by_type(self, correction_type: str):
         """
@@ -365,7 +368,7 @@ class CorrectionFactory:
 
     def __init__(self, site_information: SiteInformation):
         self._site_information = site_information
-        self.custom_corrections = []
+        self.custom_corrections = {}
 
     @property
     def site_information(self):
@@ -400,7 +403,7 @@ class CorrectionFactory:
             Returns a correction object with the site specific values
             read in from the SiteInformation class
         """
-        if (correction_type, correction_theory) in self.custom_correction:
+        if (correction_type, correction_theory) in self.custom_corrections:
             return self.custom_corrections[
                 (correction_type, correction_theory)
             ](self.site_information)
