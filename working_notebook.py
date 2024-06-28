@@ -23,8 +23,6 @@ from neptoon.neutron_correction.neutron_correction import (
 from neptoon.data_management.data_audit import (
     DataAuditLog,
 )
-from neptoon.data_management.data_audit import log_key_step
-from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
 
 
 DataAuditLog.create()
@@ -45,25 +43,6 @@ config_manager.load_and_validate_configuration(
 ProcessCRNSWithConfig(config_manager)
 
 """
-
-
-class PseudoDataProcessor:
-    def __init__(self):
-        pass
-
-    @log_key_step("style", "a1")
-    def theta_calc(self, style="first", N0=2000, a1=2.5):
-        pass
-
-    @log_key_step("method", "window")
-    def smooth_neutrons(self, method="SG", window=12):
-        # logic
-        pass
-
-
-processor = PseudoDataProcessor()
-processor.theta_calc(style="second")
-processor.smooth_neutrons(method="SG", window=12)
 
 """Step 0: Collect data from source
 """
@@ -140,6 +119,7 @@ site_information = SiteInformation(
     lattice_water=0.01,
     soil_organic_carbon=0,
 )
+
 site_information.add_custom_value("n0", 2000)
 site_information.add_custom_value("biomass", 1)
 
@@ -163,10 +143,6 @@ applying them. The flags would be updated. Validation with another
 schema to ensure the QA was succesfully implemented.
 """
 
-# Option 1
-# data_hub.apply_quality_flags_config()
-
-# Option 2
 qa_flags = QualityAssessmentFlagBuilder()
 qa_flags.add_check(
     FlagRangeCheck("air_relative_humidity", min_val=0, max_val=100),

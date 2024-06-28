@@ -385,7 +385,7 @@ class CRNSDataHub:
         """
 
         file_name_and_save_location = folder_path + file_name + ".csv"
-        self.dataframe.to_csv(file_name_and_save_location)
+        self.crns_data_frame.to_csv(file_name_and_save_location)
 
     def archive_data(self, folder_path, file_name):
         """
