@@ -275,9 +275,9 @@ class CRNSDataHub:
 
     def select_correction(
         self,
-        use_all_default_corrections=False,
         correction_type: CorrectionType = "empty",
         correction_theory: CorrectionTheory = None,
+        use_all_default_corrections=False,
     ):
         """
         Method to select corrections to be applied to data. If
