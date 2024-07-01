@@ -1,6 +1,5 @@
 import pandas as pd
 from enum import Enum
-from abc import ABC, abstractmethod
 from neptoon.logging import get_logger
 from neptoon.data_management.site_information import SiteInformation
 from neptoon.neutron_correction.correction_classes import (
@@ -8,10 +7,6 @@ from neptoon.neutron_correction.correction_classes import (
     IncomingIntensityZreda,
 )
 
-# read in the specific functions here
-from neptoon.corrections_and_functions.incoming_intensity_corrections import (
-    incoming_intensity_zreda_2012,
-)
 
 core_logger = get_logger()
 
@@ -302,7 +297,10 @@ class CorrectionFactory:
         if (correction_type, correction_theory) in self.custom_corrections:
             return self.custom_corrections[
                 (correction_type, correction_theory)
-            ](self.site_information)
+            ](
+                site_information=self.site_information,
+                correction_type=correction_type,
+            )
         if correction_type == CorrectionType.ABOVE_GROUND_BIOMASS:
             return self.create_biomass_correction(
                 correction_theory=correction_theory
@@ -322,7 +320,7 @@ class CorrectionFactory:
             )
 
     def create_intensity_correction(self, correction_theory: CorrectionTheory):
-        if correction_theory == None:
+        if correction_theory is None:
             # Apply default correction theory
             # TODO decide and add the default correction type
             pass
