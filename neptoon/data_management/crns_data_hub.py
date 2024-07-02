@@ -1,8 +1,21 @@
 import pandas as pd
+import numpy as np
 from neptoon.configuration.configuration_input import ConfigurationManager
+from neptoon.ancillary_data_collection.nmdb_data_collection import (
+    NMDBDataAttacher,
+)
+from neptoon.neutron_correction.neutron_correction import (
+    CorrectionBuilder,
+    CorrectionFactory,
+    CorrectionType,
+    CorrectionTheory,
+    CorrectNeutrons,
+)
+from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
 from neptoon.data_management.data_validation_tables import (
     FormatCheck,
 )
+from neptoon.data_management.site_information import SiteInformation
 from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
@@ -35,6 +48,7 @@ class CRNSDataHub:
         configuration_manager: ConfigurationManager = None,
         quality_assessor: DataQualityAssessor = None,
         validation: bool = True,
+        site_information: SiteInformation = None,
         process_with_config: bool = False,
     ):
         """
@@ -57,7 +71,11 @@ class CRNSDataHub:
             data_management>data_validation_tables.py for examples of
             tables being validated). These checks ensure data is
             correctly formatted for internal processing.
+        site_information : SiteInformation
+            Object which contains information about a site necessary for
+            processing crns data. e.g., bulk density data
         """
+
         self._crns_data_frame = crns_data_frame
         self._flags_data_frame = flags_data_frame
         if configuration_manager is not None:
@@ -65,6 +83,9 @@ class CRNSDataHub:
         self._validation = validation
         self._quality_assessor = quality_assessor
         self._process_with_config = process_with_config
+        self._site_information = site_information
+        self._correction_factory = CorrectionFactory(self._site_information)
+        self._correction_builder = CorrectionBuilder()
 
     @property
     def crns_data_frame(self):
@@ -72,7 +93,6 @@ class CRNSDataHub:
 
     @crns_data_frame.setter
     def crns_data_frame(self, df: pd.DataFrame):
-        # TODO checks on df
         self._crns_data_frame = df
 
     @property
@@ -94,11 +114,35 @@ class CRNSDataHub:
 
     @quality_assessor.setter
     def quality_assessor(self, assessor: DataQualityAssessor):
-        self._quality_assessor = assessor
+        if isinstance(assessor, DataQualityAssessor):
+            self._quality_assessor = assessor
+        else:
+            message = (
+                f"{assessor} is not a DataQualityAssessor class. "
+                "Cannot assign to self.quality_assessor"
+            )
+            core_logger.error(message)
+            raise TypeError(message)
 
     @property
     def process_with_config(self):
         return self._process_with_config
+
+    @property
+    def site_information(self):
+        return self._site_information
+
+    @property
+    def correction_factory(self):
+        return self._correction_factory
+
+    @property
+    def correction_builder(self):
+        return self._correction_builder
+
+    @correction_builder.setter
+    def correction_builder(self, builder: CorrectionBuilder):
+        self._correction_builder = builder
 
     def _create_quality_assessor(self):
         pass
@@ -130,6 +174,55 @@ class CRNSDataHub:
             )
             core_logger.error(validation_error_message)
             print(validation_error_message)
+
+    def update_site_information(self, new_site_information: SiteInformation):
+        """
+        When a user wants to update the hub with a SiteInformation
+        object it must be done with this method.
+
+        Parameters
+        ----------
+        site_information : SiteInformation
+            SiteInformation object
+        """
+        self._site_information = new_site_information
+        self._correction_factory = CorrectionFactory(self._site_information)
+        core_logger.info("Site information updated sucessfully")
+
+    def attach_nmdb_data(
+        self,
+        station="JUNG",
+        new_column_name="incoming_neutron_intensity",
+        resolution="60",
+        nmdb_table="revori",
+    ):
+        """
+        Utilises the NMDBDataAttacher class to attach NMDB incoming
+        intensity data to the crns_data_frame. Collects data using
+        www.NMDB.eu
+
+        See NMDBDataAttacher documentation for more information.
+
+        Parameters
+        ----------
+        station : str, optional
+            The station to collect data from, by default "JUNG"
+        new_column_name : str, optional
+            The name of the column were data will be written to, by
+            default "incoming_neutron_intensity"
+        resolution : str, optional
+            The resolution in minutes, by default "60"
+        nmdb_table : str, optional
+            The table to pull data from, by default "revori"
+        """
+        attacher = NMDBDataAttacher(
+            data_frame=self.crns_data_frame, new_column_name=new_column_name
+        )
+        attacher.configure(
+            station=station, resolution=resolution, nmdb_table=nmdb_table
+        )
+        attacher.fetch_data()
+        attacher.attach_data()
 
     def apply_quality_flags(
         self,
@@ -177,22 +270,101 @@ class CRNSDataHub:
             core_logger.info(message)
 
         if flags_default:
+            # Do we include a default system here? Is this possible?
             pass
 
-    def correct_neutrons(self):
-        pass
+    def select_correction(
+        self,
+        correction_type: CorrectionType = "empty",
+        correction_theory: CorrectionTheory = None,
+        use_all_default_corrections=False,
+    ):
+        """
+        Method to select corrections to be applied to data. If
+        use_all_default_corrections is True then it will apply the
+        default correction methods. These will periodically be updated
+        to the most current and agreed best methods.
 
-    def produce_soil_moisture_estimates(self):
-        pass
+        Individual corrections can be applied using a CorrectionType and
+        CorrectionTheory. If a user assignes a CorrectionType without a
+        CorrectionTheory, then the default correction for that
+        CorrectionType is applied.
+
+        Parameters
+        ----------
+        use_all_default_corrections : bool, optional
+            decision to use defaults, by default False
+        correction_type : CorrectionType, optional
+            A CorrectionType, by default "empty"
+        correction_theory : CorrectionTheory, optional
+            A CorrectionTheory, by default None
+        """
+
+        if use_all_default_corrections:
+            pass  # TODO build default corrections
+
+        else:
+            correction = self.correction_factory.create_correction(
+                correction_type=correction_type,
+                correction_theory=correction_theory,
+            )
+            self.correction_builder.add_correction(correction=correction)
+
+    def correct_neutrons(
+        self,
+        correct_flagged_values_too=False,
+    ):
+        """
+        Create correction factors as well as the corrected epithermal
+        neutrons column. By default it will collect apply corrections
+        only on data that has been left unflagged during QA. Opionally
+        this can be turned off.
+
+        Parameters
+        ----------
+        correct_flagged_values_too : bool, optional
+            Whether to turn off the masking of data defined as poor in
+            QA, by default False
+        """
+        if correct_flagged_values_too:
+            corrector = CorrectNeutrons(
+                crns_data_frame=self.crns_data_frame,
+                correction_builder=self.correction_builder,
+            )
+            self.crns_data_frame = corrector.correct_neutrons()
+        else:
+            corrector = CorrectNeutrons(
+                crns_data_frame=self.mask_flagged_data(),
+                correction_builder=self.correction_builder,
+            )
+            self.crns_data_frame = corrector.correct_neutrons()
+
+    def produce_soil_moisture_estimates(self, n0=None):
+        if n0 is None:
+            soil_moisture_calculator = NeutronsToSM(
+                crns_data_frame=self.crns_data_frame,
+                n0=self.site_information.n0,
+            )
+            soil_moisture_calculator.process_data()
+            soil_moisture_calculator.return_data_frame()
+        else:
+            soil_moisture_calculator = NeutronsToSM(
+                crns_data_frame=self.crns_data_frame, n0=n0
+            )
+            soil_moisture_calculator.process_data()
+            self.crns_data_frame = soil_moisture_calculator.return_data_frame()
 
     def mask_flagged_data(self):
         """
         Returns a pd.DataFrame() where flagged data has been replaced
-        with NaN values
+        with np.nan values
         """
-        pass
+        mask = self.flags_data_frame == "UNFLAGGED"
+        masked_df = self.crns_data_frame.copy()
+        masked_df[~mask] = np.nan
+        return masked_df
 
-    def save_data(self, folder_path, file_name, step):  #
+    def save_data(self, folder_path, file_name, step):
         """
         Saves the file to a specified location. It must contain the
         correct folder_path and file_name.
@@ -213,7 +385,7 @@ class CRNSDataHub:
         """
 
         file_name_and_save_location = folder_path + file_name + ".csv"
-        self.dataframe.to_csv(file_name_and_save_location)
+        self.crns_data_frame.to_csv(file_name_and_save_location)
 
     def archive_data(self, folder_path, file_name):
         """

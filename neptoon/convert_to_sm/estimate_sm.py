@@ -166,6 +166,7 @@ class NeutronsToSM:
         """
         pass
 
+    @log_key_step("smooth_window")
     def smooth_neutron_count(self, smooth_window=12):
         """
         Smooth the neutron count to remove noise

@@ -1,28 +1,30 @@
 from pathlib import Path
 import math
 import pandas as pd
+from neptoon.quality_assesment.quality_assesment import (
+    QualityAssessmentFlagBuilder,
+    FlagRangeCheck,
+    FlagNeutronGreaterThanN0,
+    FlagBelowMinimumPercentN0,
+    DataQualityAssessor,
+    FlagSpikeDetectionUniLOF,
+)
 
 from neptoon.data_management.crns_data_hub import CRNSDataHub
-from neptoon.ancillary_data_collection.nmdb_data_collection import (
-    NMDBDataAttacher,
-)
+
+from neptoon.data_management.site_information import SiteInformation
+
 from neptoon.neutron_correction.neutron_correction import (
-    CorrectionBuilder,
-    IncomingIntensityZreda,
-    CorrectNeutrons,
+    CorrectionType,
+    CorrectionTheory,
+    Correction,
 )
+
 from neptoon.data_management.data_audit import (
     DataAuditLog,
 )
-from neptoon.data_management.data_audit import log_key_step
-from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
 
-""" Test later
-# from neptoon.configuration.configuration_input import (
-#     ConfigurationManager,
-# )
 
-"""
 DataAuditLog.create()
 
 
@@ -41,25 +43,6 @@ config_manager.load_and_validate_configuration(
 ProcessCRNSWithConfig(config_manager)
 
 """
-
-
-class PseudoDataProcessor:
-    def __init__(self):
-        pass
-
-    @log_key_step("style", "a1")
-    def theta_calc(self, style="first", N0=2000, a1=2.5):
-        pass
-
-    @log_key_step("method", "window")
-    def smooth_neutrons(self, method="SG", window=12):
-        # logic
-        pass
-
-
-processor = PseudoDataProcessor()
-processor.theta_calc(style="second")
-processor.smooth_neutrons(method="SG", window=12)
 
 """Step 0: Collect data from source
 """
@@ -127,11 +110,23 @@ even show this in a notebook? This would just be using the functions in
 a workbook.
 """
 
-data_hub = CRNSDataHub(crns_data_frame=crns_df)
-# Validate the dataframe to check for initial errors
+site_information = SiteInformation(
+    latitude=90,
+    longitude=90,
+    elevation=0,
+    reference_incoming_neutron_value=150,
+    bulk_density=1.4,
+    lattice_water=0.01,
+    soil_organic_carbon=0,
+)
+
+site_information.add_custom_value("n0", 2000)
+site_information.add_custom_value("biomass", 1)
+
+data_hub = CRNSDataHub(
+    crns_data_frame=crns_df, site_information=site_information
+)
 data_hub.validate_dataframe(schema="initial_check")
-# The dataframe can be accessed here.
-data_hub.crns_data_frame
 
 """Step 3: Attach the NMDB data
 
@@ -139,10 +134,7 @@ Important step in preperation of data. Collect the NMDB data for
 intensity corrections.
 """
 
-attacher = NMDBDataAttacher(data_hub.crns_data_frame)
-attacher.configure(station="JUNG")
-attacher.fetch_data()
-attacher.attach_data()
+data_hub.attach_nmdb_data()
 
 """Step 4: Perform first QA steps
 
@@ -150,19 +142,7 @@ Here we would perform QA. This requires creating QA routines and
 applying them. The flags would be updated. Validation with another
 schema to ensure the QA was succesfully implemented.
 """
-from neptoon.quality_assesment.quality_assesment import (
-    QualityAssessmentFlagBuilder,
-    FlagRangeCheck,
-    FlagNeutronGreaterThanN0,
-    FlagBelowMinimumPercentN0,
-    DataQualityAssessor,
-    FlagSpikeDetectionUniLOF,
-)
 
-# Option 1
-# data_hub.apply_quality_flags_config()
-
-# Option 2
 qa_flags = QualityAssessmentFlagBuilder()
 qa_flags.add_check(
     FlagRangeCheck("air_relative_humidity", min_val=0, max_val=100),
@@ -170,15 +150,69 @@ qa_flags.add_check(
     FlagSpikeDetectionUniLOF("epithermal_neutrons"),
     # ...
 )
+
 data_hub.apply_quality_flags(custom_flags=qa_flags)
 
 
 """Step 5: Correct Neutrons
+
+# steps = CorrectionBuilder()
+# steps.add_correction(IncomingIntensityZreda(150))
+# corrector = CorrectNeutrons(data_hub.crns_data_frame, steps)
+# df = corrector.correct_neutrons()
 """
-steps = CorrectionBuilder()
-steps.add_correction(IncomingIntensityZreda(150))
-corrector = CorrectNeutrons(data_hub.crns_data_frame, steps)
-df = corrector.correct_neutrons()
+
+
+class NewIdeaForBiomass(Correction):
+    """
+    My new idea to correct for biomass with humidity
+    """
+
+    def __init__(self, site_information):
+        self.site_information = site_information
+        self.correction_type = CorrectionType.ABOVE_GROUND_BIOMASS
+        self.correction_factor_column_name = "biomass_correction_dp"
+        self.humidity_column_name = "air_relative_humidity"
+
+    @staticmethod
+    def new_func(biomass, humidity):
+        return (biomass / humidity) / 100
+
+    def apply(self, data_frame: pd.DataFrame):
+
+        data_frame[self.correction_factor_column_name] = data_frame.apply(
+            lambda row: self.new_func(
+                row[self.humidity_column_name],
+                self.site_information.biomass,
+            ),
+            axis=1,
+        )
+        return data_frame
+
+
+data_hub.correction_factory.register_custom_correction(
+    correction_type=CorrectionType.ABOVE_GROUND_BIOMASS,
+    theory="my_new_idea",
+    correction_class=NewIdeaForBiomass,
+)
+
+data_hub.select_correction(
+    correction_type=CorrectionType.INCOMING_INTENSITY,
+    correction_theory=CorrectionTheory.ZREDA_2012,
+)
+
+data_hub.select_correction(
+    correction_type=CorrectionType.ABOVE_GROUND_BIOMASS,
+    correction_theory="my_new_idea",
+)
+
+data_hub.correction_builder.get_corrections()
+data_hub.correct_neutrons(correct_flagged_values_too=False)
+
+
+data_hub.crns_data_frame
+data_hub.flags_data_frame
+
 
 """Step 6: Calibration [Optional]
 """
@@ -186,9 +220,14 @@ df = corrector.correct_neutrons()
 
 """Step 7: Convert to theta
 """
-soil_moisture_calculator = NeutronsToSM(crns_data_frame=df, n0=700)
-soil_moisture_calculator.process_data()
-soil_moisture_calculator.return_data_frame()
+
+data_hub.produce_soil_moisture_estimates()
+
+# soil_moisture_calculator = NeutronsToSM(
+#     crns_data_frame=data_hub.crns_data_frame, n0=700
+# )
+# soil_moisture_calculator.process_data()
+# soil_moisture_calculator.return_data_frame()
 
 """Step 8: Final QA
 """

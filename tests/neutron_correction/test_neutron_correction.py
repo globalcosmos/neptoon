@@ -1,10 +1,10 @@
 import pandas as pd
 import pytest
 from neptoon.neutron_correction.neutron_correction import (
-    Correction,
     CorrectionBuilder,
     CorrectNeutrons,
 )
+from neptoon.neutron_correction.correction_classes import Correction
 
 
 ### Test Correction class
@@ -15,6 +15,11 @@ class WrongCorrection(Correction):
 
 
 class MockCorrection(Correction):
+
+    def __init__(
+        self, correction_type: str, correction_factor_column_name: str
+    ):
+        super().__init__(correction_type, correction_factor_column_name)
 
     def apply(self, data_frame=pd.DataFrame):
         data_frame[self.correction_factor_column_name] = 1
@@ -76,9 +81,8 @@ class MockCorrection2(Correction):
         factor: float,
         correction_factor_column_name: str = "empty",
     ):
-        super().__init__(correction_type)
+        super().__init__(correction_type, correction_factor_column_name)
         self.factor = factor
-        self.correction_factor_column_name = correction_factor_column_name
 
     def apply(self, data_frame: pd.DataFrame):
         data_frame[self.correction_factor_column_name] = self.factor
