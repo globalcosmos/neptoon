@@ -95,12 +95,14 @@ class IncomingIntensityZreda(Correction):
             stored in the dataframe, by default
             "incoming_neutron_intensity"
         """
+        super().__init__(
+            correction_type=correction_type,
+            correction_factor_column_name=correction_factor_column_name,
+        )
         self.incoming_neutron_column_name = incoming_neutron_column_name
         self.reference_incoming_neutron_value = (
             reference_incoming_neutron_value
         )
-        self.correction_factor_column_name = correction_factor_column_name
-        self.correction_type = correction_type
 
     def apply(self, data_frame):
         """
