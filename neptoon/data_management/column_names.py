@@ -1,4 +1,5 @@
 from enum import Enum, auto
+import copy
 
 
 class ColumnInfo:
@@ -18,9 +19,9 @@ class ColumnInfo:
         SOIL_MOISTURE_MEASURMENT_DEPTH = auto()
 
         def __str__(self):
-            return ColumnInfo._representation[self]
+            return ColumnInfo._current_representation[self]
 
-    _representation: dict["ColumnInfo.Name", str] = {
+    _default_representation: dict["ColumnInfo.Name", str] = {
         Name.DATE_TIME: "date_time",
         Name.EPI_NEUTRON_COUNT: "epithermal_neutrons",
         Name.PRESSURE: "air_pressure",
@@ -36,6 +37,14 @@ class ColumnInfo:
         Name.SOIL_MOISTURE_MEASURMENT_DEPTH: "crns_measurement_depth",
     }
 
+    _current_representation = copy.deepcopy(_default_representation)
+
     @classmethod
     def relabel(cls, column_name: Name, new_label: str):
-        cls._representation[column_name] = new_label
+        cls._current_representation[column_name] = new_label
+
+    @classmethod
+    def reset_labels(cls):
+        cls._current_representation = copy.deepcopy(
+            cls._default_representation
+        )
