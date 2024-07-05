@@ -168,15 +168,22 @@ class NewIdeaForBiomass(Correction):
     My new idea to correct for biomass with humidity
     """
 
-    def __init__(self, site_information):
+    def __init__(
+        self,
+        site_information,
+        correction_type=CorrectionType.CUSTOM,
+        correction_factor_column_name: str = "new_biomass_correction",
+    ):
+        super().__init__(
+            correction_type=correction_type,
+            correction_factor_column_name=correction_factor_column_name,
+        )
         self.site_information = site_information
-        self.correction_type = CorrectionType.ABOVE_GROUND_BIOMASS
-        self.correction_factor_column_name = "biomass_correction_dp"
         self.humidity_column_name = "air_relative_humidity"
 
     @staticmethod
     def new_func(biomass, humidity):
-        return (biomass / humidity) / 100
+        return 1 - ((biomass / humidity) / 1000)
 
     def apply(self, data_frame: pd.DataFrame):
 

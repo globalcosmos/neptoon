@@ -1,5 +1,5 @@
 import pandas as pd
-
+from neptoon.data_management.column_names import ColumnInfo
 from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
     convert_neutrons_to_soil_moisture,
 )
@@ -21,10 +21,16 @@ class NeutronsToSM:
         dry_soil_bulk_density: float = 1.4,
         lattice_water: float = 0,
         soil_organic_carbon: float = 0,
-        corrected_neutrons_col_name: str = "corrected_epithermal_neutron_count",
-        smoothed_neutrons_col_name: str = "epithermal_neutrons_smoothed",
-        soil_moisture_col_name: str = "soil_moisture_crns",
-        depth_column_name: str = "crns_measurement_depth",
+        corrected_neutrons_col_name: str = str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
+        ),
+        smoothed_neutrons_col_name: str = str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH
+        ),
+        soil_moisture_col_name: str = str(ColumnInfo.Name.SOIL_MOISTURE),
+        depth_column_name: str = str(
+            ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH
+        ),
     ):
         self._crns_data_frame = crns_data_frame
         self._n0 = n0
