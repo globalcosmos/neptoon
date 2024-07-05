@@ -2,6 +2,7 @@ import pandas as pd
 from enum import Enum
 from neptoon.logging import get_logger
 from neptoon.data_management.site_information import SiteInformation
+from neptoon.data_management.column_names import ColumnInfo
 from neptoon.neutron_correction.correction_classes import (
     Correction,
     IncomingIntensityZreda,
@@ -201,10 +202,13 @@ class CorrectNeutrons:
             DataFrame with the corrected epithermal neutron count
             recorded in a column
         """
-        df["corrected_epithermal_neutron_count"] = df["epithermal_neutrons"]
+        df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)] = df[
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT)
+        ]
         for column_name in self.correction_columns:
-            df["corrected_epithermal_neutron_count"] = (
-                df["corrected_epithermal_neutron_count"] * df[column_name]
+            df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)] = (
+                df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)]
+                * df[column_name]
             )
         return df
 

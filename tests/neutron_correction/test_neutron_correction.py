@@ -4,6 +4,7 @@ from neptoon.neutron_correction.neutron_correction import (
     CorrectionBuilder,
     CorrectNeutrons,
 )
+from neptoon.data_management.column_names import ColumnInfo
 from neptoon.neutron_correction.correction_classes import Correction
 
 
@@ -131,7 +132,10 @@ def test_get_corrections_stored_in_builder():
 @pytest.fixture
 def sample_df():
     return pd.DataFrame(
-        {"epithermal_neutrons": [100, 200, 300], "other_data": [1, 2, 3]}
+        {
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT): [100, 200, 300],
+            "other_data": [1, 2, 3],
+        }
     )
 
 
@@ -183,18 +187,26 @@ def test_create_corrected_neutron_column(sample_df, correction_builder):
     corrector = CorrectNeutrons(sample_df, correction_builder)
     df_with_factors = corrector.create_correction_factors(sample_df)
     result_df = corrector.create_corrected_neutron_column(df_with_factors)
-    assert "corrected_epithermal_neutron_count" in result_df.columns
-    expected = sample_df["epithermal_neutrons"] * 1.5 * 2.0
-    assert (result_df["corrected_epithermal_neutron_count"] == expected).all()
+    assert (
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT) in result_df.columns
+    )
+    expected = sample_df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)] * 1.5 * 2.0
+    assert (
+        result_df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)] == expected
+    ).all()
 
 
 def test_correct_neutrons(sample_df, correction_builder):
     """Test the full neutron correction process."""
     corrector = CorrectNeutrons(sample_df, correction_builder)
     result_df = corrector.correct_neutrons()
-    assert "corrected_epithermal_neutron_count" in result_df.columns
-    expected = sample_df["epithermal_neutrons"] * 1.5 * 2.0
-    assert (result_df["corrected_epithermal_neutron_count"] == expected).all()
+    assert (
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT) in result_df.columns
+    )
+    expected = sample_df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)] * 1.5 * 2.0
+    assert (
+        result_df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)] == expected
+    ).all()
 
 
 def test_property_setters(sample_df, correction_builder):

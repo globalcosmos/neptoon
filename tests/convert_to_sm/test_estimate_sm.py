@@ -1,4 +1,5 @@
 from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
+from neptoon.data_management.column_names import ColumnInfo
 import pytest
 import pandas as pd
 import numpy as np
@@ -16,10 +17,12 @@ def sample_crns_data():
     """
     np.random.seed(42)
     data = {
-        "corrected_epithermal_neutron_count": np.random.randint(
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT): np.random.randint(
             500, 1500, 100
         ),
-        "epithermal_neutrons_smoothed": np.random.randint(500, 1500, 100),
+        str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH
+        ): np.random.randint(500, 1500, 100),
     }
     return pd.DataFrame(data)
 
@@ -59,19 +62,17 @@ def test_initialization(neutrons_to_sm_instance):
 
 def test_property_getters(neutrons_to_sm_instance):
     """Test the property getters of NeutronsToSM instance."""
-    assert (
-        neutrons_to_sm_instance.corrected_neutrons_col_name
-        == "corrected_epithermal_neutron_count"
+    assert neutrons_to_sm_instance.corrected_neutrons_col_name == str(
+        ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
     )
-    assert (
-        neutrons_to_sm_instance.soil_moisture_col_name == "soil_moisture_crns"
+    assert neutrons_to_sm_instance.soil_moisture_col_name == str(
+        ColumnInfo.Name.SOIL_MOISTURE
     )
-    assert (
-        neutrons_to_sm_instance.depth_column_name == "crns_measurement_depth"
+    assert neutrons_to_sm_instance.depth_column_name == str(
+        ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH
     )
-    assert (
-        neutrons_to_sm_instance.smoothed_neutrons_col_name
-        == "epithermal_neutrons_smoothed"
+    assert neutrons_to_sm_instance.smoothed_neutrons_col_name == str(
+        ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH
     )
 
 
@@ -84,11 +85,11 @@ def test_convert_soc_to_wsom():
 def test_smooth_neutron_count(neutrons_to_sm_instance):
     """Test the smooth_neutron_count method."""
     original_data = neutrons_to_sm_instance.crns_data_frame[
-        "corrected_epithermal_neutron_count"
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)
     ].copy()
     neutrons_to_sm_instance.smooth_neutron_count(smooth_window=3)
     smoothed_data = neutrons_to_sm_instance.crns_data_frame[
-        "epithermal_neutrons_smoothed"
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH)
     ]
 
     assert not smoothed_data.equals(original_data)
@@ -103,7 +104,8 @@ def test_calculate_sm_estimates(neutrons_to_sm_instance):
     neutrons_to_sm_instance.smooth_neutron_count()
     neutrons_to_sm_instance.calculate_sm_estimates()
     assert (
-        "soil_moisture_crns" in neutrons_to_sm_instance.crns_data_frame.columns
+        str(ColumnInfo.Name.SOIL_MOISTURE)
+        in neutrons_to_sm_instance.crns_data_frame.columns
     )
 
 
@@ -111,13 +113,14 @@ def test_process_data(neutrons_to_sm_instance):
     """Test the process_data method."""
     neutrons_to_sm_instance.process_data()
     assert (
-        "epithermal_neutrons_smoothed"
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH)
         in neutrons_to_sm_instance.crns_data_frame.columns
     )
     assert (
-        "soil_moisture_crns" in neutrons_to_sm_instance.crns_data_frame.columns
+        str(ColumnInfo.Name.SOIL_MOISTURE)
+        in neutrons_to_sm_instance.crns_data_frame.columns
     )
     assert (
-        "crns_measurement_depth"
+        str(ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH)
         in neutrons_to_sm_instance.crns_data_frame.columns
     )
