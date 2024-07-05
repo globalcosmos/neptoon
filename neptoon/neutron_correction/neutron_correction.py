@@ -5,6 +5,8 @@ from neptoon.data_management.site_information import SiteInformation
 from neptoon.data_management.column_names import ColumnInfo
 from neptoon.neutron_correction.correction_classes import (
     Correction,
+    CorrectionType,
+    CorrectionTheory,
     IncomingIntensityZreda,
 )
 
@@ -225,29 +227,6 @@ class CorrectNeutrons:
         df = self.create_correction_factors(self.crns_data_frame)
         df = self.create_corrected_neutron_column(df)
         return df
-
-
-class CorrectionType(Enum):
-    """
-    The types of correction avaiable to implement.
-    """
-
-    INCOMING_INTENSITY = "incoming_intensity"
-    ABOVE_GROUND_BIOMASS = "above_ground_biomass"
-    PRESSURE = "pressure"
-    HUMIDITY = "humidity"
-    CUSTOM = "custom"
-
-
-class CorrectionTheory(Enum):
-    """
-    The corrections theories for correcting influence on neutron signal
-    beyond soil moisture
-    """
-
-    ZREDA_2012 = "zreda_2012"
-    ROSOLEM_2012 = "rosolem_2012"
-    # TODO the rest
 
 
 class CorrectionFactory:

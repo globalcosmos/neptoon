@@ -18,7 +18,7 @@ core_logger = get_logger()
 
 
 def humidity_correction_rosolem2013(
-    absolute_humidity: float, reference_absolute_humidity: float
+    absolute_humidity: float, reference_absolute_humidity: float = 0
 ):
     """
     Calculate the correction factor for neutron counts based on the

@@ -1,4 +1,5 @@
 import pandas as pd
+from enum import Enum
 from abc import ABC, abstractmethod
 from neptoon.logging import get_logger
 
@@ -9,6 +10,29 @@ from neptoon.corrections_and_functions.incoming_intensity_corrections import (
 
 
 core_logger = get_logger()
+
+
+class CorrectionType(Enum):
+    """
+    The types of correction avaiable to implement.
+    """
+
+    INCOMING_INTENSITY = "incoming_intensity"
+    ABOVE_GROUND_BIOMASS = "above_ground_biomass"
+    PRESSURE = "pressure"
+    HUMIDITY = "humidity"
+    CUSTOM = "custom"
+
+
+class CorrectionTheory(Enum):
+    """
+    The corrections theories for correcting influence on neutron signal
+    beyond soil moisture
+    """
+
+    ZREDA_2012 = "zreda_2012"
+    ROSOLEM_2012 = "rosolem_2012"
+    # TODO the rest
 
 
 class Correction(ABC):
@@ -73,7 +97,7 @@ class IncomingIntensityZreda(Correction):
     def __init__(
         self,
         reference_incoming_neutron_value: float,
-        correction_type: str = "intensity",
+        correction_type: str = CorrectionType.INCOMING_INTENSITY,
         correction_factor_column_name: str = "correction_for_intensity",
         incoming_neutron_column_name: str = "incoming_neutron_intensity",
     ):
