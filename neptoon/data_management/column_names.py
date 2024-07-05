@@ -6,9 +6,15 @@ class ColumnInfo:
     class Name(Enum):
         DATE_TIME = auto()
         EPI_NEUTRON_COUNT = auto()
-        PRESSURE = auto()
-        RELATIVE_HUMIDITY = auto()
+        AIR_PRESSURE = auto()
+        AIR_RELATIVE_HUMIDITY = auto()
+        AIR_TEMPERATURE = auto()
         INCOMING_NEUTRON_INTENSITY = auto()
+        SATURATION_VAPOUR_PRESSURE = auto()
+        ACTUAL_VAPOUR_PRESSURE = auto()
+        ABSOLUTE_HUMIDITY = auto()
+        HUMIDITY_CORRECTION = auto()
+        INTENSITY_CORRECTION = auto()
         CORRECTED_EPI_NEUTRON_COUNT = auto()
         CORRECTED_EPI_NEUTRON_COUNT_SMOOTH = auto()
         THERM_NEUTRON_COUNT = auto()
@@ -24,9 +30,15 @@ class ColumnInfo:
     _default_representation: dict["ColumnInfo.Name", str] = {
         Name.DATE_TIME: "date_time",
         Name.EPI_NEUTRON_COUNT: "epithermal_neutrons",
-        Name.PRESSURE: "air_pressure",
-        Name.RELATIVE_HUMIDITY: "air_relative_humidity",
+        Name.AIR_PRESSURE: "air_pressure",
+        Name.AIR_RELATIVE_HUMIDITY: "air_relative_humidity",
+        Name.AIR_TEMPERATURE: "air_temperature",
         Name.INCOMING_NEUTRON_INTENSITY: "incoming_neutron_intensity",
+        Name.SATURATION_VAPOUR_PRESSURE: "saturation_vapour_pressure",
+        Name.ACTUAL_VAPOUR_PRESSURE: "actual_vapour_pressure",
+        Name.ABSOLUTE_HUMIDITY: "absolute_humidity",
+        Name.HUMIDITY_CORRECTION: "humidity_correction",
+        Name.INTENSITY_CORRECTION: "correction_for_intensity",
         Name.CORRECTED_EPI_NEUTRON_COUNT: "corrected_epithermal_neutrons",
         Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH: "corrected_epithermal_neutrons_smooth",
         Name.THERM_NEUTRON_COUNT: "thermal_neutron_count",
