@@ -122,7 +122,7 @@ def calc_beta_coefficient(mean_pressure, latitude, elevation, cutoff_rigidity):
     Parameters
     ----------
     mean_pressure : float
-        Mean atmospheric pressure in millibars (mb).
+        Mean atmospheric pressure in millibars (hPa).
     latitude : float
         Geographic latitude of the site in degrees.
     elevation : float

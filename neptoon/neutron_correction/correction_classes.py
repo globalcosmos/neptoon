@@ -15,6 +15,12 @@ from neptoon.corrections_and_functions.air_humidity_corrections import (
     calc_actual_vapour_pressure,
     humidity_correction_rosolem2013,
 )
+from neptoon.corrections_and_functions.pressure_corrections import (
+    pressure_correction_beta_coeff,
+    pressure_correction_l_coeff,
+    calc_mean_pressure,
+    calc_beta_coefficient,
+)
 
 core_logger = get_logger()
 
@@ -167,12 +173,12 @@ class IncomingIntensityZreda(Correction):
         return data_frame
 
 
-class HumidityCorrectionRosolem2012(Correction):
+class HumidityCorrectionRosolem2013(Correction):
     """
-    Corrects neutrons for incoming neutron intensity according to the
-    original Zreda et al. (2012) equation.
+    Corrects neutrons for humidity according to the
+     Rosolem et al. (2013) equation.
 
-    https://doi.org/10.5194/hess-16-4079-2012
+    https://doi.org/10.1175/JHM-D-12-0120.1
     """
 
     def __init__(
@@ -278,5 +284,172 @@ class HumidityCorrectionRosolem2012(Correction):
             ),
             axis=1,
         )
+
+        return data_frame
+
+
+class PressureCorrectionZreda2012(Correction):
+    """
+    Corrects neutrons for changes in atmospheric pressure according to
+    the original Zreda et al. (2012) equation.
+
+    https://doi.org/10.5194/hess-16-4079-2012
+    """
+
+    def __init__(
+        self,
+        site_elevation: float = None,
+        reference_pressure_value: float = None,
+        correction_type: str = CorrectionType.PRESSURE,
+        correction_factor_column_name: str = str(
+            ColumnInfo.Name.PRESSURE_CORRECTION
+        ),
+        beta_coefficient: float = None,
+        l_coefficient: float = None,
+        latitude: float = None,
+        cut_off_rigidity=None,
+    ):
+        """
+        Required attributes for creation.
+
+        Parameters
+        ----------
+        site_elevation : float, optional
+            site elevation in m, by default None
+        reference_pressure_value : float, optional
+            reference pressure for correction (recommended to be average
+            site pressure). - hPa , by default None
+        correction_type : str, optional
+            correction type, by default CorrectionType.PRESSURE
+        correction_factor_column_name : str, optional
+            Name of column to store correction factors, by default str(
+            ColumnInfo.Name.PRESSURE_CORRECTION )
+        beta_coefficient : float, optional
+            beta_coefficient for processing, by default None
+        l_coefficient : float, optional
+            mass attenuation length, by default None
+        latitude : float, optional
+            latitude of site in degrees, by default None
+        cut_off_rigidity : _type_, optional
+            cut-off rigidity at the site, by default None
+        """
+        super().__init__(
+            correction_type=correction_type,
+            correction_factor_column_name=correction_factor_column_name,
+        )
+        self.reference_pressure_value = reference_pressure_value
+        self.beta_coefficient = beta_coefficient
+        self.l_coefficeint = l_coefficient
+        self.site_elevation = site_elevation
+        self.latitude = latitude
+        self.cut_off_rigidity = cut_off_rigidity
+
+    def _prepare_for_correction(self):
+        """
+        Prepare to correction process. Check to see if reference
+        pressure needs calculating and then checks for coefficients
+        given in site information. If no coefficient given it will
+        calculate the beta_coefficient.
+        """
+
+        self._ensure_reference_pressure_available()
+        self._check_coefficient_available()
+
+    def _check_coefficient_available(self):
+        """
+        Checks for coefficients. If none given it will create the
+        beta_coefficient from supplied data.
+        """
+        if (self.l_coefficeint is None) and (self.beta_coefficient is None):
+            message = (
+                "No coefficient given for pressure correction. "
+                "Calculating beta coefficient."
+            )
+            core_logger.info(message)
+            self.beta_coefficient = calc_beta_coefficient(
+                self.reference_pressure_value,
+                self.latitude,
+                self.site_elevation,
+                self.cut_off_rigidity,
+            )
+            self.method_to_use = "beta"
+        elif self.beta_coefficient:
+            self.method_to_use = "beta"
+        elif self.l_coefficeint:
+            self.method_to_use = "l_coeff"
+
+    def _ensure_reference_pressure_available(self):
+        """
+        Checks for reference pressure.
+
+        NOTE: Important to note that changing reference pressure from
+        the value used during when calibrating will impact the results.
+        If reference pressure is changed for processing the site must be
+        re-calibrated so that the N0 has the same reference pressure.
+
+        Raises
+        ------
+        ValueError
+            If no reference pressure and no elevation it cannot work.
+            Raises error.
+        """
+        if self.reference_pressure_value is None:
+            if self.site_elevation is None:
+                message = (
+                    "You must supply a reference pressure or a site elevation"
+                )
+                core_logger.error(message)
+                raise ValueError(message)
+
+            message = (
+                "No reference pressure value given. Calculating average pressure "
+                "using elevation information and using this value"
+            )
+            core_logger.info(message)
+            self.reference_pressure_value = calc_mean_pressure(
+                self.site_elevation
+            )
+
+    def apply(self, data_frame):
+        """
+        Applies the neutron correction
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame with appropriate data
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame now corrected
+        """
+
+        # TODO validation here
+
+        self._prepare_for_correction()
+
+        if self.method_to_use == "beta":
+            data_frame[str(ColumnInfo.Name.PRESSURE_CORRECTION)] = (
+                data_frame.apply(
+                    lambda row: pressure_correction_beta_coeff(
+                        row[str(ColumnInfo.Name.AIR_PRESSURE)],
+                        self.reference_pressure_value,
+                        self.beta_coefficient,
+                    ),
+                    axis=1,
+                )
+            )
+        elif self.method_to_use == "l_coeff":
+            data_frame[str(ColumnInfo.Name.PRESSURE_CORRECTION)] = (
+                data_frame.apply(
+                    lambda row: pressure_correction_l_coeff(
+                        row[str(ColumnInfo.Name.AIR_PRESSURE)],
+                        self.reference_pressure_value,
+                        self.l_coefficeint,
+                    ),
+                    axis=1,
+                )
+            )
 
         return data_frame

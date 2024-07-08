@@ -15,6 +15,7 @@ class ColumnInfo:
         ABSOLUTE_HUMIDITY = auto()
         HUMIDITY_CORRECTION = auto()
         INTENSITY_CORRECTION = auto()
+        PRESSURE_CORRECTION = auto()
         CORRECTED_EPI_NEUTRON_COUNT = auto()
         CORRECTED_EPI_NEUTRON_COUNT_SMOOTH = auto()
         THERM_NEUTRON_COUNT = auto()
@@ -38,7 +39,8 @@ class ColumnInfo:
         Name.ACTUAL_VAPOUR_PRESSURE: "actual_vapour_pressure",
         Name.ABSOLUTE_HUMIDITY: "absolute_humidity",
         Name.HUMIDITY_CORRECTION: "humidity_correction",
-        Name.INTENSITY_CORRECTION: "correction_for_intensity",
+        Name.INTENSITY_CORRECTION: "incoming_neutron_intensity_correction",
+        Name.PRESSURE_CORRECTION: "atmospheric_pressure_correction",
         Name.CORRECTED_EPI_NEUTRON_COUNT: "corrected_epithermal_neutrons",
         Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH: "corrected_epithermal_neutrons_smooth",
         Name.THERM_NEUTRON_COUNT: "thermal_neutron_count",
