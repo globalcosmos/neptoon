@@ -1,5 +1,4 @@
 import pandas as pd
-from enum import Enum
 from neptoon.logging import get_logger
 from neptoon.data_management.site_information import SiteInformation
 from neptoon.data_management.column_names import ColumnInfo
@@ -312,11 +311,15 @@ class CorrectionFactory:
             pass
         elif correction_theory == CorrectionTheory.ZREDA_2012:
             return IncomingIntensityCorrectionZreda2012(
-                reference_incoming_neutron_value=self.site_information.reference_incoming_neutron_value
+                reference_incoming_neutron_value=(
+                    self.site_information.reference_incoming_neutron_value
+                )
             )
         elif correction_theory == CorrectionTheory.HAWDON_2014:
             return IncomingIntensityCorrectionHawdon2014(
-                incoming_neutron_intensity=self.site_information.reference_incoming_neutron_value,
+                incoming_neutron_intensity=(
+                    self.site_information.reference_incoming_neutron_value
+                ),
                 cutoff_rigidity=self.site_information.cutoff_rigidity,
             )
 
