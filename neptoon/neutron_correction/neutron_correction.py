@@ -305,6 +305,21 @@ class CorrectionFactory:
             )
 
     def create_intensity_correction(self, correction_theory: CorrectionTheory):
+        """
+        Internal method for selecting the incoming neutron intensity
+        correction to use. If no CorrectionTheory supplied it will use
+        the default.
+
+        Parameters
+        ----------
+        correction_theory : CorrectionTheory
+            The CorrectionTheory to use
+
+        Returns
+        -------
+        Correction
+            Intensity correction with values filled in.
+        """
         if correction_theory is None:
             return IncomingIntensityCorrectionHawdon2014(
                 incoming_neutron_intensity=(
@@ -330,6 +345,20 @@ class CorrectionFactory:
         pass
 
     def create_pressure_correction(self, correction_theory: CorrectionTheory):
+        """
+        Internal method for selecting the correct pressure correction to
+        use
+
+        Parameters
+        ----------
+        correction_theory : CorrectionTheory
+            The CorrectionTheory to apply
+
+        Returns
+        -------
+        Correction
+            Returns a pressure Correction with values inserted.
+        """
         correction_theory = (
             correction_theory  # TODO remove this or leave it for consistency?
         )
@@ -341,10 +370,22 @@ class CorrectionFactory:
         )
 
     def create_humidity_correction(self, correction_theory: CorrectionTheory):
+        """
+        Internal method for selecting the correct humidity correction to
+        use
+
+        Parameters
+        ----------
+        correction_theory : CorrectionTheory
+            The CorrectionTheory to apply
+
+        Returns
+        -------
+        Correction
+            Returns the Correction
+        """
         if correction_theory is None:
-            # TODO Apply default correction theory
-            # TODO decide and add the default correction type
-            pass
+            return HumidityCorrectionRosolem2013()
         elif correction_theory == CorrectionTheory.ROSOLEM_2013:
             return HumidityCorrectionRosolem2013()
 
