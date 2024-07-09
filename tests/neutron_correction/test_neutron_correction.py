@@ -4,7 +4,7 @@ from neptoon.neutron_correction.neutron_correction import (
     CorrectionBuilder,
     CorrectNeutrons,
 )
-from neptoon.data_management.column_names import ColumnInfo
+from neptoon.data_management.column_information import ColumnInfo
 from neptoon.neutron_correction.correction_classes import Correction
 
 

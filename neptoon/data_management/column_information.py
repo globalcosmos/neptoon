@@ -3,6 +3,13 @@ import copy
 
 
 class ColumnInfo:
+    """
+    Used for storing information related to the cols in CRNS time series
+    data. The names of columns are stored here providing a clean area to
+    update column names and have this applied across the code base.
+
+    """
+
     class Name(Enum):
         DATE_TIME = auto()
         EPI_NEUTRON_COUNT = auto()
@@ -57,10 +64,26 @@ class ColumnInfo:
 
     @classmethod
     def relabel(cls, column_name: Name, new_label: str):
+        """
+        Class method which allows a user to change the expected string
+        of a column type.
+
+        Parameters
+        ----------
+        column_name : Name
+            The Name of the column e.g., Name.EPI_NEUTRON_COUNT
+        new_label : str
+            A string that represents the new column name to expect
+            throughout processing.
+        """
         cls._current_representation[column_name] = new_label
 
     @classmethod
     def reset_labels(cls):
+        """
+        Class method to reset all the labels to default values supplied
+        in neptoon.
+        """
         cls._current_representation = copy.deepcopy(
             cls._default_representation
         )

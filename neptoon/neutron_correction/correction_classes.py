@@ -2,7 +2,7 @@ import pandas as pd
 from enum import Enum
 from abc import ABC, abstractmethod
 from neptoon.logging import get_logger
-from neptoon.data_management.column_names import ColumnInfo
+from neptoon.data_management.column_information import ColumnInfo
 
 # read in the specific functions here
 from neptoon.corrections_and_functions.incoming_intensity_corrections import (

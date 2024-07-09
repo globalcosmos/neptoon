@@ -1,7 +1,7 @@
 import pandas as pd
 from neptoon.logging import get_logger
 from neptoon.data_management.site_information import SiteInformation
-from neptoon.data_management.column_names import ColumnInfo
+from neptoon.data_management.column_information import ColumnInfo
 from neptoon.neutron_correction.correction_classes import (
     Correction,
     CorrectionType,

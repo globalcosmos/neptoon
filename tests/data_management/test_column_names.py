@@ -1,4 +1,4 @@
-from neptoon.data_management.column_names import ColumnInfo
+from neptoon.data_management.column_information import ColumnInfo
 import pytest
 
 
