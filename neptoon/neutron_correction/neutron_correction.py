@@ -7,7 +7,8 @@ from neptoon.neutron_correction.correction_classes import (
     Correction,
     CorrectionType,
     CorrectionTheory,
-    IncomingIntensityZreda,
+    IncomingIntensityCorrectionZreda2012,
+    IncomingIntensityCorrectionHawdon2014,
     HumidityCorrectionRosolem2013,
     PressureCorrectionZreda2012,
 )
@@ -310,8 +311,13 @@ class CorrectionFactory:
             # TODO decide and add the default correction type
             pass
         elif correction_theory == CorrectionTheory.ZREDA_2012:
-            return IncomingIntensityZreda(
+            return IncomingIntensityCorrectionZreda2012(
                 reference_incoming_neutron_value=self.site_information.reference_incoming_neutron_value
+            )
+        elif correction_theory == CorrectionTheory.HAWDON_2014:
+            return IncomingIntensityCorrectionHawdon2014(
+                incoming_neutron_intensity=self.site_information.reference_incoming_neutron_value,
+                cutoff_rigidity=self.site_information.cutoff_rigidity,
             )
 
     def create_biomass_correction(self, correction_theory: CorrectionTheory):
@@ -325,7 +331,7 @@ class CorrectionFactory:
             site_elevation=self.site_information.elevation,
             reference_pressure_value=self.site_information.mean_pressure,
             latitude=self.site_information.latitude,
-            cut_off_rigidity=self.site_information.cut_off_rigidity,
+            cutoff_rigidity=self.site_information.cutoff_rigidity,
         )
 
     def create_humidity_correction(self, correction_theory: CorrectionTheory):

@@ -7,6 +7,7 @@ from neptoon.data_management.column_names import ColumnInfo
 # read in the specific functions here
 from neptoon.corrections_and_functions.incoming_intensity_corrections import (
     incoming_intensity_zreda_2012,
+    incoming_intensity_adjustment_rc_corrected,
 )
 
 from neptoon.corrections_and_functions.air_humidity_corrections import (
@@ -45,6 +46,7 @@ class CorrectionTheory(Enum):
 
     ZREDA_2012 = "zreda_2012"
     ROSOLEM_2013 = "rosolem_2013"
+    HAWDON_2014 = "hawdon_2014"
     # TODO the rest
 
 
@@ -99,7 +101,7 @@ class Correction(ABC):
         return self.correction_factor_column_name
 
 
-class IncomingIntensityZreda(Correction):
+class IncomingIntensityCorrectionZreda2012(Correction):
     """
     Corrects neutrons for incoming neutron intensity according to the
     original Zreda et al. (2012) equation.
@@ -170,6 +172,40 @@ class IncomingIntensityZreda(Correction):
             axis=1,
         )
 
+        return data_frame
+
+
+class IncomingIntensityCorrectionHawdon2014(Correction):
+
+    def __init__(
+        self,
+        incoming_neutron_intensity: float,
+        cutoff_rigidity: float,
+        correction_type: CorrectionType = CorrectionType.INCOMING_INTENSITY,
+        correction_factor_column_name: str = str(
+            ColumnInfo.Name.INTENSITY_CORRECTION
+        ),
+        incoming_neutron_column_name: str = str(
+            ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY
+        ),
+    ):
+        super().__init__(
+            correction_type=correction_type,
+            correction_factor_column_name=correction_factor_column_name,
+        )
+        self.incoming_neutron_intensity = incoming_neutron_intensity
+        self.cutoff_rigidity = cutoff_rigidity
+        self.incoming_neutron_column_name = incoming_neutron_column_name
+
+    def apply(self, data_frame):
+        data_frame[self.correction_factor_column_name] = data_frame.apply(
+            lambda row: incoming_intensity_adjustment_rc_corrected(
+                incoming_intensity=row[self.incoming_neutron_column_name],
+                incoming_ref=self.incoming_neutron_intensity,
+                cutoff_rigidity=self.cutoff_rigidity,
+            ),
+            axis=1,
+        )
         return data_frame
 
 
@@ -307,7 +343,7 @@ class PressureCorrectionZreda2012(Correction):
         beta_coefficient: float = None,
         l_coefficient: float = None,
         latitude: float = None,
-        cut_off_rigidity=None,
+        cutoff_rigidity=None,
     ):
         """
         Required attributes for creation.
@@ -330,7 +366,7 @@ class PressureCorrectionZreda2012(Correction):
             mass attenuation length, by default None
         latitude : float, optional
             latitude of site in degrees, by default None
-        cut_off_rigidity : _type_, optional
+        cutoff_rigidity : _type_, optional
             cut-off rigidity at the site, by default None
         """
         super().__init__(
@@ -342,7 +378,7 @@ class PressureCorrectionZreda2012(Correction):
         self.l_coefficeint = l_coefficient
         self.site_elevation = site_elevation
         self.latitude = latitude
-        self.cut_off_rigidity = cut_off_rigidity
+        self.cutoff_rigidity = cutoff_rigidity
 
     def _prepare_for_correction(self):
         """
@@ -370,7 +406,7 @@ class PressureCorrectionZreda2012(Correction):
                 self.reference_pressure_value,
                 self.latitude,
                 self.site_elevation,
-                self.cut_off_rigidity,
+                self.cutoff_rigidity,
             )
             self.method_to_use = "beta"
         elif self.beta_coefficient:

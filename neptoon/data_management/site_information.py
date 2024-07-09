@@ -18,7 +18,7 @@ class SiteInformation:
     bulk_density: float
     lattice_water: float
     soil_organic_carbon: float
-    cut_off_rigidity: float
+    cutoff_rigidity: float
     mean_pressure: Optional[float] = None
     site_biomass: Optional[float] = None
 
