@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 from io import StringIO
 from dateutil import parser
-from neptoon.data_management.column_names import ColumnInfo
+from neptoon.data_management.column_information import ColumnInfo
 from neptoon.configuration.global_configuration import GlobalConfig
 from neptoon.data_management.data_audit import log_key_step
 from neptoon.logging import get_logger

@@ -18,7 +18,7 @@ core_logger = get_logger()
 
 
 def humidity_correction_rosolem2013(
-    absolute_humidity: float, reference_absolute_humidity: float
+    absolute_humidity: float, reference_absolute_humidity: float = 0
 ):
     """
     Calculate the correction factor for neutron counts based on the
@@ -58,13 +58,13 @@ def calc_absolute_humidity(vapour_pressure: float, temperature: float):
     absolute_humidity: float
         Absolute humidity in grams per cubic meter (g/m^3)
     """
-    absolute_humidity = (vapour_pressure / 100) / (
-        461.5 * (temperature + 273.15)
-    )
+    absolute_humidity = (
+        (vapour_pressure * 100) / (461.5 * (temperature + 273.15))
+    ) * 1000
     return absolute_humidity
 
 
-def saturation_vapour_pressure(temperature: float):
+def calc_saturation_vapour_pressure(temperature: float):
     """
     Calculate saturation vapour pressure (hPA) using average temperature
     Can be used to calculate actual vapour pressure (hPA) if using dew
@@ -111,7 +111,7 @@ def calc_vapour_pressure_from_dewpoint_temp(dewpoint_temp: float):
     return vapour_pressure
 
 
-def calc_relative_humidity_from_temperature(
+def calc_relative_humidity_from_dewpoint_temperature(
     temperature: float, dewpoint_temperature: float
 ):
     """
@@ -134,3 +134,24 @@ def calc_relative_humidity_from_temperature(
         / ((243.04 + temperature) * (243.04 + dewpoint_temperature))
     )
     return relative_humidity
+
+
+def calc_actual_vapour_pressure(
+    saturation_vapour_pressure: float, relative_humidity: float
+):
+    """
+    Calculates actual vapour pressure
+
+    Parameters
+    ----------
+    saturation_vapour_pressure : float
+        Saturation Vapour Pressure (hPa)
+    relative_humidity : float
+        Relative Humdity (%)
+
+    Returns
+    -------
+    actual vapour pressure: float
+        The actual vapour pressure (hPa)
+    """
+    return saturation_vapour_pressure * (relative_humidity / 100)

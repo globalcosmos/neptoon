@@ -18,7 +18,8 @@ class SiteInformation:
     bulk_density: float
     lattice_water: float
     soil_organic_carbon: float
-    reference_pressure: Optional[float] = None
+    cutoff_rigidity: float
+    mean_pressure: Optional[float] = None
     site_biomass: Optional[float] = None
 
     def add_custom_value(self, name: str, value):

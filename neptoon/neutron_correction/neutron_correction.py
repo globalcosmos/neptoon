@@ -1,11 +1,15 @@
 import pandas as pd
-from enum import Enum
 from neptoon.logging import get_logger
 from neptoon.data_management.site_information import SiteInformation
-from neptoon.data_management.column_names import ColumnInfo
+from neptoon.data_management.column_information import ColumnInfo
 from neptoon.neutron_correction.correction_classes import (
     Correction,
-    IncomingIntensityZreda,
+    CorrectionType,
+    CorrectionTheory,
+    IncomingIntensityCorrectionZreda2012,
+    IncomingIntensityCorrectionHawdon2014,
+    HumidityCorrectionRosolem2013,
+    PressureCorrectionZreda2012,
 )
 
 
@@ -227,29 +231,6 @@ class CorrectNeutrons:
         return df
 
 
-class CorrectionType(Enum):
-    """
-    The types of correction avaiable to implement.
-    """
-
-    INCOMING_INTENSITY = "incoming_intensity"
-    ABOVE_GROUND_BIOMASS = "above_ground_biomass"
-    PRESSURE = "pressure"
-    HUMIDITY = "humidity"
-    CUSTOM = "custom"
-
-
-class CorrectionTheory(Enum):
-    """
-    The corrections theories for correcting influence on neutron signal
-    beyond soil moisture
-    """
-
-    ZREDA_2012 = "zreda_2012"
-    ROSOLEM_2012 = "rosolem_2012"
-    # TODO the rest
-
-
 class CorrectionFactory:
     """
     Used inside the CRNSDataHub when selecting which corrections to
@@ -324,23 +305,89 @@ class CorrectionFactory:
             )
 
     def create_intensity_correction(self, correction_theory: CorrectionTheory):
+        """
+        Internal method for selecting the incoming neutron intensity
+        correction to use. If no CorrectionTheory supplied it will use
+        the default.
+
+        Parameters
+        ----------
+        correction_theory : CorrectionTheory
+            The CorrectionTheory to use
+
+        Returns
+        -------
+        Correction
+            Intensity correction with values filled in.
+        """
         if correction_theory is None:
-            # Apply default correction theory
-            # TODO decide and add the default correction type
-            pass
+            return IncomingIntensityCorrectionHawdon2014(
+                incoming_neutron_intensity=(
+                    self.site_information.reference_incoming_neutron_value
+                ),
+                cutoff_rigidity=self.site_information.cutoff_rigidity,
+            )
         elif correction_theory == CorrectionTheory.ZREDA_2012:
-            return IncomingIntensityZreda(
-                self.site_information.reference_incoming_neutron_value
+            return IncomingIntensityCorrectionZreda2012(
+                reference_incoming_neutron_value=(
+                    self.site_information.reference_incoming_neutron_value
+                )
+            )
+        elif correction_theory == CorrectionTheory.HAWDON_2014:
+            return IncomingIntensityCorrectionHawdon2014(
+                incoming_neutron_intensity=(
+                    self.site_information.reference_incoming_neutron_value
+                ),
+                cutoff_rigidity=self.site_information.cutoff_rigidity,
             )
 
     def create_biomass_correction(self, correction_theory: CorrectionTheory):
         pass
 
     def create_pressure_correction(self, correction_theory: CorrectionTheory):
-        pass
+        """
+        Internal method for selecting the correct pressure correction to
+        use
+
+        Parameters
+        ----------
+        correction_theory : CorrectionTheory
+            The CorrectionTheory to apply
+
+        Returns
+        -------
+        Correction
+            Returns a pressure Correction with values inserted.
+        """
+        correction_theory = (
+            correction_theory  # TODO remove this or leave it for consistency?
+        )
+        return PressureCorrectionZreda2012(
+            site_elevation=self.site_information.elevation,
+            reference_pressure_value=self.site_information.mean_pressure,
+            latitude=self.site_information.latitude,
+            cutoff_rigidity=self.site_information.cutoff_rigidity,
+        )
 
     def create_humidity_correction(self, correction_theory: CorrectionTheory):
-        pass
+        """
+        Internal method for selecting the correct humidity correction to
+        use
+
+        Parameters
+        ----------
+        correction_theory : CorrectionTheory
+            The CorrectionTheory to apply
+
+        Returns
+        -------
+        Correction
+            Returns the Correction
+        """
+        if correction_theory is None:
+            return HumidityCorrectionRosolem2013()
+        elif correction_theory == CorrectionTheory.ROSOLEM_2013:
+            return HumidityCorrectionRosolem2013()
 
     def register_custom_correction(
         self, correction_type: CorrectionType, theory: str, correction_class
