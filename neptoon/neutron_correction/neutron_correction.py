@@ -306,9 +306,12 @@ class CorrectionFactory:
 
     def create_intensity_correction(self, correction_theory: CorrectionTheory):
         if correction_theory is None:
-            # TODO Apply default correction theory
-            # TODO decide and add the default correction type
-            pass
+            return IncomingIntensityCorrectionHawdon2014(
+                incoming_neutron_intensity=(
+                    self.site_information.reference_incoming_neutron_value
+                ),
+                cutoff_rigidity=self.site_information.cutoff_rigidity,
+            )
         elif correction_theory == CorrectionTheory.ZREDA_2012:
             return IncomingIntensityCorrectionZreda2012(
                 reference_incoming_neutron_value=(
