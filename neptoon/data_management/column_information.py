@@ -8,6 +8,9 @@ class ColumnInfo:
     data. The names of columns are stored here providing a clean area to
     update column names and have this applied across the code base.
 
+    TODO: Ideas for improvements:
+        - Add information on whether a col is 'supplied' or 'calculated'
+        - Use this information to organise order of 'calculated' columns
     """
 
     class Name(Enum):
