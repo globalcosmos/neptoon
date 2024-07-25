@@ -29,6 +29,8 @@ class SiteInformation:
     mean_pressure: Optional[float] = None
     site_biomass: Optional[float] = None
     n0: Optional[float] = None
+    beta_coefficient: Optional[float] = None
+    l_coefficient: Optional[float] = None
 
     def add_custom_value(self, name: str, value):
         """

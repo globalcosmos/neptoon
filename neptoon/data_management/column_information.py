@@ -67,6 +67,8 @@ class ColumnInfo:  # TODO Change to Columns
         MEAN_PRESSURE = auto()
         SITE_BIOMASS = auto()
         N0 = auto()
+        BETA_COEFFICIENT = auto()
+        L_COEFFICIENT = auto()
 
         def __str__(self):
             return ColumnInfo._current_representation[self]
@@ -104,6 +106,8 @@ class ColumnInfo:  # TODO Change to Columns
         Name.MEAN_PRESSURE: "mean_pressure",
         Name.SITE_BIOMASS: "site_biomass",
         Name.N0: "n0",
+        Name.BETA_COEFFICIENT: "beta_coefficient",
+        Name.L_COEFFICIENT: "l_coefficient",
     }
 
     _current_representation = copy.deepcopy(_default_representation)
@@ -126,6 +130,8 @@ class ColumnInfo:  # TODO Change to Columns
         "mean_pressure": Name.MEAN_PRESSURE,
         "site_biomass": Name.SITE_BIOMASS,
         "n0": Name.N0,
+        "beta_coefficient": Name.BETA_COEFFICIENT,
+        "l_coefficient": Name.L_COEFFICIENT,
     }
 
     @classmethod

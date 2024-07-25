@@ -230,6 +230,13 @@ class CorrectNeutrons:
         df = self.create_corrected_neutron_column(df)
         return df
 
+        ### TODO HERE!!!!!!!!!
+        """
+NEED TO REMOVE THE EXPECTATION OF INDIVIDUAL NUMBERS HERE!
+USING COLUMN TITLES INSTEAD IN SITEINFORMATION AND COLUMNINFO
+
+        """
+
 
 class CorrectionFactory:
     """
