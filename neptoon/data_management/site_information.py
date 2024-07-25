@@ -8,7 +8,14 @@ class SiteInformation:
     A data class which stores information about the site which is needed
     in data processing
 
-    TODO: alternatively do we use pydantic and validate?
+    IMPORTANT: If updating this with new values in the code base, ensure
+    you also update ColumnInfo in
+    ..data_management.column_information.py to include a mapping to a
+    column name. This ensures when running the
+    CRNSDataHub.prepare_static_values() method that the name for the
+    column is consistent throughout processing.
+
+
     """
 
     latitude: float
