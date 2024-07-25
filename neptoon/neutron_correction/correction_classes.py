@@ -17,8 +17,8 @@ from neptoon.corrections_and_functions.air_humidity_corrections import (
     humidity_correction_rosolem2013,
 )
 from neptoon.corrections_and_functions.pressure_corrections import (
-    pressure_correction_beta_coeff,
-    pressure_correction_l_coeff,
+    calc_pressure_correction_beta_coeff,
+    calc_pressure_correction_l_coeff,
     calc_mean_pressure,
     calc_beta_coefficient,
 )
@@ -111,7 +111,9 @@ class IncomingIntensityCorrectionZreda2012(Correction):
 
     def __init__(
         self,
-        reference_incoming_neutron_value: float,
+        reference_incoming_neutron_value: str = str(
+            ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE
+        ),
         correction_type: str = CorrectionType.INCOMING_INTENSITY,
         correction_factor_column_name: str = str(
             ColumnInfo.Name.INTENSITY_CORRECTION
@@ -167,7 +169,7 @@ class IncomingIntensityCorrectionZreda2012(Correction):
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_zreda_2012(
                 row[self.incoming_neutron_column_name],
-                self.reference_incoming_neutron_value,
+                row[self.reference_incoming_neutron_value],
             ),
             axis=1,
         )
@@ -179,8 +181,10 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
 
     def __init__(
         self,
-        incoming_neutron_intensity: float,
-        cutoff_rigidity: float,
+        reference_incoming_neutron_value: str = str(
+            ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE
+        ),
+        cutoff_rigidity: str = str(ColumnInfo.Name.CUTOFF_RIGIDITY),
         correction_type: CorrectionType = CorrectionType.INCOMING_INTENSITY,
         correction_factor_column_name: str = str(
             ColumnInfo.Name.INTENSITY_CORRECTION
@@ -193,7 +197,9 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
             correction_type=correction_type,
             correction_factor_column_name=correction_factor_column_name,
         )
-        self.incoming_neutron_intensity = incoming_neutron_intensity
+        self.reference_incoming_neutron_value = (
+            reference_incoming_neutron_value
+        )
         self.cutoff_rigidity = cutoff_rigidity
         self.incoming_neutron_column_name = incoming_neutron_column_name
 
@@ -201,8 +207,8 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_adjustment_rc_corrected(
                 incoming_intensity=row[self.incoming_neutron_column_name],
-                incoming_ref=self.incoming_neutron_intensity,
-                cutoff_rigidity=self.cutoff_rigidity,
+                incoming_ref=row[self.incoming_neutron_intensity],
+                cutoff_rigidity=row[self.cutoff_rigidity],
             ),
             axis=1,
         )
@@ -334,7 +340,7 @@ class PressureCorrectionZreda2012(Correction):
 
     def __init__(
         self,
-        site_elevation: float = None,
+        site_elevation: str = None,
         reference_pressure_value: float = None,
         correction_type: str = CorrectionType.PRESSURE,
         correction_factor_column_name: str = str(
@@ -343,7 +349,7 @@ class PressureCorrectionZreda2012(Correction):
         beta_coefficient: float = None,
         l_coefficient: float = None,
         latitude: float = None,
-        cutoff_rigidity=None,
+        cutoff_rigidity: float = None,
     ):
         """
         Required attributes for creation.
@@ -391,35 +397,12 @@ class PressureCorrectionZreda2012(Correction):
         self._ensure_reference_pressure_available()
         self._check_coefficient_available()
 
-    def _check_coefficient_available(self):
-        """
-        Checks for coefficients. If none given it will create the
-        beta_coefficient from supplied data.
-        """
-        if (self.l_coefficeint is None) and (self.beta_coefficient is None):
-            message = (
-                "No coefficient given for pressure correction. "
-                "Calculating beta coefficient."
-            )
-            core_logger.info(message)
-            self.beta_coefficient = calc_beta_coefficient(
-                self.reference_pressure_value,
-                self.latitude,
-                self.site_elevation,
-                self.cutoff_rigidity,
-            )
-            self.method_to_use = "beta"
-        elif self.beta_coefficient:
-            self.method_to_use = "beta"
-        elif self.l_coefficeint:
-            self.method_to_use = "l_coeff"
-
     def _ensure_reference_pressure_available(self):
         """
         Checks for reference pressure.
 
         NOTE: Important to note that changing reference pressure from
-        the value used during when calibrating will impact the results.
+        the value used during calibration will impact the results.
         If reference pressure is changed for processing the site must be
         re-calibrated so that the N0 has the same reference pressure.
 
@@ -446,6 +429,29 @@ class PressureCorrectionZreda2012(Correction):
                 self.site_elevation
             )
 
+    def _check_coefficient_available(self):
+        """
+        Checks for coefficients. If none given it will create the
+        beta_coefficient from supplied data.
+        """
+        if (self.l_coefficeint is None) and (self.beta_coefficient is None):
+            message = (
+                "No coefficient given for pressure correction. "
+                "Calculating beta coefficient."
+            )
+            core_logger.info(message)
+            self.beta_coefficient = calc_beta_coefficient(
+                self.reference_pressure_value,
+                self.latitude,
+                self.site_elevation,
+                self.cutoff_rigidity,
+            )
+            self.method_to_use = "beta"
+        elif self.beta_coefficient:
+            self.method_to_use = "beta"
+        elif self.l_coefficeint:
+            self.method_to_use = "l_coeff"
+
     def apply(self, data_frame):
         """
         Applies the neutron correction
@@ -468,7 +474,7 @@ class PressureCorrectionZreda2012(Correction):
         if self.method_to_use == "beta":
             data_frame[str(ColumnInfo.Name.PRESSURE_CORRECTION)] = (
                 data_frame.apply(
-                    lambda row: pressure_correction_beta_coeff(
+                    lambda row: calc_pressure_correction_beta_coeff(
                         row[str(ColumnInfo.Name.AIR_PRESSURE)],
                         self.reference_pressure_value,
                         self.beta_coefficient,
@@ -479,7 +485,7 @@ class PressureCorrectionZreda2012(Correction):
         elif self.method_to_use == "l_coeff":
             data_frame[str(ColumnInfo.Name.PRESSURE_CORRECTION)] = (
                 data_frame.apply(
-                    lambda row: pressure_correction_l_coeff(
+                    lambda row: calc_pressure_correction_l_coeff(
                         row[str(ColumnInfo.Name.AIR_PRESSURE)],
                         self.reference_pressure_value,
                         self.l_coefficeint,

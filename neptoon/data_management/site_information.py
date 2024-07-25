@@ -28,6 +28,7 @@ class SiteInformation:
     cutoff_rigidity: float
     mean_pressure: Optional[float] = None
     site_biomass: Optional[float] = None
+    n0: Optional[float] = None
 
     def add_custom_value(self, name: str, value):
         """
