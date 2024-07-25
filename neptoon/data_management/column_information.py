@@ -56,6 +56,8 @@ class ColumnInfo:  # TODO Change to Columns
         SOIL_MOISTURE_UNCERTAINTY_LOWER = auto()
         SOIL_MOISTURE_MEASURMENT_DEPTH = auto()
         SOIL_MOISTURE_MEASUREMENT_RADIUS = auto()
+        LATITUDE = auto()
+        LONGITUDE = auto()
         ELEVATION = auto()
         REFERENCE_INCOMING_NEUTRON_VALUE = auto()
         DRY_SOIL_BULK_DENSITY = auto()
@@ -64,6 +66,7 @@ class ColumnInfo:  # TODO Change to Columns
         CUTOFF_RIGIDITY = auto()
         MEAN_PRESSURE = auto()
         SITE_BIOMASS = auto()
+        N0 = auto()
 
         def __str__(self):
             return ColumnInfo._current_representation[self]
@@ -90,6 +93,8 @@ class ColumnInfo:  # TODO Change to Columns
         Name.SOIL_MOISTURE_UNCERTAINTY_LOWER: "soil_moisture_uncertainty_lower",
         Name.SOIL_MOISTURE_MEASURMENT_DEPTH: "crns_measurement_depth",
         Name.SOIL_MOISTURE_MEASUREMENT_RADIUS: "crns_measurement_radius",
+        Name.LATITUDE: "latitude",
+        Name.LONGITUDE: "longitude",
         Name.ELEVATION: "elevation",
         Name.REFERENCE_INCOMING_NEUTRON_VALUE: "reference_incoming_neutron_value",
         Name.DRY_SOIL_BULK_DENSITY: "dry_soil_bulk_density",
@@ -98,6 +103,7 @@ class ColumnInfo:  # TODO Change to Columns
         Name.CUTOFF_RIGIDITY: "cutoff_rigidity",
         Name.MEAN_PRESSURE: "mean_pressure",
         Name.SITE_BIOMASS: "site_biomass",
+        Name.N0: "n0",
     }
 
     _current_representation = copy.deepcopy(_default_representation)
@@ -119,6 +125,7 @@ class ColumnInfo:  # TODO Change to Columns
         "cutoff_rigidity": Name.CUTOFF_RIGIDITY,
         "mean_pressure": Name.MEAN_PRESSURE,
         "site_biomass": Name.SITE_BIOMASS,
+        "n0": Name.N0,
     }
 
     @classmethod
