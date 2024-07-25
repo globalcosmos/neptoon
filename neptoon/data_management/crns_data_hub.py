@@ -386,7 +386,7 @@ class CRNSDataHub:
                     " crns_data_frame."
                 )
                 core_logger.info(message)
-                pass
+                continue
             elif site_information_dict[key] is None:
                 # TODO add skip here
                 pass
