@@ -160,25 +160,25 @@ class ColumnInfo:  # TODO Change to Columns
             cls._default_representation
         )
 
-    @classmethod
-    def add_custom_name(cls, name: str):
-        if not hasattr(cls.Name, name.upper()):
-            cls.Name = Enum(
-                "Name",
-                {
-                    **{
-                        enum_member.name: enum_member.value
-                        for enum_member in cls.Name
-                    },
-                    name.upper(): auto(),
-                },
-            )
-        cls._current_representation[getattr(cls.Name, name.upper())] = (
-            name.lower()
-        )
-        cls.SITE_INFO_TO_COLUMN_INFO[name.lower()] = getattr(
-            cls.Name, name.upper()
-        )
+    # @classmethod
+    # def add_custom_name(cls, name: str):
+    #     if not hasattr(cls.Name, name.upper()):
+    #         cls.Name = Enum(
+    #             "",
+    #             {
+    #                 **{
+    #                     enum_member.name: enum_member.value
+    #                     for enum_member in cls.Name
+    #                 },
+    #                 name.upper(): auto(),
+    #             },
+    #         )
+    #     cls._current_representation[getattr(cls.Name, name.upper())] = (
+    #         name.lower()
+    #     )
+    #     cls.SITE_INFO_TO_COLUMN_INFO[name.lower()] = getattr(
+    #         cls.Name, name.upper()
+    #     )
 
     @classmethod
     def get_col_name(cls, column_name: str):

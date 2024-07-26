@@ -50,6 +50,29 @@ class CorrectionTheory(Enum):
     # TODO the rest
 
 
+def is_column_missing_or_empty(data_frame, column_name):
+    """
+    Find whether a column is missing or empty in a dataframe. Useful for
+    checking data before making calculations.
+
+    Parameters
+    ----------
+    data_frame : pd.DataFrame
+        _description_
+    column_name : str
+        Name of column to check for
+
+    Returns
+    -------
+    bool
+        True or False whether column is missing or empty
+    """
+    return (
+        column_name not in data_frame.columns
+        or data_frame[column_name].isnull().all()
+    )
+
+
 class Correction(ABC):
     """
     Abstract class for the Correction classes. Ensures that all
@@ -397,28 +420,6 @@ class PressureCorrectionZreda2012(Correction):
         self._ensure_reference_pressure_available(data_frame)
         self._check_coefficient_available(data_frame)
 
-    @staticmethod
-    def _is_column_missing_or_empty(data_frame, column_name):
-        """
-        Find whether a column is missing or empy
-
-        Parameters
-        ----------
-        data_frame : pd.DataFrame
-            _description_
-        column_name : str
-            Name of column to check for
-
-        Returns
-        -------
-        _type_
-            _description_
-        """
-        return (
-            column_name not in data_frame.columns
-            or data_frame[column_name].isnull().all()
-        )
-
     def _ensure_reference_pressure_available(self, data_frame):
         """
         Checks for reference pressure.
@@ -436,8 +437,8 @@ class PressureCorrectionZreda2012(Correction):
         """
         column_name_press = self.reference_pressure_value
         column_name_elev = self.site_elevation
-        if self._is_column_missing_or_empty(data_frame, column_name_press):
-            if self._is_column_missing_or_empty(data_frame, column_name_elev):
+        if is_column_missing_or_empty(data_frame, column_name_press):
+            if is_column_missing_or_empty(data_frame, column_name_elev):
                 message = (
                     "You must supply a reference pressure or a site elevation"
                 )
@@ -462,9 +463,9 @@ class PressureCorrectionZreda2012(Correction):
         column_name_beta = self.beta_coefficient
         column_name_l = self.l_coefficeint
 
-        if self._is_column_missing_or_empty(
+        if is_column_missing_or_empty(
             data_frame, column_name_beta
-        ) and self._is_column_missing_or_empty(data_frame, column_name_l):
+        ) and is_column_missing_or_empty(data_frame, column_name_l):
             message = (
                 "No coefficient given for pressure correction. "
                 "Calculating beta coefficient."
@@ -481,9 +482,9 @@ class PressureCorrectionZreda2012(Correction):
             )
 
             self.method_to_use = "beta"
-        elif self._is_column_missing_or_empty(data_frame, column_name_beta):
+        elif is_column_missing_or_empty(data_frame, column_name_beta):
             self.method_to_use = "beta"
-        elif self._is_column_missing_or_empty(data_frame, column_name_l):
+        elif is_column_missing_or_empty(data_frame, column_name_l):
             self.method_to_use = "l_coeff"
 
     def apply(self, data_frame):
@@ -503,29 +504,39 @@ class PressureCorrectionZreda2012(Correction):
 
         # TODO validation here
 
-        self._prepare_for_correction(data_frame)
-
-        if self.method_to_use == "beta":
-            data_frame[str(ColumnInfo.Name.PRESSURE_CORRECTION)] = (
-                data_frame.apply(
-                    lambda row: calc_pressure_correction_beta_coeff(
-                        row[str(ColumnInfo.Name.AIR_PRESSURE)],
-                        row[self.reference_pressure_value],
-                        row[self.beta_coefficient],
-                    ),
-                    axis=1,
-                )
+        if not is_column_missing_or_empty(
+            data_frame, self.correction_factor_column_name
+        ):
+            message = (
+                "The correction already appears in the data_frame as"
+                f"'{self.correction_factor_column_name}'. Skipping correction to prevent "
+                "unwanted overwrites. "
             )
-        elif self.method_to_use == "l_coeff":
-            data_frame[str(ColumnInfo.Name.PRESSURE_CORRECTION)] = (
-                data_frame.apply(
-                    lambda row: calc_pressure_correction_l_coeff(
-                        row[str(ColumnInfo.Name.AIR_PRESSURE)],
-                        row[self.reference_pressure_value],
-                        row[self.l_coefficeint],
-                    ),
-                    axis=1,
-                )
-            )
+            core_logger.info(message)
+            return data_frame
 
-        return data_frame
+        else:
+            self._prepare_for_correction(data_frame)
+            if self.method_to_use == "beta":
+                data_frame[self.correction_factor_column_name] = (
+                    data_frame.apply(
+                        lambda row: calc_pressure_correction_beta_coeff(
+                            row[str(ColumnInfo.Name.AIR_PRESSURE)],
+                            row[self.reference_pressure_value],
+                            row[self.beta_coefficient],
+                        ),
+                        axis=1,
+                    )
+                )
+            elif self.method_to_use == "l_coeff":
+                data_frame[self.correction_factor_column_name] = (
+                    data_frame.apply(
+                        lambda row: calc_pressure_correction_l_coeff(
+                            row[str(ColumnInfo.Name.AIR_PRESSURE)],
+                            row[self.reference_pressure_value],
+                            row[self.l_coefficeint],
+                        ),
+                        axis=1,
+                    )
+                )
+            return data_frame
