@@ -60,7 +60,7 @@ class ColumnInfo:
         Name.THERM_NEUTRON_COUNT: "thermal_neutron_count",
         Name.PRECIPITATION: "precipitation",
         Name.SOIL_MOISTURE: "soil_moisture",
-        Name.SOIL_MOISTURE_FINAL: "soil_moisture_final",
+        Name.SOIL_MOISTURE_FINAL: "soil_moisture",  # updated to processed soil moisture
         Name.SOIL_MOISTURE_UNCERTAINTY_UPPER: "soil_moisture_uncertainty_upper",
         Name.SOIL_MOISTURE_UNCERTAINTY_LOWER: "soil_moisture_uncertainty_lower",
         Name.SOIL_MOISTURE_MEASURMENT_DEPTH: "crns_measurement_depth",
