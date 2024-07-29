@@ -80,11 +80,24 @@ class SmoothData:
                 raise ValueError(message)
 
     def _validate_savitsky_golay_params(self):
+        """_summary_
+
+        Raises
+        ------
+        ValueError
+            _description_
+        ValueError
+            _description_
+        """
         if self.poly_order is None:
             message = (
                 "poly_order cannot be None when implementing SG filter. "
                 "Either change the smoothing method or supply a poly_order value"
             )
+            core_logger.error(message)
+            raise ValueError(message)
+        if isinstance(self.window, str):
+            message = "Time-based window is not supported for Savitzky-Golay smoothing"
             core_logger.error(message)
             raise ValueError(message)
 
@@ -98,19 +111,21 @@ class SmoothData:
         """
 
     def apply_smoothing(self):
-        # read data
-        # smooth data
-        # return data
-        pass
+
+        return self.data.rolling(window=self.window, center=False)
 
     def _apply_rolling_mean(self):
         pass
 
 
-temp_test_data = pd.Series(
+temp_test_data = pd.DataFrame(
     np.random.randn(100),
     index=pd.date_range(start="2023-01-01", periods=100, freq="h"),
 )
 
-smoother = SmoothData(data=temp_test_data)
-smoother.data
+smoother = SmoothData(
+    data=temp_test_data, smooth_method="rolling_mean", window=12
+)
+smoother.apply_smoothing()
+
+## DOES NOT WORK - issue with data read in to fix

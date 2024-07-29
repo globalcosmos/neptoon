@@ -25,3 +25,6 @@ def test_smooth_data(data_to_smooth_hourly):
 
 
 test_smooth_data(temp_test_data)
+
+
+# test validation steps of Smoother
