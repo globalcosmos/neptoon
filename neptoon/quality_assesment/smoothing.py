@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 from neptoon.logging import get_logger
 
@@ -32,7 +32,7 @@ class SmoothData:
         smooth_method: Literal[
             "rolling_mean", "savitsky_golay"
         ] = "rolling_mean",
-        window: int = 12,
+        window: Optional[Union[str, int]] = 12,
         poly_order: Optional[int] = None,
     ):
         self.data = data
@@ -43,6 +43,23 @@ class SmoothData:
         self._validate_inputs()
 
     def _validate_inputs(self):
+        """
+        Validate the inputs in SmoothData class to ensure selected
+        smoothing method can be applied with given data.
+
+        Raises
+        ------
+        ValueError
+            If not DateTmeIndex in data
+        ValueError
+            If incorrect method supplied
+        ValueError
+            If invalid time string supplied for rolling mean
+        """
+        if not isinstance(self.data.index, pd.DatetimeIndex):
+            message = "Data index must be a DatetimeIndex"
+            core_logger.error(message)
+            raise ValueError(message)
         if self.smooth_method not in ["rolling_mean", "savitsky_golay"]:
             message = (
                 "smooth_method must be either 'rolling_mean' or "
@@ -50,10 +67,17 @@ class SmoothData:
             )
             core_logger.error(message)
             raise ValueError(message)
+        if self.smooth_method == "savitsky_golay":
+            self._validate_savitsky_golay_params()
         if self.smooth_method == "rolling_mean":
             self._validate_rolling_mean_params()
-        elif self.smooth_method == "savitsky_golay":
-            self._validate_savitsky_golay_params()
+        if isinstance(self.window, str):
+            try:
+                pd.Timedelta(self.window)
+            except ValueError:
+                message = f"Invalid time string for window: {self.window}"
+                core_logger.error(message)
+                raise ValueError(message)
 
     def _validate_savitsky_golay_params(self):
         if self.poly_order is None:
@@ -79,7 +103,7 @@ class SmoothData:
         # return data
         pass
 
-    def _apply_rolling_mean():
+    def _apply_rolling_mean(self):
         pass
 
 
