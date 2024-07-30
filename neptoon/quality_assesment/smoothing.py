@@ -39,6 +39,24 @@ class SmoothData:
         poly_order: Optional[int] = None,
         auto_update_final_col: bool = True,
     ):
+        """_summary_
+
+        Parameters
+        ----------
+        data : pd.Series
+            Data to be smoothed - must be time indexed
+        column_to_smooth : str
+            The column name of the column to be smoothed.
+        smooth_method : Literal["rolling_mean", "savitsky_golay"],
+            The smooth method to apply, by default "rolling_mean"
+        window : Optional[Union[str, int]], optional
+            The window size for smoothing, by default 12
+        poly_order : Optional[int], optional
+            Poly order to apply (savitsky golay only), by default None
+        auto_update_final_col : bool, optional
+            Whether to update the ColumnInfo object to represent the new
+            column as _FINAL, by default True
+        """
         self.data = data
         self.column_to_smooth = column_to_smooth
         self.smooth_method = smooth_method
@@ -171,7 +189,19 @@ class SmoothData:
             )
 
     def _apply_rolling_mean(self, data_to_smooth):
-        return data_to_smooth.rolling(window=self.window, center=False).mean()
+        if isinstance(self.window, int):
+            return data_to_smooth.rolling(
+                window=self.window,
+                min_periods=int((self.window / 2)),
+                center=False,
+            ).mean()
+        else:
+            # TODO: Need to address min periods using TimeDelta
+            return data_to_smooth.rolling(
+                window=self.window,
+                min_periods=2,
+                center=False,
+            ).mean()
 
     def _apply_savitsky_golay(self, data_to_smooth):
         smoothed = savgol_filter(
@@ -217,8 +247,8 @@ temp_test_data = pd.Series(
 smoother = SmoothData(
     data=temp_test_data,
     column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
-    smooth_method="savitsky_golay",
-    window=12,
+    smooth_method="rolling_mean",
+    window="1D",
     poly_order=4,
 )
 smoother.apply_smoothing()

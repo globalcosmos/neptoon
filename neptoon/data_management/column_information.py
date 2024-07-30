@@ -28,7 +28,7 @@ class ColumnInfo:
         INTENSITY_CORRECTION = auto()
         PRESSURE_CORRECTION = auto()
         CORRECTED_EPI_NEUTRON_COUNT = auto()
-        CORRECTED_EPI_NEUTRON_COUNT_SMOOTH = auto()
+        CORRECTED_EPI_NEUTRON_COUNT_FINAL = auto()
         THERM_NEUTRON_COUNT = auto()
         PRECIPITATION = auto()
         SOIL_MOISTURE = auto()
@@ -56,7 +56,7 @@ class ColumnInfo:
         Name.INTENSITY_CORRECTION: "incoming_neutron_intensity_correction",
         Name.PRESSURE_CORRECTION: "atmospheric_pressure_correction",
         Name.CORRECTED_EPI_NEUTRON_COUNT: "corrected_epithermal_neutrons",
-        Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH: "corrected_epithermal_neutrons_smooth",
+        Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL: "corrected_epithermal_neutrons",
         Name.THERM_NEUTRON_COUNT: "thermal_neutron_count",
         Name.PRECIPITATION: "precipitation",
         Name.SOIL_MOISTURE: "soil_moisture",
