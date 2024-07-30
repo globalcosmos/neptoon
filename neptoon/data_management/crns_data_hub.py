@@ -21,6 +21,7 @@ from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
+from neptoon.quality_assesment.smoothing import SmoothData
 
 from neptoon.logging import get_logger
 
@@ -343,9 +344,11 @@ class CRNSDataHub:
     def smooth_data(
         self,
         column_to_smooth: str,
-        smooth_method: Literal["rolling_mean", "savitsky_golay"] = None,
-        window: Optional[Union[int, str]] = None,
-        poly_order: int = None,
+        smooth_method: Literal[
+            "rolling_mean", "savitsky_golay"
+        ] = "rolling_mean",
+        window: Optional[Union[int, str]] = 12,
+        poly_order: int = 4,
         auto_update_final_col: bool = True,
     ):
         """
@@ -368,8 +371,17 @@ class CRNSDataHub:
             The column in the crns_data_frame that needs to be smoothed.
             Automatically
         """
-        # self.crns_data_frame()
-        pass
+        series_to_smooth = pd.Series(self.crns_data_frame[column_to_smooth])
+        smoother = SmoothData(
+            data=series_to_smooth,
+            column_to_smooth=column_to_smooth,
+            smooth_method=smooth_method,
+            window=window,
+            poly_order=poly_order,
+            auto_update_final_col=auto_update_final_col,
+        )
+        col_name = smoother.create_new_column_name()
+        self.crns_data_frame[col_name] = smoother.apply_smoothing()
 
     def produce_soil_moisture_estimates(self, n0=None):
         if n0 is None:
