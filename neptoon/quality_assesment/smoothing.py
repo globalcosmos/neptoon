@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import Literal, Optional, Union
+from scipy.signal import savgol_filter
 
 from neptoon.logging import get_logger
 from neptoon.data_management.column_information import ColumnInfo
@@ -36,12 +37,14 @@ class SmoothData:
         ] = "rolling_mean",
         window: Optional[Union[str, int]] = 12,
         poly_order: Optional[int] = None,
+        auto_update_final_col: bool = True,
     ):
         self.data = data
         self.column_to_smooth = column_to_smooth
         self.smooth_method = smooth_method
         self.window = window
         self.poly_order = poly_order
+        self.auto_update_final_col = auto_update_final_col
 
         self._validate_inputs()
 
@@ -112,10 +115,71 @@ class SmoothData:
         "TODO: could implement time delta selection here?"
         pass
 
-    def _update_column_name_config(self):
+    def _update_column_name_config(
+        self,
+        possible_names=[
+            str(ColumnInfo.Name.SOIL_MOISTURE),
+            str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT),
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
+        ],
+    ):
         """
-        This method will update the ConfigInfo.Name.... Final column
+        Updates the value for the '_FINAL' value in ColumnInfo.
+        Currently restricted to EPI_NEUTRONS and SOIL_MOISTURE. These
+        are most likely to be smoothed and used throughout the code.
+
+        The possible_names parameter is included to give flexibility in
+        future with updating the names. (i.e., we could include support
+        for supplying other columns to be automatically updated with
+        '_FINAL' after smoothing)
+
+        Parameters
+        ----------
+        possible_names : list, optional
+            _description_, by default [
+            str(ColumnInfo.Name.SOIL_MOISTURE),
+            str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT),
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL), ]
         """
+        if not self.auto_update_final_col:
+            return
+        if self.column_to_smooth not in possible_names:
+            message = (
+                f"{self.column_to_smooth} is not supported for automatic "
+                "updating of ColumnInfo. Please turn off auto_update_final_col"
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+        new_column_name = self.create_new_column_name()
+        if self.column_to_smooth in [
+            str(ColumnInfo.Name.SOIL_MOISTURE),
+            str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+        ]:
+            ColumnInfo.relabel(
+                ColumnInfo.Name.SOIL_MOISTURE_FINAL, new_label=new_column_name
+            )
+        elif self.column_to_smooth in [
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT),
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
+        ]:
+            ColumnInfo.relabel(
+                ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL,
+                new_label=new_column_name,
+            )
+
+    def _apply_rolling_mean(self, data_to_smooth):
+        return data_to_smooth.rolling(window=self.window, center=False).mean()
+
+    def _apply_savitsky_golay(self, data_to_smooth):
+        smoothed = savgol_filter(
+            x=data_to_smooth,
+            window_length=self.window,
+            polyorder=self.poly_order,
+        )
+        return pd.Series(smoothed, index=self.data.index)
 
     def create_new_column_name(self):
         """
@@ -138,10 +202,11 @@ class SmoothData:
 
     def apply_smoothing(self):
         if self.smooth_method == "rolling_mean":
+            self._update_column_name_config()
             return self._apply_rolling_mean(self.data)
-
-    def _apply_rolling_mean(self, data_to_smooth):
-        return data_to_smooth.rolling(window=self.window, center=False).mean()
+        elif self.smooth_method == "savitsky_golay":
+            self._update_column_name_config()
+            return self._apply_savitsky_golay(self.data)
 
 
 temp_test_data = pd.Series(
@@ -151,10 +216,12 @@ temp_test_data = pd.Series(
 
 smoother = SmoothData(
     data=temp_test_data,
-    column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT),
-    smooth_method="rolling_mean",
+    column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
+    smooth_method="savitsky_golay",
     window=12,
+    poly_order=4,
 )
+smoother.apply_smoothing()
 
 date_rng = pd.date_range(start="2023-01-01", periods=100, freq="h")
 
@@ -174,3 +241,4 @@ df["temperature"] = np.random.normal(15, 5, size=100)
 df["new"] = smoother.apply_smoothing()
 
 smoother.create_new_column_name()
+str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL)

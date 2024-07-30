@@ -44,7 +44,7 @@ class ColumnInfo:
     _default_representation: dict["ColumnInfo.Name", str] = {
         Name.DATE_TIME: "date_time",
         Name.EPI_NEUTRON_COUNT: "epithermal_neutrons",
-        Name.EPI_NEUTRON_COUNT_FINAL: "epithermal_neutrons_final",
+        Name.EPI_NEUTRON_COUNT_FINAL: "epithermal_neutrons",
         Name.AIR_PRESSURE: "air_pressure",
         Name.AIR_RELATIVE_HUMIDITY: "air_relative_humidity",
         Name.AIR_TEMPERATURE: "air_temperature",
@@ -83,6 +83,7 @@ class ColumnInfo:
             A string that represents the new column name to expect
             throughout processing.
         """
+        # print(f"Relabeling {column_name} to {new_label}")
         cls._current_representation[column_name] = new_label
 
     @classmethod
