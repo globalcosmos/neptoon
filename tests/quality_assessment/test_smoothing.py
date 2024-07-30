@@ -11,6 +11,15 @@ def data_to_smooth_hourly():
     )
 
 
+@pytest.fixture
+def og_data_table():
+
+    return pd.DataFrame(
+        index=pd.date_range(start="2023-01-01", periods=100, freq="h"),
+        columns=["neutron_counts", "air_pressure", "temperature"],
+    )
+
+
 temp_test_data = pd.Series(
     np.random.randn(100),
     index=pd.date_range(start="2023-01-01", periods=100, freq="h"),

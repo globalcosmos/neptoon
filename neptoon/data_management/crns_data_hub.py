@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from typing import Literal, Union, Optional
 from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataAttacher,
@@ -338,6 +339,37 @@ class CRNSDataHub:
                 correction_builder=self.correction_builder,
             )
             self.crns_data_frame = corrector.correct_neutrons()
+
+    def smooth_data(
+        self,
+        column_to_smooth: str,
+        smooth_method: Literal["rolling_mean", "savitsky_golay"] = None,
+        window: Optional[Union[int, str]] = None,
+        poly_order: int = None,
+        auto_update_final_col: bool = True,
+    ):
+        """
+        Applies a smoothing method to a series of data in the
+        crns_data_frame using the SmoothData class.
+
+        A `column_to_smooth` attribute must be supplied, and should be
+        written using the "str(ColumnInfo.Name.COLUMN)" format. The two
+        most likely to be used are:
+
+           - str(ColumnInfo.Name.SOIL_MOISTURE)
+           - str(ColumnInfo.Name.EPI_NEUTRONS)
+
+        If parameters are left as None, it uses defaults from SmoothData
+        (i.e., rolling_mean, window size == 12).
+
+        Parameters
+        ----------
+        column_to_smooth : str(ColumnInfo.Name.VALUE)
+            The column in the crns_data_frame that needs to be smoothed.
+            Automatically
+        """
+        # self.crns_data_frame()
+        pass
 
     def produce_soil_moisture_estimates(self, n0=None):
         if n0 is None:
