@@ -194,6 +194,8 @@ class CorrectNeutrons:
         Calculates the corrected neutron count rate after applying all
         the corrections.
 
+        NOTE:
+
         Parameters
         ----------
         df : pd.DataFrame
@@ -207,7 +209,7 @@ class CorrectNeutrons:
             recorded in a column
         """
         df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)] = df[
-            str(ColumnInfo.Name.EPI_NEUTRON_COUNT)
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL)
         ]
         for column_name in self.correction_columns:
             df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)] = (
