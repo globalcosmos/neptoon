@@ -25,7 +25,7 @@ class NeutronsToSM:
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
         ),
         smoothed_neutrons_col_name: str = str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ),
         soil_moisture_col_name: str = str(ColumnInfo.Name.SOIL_MOISTURE),
         depth_column_name: str = str(

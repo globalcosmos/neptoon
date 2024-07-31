@@ -7,14 +7,6 @@ from neptoon.logging import get_logger
 from neptoon.data_management.column_information import ColumnInfo
 
 core_logger = get_logger()
-""" 
-Features:
-    - Class for smoothing
-    - neutrons and SM need "FINAL" ColumnInfo.Name variables
-    - update feature to ensure code works on most current version of
-      variable
-    - method to ensure ColumnInfo is managed correctly
- """
 
 
 class SmoothData:
@@ -39,7 +31,8 @@ class SmoothData:
         poly_order: Optional[int] = None,
         auto_update_final_col: bool = True,
     ):
-        """_summary_
+        """
+        Attributes for SmoothData
 
         Parameters
         ----------
@@ -108,14 +101,16 @@ class SmoothData:
                 raise ValueError(message)
 
     def _validate_savitsky_golay_params(self):
-        """_summary_
+        """
+        Validates that the parameters are appropriate for using savitsky
+        golay smoothing.
 
         Raises
         ------
         ValueError
-            _description_
+            error if polyorder not supplied
         ValueError
-            _description_
+            error if time based window given
         """
         if self.poly_order is None:
             message = (
@@ -189,6 +184,19 @@ class SmoothData:
             )
 
     def _apply_rolling_mean(self, data_to_smooth):
+        """
+        Applies a rolling mean smoothing
+
+        Parameters
+        ----------
+        data_to_smooth : str
+            The name of the column to smooth
+
+        Returns
+        -------
+        pd.Series
+            The smoothed data
+        """
         if isinstance(self.window, int):
             return data_to_smooth.rolling(
                 window=self.window,
@@ -204,6 +212,19 @@ class SmoothData:
             ).mean()
 
     def _apply_savitsky_golay(self, data_to_smooth):
+        """
+        Applies the savitsky golay smoothing technique
+
+        Parameters
+        ----------
+        data_to_smooth : str
+            column name to be smoothed
+
+        Returns
+        -------
+        pd.Series
+            smoothed series
+        """
         smoothed = savgol_filter(
             x=data_to_smooth,
             window_length=self.window,
@@ -231,6 +252,15 @@ class SmoothData:
         return og_column_name + add_on
 
     def apply_smoothing(self):
+        """
+        Function to apply smoothing to a Series of data. It is presumed
+        that the appropriate attributes have been assigned already.
+
+        Returns
+        -------
+        pd.Series
+            The smoothed Series
+        """
         if self.smooth_method == "rolling_mean":
             self._update_column_name_config()
             return self._apply_rolling_mean(self.data)
