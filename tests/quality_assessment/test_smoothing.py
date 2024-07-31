@@ -133,7 +133,7 @@ def test_validation_of_attributes_savitsky_golay(data_to_smooth_hourly):
     Validation of attributes test when requesting SG filter smoothing.
     """
     with pytest.raises(ValueError):
-        smoother = SmoothData(
+        SmoothData(
             data=data_to_smooth_hourly,
             column_to_smooth="epithermal_neutrons",
             smooth_method="savitsky_golay",
@@ -150,7 +150,7 @@ def test_validation_of_attributes_datetime_index(
     Test for validation when bad index supplied.
     """
     with pytest.raises(ValueError):
-        smoother = SmoothData(
+        SmoothData(
             data=data_to_smooth_hourly_bad_index,
             column_to_smooth="epithermal_neutrons",
             smooth_method="savitsky_golay",
