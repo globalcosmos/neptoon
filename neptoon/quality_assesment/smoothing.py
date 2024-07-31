@@ -267,38 +267,3 @@ class SmoothData:
         elif self.smooth_method == "savitsky_golay":
             self._update_column_name_config()
             return self._apply_savitsky_golay(self.data)
-
-
-temp_test_data = pd.Series(
-    np.random.randn(100),
-    index=pd.date_range(start="2023-01-01", periods=100, freq="h"),
-)
-
-smoother = SmoothData(
-    data=temp_test_data,
-    column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
-    smooth_method="rolling_mean",
-    window="1D",
-    poly_order=4,
-)
-smoother.apply_smoothing()
-
-date_rng = pd.date_range(start="2023-01-01", periods=100, freq="h")
-
-# Create the DataFrame
-df = pd.DataFrame(
-    index=date_rng, columns=["neutron_counts", "air_pressure", "temperature"]
-)
-
-# Fill the DataFrame with random data
-df["neutron_counts"] = np.random.randint(
-    800, 1200, size=100
-)  # Random integers between 800 and 1200
-df["air_pressure"] = np.random.uniform(
-    950, 1050, size=100
-)  # Random floats between 950 and 1050
-df["temperature"] = np.random.normal(15, 5, size=100)
-df["new"] = smoother.apply_smoothing()
-
-smoother.create_new_column_name()
-str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL)
