@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from typing import Literal, Optional, Union
 from scipy.signal import savgol_filter
 
