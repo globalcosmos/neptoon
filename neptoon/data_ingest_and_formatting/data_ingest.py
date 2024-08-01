@@ -627,21 +627,20 @@ class FormatDataForCRNSDataHub:
     def __init__(
         self,
         data_frame: pd.DataFrame,
-        columns=0,  # Can be int, column_name, or a list these
+        column_names: str = None,
+        datetime_columns: str = None,  # Can be int, column_name, or a list these
         datetime_format: str = None,
         initial_time_zone: str = "utc",
         convert_time_zone_to: str = "utc",
         is_timestamp: bool = False,
-        datetime_column: str = "_datetime",
         decimal: str = ".",
     ):
         self._data_frame = data_frame
-        self._columns = columns
-        self._datatime_format = datetime_format
+        self._datetime_columns = datetime_columns
+        self._datetime_format = datetime_format
         self._initial_time_zone = initial_time_zone
         self._convert_time_zone_to = convert_time_zone_to
         self._is_timestamp = is_timestamp
-        self._dt_column = datetime_column
         self._decimal = decimal
 
     @property
@@ -649,12 +648,12 @@ class FormatDataForCRNSDataHub:
         return self._data_frame
 
     @property
-    def columns(self):
-        return self._columns
+    def datetime_columns(self):
+        return self._datetime_columns
 
     @property
     def datetime_format(self):
-        return self._datatime_format
+        return self._datetime_format
 
     @property
     def initial_time_zone(self):
@@ -672,10 +671,6 @@ class FormatDataForCRNSDataHub:
     def decimal(self):
         return self._decimal
 
-    @property
-    def datetime_column(self):
-        return self._data_time_format
-
     @data_frame.setter
     def data_frame(self, df: pd.DataFrame):
         self._data_frame = df
@@ -686,27 +681,28 @@ class FormatDataForCRNSDataHub:
         """
         TODO: docstring
 
-        Create a Datetime column, merge columns if necessary.
+        Create a Datetime column, merge columns if necessary (e.g., when
+        columns are split into date and time)
 
         Returns:
             pd.DataFrame: data including a Datetime column.
         """
-
-        # Define the index column
-        if isinstance(self.columns, int):
-            dt_series = self.data_frame.iloc[:, self.columns]
-        elif isinstance(self.columns, str):
-            dt_series = self.data_frame[self.columns]
-        elif isinstance(self.columns, list):
+        if isinstance(self.datetime_columns, str):
+            dt_series = self.data_frame[self.datetime_columns]
+        elif isinstance(self.datetime_columns, list):
             # Join multiple columns
-            column_names = []
-            for i in self.columns:
-                if isinstance(i, int):
-                    column_names.append(self.data_frame.columns[i])
-                elif isinstance(i, str):
-                    column_names.append(self.data_frame[i])
+            temp_column_names = []
+            for i in self.datetime_columns:
+                if isinstance(i, str):
+                    temp_column_names.append(
+                        self.data_frame[self.datetime_columns[i]]
+                    )
+                else:
+                    message = "dt_column_names must be a string type"
+                    core_logger.error(message)
+                    raise ValueError(message)
             # Join columns together separated with a space
-            dt_series = self.data_frame[column_names].apply(
+            dt_series = self.data_frame[temp_column_names].apply(
                 lambda x: "{} {}".format(x[0], x[1]), axis=1
             )
         dt_series = pd.to_datetime(
