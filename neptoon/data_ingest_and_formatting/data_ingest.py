@@ -12,7 +12,7 @@ import zipfile
 import io
 from saqc import SaQC
 from pathlib import Path
-from typing import Union
+from typing import Union, Literal, List
 from neptoon.data_management.data_audit import log_key_step
 from neptoon.logging import get_logger
 from neptoon.data_management.column_information import ColumnInfo
@@ -639,8 +639,11 @@ class InputColumnMetaData:
 
 class DataFrameConfig:
 
-    def __init__(self):
-        pass
+    def __init__(
+        self, pressure_merge_method: Literal["mean", "priority"] = "priority"
+    ):
+        self.column_data: List[InputColumnMetaData] = []
+        self.pressure_merge_method = pressure_merge_method
 
     def add_column(
         self,
@@ -649,8 +652,16 @@ class DataFrameConfig:
         unit: str,
         priority: int,
     ):
-        # add InputColumnMetaData object in a dictionary
-        pass
+        self.column_data.append(
+            (
+                InputColumnMetaData(
+                    initial_name=initial_name,
+                    variable_type=variable_type,
+                    unit=unit,
+                    priority=priority,
+                )
+            )
+        )
 
     def build_from_yaml(self):
         # automate building using YAML file
@@ -676,6 +687,7 @@ class FormatDataForCRNSDataHub:
         decimal: str = ".",
     ):
         self._data_frame = data_frame
+        self._data_frame_config = data_frame_config
         self._datetime_columns = datetime_columns
         self._datetime_format = datetime_format
         self._initial_time_zone = initial_time_zone
@@ -686,6 +698,10 @@ class FormatDataForCRNSDataHub:
     @property
     def data_frame(self):
         return self._data_frame
+
+    @property
+    def data_frame_config(self):
+        return self._data_frame_config
 
     @property
     def datetime_columns(self):
@@ -862,6 +878,78 @@ class FormatDataForCRNSDataHub:
         Some agg with count, some agg with average. 
 
         """
+
+    def convert_counts_to_per_hour(self):
+        # check for neutron units
+        # check diff between index
+        # convert to hourly count rate
+
+        pass
+
+    def aggregate_data_frame(self):
+        pass
+
+    def prepare_pressure_data(self):
+        """
+        Prepares the pressure data for neptoon. Many CRNS have multiple
+        pressure sensors available in the input dataset. To process CRNS
+        we need only one value of pressure. This method uses the
+        provided settings in the DataFrameConfig class to produce a
+        single pressure sensor value.
+
+        Options:
+            mean - create an average of all the pressure sensors
+            priority - use one sensor selected as priority
+
+        Future Options:
+            priority_filled - use one sensor as priorty and fill values
+            from alternative senors when missing data is found (needs
+            some interpolation)
+        """
+        if self.data_frame_config.pressure_merge_method == "priority":
+            priority_pressure_col = next(
+                col
+                for col in self.data_frame_config.column_data
+                if col.variable_type is InputColumnDataType.PRESSURE
+                and col.priority == 1
+            )
+
+            additional_priority_cols = sum(
+                1
+                for col in self.data_frame_config.column_data
+                if col.variable_type is InputColumnDataType.PRESSURE
+                and col.priority == 1
+            )
+            if additional_priority_cols > 1:
+                message = (
+                    "More than one pressure column given top priority. "
+                    f"Using column '{priority_pressure_col.initial_name}'. For future reference "
+                    "it is better to give only one column top priority when "
+                    "using 'priority' merge method"
+                )
+                core_logger.info(message)
+
+            self.data_frame.rename(
+                columns={
+                    priority_pressure_col.initial_name: str(
+                        ColumnInfo.Name.AIR_PRESSURE
+                    )
+                },
+                inplace=True,
+            )
+
+        elif self.data_frame_config.pressure_merge_method == "mean":
+            available_pressure_cols = [
+                col
+                for col in self.data_frame_config.column_data
+                if col.variable_type is InputColumnDataType.PRESSURE
+            ]
+            pressure_col_names = [
+                col.initial_name for col in available_pressure_cols
+            ]
+            self.data_frame[str(ColumnInfo.Name.AIR_PRESSURE)] = (
+                self.data_frame[pressure_col_names].mean(axis=1)
+            )
 
     def return_data_frame(self):
         """

@@ -29,10 +29,11 @@ timeseries_data_format:
   data_format: standard #HydroInnova, Styx, Finapp etc.
   resolution: 1hour
   key_column_names:
-    neutron_counts: n1cts, n2cts, n3cts
+    neutron_counts: N1Cts, n2cts, n3cts
     thermal_neutrons:
+    neutron_count_units: #counts_per_seconds or absolute_count
     pressure: P4_mb, P1_mb
-    pressure_unit: pascal
+    pressure_unit: hectopascals
     relative_humidity: RH_CS215
     atmospheric_temperature: EX_TEM
     resolution_column: N1ET_sec
