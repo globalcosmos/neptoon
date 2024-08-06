@@ -31,7 +31,7 @@ timeseries_data_format:
   key_column_names:
     neutron_counts: n1cts, n2cts, n3cts
     thermal_neutrons:
-    pressure: P4_mb
+    pressure: P4_mb, P1_mb
     pressure_unit: pascal
     relative_humidity: RH_CS215
     atmospheric_temperature: EX_TEM

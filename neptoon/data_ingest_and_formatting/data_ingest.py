@@ -6,6 +6,8 @@ these to the ManageFileCollection object?
 
 import pandas as pd
 import tarfile
+from dataclasses import dataclass
+from enum import Enum, auto
 import zipfile
 import io
 from saqc import SaQC
@@ -13,6 +15,7 @@ from pathlib import Path
 from typing import Union
 from neptoon.data_management.data_audit import log_key_step
 from neptoon.logging import get_logger
+from neptoon.data_management.column_information import ColumnInfo
 
 core_logger = get_logger()
 
@@ -616,9 +619,46 @@ class ParseFilesIntoDataFrame:
 # crnsdatahub.align_time()
 
 
+class InputColumnDataType(Enum):
+    DATE_TIME = auto()
+    PRESSURE = auto()
+    TEMPERATURE = auto()
+    RELATIVE_HUMIDITY = auto()
+    EPI_NEUTRON_COUNT = auto()
+    THERM_NEUTRON_COUNT = auto()
+    ELAPSED_TIME = auto()
+
+
+@dataclass
+class InputColumnMetaData:
+    initial_name: str
+    variable_type: InputColumnDataType
+    unit: str
+    priority: int
+
+
+class DataFrameConfig:
+
+    def __init__(self):
+        pass
+
+    def add_column(
+        self,
+        initial_name: str,
+        variable_type: InputColumnDataType,
+        unit: str,
+        priority: int,
+    ):
+        # add InputColumnMetaData object in a dictionary
+        pass
+
+    def build_from_yaml(self):
+        # automate building using YAML file
+        pass
+
+
 class FormatDataForCRNSDataHub:
     """
-    TODO datetime column has two very similar version. Need to fix this.
     TODO double check extract_datetime_column for logic
     TODO Other formatting??
     TODO One Click Function that compiles the formatting
@@ -627,8 +667,8 @@ class FormatDataForCRNSDataHub:
     def __init__(
         self,
         data_frame: pd.DataFrame,
-        column_names: str = None,
-        datetime_columns: str = None,  # Can be int, column_name, or a list these
+        data_frame_config: DataFrameConfig = None,
+        datetime_columns: str = None,  # Can be column_name, or a list of column names
         datetime_format: str = None,
         initial_time_zone: str = "utc",
         convert_time_zone_to: str = "utc",
@@ -678,9 +718,7 @@ class FormatDataForCRNSDataHub:
     def extract_datetime_column(
         self,
     ) -> pd.Series:
-        """
-        TODO: docstring
-
+        """ "
         Create a Datetime column, merge columns if necessary (e.g., when
         columns are split into date and time)
 
@@ -789,7 +827,7 @@ class FormatDataForCRNSDataHub:
         Convert DataFrame to numeric values.
 
         """
-        # Cases when decimal is not ., replace them by .
+        # Cases when decimal is not '.', replace them by '.'
         decimal = self.decimal
         decimal = decimal.strip()
         if decimal != ".":
@@ -799,6 +837,31 @@ class FormatDataForCRNSDataHub:
 
         # Convert all the regular columns to numeric and drop any failures
         self.data_frame = self.data_frame.apply(pd.to_numeric, errors="coerce")
+
+    def set_column_names(self):
+        pass
+
+    def merge_columns(self):
+        pass
+
+        """
+        HOW TO DEAL WITH COLUMN NAMES AND MERGING
+
+        We need a way to give a list of names for one type of variable
+        e.g., pressure
+
+        Then we need a way to state a preference - give option in merge
+        to select one to use in preference. 
+
+        For now we can stick to providing options for key variables. 
+
+        We also need a way to decide how to aggregate to 1 hour. Sub 1
+        hour resolution comes with v0.2.0 (we need to fix a few things
+        for this).
+
+        Some agg with count, some agg with average. 
+
+        """
 
     def return_data_frame(self):
         """
