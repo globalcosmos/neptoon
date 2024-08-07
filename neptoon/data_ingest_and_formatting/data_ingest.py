@@ -640,10 +640,20 @@ class InputColumnMetaData:
 class DataFrameConfig:
 
     def __init__(
-        self, pressure_merge_method: Literal["mean", "priority"] = "priority"
+        self,
+        data_resolution=None,
+        pressure_merge_method: Literal["mean", "priority"] = "priority",
+        temperature_merge_method: Literal["mean", "priority"] = "priority",
+        relative_humidity_merge_method: Literal[
+            "mean", "priority"
+        ] = "priority",
     ):
-        self.column_data: List[InputColumnMetaData] = []
+
+        self.data_resolution = data_resolution
         self.pressure_merge_method = pressure_merge_method
+        self.temperature_merge_method = temperature_merge_method
+        self.relative_humidity_merge_method = relative_humidity_merge_method
+        self.column_data: List[InputColumnMetaData] = []
 
     def add_column(
         self,
@@ -794,7 +804,11 @@ class FormatDataForCRNSDataHub:
             )
         return datetime_series
 
-    def align_time_stamps(self, method: str = "nshift", freq: str = "1H"):
+    def align_time_stamps(
+        self,
+        freq: str = "1h",
+        method: str = "time",
+    ):
         """
         Aligns timestamps to occur on the hour. E.g., 01:00 not 01:05.
 
@@ -804,7 +818,7 @@ class FormatDataForCRNSDataHub:
         ----------
         method : str, optional
             method to use for shifting, defaults to shifting to nearest
-            hour, by default "nshift"
+            hour, by default "time"
         freq : str, optional
             Define how regular the timestamps should be, 1 hour by
             default, by default "1H"
@@ -819,7 +833,10 @@ class FormatDataForCRNSDataHub:
             )
             print(message)
             core_logger.error(message)
-        timestamp_aligner.align_timestamps(method=method, freq=freq)
+        timestamp_aligner.align_timestamps(
+            freq=freq,
+            method=method,
+        )
         self.data_frame = timestamp_aligner.return_dataframe()
 
     def datetime_as_index(
@@ -835,6 +852,7 @@ class FormatDataForCRNSDataHub:
         date_time_column = self.extract_datetime_column()
         date_time_column = self.convert_time_zone(date_time_column)
         self.data_frame.index = date_time_column
+        self.data_frame.drop(self.datetime_columns, axis=1, inplace=True)
 
     def dataframe_to_numeric(
         self,
@@ -857,7 +875,7 @@ class FormatDataForCRNSDataHub:
     def set_column_names(self):
         pass
 
-    def merge_columns(self):
+    def prepare_key_columns(self):
         pass
 
         """
@@ -878,6 +896,17 @@ class FormatDataForCRNSDataHub:
         Some agg with count, some agg with average. 
 
         """
+        self.merge_multiple_meteo_columns(
+            column_data_type=InputColumnDataType.PRESSURE
+        )
+        self.merge_multiple_meteo_columns(
+            column_data_type=InputColumnDataType.TEMPERATURE
+        )
+        self.merge_multiple_meteo_columns(
+            column_data_type=InputColumnDataType.RELATIVE_HUMIDITY
+        )
+        self.prepare_epi_neutron_data()
+        self.prepare_thermal_neutron_data()
 
     def convert_counts_to_per_hour(self):
         # check for neutron units
@@ -889,67 +918,95 @@ class FormatDataForCRNSDataHub:
     def aggregate_data_frame(self):
         pass
 
-    def prepare_pressure_data(self):
+    def merge_multiple_meteo_columns(
+        self,
+        column_data_type: Literal[
+            InputColumnDataType.PRESSURE,
+            InputColumnDataType.RELATIVE_HUMIDITY,
+            InputColumnDataType.TEMPERATURE,
+        ],
+    ):
         """
-        Prepares the pressure data for neptoon. Many CRNS have multiple
-        pressure sensors available in the input dataset. To process CRNS
-        we need only one value of pressure. This method uses the
-        provided settings in the DataFrameConfig class to produce a
-        single pressure sensor value.
+        Merges columns when multiple are available. Many CRNS have
+        multiple sensors available in the input dataset (e.g., 2 or more
+        pressure sensors at the site). We need only one value for each
+        of these variables. This method uses the settings in the
+        DataFrameConfig class to produce a single sensor value for the
+        selected sensor.
 
-        Options:
+        Current Options (set in the Config file):
             mean - create an average of all the pressure sensors
             priority - use one sensor selected as priority
 
         Future Options:
             priority_filled - use one sensor as priorty and fill values
-            from alternative senors when missing data is found (needs
-            some interpolation)
+            from alternative seno
+
+        Parameters
+        ----------
+        column_data_type : InputColumnDataType
+            One of the possible InputColumnDataTypes that can be used
+            here.
+
+        Raises
+        ------
+        ValueError
+            If an incompatible InputColumnDataType is given
         """
-        if self.data_frame_config.pressure_merge_method == "priority":
-            priority_pressure_col = next(
+
+        if column_data_type == InputColumnDataType.PRESSURE:
+            merge_method = self.data_frame_config.pressure_merge_method
+            created_col_name = str(ColumnInfo.Name.AIR_PRESSURE)
+        elif column_data_type == InputColumnDataType.TEMPERATURE:
+            merge_method = self.data_frame_config.temperature_merge_method
+        elif column_data_type == InputColumnDataType.RELATIVE_HUMIDITY:
+            merge_method = (
+                self.data_frame_config.relative_humidity_merge_method
+            )
+        else:
+            message = (
+                f"{column_data_type} is incompatible with this method to merge"
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+            return
+
+        if merge_method == "priority":
+            priority_col = next(
                 col
                 for col in self.data_frame_config.column_data
-                if col.variable_type is InputColumnDataType.PRESSURE
-                and col.priority == 1
+                if col.variable_type is column_data_type and col.priority == 1
             )
 
             additional_priority_cols = sum(
                 1
                 for col in self.data_frame_config.column_data
-                if col.variable_type is InputColumnDataType.PRESSURE
-                and col.priority == 1
+                if col.variable_type is column_data_type and col.priority == 1
             )
             if additional_priority_cols > 1:
                 message = (
-                    "More than one pressure column given top priority. "
-                    f"Using column '{priority_pressure_col.initial_name}'. For future reference "
+                    f"More than one {column_data_type} column given top priority. "
+                    f"Using column '{priority_col.initial_name}'. For future reference "
                     "it is better to give only one column top priority when "
                     "using 'priority' merge method"
                 )
                 core_logger.info(message)
 
             self.data_frame.rename(
-                columns={
-                    priority_pressure_col.initial_name: str(
-                        ColumnInfo.Name.AIR_PRESSURE
-                    )
-                },
+                columns={priority_col.initial_name: created_col_name},
                 inplace=True,
             )
 
-        elif self.data_frame_config.pressure_merge_method == "mean":
-            available_pressure_cols = [
+        elif merge_method == "mean":
+            available_cols = [
                 col
                 for col in self.data_frame_config.column_data
-                if col.variable_type is InputColumnDataType.PRESSURE
+                if col.variable_type is column_data_type
             ]
-            pressure_col_names = [
-                col.initial_name for col in available_pressure_cols
-            ]
-            self.data_frame[str(ColumnInfo.Name.AIR_PRESSURE)] = (
-                self.data_frame[pressure_col_names].mean(axis=1)
-            )
+            pressure_col_names = [col.initial_name for col in available_cols]
+            self.data_frame[created_col_name] = self.data_frame[
+                pressure_col_names
+            ].mean(axis=1)
 
     def return_data_frame(self):
         """
@@ -1025,7 +1082,7 @@ class TimeStampAligner:
             raise ValueError("The DataFrame index must be of datetime type")
 
     @log_key_step("method", "freq")
-    def align_timestamps(self, method: str = "nshift", freq: str = "1Hour"):
+    def align_timestamps(self, freq: str = "1h", method: str = "time"):
         """
         Aligns the time stamp of the SaQC feature. Will automatically do
         this for all data columns. For more information on the values
@@ -1038,13 +1095,15 @@ class TimeStampAligner:
         method : str, optional
             Defaults to the nearest shift method to align time stamps.
             This means data is adjusted to the nearest time stamp
-            without interpolation, by default "nshift".
+            without interpolation, by default "time".
         freq : str, optional
             The frequency of time stamps wanted, by default "1Hour"
         """
 
         self.qc = self.qc.align(
-            field=self.data_frame.columns, freq=freq, method=method
+            field=self.data_frame.columns,
+            freq=freq,
+            method=method,
         )
 
     def return_dataframe(self):

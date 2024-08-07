@@ -1,0 +1,27 @@
+input_data_config:
+  time_step_resolution: 1hour
+  key_column_info:
+    epithermal_neutron_counts_columns: N1Cts, n2cts, n3cts
+    thermal_neutrons:
+    epithermal_neutron_count_units: absolute_count #counts_per_hour, counts_per_seconds or absolute_count
+    pressure_columns: P4_mb, P3_mb, P1_mb
+    pressure_units: hectopascals
+    pressure_merge_method: priority
+    temperature_columns: T1_C
+    temperature_units: celcius
+    temperature_merge_method: priority
+
+timeseries_data_format:
+  data_format: standard #HydroInnova, Styx, Finapp etc.
+  resolution: 1hour
+  key_column_names:
+    neutron_counts: N1Cts, n2cts, n3cts
+    thermal_neutrons:
+    neutron_count_units: #counts_per_seconds or absolute_count
+    pressure: P4_mb, P1_mb
+    pressure_unit: hectopascals
+    relative_humidity: RH_CS215
+    atmospheric_temperature: EX_TEM
+    resolution_column: N1ET_sec
+    resolution_default:
+    incoming_neutron_intensity: Jung
