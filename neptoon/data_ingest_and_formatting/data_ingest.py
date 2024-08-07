@@ -6,6 +6,8 @@ these to the ManageFileCollection object?
 
 import pandas as pd
 import tarfile
+import re
+from datetime import timedelta
 from dataclasses import dataclass
 from enum import Enum, auto
 import zipfile
@@ -608,17 +610,6 @@ class ParseFilesIntoDataFrame:
         return header_list
 
 
-# Concept
-# formatter = FormatDataForCRNSDataHub(df)
-# formatter.format_data_frame()
-# df = formatter.return_data_frame()
-# formats reduces the df to the main columns, use this column, average those columns
-# crnsdatahub = CRNSDataHub(df) # expectes certain format
-# validation
-# quality checks
-# crnsdatahub.align_time()
-
-
 class InputColumnDataType(Enum):
     DATE_TIME = auto()
     PRESSURE = auto()
@@ -641,7 +632,7 @@ class DataFrameConfig:
 
     def __init__(
         self,
-        data_resolution=None,
+        data_resolution: str = "1hour",
         pressure_merge_method: Literal["mean", "priority"] = "priority",
         temperature_merge_method: Literal["mean", "priority"] = "priority",
         relative_humidity_merge_method: Literal[
@@ -649,11 +640,45 @@ class DataFrameConfig:
         ] = "priority",
     ):
 
-        self.data_resolution = data_resolution
+        self.data_resolution = self.parse_resolution(data_resolution)
+        self.conversion_factor_to_counts_per_hour = (
+            self.get_conversion_factor()
+        )
         self.pressure_merge_method = pressure_merge_method
         self.temperature_merge_method = temperature_merge_method
         self.relative_humidity_merge_method = relative_humidity_merge_method
+
         self.column_data: List[InputColumnMetaData] = []
+
+    def parse_resolution(
+        self,
+        resolution_str,
+    ):
+
+        pattern = re.compile(r"(\d+)\s*([a-zA-Z]+)")
+        match = pattern.match(resolution_str.strip())
+
+        if not match:
+            raise ValueError(f"Invalid resolution format: {resolution_str}")
+
+        value, unit = match.groups()
+        value = int(value)
+
+        if unit.lower() in ["min", "minute", "minutes"]:
+            return timedelta(minutes=value)
+        elif unit.lower() in ["hour", "hours", "hr", "hrs"]:
+            return timedelta(hours=value)
+        elif unit.lower() in ["day", "days"]:
+            return timedelta(days=value)
+        else:
+            message = f"Unsupported time unit: {unit}"
+            core_logger.error(message)
+            raise ValueError(message)
+
+    def get_conversion_factor(self):
+
+        hours = self.data_resolution.total_seconds() / 3600
+        return 1 / hours
 
     def add_column(
         self,
@@ -905,10 +930,85 @@ class FormatDataForCRNSDataHub:
         self.merge_multiple_meteo_columns(
             column_data_type=InputColumnDataType.RELATIVE_HUMIDITY
         )
-        self.prepare_epi_neutron_data()
-        self.prepare_thermal_neutron_data()
+        self.prepare_neutron_count_columns(
+            neutron_column_type=InputColumnDataType.EPI_NEUTRON_COUNT
+        )
+        try:
+            self.prepare_neutron_count_columns(
+                neutron_column_type=InputColumnDataType.THERM_NEUTRON_COUNT
+            )
+        except:
+            message = "Failed trying to process thermal_neutron_counts"
+            core_logger.error(message)
 
-    def convert_counts_to_per_hour(self):
+    def prepare_neutron_count_columns(
+        self,
+        neutron_column_type: Literal[
+            InputColumnDataType.EPI_NEUTRON_COUNT,
+            InputColumnDataType.THERM_NEUTRON_COUNT,
+        ],
+    ):
+        """
+        Prepares the neutron columns for usage in neptoon. Performs
+        several steps:
+
+            - Finds the columns labeled with neutron_column_type
+            - If more than one it will sum them into a new column
+            - Check the units and convert to counts per hour.
+
+
+        Parameters
+        ----------
+        neutron_column_type :
+                    Literal[
+                        InputColumnDataType.EPI_NEUTRON_COUNT,
+                        InputColumnDataType.THERM_NEUTRON_COUNT,
+                            ]
+            The type of neutron data being processed
+        """
+        if neutron_column_type == InputColumnDataType.EPI_NEUTRON_COUNT:
+            final_column_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT)
+        elif neutron_column_type == InputColumnDataType.THERM_NEUTRON_COUNT:
+            final_column_name = str(ColumnInfo.Name.THERM_NEUTRON_COUNT)
+
+        epi_neutron_cols = [
+            col
+            for col in self.data_frame_config.column_data
+            if col.variable_type is neutron_column_type
+        ]
+
+        epi_neutron_unit = next(
+            col.unit
+            for col in self.data_frame_config.column_data
+            if col.variable_type is neutron_column_type
+        )
+        print(epi_neutron_unit)
+
+        if len(epi_neutron_cols) > 1:
+            epi_col_names = [name.initial_name for name in epi_neutron_cols]
+
+            self.data_frame[final_column_name] = self.data_frame[
+                epi_col_names
+            ].sum(axis=1)
+        else:
+            epi_col_name = epi_neutron_cols[0].initial_name
+            self.data_frame.rename(
+                columns={epi_col_name: final_column_name},
+                inplace=True,
+            )
+
+        if epi_neutron_unit == "counts_per_hour":
+            pass
+        elif epi_neutron_unit == "absolute_count":
+            self.data_frame[final_column_name] = (
+                self.data_frame[final_column_name]
+                * self.data_frame_config.conversion_factor_to_counts_per_hour
+            )
+        elif epi_neutron_unit == "counts_per_second":
+            self.data_frame[final_column_name] = self.data_frame[
+                final_column_name
+            ] = (self.data_frame[final_column_name] * 3600)
+
         # check for neutron units
         # check diff between index
         # convert to hourly count rate
