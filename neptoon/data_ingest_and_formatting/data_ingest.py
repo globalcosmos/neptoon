@@ -1059,10 +1059,12 @@ class FormatDataForCRNSDataHub:
             created_col_name = str(ColumnInfo.Name.AIR_PRESSURE)
         elif column_data_type == InputColumnDataType.TEMPERATURE:
             merge_method = self.data_frame_config.temperature_merge_method
+            created_col_name = str(ColumnInfo.Name.AIR_TEMPERATURE)
         elif column_data_type == InputColumnDataType.RELATIVE_HUMIDITY:
             merge_method = (
                 self.data_frame_config.relative_humidity_merge_method
             )
+            created_col_name = str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
         else:
             message = (
                 f"{column_data_type} is incompatible with this method to merge"
@@ -1072,30 +1074,37 @@ class FormatDataForCRNSDataHub:
             return
 
         if merge_method == "priority":
-            priority_col = next(
-                col
-                for col in self.data_frame_config.column_data
-                if col.variable_type is column_data_type and col.priority == 1
-            )
-
-            additional_priority_cols = sum(
-                1
-                for col in self.data_frame_config.column_data
-                if col.variable_type is column_data_type and col.priority == 1
-            )
-            if additional_priority_cols > 1:
-                message = (
-                    f"More than one {column_data_type} column given top priority. "
-                    f"Using column '{priority_col.initial_name}'. For future reference "
-                    "it is better to give only one column top priority when "
-                    "using 'priority' merge method"
+            try:
+                priority_col = next(
+                    col
+                    for col in self.data_frame_config.column_data
+                    if col.variable_type is column_data_type
+                    and col.priority == 1
                 )
-                core_logger.info(message)
 
-            self.data_frame.rename(
-                columns={priority_col.initial_name: created_col_name},
-                inplace=True,
-            )
+                additional_priority_cols = sum(
+                    1
+                    for col in self.data_frame_config.column_data
+                    if col.variable_type is column_data_type
+                    and col.priority == 1
+                )
+                if additional_priority_cols > 1:
+                    message = (
+                        f"More than one {column_data_type} column given top priority. "
+                        f"Using column '{priority_col.initial_name}'. For future reference "
+                        "it is better to give only one column top priority when "
+                        "using 'priority' merge method"
+                    )
+                    core_logger.info(message)
+
+                self.data_frame.rename(
+                    columns={priority_col.initial_name: created_col_name},
+                    inplace=True,
+                )
+            except StopIteration:
+                raise ValueError(
+                    f"No column found with priority 1 for type {column_data_type}"
+                )
 
         elif merge_method == "mean":
             available_cols = [
@@ -1108,15 +1117,20 @@ class FormatDataForCRNSDataHub:
                 pressure_col_names
             ].mean(axis=1)
 
-    def return_data_frame(self):
+    def format_data_and_return_data_frame(self):
         """
-        Returns the contained DataFrame
+        Completes the whole process of formatting the dataframe. Expects
+        the settings to be fully implemented.
 
         Returns
         -------
         pd.DataFrame
             DataFrame
         """
+        self.datetime_as_index()
+        self.dataframe_to_numeric()
+        self.prepare_key_columns()
+        self.align_time_stamps()
         return self.data_frame
 
 
