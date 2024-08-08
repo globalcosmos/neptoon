@@ -1,5 +1,6 @@
 import logging
 import yaml
+from typing import Literal
 from abc import ABC, abstractmethod
 from neptoon.logging import get_logger
 from neptoon.configuration.yaml_classes import (
@@ -296,6 +297,10 @@ class GlobalSettingsConfigurationValidataion(ValidateConfigurationFile):
     pass
 
 
+class InputDataFrameConfigurationValidation:
+    pass
+
+
 class ConfigurationManager:
     """
     Configuration Management class. The purpose of this class is to
@@ -330,7 +335,16 @@ class ConfigurationManager:
 
         return configuration_object
 
-    def load_and_validate_configuration(self, name: str, file_path: str):
+    def load_and_validate_configuration(
+        self,
+        name: Literal[
+            "station",
+            "processing",
+            "global",
+            "input_data",
+        ],
+        file_path: str,
+    ):
         """
         This class handles loading and validating of YAML configuration
         files. The output is a ConfigurationObject that has been type
@@ -345,6 +359,7 @@ class ConfigurationManager:
             - sensor
             - processing
             - global
+            - input_data
 
         file_path : str
             File path of the configuration YAML file
@@ -360,12 +375,22 @@ class ConfigurationManager:
         name_lower = name.lower()
         if name_lower == "station":
             validation_object = SensorConfigurationValidation(pre_load)
+            validation_object.validate_configuration()
         elif name_lower == "processing":
-            validation_object = ProcessConfigurationValidation(pre_load)
+            pass
+            # validation_object = ProcessConfigurationValidation(pre_load)
+            # validation_object.validate_configuration()
         elif name_lower == "global":
-            validation_object = GlobalSettingsConfigurationValidataion(
-                pre_load
-            )
+            pass
+            # validation_object = GlobalSettingsConfigurationValidataion(
+            #     pre_load
+            # )
+            # validation_object.validate_configuration()
+        elif name_lower == "input_data":
+            pass
+            # validation_object = InputDataFrameConfigurationValidation(pre_load)
+            # validation_object.validate_configuration()
+
         else:
             logging.error(
                 "Incompatible name given when configuration file loaded."
@@ -375,13 +400,19 @@ class ConfigurationManager:
                 f"type. Accepted names are [station, processing, global]"
             )
 
-        validation_object.validate_configuration()
-
         self._configs[name] = self.convert_configuration_dictionary(
             pre_load.whole_yaml_file
         )
 
-    def get_configuration(self, name):
+    def get_configuration(
+        self,
+        name: Literal[
+            "station",
+            "processing",
+            "global",
+            "input_data",
+        ],
+    ):
         """
         Get the configuration file
 

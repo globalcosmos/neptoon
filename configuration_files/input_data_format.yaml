@@ -1,15 +1,24 @@
-input_data_config:
+input_data:
   time_step_resolution: 1hour
   key_column_info:
-    epithermal_neutron_counts_columns: N1Cts, n2cts, n3cts
+    epithermal_neutron_counts_columns:
+      - N1Cts
+      - n2cts
+      - n3cts
     thermal_neutrons:
     epithermal_neutron_count_units: absolute_count #counts_per_hour, counts_per_seconds or absolute_count
-    pressure_columns: P4_mb, P3_mb, P1_mb
+    pressure_columns:
+      - P4_mb # first priorty goes first
+      - P3_mb
+      - P1_mb
     pressure_units: hectopascals
     pressure_merge_method: priority
-    temperature_columns: T1_C, T2_C
+    temperature_columns:
+      - T1_C
+      - T2_C
     temperature_units: celcius
     temperature_merge_method: priority
-    relative_humidity_columns: RH1
+    relative_humidity_columns:
+      - RH1
     relative_humidity_units: percent
     relative_humidity_merge_method: priority

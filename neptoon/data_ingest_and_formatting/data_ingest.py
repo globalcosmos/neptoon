@@ -18,6 +18,10 @@ from typing import Union, Literal, List
 from neptoon.data_management.data_audit import log_key_step
 from neptoon.logging import get_logger
 from neptoon.data_management.column_information import ColumnInfo
+from neptoon.configuration.configuration_input import (
+    PreLoadConfigurationYaml,
+    ConfigurationManager,
+)
 
 core_logger = get_logger()
 
@@ -628,19 +632,52 @@ class InputColumnMetaData:
     priority: int
 
 
-class DataFrameConfig:
+class InputDataFrameConfig:
 
     def __init__(
         self,
-        data_resolution: str = "1hour",
+        time_resolution: str,
         pressure_merge_method: Literal["mean", "priority"] = "priority",
         temperature_merge_method: Literal["mean", "priority"] = "priority",
         relative_humidity_merge_method: Literal[
             "mean", "priority"
         ] = "priority",
     ):
+        """
+        A class storing information supporting automated processing of
+        raw input CRNS data files into a ready for neptoon dataframe
+        (for use in FormatDataForCRNSDataHub)
 
-        self.data_resolution = self.parse_resolution(data_resolution)
+        Parameters
+        ----------
+        time_resolution : str
+            Time resolution in format "<number> <unit>".
+        pressure_merge_method : {'mean', 'priority'}, optional
+            Method for merging pressure data, by default 'priority'.
+        temperature_merge_method : {'mean', 'priority'}, optional
+            Method for merging temperature data, by default 'priority'.
+        relative_humidity_merge_method : {'mean', 'priority'}, optional
+            Method for merging relative humidity data, by default
+            'priority'.
+
+
+        Notes
+        -----
+        For time_resolution, <number> is a positive integer and <unit>
+        is one of:
+            - For minutes: "min", "minute", "minutes"
+            - For hours: "hour", "hours", "hr", "hrs"
+            - For days: "day", "days"
+        The parsing is case-insensitive.
+
+        For *_merge_method parameters:
+            - 'mean': Average of all columns with the same data type.
+            - 'priority': Select one column from available  columns
+              based on
+            predefined priority.
+        """
+
+        self.time_resolution = self.parse_resolution(time_resolution)
         self.conversion_factor_to_counts_per_hour = (
             self.get_conversion_factor()
         )
@@ -654,6 +691,37 @@ class DataFrameConfig:
         self,
         resolution_str,
     ):
+        """
+        Parse a string representation of a time resolution and convert
+        it to a timedelta object.
+
+        This method takes a string describing a time resolution (e.g.,
+        "30 minutes", "2 hours", "1 day") and converts it into a Python
+        timedelta object. It supports minutes, hours, and days as units.
+
+        Parameters
+        ----------
+        resolution_str : str
+            A string representing the time resolution. The format should
+            be "<number> <unit>", where <number> is a positive integer
+            and <unit> is one of the following: - For minutes: "min",
+            "minute", "minutes" - For hours: "hour", "hours", "hr",
+            "hrs" - For days: "day", "days" The parsing is
+            case-insensitive.
+
+        Returns
+        -------
+        datetime.timedelta
+            A timedelta object representing the parsed time resolution.
+
+        Raises
+        ------
+        ValueError
+            If the resolution string format is invalid or cannot be
+            parsed.
+        ValueError
+            If an unsupported time unit is provided.
+        """
 
         pattern = re.compile(r"(\d+)\s*([a-zA-Z]+)")
         match = pattern.match(resolution_str.strip())
@@ -676,17 +744,45 @@ class DataFrameConfig:
             raise ValueError(message)
 
     def get_conversion_factor(self):
+        """
+        Figures out the factor needed to multiply a count rate by to
+        convert it to counts per hour. Uses the data_resolution
+        attribute for this calculation.
 
-        hours = self.data_resolution.total_seconds() / 3600
+        Returns
+        -------
+        float
+            The factor to convert to counts per hour
+        """
+
+        hours = self.time_resolution.total_seconds() / 3600
         return 1 / hours
 
-    def add_column(
+    def add_column_meta_data(
         self,
         initial_name: str,
         variable_type: InputColumnDataType,
         unit: str,
         priority: int,
     ):
+        """
+        Adds an InputColumnMetaData class to the column_data attribute.
+
+        Parameters
+        ----------
+        initial_name : str
+            The name of the column from the original raw data
+        variable_type : InputColumnDataType
+            Enum of the column data type: see InputColumnDataType
+        unit : str
+            The units of the column e.g., "hectopascals"
+        priority : int
+            The priority of the column - 1 being highest. Needed when
+            multiple columns are present and the user wants to use the
+            priority merge method (i.e., choose the best column for a
+            data type).
+        """
+
         self.column_data.append(
             (
                 InputColumnMetaData(
@@ -698,8 +794,62 @@ class DataFrameConfig:
             )
         )
 
-    def build_from_yaml(self):
-        # automate building using YAML file
+    def build_from_yaml(
+        self,
+        path: str,
+    ):
+
+        internal_config = ConfigurationManager()
+        internal_config.load_and_validate_configuration(
+            name="input_data",
+            file_path=path,
+        )
+
+        yaml_information = internal_config.get_configuration("input_data")
+
+        self.add_meteo_columns(
+            meteo_columns=yaml_information.input_data.key_column_info.temperature_columns,
+            meteo_type=InputColumnDataType.TEMPERATURE,
+            unit=yaml_information.input_data.key_column_info.temperature_units,
+        )
+        self.add_meteo_columns(
+            meteo_columns=yaml_information.input_data.key_column_info.pressure_columns,
+            meteo_type=InputColumnDataType.PRESSURE,
+            unit=yaml_information.input_data.key_column_info.pressure_units,
+        )
+        self.add_meteo_columns(
+            meteo_columns=yaml_information.input_data.key_column_info.relative_humidity_columns,
+            meteo_type=InputColumnDataType.RELATIVE_HUMIDITY,
+            unit=yaml_information.input_data.key_column_info.relative_humidity_units,
+        )
+
+    def assign_merge_methods(
+        self,
+    ):
+        pass
+
+    def add_meteo_columns(
+        self,
+        meteo_columns,
+        meteo_type,
+        unit,
+    ):
+        available_cols = [name for name in meteo_columns]
+
+        priority = 1
+        for col in available_cols:
+            self.add_column_meta_data(
+                initial_name=col,
+                variable_type=meteo_type,
+                unit=unit,
+                priority=priority,
+            )
+            priority += 1
+
+    def add_date_time_columns(self):
+        pass
+
+    def add_neutron_columns(self):
         pass
 
 
@@ -713,7 +863,7 @@ class FormatDataForCRNSDataHub:
     def __init__(
         self,
         data_frame: pd.DataFrame,
-        data_frame_config: DataFrameConfig = None,
+        data_frame_config: InputDataFrameConfig = None,
         datetime_columns: str = None,  # Can be column_name, or a list of column names
         datetime_format: str = None,
         initial_time_zone: str = "utc",

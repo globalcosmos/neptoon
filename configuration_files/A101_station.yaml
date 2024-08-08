@@ -59,8 +59,6 @@ data_storage:
   local_storage_path: input/station-data.zip
   local_storage_prefix: CRS03_Data
   local_storage_suffix: .txt
-  cache_data_pickle_store:
-  cache_data_restore_pickle:
   FTP_server_host: host
   FTP_server_username: username
   FTP_server_password: password # need to think of a better way to store passwords!
@@ -69,7 +67,7 @@ data_storage:
   remote_folder_SD_path:
   remote_folder_SD_prefix:
   remote_folder_SD_suffix:
-# # The collected metadata will be filled out by cosmosbase!
+# # The collected metadata will be filled out by neptoon!
 # externally_collected_metadata:
 #   soil_grids:
 #     # Change these to change resolution around the sensor
