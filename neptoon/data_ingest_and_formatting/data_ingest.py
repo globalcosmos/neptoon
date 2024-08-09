@@ -643,7 +643,7 @@ class InputDataFrameConfig:
             "mean", "priority"
         ] = "priority",
         datetime_columns: str = None,  # Can be column_name, or a list of column names
-        datetime_format: str = None,
+        datetime_format: str = "%Y/%m/%d %H:%M:%S",
         initial_time_zone: str = "utc",
         convert_time_zone_to: str = "utc",
         is_timestamp: bool = False,
@@ -690,7 +690,12 @@ class InputDataFrameConfig:
         self.pressure_merge_method = pressure_merge_method
         self.temperature_merge_method = temperature_merge_method
         self.relative_humidity_merge_method = relative_humidity_merge_method
-
+        self.datetime_columns = datetime_columns
+        self.datetime_format = datetime_format
+        self.initial_time_zone = initial_time_zone
+        self.convert_time_zone_to = convert_time_zone_to
+        self.is_timestamp = is_timestamp
+        self.decimal = decimal
         self.column_data: List[InputColumnMetaData] = []
 
     def parse_resolution(
@@ -828,11 +833,36 @@ class InputDataFrameConfig:
             meteo_type=InputColumnDataType.RELATIVE_HUMIDITY,
             unit=yaml_information.input_data.key_column_info.relative_humidity_units,
         )
+        self.assign_merge_methods(
+            column_data_type=InputColumnDataType.PRESSURE,
+            merge_method=yaml_information.input_data.key_column_info.pressure_merge_method,
+        )
+        self.assign_merge_methods(
+            column_data_type=InputColumnDataType.TEMPERATURE,
+            merge_method=yaml_information.input_data.key_column_info.temperature_merge_method,
+        )
+        self.assign_merge_methods(
+            column_data_type=InputColumnDataType.RELATIVE_HUMIDITY,
+            merge_method=yaml_information.input_data.key_column_info.relative_humidity_merge_method,
+        )
+        self.add_date_time_column_info(
+            date_time_columns=yaml_information.input_data.key_column_info.datetime_columns,
+            datetime_format=yaml_information.input_data.key_column_info.datetime_format,
+            initial_time_zone=yaml_information.input_data.key_column_info.initial_time_zone,
+            convert_time_zone_to=yaml_information.input_data.key_column_info.convert_time_zone_to,
+        )
 
     def assign_merge_methods(
         self,
+        column_data_type,
+        merge_method,
     ):
-        pass
+        if column_data_type == InputColumnDataType.PRESSURE:
+            self.pressure_merge_method = merge_method
+        elif column_data_type == InputColumnDataType.RELATIVE_HUMIDITY:
+            self.relative_humidity_merge_method = merge_method
+        elif column_data_type == InputColumnDataType.TEMPERATURE:
+            self.temperature_merge_method = merge_method
 
     def add_meteo_columns(
         self,
@@ -852,8 +882,19 @@ class InputDataFrameConfig:
             )
             priority += 1
 
-    def add_date_time_columns(self):
-        pass
+    def add_date_time_column_info(
+        self,
+        date_time_columns,
+        datetime_format,
+        initial_time_zone,
+        convert_time_zone_to,
+    ):
+        self.date_time_columnsdate_time_columns = [
+            col for col in date_time_columns
+        ]
+        self.datetime_format = datetime_format.replace('"', "")
+        self.initial_time_zone = initial_time_zone
+        self.convert_time_zone_to = convert_time_zone_to
 
     def add_neutron_columns(self):
         pass
