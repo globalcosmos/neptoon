@@ -642,6 +642,12 @@ class InputDataFrameConfig:
         relative_humidity_merge_method: Literal[
             "mean", "priority"
         ] = "priority",
+        datetime_columns: str = None,  # Can be column_name, or a list of column names
+        datetime_format: str = None,
+        initial_time_zone: str = "utc",
+        convert_time_zone_to: str = "utc",
+        is_timestamp: bool = False,
+        decimal: str = ".",
     ):
         """
         A class storing information supporting automated processing of
@@ -864,21 +870,9 @@ class FormatDataForCRNSDataHub:
         self,
         data_frame: pd.DataFrame,
         data_frame_config: InputDataFrameConfig = None,
-        datetime_columns: str = None,  # Can be column_name, or a list of column names
-        datetime_format: str = None,
-        initial_time_zone: str = "utc",
-        convert_time_zone_to: str = "utc",
-        is_timestamp: bool = False,
-        decimal: str = ".",
     ):
         self._data_frame = data_frame
         self._data_frame_config = data_frame_config
-        self._datetime_columns = datetime_columns
-        self._datetime_format = datetime_format
-        self._initial_time_zone = initial_time_zone
-        self._convert_time_zone_to = convert_time_zone_to
-        self._is_timestamp = is_timestamp
-        self._decimal = decimal
 
     @property
     def data_frame(self):
@@ -887,30 +881,6 @@ class FormatDataForCRNSDataHub:
     @property
     def data_frame_config(self):
         return self._data_frame_config
-
-    @property
-    def datetime_columns(self):
-        return self._datetime_columns
-
-    @property
-    def datetime_format(self):
-        return self._datetime_format
-
-    @property
-    def initial_time_zone(self):
-        return self._initial_time_zone
-
-    @property
-    def convert_time_zone_to(self):
-        return self._convert_time_zone_to
-
-    @property
-    def is_timestamp(self):
-        return self._is_timestamp
-
-    @property
-    def decimal(self):
-        return self._decimal
 
     @data_frame.setter
     def data_frame(self, df: pd.DataFrame):
@@ -926,15 +896,19 @@ class FormatDataForCRNSDataHub:
         Returns:
             pd.DataFrame: data including a Datetime column.
         """
-        if isinstance(self.datetime_columns, str):
-            dt_series = self.data_frame[self.datetime_columns]
-        elif isinstance(self.datetime_columns, list):
+        if isinstance(self.data_frame_config.datetime_columns, str):
+            dt_series = self.data_frame[
+                self.data_frame_config.datetime_columns
+            ]
+        elif isinstance(self.data_frame_config.datetime_columns, list):
             # Join multiple columns
             temp_column_names = []
-            for i in self.datetime_columns:
+            for i in self.data_frame_config.datetime_columns:
                 if isinstance(i, str):
                     temp_column_names.append(
-                        self.data_frame[self.datetime_columns[i]]
+                        self.data_frame[
+                            self.data_frame_config.datetime_columns[i]
+                        ]
                     )
                 else:
                     message = "dt_column_names must be a string type"
@@ -947,8 +921,8 @@ class FormatDataForCRNSDataHub:
         dt_series = pd.to_datetime(
             dt_series,
             errors="coerce",
-            unit="s" if self.is_timestamp else None,
-            format=self.datetime_format,
+            unit="s" if self.data_frame_config.is_timestamp else None,
+            format=self.data_frame_config.datetime_format,
         )
         return dt_series
 
@@ -971,11 +945,14 @@ class FormatDataForCRNSDataHub:
         """
         if datetime_series[0].tzinfo is None:
             datetime_series = datetime_series.dt.tz_localize(
-                self.initial_time_zone
+                self.data_frame_config.initial_time_zone
             )
-        if self.initial_time_zone != self.convert_time_zone_to:
+        if (
+            self.data_frame_config.initial_time_zone
+            != self.data_frame_config.convert_time_zone_to
+        ):
             datetime_series = datetime_series.dt.tz_convert(
-                self.convert_time_zone_to
+                self.data_frame_config.convert_time_zone_to
             )
         return datetime_series
 
@@ -1027,7 +1004,9 @@ class FormatDataForCRNSDataHub:
         date_time_column = self.extract_datetime_column()
         date_time_column = self.convert_time_zone(date_time_column)
         self.data_frame.index = date_time_column
-        self.data_frame.drop(self.datetime_columns, axis=1, inplace=True)
+        self.data_frame.drop(
+            self.data_frame_config.datetime_columns, axis=1, inplace=True
+        )
 
     def dataframe_to_numeric(
         self,
@@ -1037,7 +1016,7 @@ class FormatDataForCRNSDataHub:
 
         """
         # Cases when decimal is not '.', replace them by '.'
-        decimal = self.decimal
+        decimal = self.data_frame_config.decimal
         decimal = decimal.strip()
         if decimal != ".":
             self.data_frame = self.data_frame.apply(
