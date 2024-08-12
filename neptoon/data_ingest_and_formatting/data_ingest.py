@@ -636,14 +636,15 @@ class InputDataFrameConfig:
 
     def __init__(
         self,
-        time_resolution: str,
+        yaml_path: Union[str, Path] = None,
+        time_resolution: str = "1hour",
         pressure_merge_method: Literal["mean", "priority"] = "priority",
         temperature_merge_method: Literal["mean", "priority"] = "priority",
         relative_humidity_merge_method: Literal[
             "mean", "priority"
         ] = "priority",
-        datetime_columns: str = None,  # Can be column_name, or a list of column names
-        datetime_format: str = "%Y/%m/%d %H:%M:%S",
+        date_time_columns: str = None,  # Can be column_name, or a list of column names
+        date_time_format: str = "%Y/%m/%d %H:%M:%S",
         initial_time_zone: str = "utc",
         convert_time_zone_to: str = "utc",
         is_timestamp: bool = False,
@@ -683,20 +684,40 @@ class InputDataFrameConfig:
             predefined priority.
         """
 
-        self.time_resolution = self.parse_resolution(time_resolution)
-        self.conversion_factor_to_counts_per_hour = (
+        self._time_resolution = self.parse_resolution(time_resolution)
+        self._conversion_factor_to_counts_per_hour = (
             self.get_conversion_factor()
         )
+        self.yaml_path = yaml_path
         self.pressure_merge_method = pressure_merge_method
         self.temperature_merge_method = temperature_merge_method
         self.relative_humidity_merge_method = relative_humidity_merge_method
-        self.datetime_columns = datetime_columns
-        self.datetime_format = datetime_format
+        self.date_time_columns = date_time_columns
+        self.date_time_format = date_time_format
         self.initial_time_zone = initial_time_zone
         self.convert_time_zone_to = convert_time_zone_to
         self.is_timestamp = is_timestamp
         self.decimal = decimal
         self.column_data: List[InputColumnMetaData] = []
+
+    @property
+    def time_resolution(self):
+        return self._time_resolution
+
+    @property
+    def conversion_factor_to_counts_per_hour(self):
+        return self._conversion_factor_to_counts_per_hour
+
+    @conversion_factor_to_counts_per_hour.setter
+    def conversion_factor_to_counts_per_hour(self, value):
+        self._conversion_factor_to_counts_per_hour = value
+
+    @time_resolution.setter
+    def time_resoltuion(self, value):
+        self._time_resolution = self.parse_resolution(value)
+        self._conversion_factor_to_counts_per_hour = (
+            self.get_conversion_factor(self.time_resoltuion)
+        )
 
     def parse_resolution(
         self,
@@ -807,8 +828,14 @@ class InputDataFrameConfig:
 
     def build_from_yaml(
         self,
-        path: str,
+        path_to_yaml: str = None,
     ):
+        if path_to_yaml is None and self.yaml_path is None:
+            message = "No path given for yaml file"
+            core_logger.error(message)
+            raise ValueError(message)
+        else:
+            path = path_to_yaml if path_to_yaml is not None else self.yaml_path
 
         internal_config = ConfigurationManager()
         internal_config.load_and_validate_configuration(
@@ -846,8 +873,8 @@ class InputDataFrameConfig:
             merge_method=yaml_information.input_data.key_column_info.relative_humidity_merge_method,
         )
         self.add_date_time_column_info(
-            date_time_columns=yaml_information.input_data.key_column_info.datetime_columns,
-            datetime_format=yaml_information.input_data.key_column_info.datetime_format,
+            date_time_columns=yaml_information.input_data.key_column_info.date_time_columns,
+            date_time_format=yaml_information.input_data.key_column_info.date_time_format,
             initial_time_zone=yaml_information.input_data.key_column_info.initial_time_zone,
             convert_time_zone_to=yaml_information.input_data.key_column_info.convert_time_zone_to,
         )
@@ -885,14 +912,12 @@ class InputDataFrameConfig:
     def add_date_time_column_info(
         self,
         date_time_columns,
-        datetime_format,
+        date_time_format,
         initial_time_zone,
         convert_time_zone_to,
     ):
-        self.date_time_columnsdate_time_columns = [
-            col for col in date_time_columns
-        ]
-        self.datetime_format = datetime_format.replace('"', "")
+        self.date_time_columns = [col for col in date_time_columns]
+        self.date_time_format = date_time_format.replace('"', "")
         self.initial_time_zone = initial_time_zone
         self.convert_time_zone_to = convert_time_zone_to
 
@@ -902,7 +927,7 @@ class InputDataFrameConfig:
 
 class FormatDataForCRNSDataHub:
     """
-    TODO double check extract_datetime_column for logic
+    TODO double check extract_date_time_column for logic
     TODO Other formatting??
     TODO One Click Function that compiles the formatting
     """
@@ -927,7 +952,7 @@ class FormatDataForCRNSDataHub:
     def data_frame(self, df: pd.DataFrame):
         self._data_frame = df
 
-    def extract_datetime_column(
+    def extract_date_time_column(
         self,
     ) -> pd.Series:
         """ "
@@ -937,18 +962,18 @@ class FormatDataForCRNSDataHub:
         Returns:
             pd.DataFrame: data including a Datetime column.
         """
-        if isinstance(self.data_frame_config.datetime_columns, str):
+        if isinstance(self.data_frame_config.date_time_columns, str):
             dt_series = self.data_frame[
-                self.data_frame_config.datetime_columns
+                self.data_frame_config.date_time_columns
             ]
-        elif isinstance(self.data_frame_config.datetime_columns, list):
+        elif isinstance(self.data_frame_config.date_time_columns, list):
             # Join multiple columns
             temp_column_names = []
-            for i in self.data_frame_config.datetime_columns:
+            for i in self.data_frame_config.date_time_columns:
                 if isinstance(i, str):
                     temp_column_names.append(
                         self.data_frame[
-                            self.data_frame_config.datetime_columns[i]
+                            self.data_frame_config.date_time_columns[i]
                         ]
                     )
                 else:
@@ -963,11 +988,11 @@ class FormatDataForCRNSDataHub:
             dt_series,
             errors="coerce",
             unit="s" if self.data_frame_config.is_timestamp else None,
-            format=self.data_frame_config.datetime_format,
+            format=self.data_frame_config.date_time_format,
         )
         return dt_series
 
-    def convert_time_zone(self, datetime_series):
+    def convert_time_zone(self, date_time_series):
         """
         Convert the timezone of a date time time series. Uses the
         attributes initial_time_zone (the actual time zone the data is
@@ -976,26 +1001,26 @@ class FormatDataForCRNSDataHub:
 
         Parameters
         ----------
-        datetime_series : pd.Series
-            The datetime_series that is converted
+        date_time_series : pd.Series
+            The date_time_series that is converted
 
         Returns
         -------
         pd.Series
-            The converted datetime series in the correct time zone
+            The converted date_time series in the correct time zone
         """
-        if datetime_series[0].tzinfo is None:
-            datetime_series = datetime_series.dt.tz_localize(
+        if date_time_series[0].tzinfo is None:
+            date_time_series = date_time_series.dt.tz_localize(
                 self.data_frame_config.initial_time_zone
             )
         if (
             self.data_frame_config.initial_time_zone
             != self.data_frame_config.convert_time_zone_to
         ):
-            datetime_series = datetime_series.dt.tz_convert(
+            date_time_series = date_time_series.dt.tz_convert(
                 self.data_frame_config.convert_time_zone_to
             )
-        return datetime_series
+        return date_time_series
 
     def align_time_stamps(
         self,
@@ -1021,7 +1046,7 @@ class FormatDataForCRNSDataHub:
         except Exception as e:
             message = (
                 "Could not align timestamps of dataframe. First the "
-                "dataframe must have a datetime index.\n"
+                "dataframe must have a date time index.\n"
                 f"Exception: {e}"
             )
             print(message)
@@ -1032,24 +1057,24 @@ class FormatDataForCRNSDataHub:
         )
         self.data_frame = timestamp_aligner.return_dataframe()
 
-    def datetime_as_index(
+    def date_time_as_index(
         self,
     ) -> pd.DataFrame:
         """
-        Sets a datetime column as the index of the contained DataFrame
+        Sets a date_time column as the index of the contained DataFrame
 
         Returns:
             pd.DataFrame: data with a DatetimeIndex
         """
 
-        date_time_column = self.extract_datetime_column()
+        date_time_column = self.extract_date_time_column()
         date_time_column = self.convert_time_zone(date_time_column)
         self.data_frame.index = date_time_column
         self.data_frame.drop(
-            self.data_frame_config.datetime_columns, axis=1, inplace=True
+            self.data_frame_config.date_time_columns, axis=1, inplace=True
         )
 
-    def dataframe_to_numeric(
+    def data_frame_to_numeric(
         self,
     ):
         """
@@ -1071,26 +1096,8 @@ class FormatDataForCRNSDataHub:
         pass
 
     def prepare_key_columns(self):
-        pass
+        """ """
 
-        """
-        HOW TO DEAL WITH COLUMN NAMES AND MERGING
-
-        We need a way to give a list of names for one type of variable
-        e.g., pressure
-
-        Then we need a way to state a preference - give option in merge
-        to select one to use in preference. 
-
-        For now we can stick to providing options for key variables. 
-
-        We also need a way to decide how to aggregate to 1 hour. Sub 1
-        hour resolution comes with v0.2.0 (we need to fix a few things
-        for this).
-
-        Some agg with count, some agg with average. 
-
-        """
         self.merge_multiple_meteo_columns(
             column_data_type=InputColumnDataType.PRESSURE
         )
@@ -1178,12 +1185,6 @@ class FormatDataForCRNSDataHub:
             self.data_frame[final_column_name] = self.data_frame[
                 final_column_name
             ] = (self.data_frame[final_column_name] * 3600)
-
-        # check for neutron units
-        # check diff between index
-        # convert to hourly count rate
-
-        pass
 
     def aggregate_data_frame(self):
         pass
@@ -1297,8 +1298,8 @@ class FormatDataForCRNSDataHub:
         pd.DataFrame
             DataFrame
         """
-        self.datetime_as_index()
-        self.dataframe_to_numeric()
+        self.date_time_as_index()
+        self.data_frame_to_numeric()
         self.prepare_key_columns()
         self.align_time_stamps()
         return self.data_frame
