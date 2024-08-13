@@ -19,7 +19,6 @@ from neptoon.data_management.data_audit import log_key_step
 from neptoon.logging import get_logger
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.configuration.configuration_input import (
-    PreLoadConfigurationYaml,
     ConfigurationManager,
 )
 
@@ -643,6 +642,9 @@ class InputDataFrameConfig:
         relative_humidity_merge_method: Literal[
             "mean", "priority"
         ] = "priority",
+        neutron_count_units: Literal[
+            "absolute_count", "counts_per_hour", "counts_per_second"
+        ] = "absolute_count",
         date_time_columns: str = None,  # Can be column_name, or a list of column names
         date_time_format: str = "%Y/%m/%d %H:%M:%S",
         initial_time_zone: str = "utc",
@@ -692,6 +694,7 @@ class InputDataFrameConfig:
         self.pressure_merge_method = pressure_merge_method
         self.temperature_merge_method = temperature_merge_method
         self.relative_humidity_merge_method = relative_humidity_merge_method
+        self.neutron_count_units = neutron_count_units
         self.date_time_columns = date_time_columns
         self.date_time_format = date_time_format
         self.initial_time_zone = initial_time_zone
@@ -713,10 +716,10 @@ class InputDataFrameConfig:
         self._conversion_factor_to_counts_per_hour = value
 
     @time_resolution.setter
-    def time_resoltuion(self, value):
+    def time_resolution(self, value):
         self._time_resolution = self.parse_resolution(value)
         self._conversion_factor_to_counts_per_hour = (
-            self.get_conversion_factor(self.time_resoltuion)
+            self.get_conversion_factor()
         )
 
     def parse_resolution(
@@ -764,7 +767,7 @@ class InputDataFrameConfig:
         value, unit = match.groups()
         value = int(value)
 
-        if unit.lower() in ["min", "minute", "minutes"]:
+        if unit.lower() in ["min", "mins", "minute", "minutes"]:
             return timedelta(minutes=value)
         elif unit.lower() in ["hour", "hours", "hr", "hrs"]:
             return timedelta(hours=value)
@@ -845,6 +848,24 @@ class InputDataFrameConfig:
 
         yaml_information = internal_config.get_configuration("input_data")
 
+        self.time_resolution = yaml_information.input_data.time_step_resolution
+
+        self.neutron_count_units = (
+            yaml_information.input_data.key_column_info.neutron_count_units
+        )
+
+        self.add_meteo_columns(
+            meteo_columns=yaml_information.input_data.key_column_info.epithermal_neutron_counts_columns,
+            meteo_type=InputColumnDataType.EPI_NEUTRON_COUNT,
+            unit=self.neutron_count_units,
+        )
+
+        self.add_meteo_columns(
+            meteo_columns=yaml_information.input_data.key_column_info.thermal_neutrons,
+            meteo_type=InputColumnDataType.THERM_NEUTRON_COUNT,
+            unit=self.neutron_count_units,
+        )
+
         self.add_meteo_columns(
             meteo_columns=yaml_information.input_data.key_column_info.temperature_columns,
             meteo_type=InputColumnDataType.TEMPERATURE,
@@ -897,8 +918,10 @@ class InputDataFrameConfig:
         meteo_type,
         unit,
     ):
-        available_cols = [name for name in meteo_columns]
+        if meteo_columns is None:
+            return
 
+        available_cols = [name for name in meteo_columns]
         priority = 1
         for col in available_cols:
             self.add_column_meta_data(
@@ -921,8 +944,11 @@ class InputDataFrameConfig:
         self.initial_time_zone = initial_time_zone
         self.convert_time_zone_to = convert_time_zone_to
 
-    def add_neutron_columns(self):
-        pass
+    def add_neutron_columns(
+        self,
+        neutron_count_units,
+    ):
+        self.neutron_count_units = neutron_count_units
 
 
 class FormatDataForCRNSDataHub:
@@ -967,23 +993,34 @@ class FormatDataForCRNSDataHub:
                 self.data_frame_config.date_time_columns
             ]
         elif isinstance(self.data_frame_config.date_time_columns, list):
-            # Join multiple columns
-            temp_column_names = []
-            for i in self.data_frame_config.date_time_columns:
-                if isinstance(i, str):
-                    temp_column_names.append(
-                        self.data_frame[
-                            self.data_frame_config.date_time_columns[i]
-                        ]
-                    )
+            # Select Columns
+            temp_columns = []
+            for col_name in self.data_frame_config.date_time_columns:
+                if isinstance(col_name, str):
+                    temp_columns.append(self.data_frame[col_name])
                 else:
-                    message = "dt_column_names must be a string type"
+                    message = (
+                        "date_time_columns must contain only string "
+                        "type column names"
+                    )
                     core_logger.error(message)
                     raise ValueError(message)
+
             # Join columns together separated with a space
-            dt_series = self.data_frame[temp_column_names].apply(
-                lambda x: "{} {}".format(x[0], x[1]), axis=1
-            )
+            # dt_series = self.data_frame[temp_columns].apply(
+            #     lambda x: "{} {}".format(x[0], x[1]), axis=1
+            # )
+            if len(temp_columns) == 1:
+                dt_series = temp_columns[0]
+            else:
+                dt_series = pd.concat(temp_columns, axis=1).apply(
+                    " ".join, axis=1
+                )
+        else:
+            message = "date_time_columns must be either a string or a list of strings"
+            core_logger.error(message)
+            raise ValueError(message)
+
         dt_series = pd.to_datetime(
             dt_series,
             errors="coerce",
@@ -1041,6 +1078,9 @@ class FormatDataForCRNSDataHub:
             Define how regular the timestamps should be, 1 hour by
             default, by default "1H"
         """
+        if self.data_frame_config.time_resolution:
+            freq = self.data_frame_config.time_resolution
+
         try:
             timestamp_aligner = TimeStampAligner(self.data_frame)
         except Exception as e:
@@ -1091,9 +1131,6 @@ class FormatDataForCRNSDataHub:
 
         # Convert all the regular columns to numeric and drop any failures
         self.data_frame = self.data_frame.apply(pd.to_numeric, errors="coerce")
-
-    def set_column_names(self):
-        pass
 
     def prepare_key_columns(self):
         """ """
@@ -1288,7 +1325,9 @@ class FormatDataForCRNSDataHub:
                 pressure_col_names
             ].mean(axis=1)
 
-    def format_data_and_return_data_frame(self):
+    def format_data_and_return_data_frame(
+        self,
+    ):
         """
         Completes the whole process of formatting the dataframe. Expects
         the settings to be fully implemented.
@@ -1301,7 +1340,6 @@ class FormatDataForCRNSDataHub:
         self.date_time_as_index()
         self.data_frame_to_numeric()
         self.prepare_key_columns()
-        self.align_time_stamps()
         return self.data_frame
 
 

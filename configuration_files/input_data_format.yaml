@@ -1,23 +1,21 @@
 # raw_data_parse:
-#   data_location: str | Path,
-#   prefix: str = "",
-#   suffix: str = "",
-#   encoding: str = "cp850",
-#   skip_lines: int = 0,
+#   data_location:
+#   prefix:
+#   suffix:
+#   encoding: "cp850"
+#   skip_lines: 0
 #   seperator: ,
 #   decimal: .
 #   skipinitialspace: True
 #   parser_kw: dict(strip_left=True, digit_first=True)
 
 input_data:
-  time_step_resolution: 1hour
+  time_step_resolution: 15mins
   key_column_info:
     epithermal_neutron_counts_columns:
       - N1Cts
-      - n2cts
-      - n3cts
     thermal_neutrons:
-    epithermal_neutron_count_units: absolute_count #counts_per_hour, counts_per_seconds or absolute_count
+    neutron_count_units: absolute_count #counts_per_hour, counts_per_seconds or absolute_count
     pressure_columns:
       - P4_mb # first priorty goes first
       - P3_mb
