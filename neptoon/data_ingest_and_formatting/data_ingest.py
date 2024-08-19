@@ -623,6 +623,17 @@ class InputColumnDataType(Enum):
     ELAPSED_TIME = auto()
 
 
+class NeutronCountUnits(Enum):
+    ABSOLUTE_COUNT = "absolute_count"
+    COUNTS_PER_HOUR = "counts_per_hour"
+    COUNTS_PER_SECOND = "counts_per_second"
+
+
+class MergeMethod(Enum):
+    MEAN = "mean"
+    PRIORITY = "priority"
+
+
 @dataclass
 class InputColumnMetaData:
     initial_name: str
@@ -632,20 +643,43 @@ class InputColumnMetaData:
 
 
 class InputDataFrameConfig:
+    """
+    Configuration class storing necessary attributes to format a
+    DataFrame using the FormatDataForCRNSDataHub.
+
+    Attributes
+    ----------
+    time_resolution : str
+        Time resolution in format "<number> <unit>".
+    pressure_merge_method : {'mean', 'priority'}, optional
+        Method for merging pressure data, by default 'priority'.
+    temperature_merge_method : {'mean', 'priority'}, optional
+        Method for merging temperature data, by default 'priority'.
+    relative_humidity_merge_method : {'mean', 'priority'}, optional
+        Method for merging relative humidity data, by default
+        'priority'.
+
+    Methods
+    -------
+    parse_resolution
+    get_conversion_factor
+    add_column_meta_data
+    build_from_yaml
+    assign_merge_methods
+    add_meteo_columns
+    add_date_time_column_info
+    add_neutron_columns
+    """
 
     def __init__(
         self,
         yaml_path: Union[str, Path] = None,
         time_resolution: str = "1hour",
-        pressure_merge_method: Literal["mean", "priority"] = "priority",
-        temperature_merge_method: Literal["mean", "priority"] = "priority",
-        relative_humidity_merge_method: Literal[
-            "mean", "priority"
-        ] = "priority",
-        neutron_count_units: Literal[
-            "absolute_count", "counts_per_hour", "counts_per_second"
-        ] = "absolute_count",
-        date_time_columns: str = None,  # Can be column_name, or a list of column names
+        pressure_merge_method: MergeMethod = MergeMethod.PRIORITY,
+        temperature_merge_method: MergeMethod = MergeMethod.PRIORITY,
+        relative_humidity_merge_method: MergeMethod = MergeMethod.PRIORITY,
+        neutron_count_units: NeutronCountUnits = NeutronCountUnits.ABSOLUTE_COUNT,
+        date_time_columns: str = None,
         date_time_format: str = "%Y/%m/%d %H:%M:%S",
         initial_time_zone: str = "utc",
         convert_time_zone_to: str = "utc",
@@ -659,16 +693,37 @@ class InputDataFrameConfig:
 
         Parameters
         ----------
-        time_resolution : str
-            Time resolution in format "<number> <unit>".
-        pressure_merge_method : {'mean', 'priority'}, optional
-            Method for merging pressure data, by default 'priority'.
-        temperature_merge_method : {'mean', 'priority'}, optional
-            Method for merging temperature data, by default 'priority'.
-        relative_humidity_merge_method : {'mean', 'priority'}, optional
-            Method for merging relative humidity data, by default
-            'priority'.
-
+        yaml_path : Union[str, Path], optional
+            path for a YAML file to automate the build, by default None
+        time_resolution : str, optional
+            Time resolution in format "<number><unit>, by default
+            "1hour"
+        pressure_merge_method : MergeMethod, optional
+            Method used to merge multiple pressure columns, by default
+            MergeMethod.PRIORITY
+        temperature_merge_method : MergeMethod, optional
+            Method used to merge multiple temperature columns,, by
+            default MergeMethod.PRIORITY
+        relative_humidity_merge_method : MergeMethod, optional
+            Method used to merge multiple relative humidity columns,, by
+            default MergeMethod.PRIORITY
+        neutron_count_units : NeutronCountUnits, optional
+            The units of neutron counts, by default
+            NeutronCountUnits.ABSOLUTE_COUNT
+        date_time_columns : List[str], optional
+            Names of date time columns, if more than one expects DATE +
+            TIME, by default None
+        date_time_format : str, optional
+            Format of the date time column, by default "%Y/%m/%d
+            %H:%M:%S"
+        initial_time_zone : str, optional
+            Initial time zone, by default "utc"
+        convert_time_zone_to : str, optional
+            Desired time zone, by default "utc"
+        is_timestamp : bool, optional
+            Whether time stamp, by default False
+        decimal : str, optional
+            Decimal divider, by default "."
 
         Notes
         -----
@@ -680,10 +735,10 @@ class InputDataFrameConfig:
         The parsing is case-insensitive.
 
         For *_merge_method parameters:
-            - 'mean': Average of all columns with the same data type.
-            - 'priority': Select one column from available  columns
-              based on
-            predefined priority.
+            - Mergemethod.MEAN: Average of all columns with the same
+              data type.
+            - Mergemethod.PRIORITY: Select one column from available
+              columns based on predefined priority.
         """
 
         self._time_resolution = self.parse_resolution(time_resolution)
@@ -717,6 +772,15 @@ class InputDataFrameConfig:
 
     @time_resolution.setter
     def time_resolution(self, value):
+        """
+        When setting the time_resoltion this method ensures the
+        conversion factor is updated.
+
+        Parameters
+        ----------
+        value : str
+            Time resolution
+        """
         self._time_resolution = self.parse_resolution(value)
         self._conversion_factor_to_counts_per_hour = (
             self.get_conversion_factor()
@@ -724,7 +788,7 @@ class InputDataFrameConfig:
 
     def parse_resolution(
         self,
-        resolution_str,
+        resolution_str: str,
     ):
         """
         Parse a string representation of a time resolution and convert
@@ -781,7 +845,7 @@ class InputDataFrameConfig:
     def get_conversion_factor(self):
         """
         Figures out the factor needed to multiply a count rate by to
-        convert it to counts per hour. Uses the data_resolution
+        convert it to counts per hour. Uses the time_resolution
         attribute for this calculation.
 
         Returns
@@ -833,6 +897,22 @@ class InputDataFrameConfig:
         self,
         path_to_yaml: str = None,
     ):
+        """
+        Automatically assigns the internal attributes using a provided
+        YAML file.
+
+        Parameters
+        ----------
+        path_to_yaml : str, optional
+            Location of the YAML file, if not supplied here it expects
+            that the self.yaml_path attribute is already set, by default
+            None
+
+        Raises
+        ------
+        ValueError
+            When no path is given but the method is called.
+        """
         if path_to_yaml is None and self.yaml_path is None:
             message = "No path given for yaml file"
             core_logger.error(message)
@@ -902,9 +982,19 @@ class InputDataFrameConfig:
 
     def assign_merge_methods(
         self,
-        column_data_type,
-        merge_method,
+        column_data_type: InputColumnDataType,
+        merge_method: str,
     ):
+        """
+        Assigns the merge method for each of the input columns.
+
+        Parameters
+        ----------
+        column_data_type : InputColumnDataType
+            The variable being assinged (as a InputColumnDataType)
+        merge_method : str
+            The selected merge methodq
+        """
         if column_data_type == InputColumnDataType.PRESSURE:
             self.pressure_merge_method = merge_method
         elif column_data_type == InputColumnDataType.RELATIVE_HUMIDITY:
@@ -914,10 +1004,36 @@ class InputDataFrameConfig:
 
     def add_meteo_columns(
         self,
-        meteo_columns,
-        meteo_type,
-        unit,
+        meteo_columns: List,
+        meteo_type: InputColumnDataType,
+        unit: str,
     ):
+        """
+        Adds column meta data to the class instance. Intended for use
+        when importing attributes with the YAML file.
+
+        There can be more than one column recording the same variable.
+        These are recorded in the YAML in priority order e.g.,:
+
+            pressure_columns:
+                - P4_mb # first priorty goes first
+                - P3_mb
+                - P1_mb
+
+        This method will go through the list in priority order, create a
+        InputColumnMetaData class for each column, assign the
+        appropriate values, and add it to self.column_data using the
+        method self.add_column_meta_data.
+
+        Parameters
+        ----------
+        meteo_columns : List
+            A list of column names
+        meteo_type : InputColumnDataType
+            The type of column being attributed
+        unit : str
+            The units associated with the column
+        """
         if meteo_columns is None:
             return
 
@@ -934,28 +1050,66 @@ class InputDataFrameConfig:
 
     def add_date_time_column_info(
         self,
-        date_time_columns,
-        date_time_format,
-        initial_time_zone,
-        convert_time_zone_to,
+        date_time_columns: List,
+        date_time_format: str,
+        initial_time_zone: str,
+        convert_time_zone_to: str = "UTC",
     ):
+        """
+        Adds datetime column information. Intended for use when
+        importing attributes with the YAML file.
+
+        Parameters
+        ----------
+        date_time_columns : List
+            Names of date time columns
+        date_time_format : str
+            The expected format of the date time values.
+        initial_time_zone : str
+            The intial time zone of the data
+        convert_time_zone_to : str
+            The desired time zone, by default "UTC"
+        """
         self.date_time_columns = [col for col in date_time_columns]
         self.date_time_format = date_time_format.replace('"', "")
         self.initial_time_zone = initial_time_zone
         self.convert_time_zone_to = convert_time_zone_to
 
-    def add_neutron_columns(
-        self,
-        neutron_count_units,
-    ):
-        self.neutron_count_units = neutron_count_units
-
 
 class FormatDataForCRNSDataHub:
     """
-    TODO double check extract_date_time_column for logic
-    TODO Other formatting??
-    TODO One Click Function that compiles the formatting
+    Formats a DataFrame into the requred format for work in neptoon.
+
+    Key features:
+        - Combines multiple datetime columns (e.g., DATE + TIME) into a
+          single date_time column
+        - Converts time zone (default UTC)
+        - Ensures date time index
+        - Ensures columns are numeric
+        - Organises columns when multiple are present
+
+    Attributes
+    ----------
+
+    data_frame: pd.DataFrame
+        The time series dataframe
+    data_frame_config: InputDataFrameConfig
+        Config object with information about the dataframe, which
+        supports formatting
+
+    Methods
+    -------
+
+    extract_date_time_column
+    convert_time_zone
+    align_time_stamps
+    date_time_as_index
+    data_frame_to_numeric
+    aggregate_data_frame TODO
+    merge_multiple_meteo_columns
+    prepare_key_columns
+    prepare_neutron_count_columns
+    format_data_and_return_data_frame
     """
 
     def __init__(
@@ -963,6 +1117,17 @@ class FormatDataForCRNSDataHub:
         data_frame: pd.DataFrame,
         data_frame_config: InputDataFrameConfig = None,
     ):
+        """
+        Attributes of class
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            The un-formatted dataframe
+        data_frame_config : InputDataFrameConfig, optional
+            Config Object which sets the options for formatting, by
+            default None
+        """
         self._data_frame = data_frame
         self._data_frame_config = data_frame_config
 
@@ -981,12 +1146,12 @@ class FormatDataForCRNSDataHub:
     def extract_date_time_column(
         self,
     ) -> pd.Series:
-        """ "
+        """
         Create a Datetime column, merge columns if necessary (e.g., when
         columns are split into date and time)
 
         Returns:
-            pd.DataFrame: data including a Datetime column.
+            pd.Series: the Datetime column.
         """
         if isinstance(self.data_frame_config.date_time_columns, str):
             dt_series = self.data_frame[
@@ -1118,8 +1283,7 @@ class FormatDataForCRNSDataHub:
         self,
     ):
         """
-        Convert DataFrame to numeric values.
-
+        Convert DataFrame columns to numeric values.
         """
         # Cases when decimal is not '.', replace them by '.'
         decimal = self.data_frame_config.decimal
@@ -1132,98 +1296,8 @@ class FormatDataForCRNSDataHub:
         # Convert all the regular columns to numeric and drop any failures
         self.data_frame = self.data_frame.apply(pd.to_numeric, errors="coerce")
 
-    def prepare_key_columns(self):
-        """ """
-
-        self.merge_multiple_meteo_columns(
-            column_data_type=InputColumnDataType.PRESSURE
-        )
-        self.merge_multiple_meteo_columns(
-            column_data_type=InputColumnDataType.TEMPERATURE
-        )
-        self.merge_multiple_meteo_columns(
-            column_data_type=InputColumnDataType.RELATIVE_HUMIDITY
-        )
-        self.prepare_neutron_count_columns(
-            neutron_column_type=InputColumnDataType.EPI_NEUTRON_COUNT
-        )
-        try:
-            self.prepare_neutron_count_columns(
-                neutron_column_type=InputColumnDataType.THERM_NEUTRON_COUNT
-            )
-        except:
-            message = "Failed trying to process thermal_neutron_counts"
-            core_logger.error(message)
-
-    def prepare_neutron_count_columns(
-        self,
-        neutron_column_type: Literal[
-            InputColumnDataType.EPI_NEUTRON_COUNT,
-            InputColumnDataType.THERM_NEUTRON_COUNT,
-        ],
-    ):
-        """
-        Prepares the neutron columns for usage in neptoon. Performs
-        several steps:
-
-            - Finds the columns labeled with neutron_column_type
-            - If more than one it will sum them into a new column
-            - Check the units and convert to counts per hour.
-
-
-        Parameters
-        ----------
-        neutron_column_type :
-                    Literal[
-                        InputColumnDataType.EPI_NEUTRON_COUNT,
-                        InputColumnDataType.THERM_NEUTRON_COUNT,
-                            ]
-            The type of neutron data being processed
-        """
-        if neutron_column_type == InputColumnDataType.EPI_NEUTRON_COUNT:
-            final_column_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT)
-        elif neutron_column_type == InputColumnDataType.THERM_NEUTRON_COUNT:
-            final_column_name = str(ColumnInfo.Name.THERM_NEUTRON_COUNT)
-
-        epi_neutron_cols = [
-            col
-            for col in self.data_frame_config.column_data
-            if col.variable_type is neutron_column_type
-        ]
-
-        epi_neutron_unit = next(
-            col.unit
-            for col in self.data_frame_config.column_data
-            if col.variable_type is neutron_column_type
-        )
-        print(epi_neutron_unit)
-
-        if len(epi_neutron_cols) > 1:
-            epi_col_names = [name.initial_name for name in epi_neutron_cols]
-
-            self.data_frame[final_column_name] = self.data_frame[
-                epi_col_names
-            ].sum(axis=1)
-        else:
-            epi_col_name = epi_neutron_cols[0].initial_name
-            self.data_frame.rename(
-                columns={epi_col_name: final_column_name},
-                inplace=True,
-            )
-
-        if epi_neutron_unit == "counts_per_hour":
-            pass
-        elif epi_neutron_unit == "absolute_count":
-            self.data_frame[final_column_name] = (
-                self.data_frame[final_column_name]
-                * self.data_frame_config.conversion_factor_to_counts_per_hour
-            )
-        elif epi_neutron_unit == "counts_per_second":
-            self.data_frame[final_column_name] = self.data_frame[
-                final_column_name
-            ] = (self.data_frame[final_column_name] * 3600)
-
     def aggregate_data_frame(self):
+        """TODO"""
         pass
 
     def merge_multiple_meteo_columns(
@@ -1324,6 +1398,99 @@ class FormatDataForCRNSDataHub:
             self.data_frame[created_col_name] = self.data_frame[
                 pressure_col_names
             ].mean(axis=1)
+
+    def prepare_key_columns(self):
+        """
+        Prepares the key columns if all the information has been
+        supplied.
+        """
+
+        self.merge_multiple_meteo_columns(
+            column_data_type=InputColumnDataType.PRESSURE
+        )
+        self.merge_multiple_meteo_columns(
+            column_data_type=InputColumnDataType.TEMPERATURE
+        )
+        self.merge_multiple_meteo_columns(
+            column_data_type=InputColumnDataType.RELATIVE_HUMIDITY
+        )
+        self.prepare_neutron_count_columns(
+            neutron_column_type=InputColumnDataType.EPI_NEUTRON_COUNT
+        )
+        try:
+            self.prepare_neutron_count_columns(
+                neutron_column_type=InputColumnDataType.THERM_NEUTRON_COUNT
+            )
+        except:
+            message = "Failed trying to process thermal_neutron_counts"
+            core_logger.error(message)
+
+    def prepare_neutron_count_columns(
+        self,
+        neutron_column_type: Literal[
+            InputColumnDataType.EPI_NEUTRON_COUNT,
+            InputColumnDataType.THERM_NEUTRON_COUNT,
+        ],
+    ):
+        """
+        Prepares the neutron columns for usage in neptoon. Performs
+        several steps:
+
+            - Finds the columns labeled with neutron_column_type
+            - If more than one it will sum them into a new column
+            - Check the units and convert to counts per hour.
+
+
+        Parameters
+        ----------
+        neutron_column_type :
+                    Literal[
+                        InputColumnDataType.EPI_NEUTRON_COUNT,
+                        InputColumnDataType.THERM_NEUTRON_COUNT,
+                            ]
+            The type of neutron data being processed
+        """
+        if neutron_column_type == InputColumnDataType.EPI_NEUTRON_COUNT:
+            final_column_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT)
+        elif neutron_column_type == InputColumnDataType.THERM_NEUTRON_COUNT:
+            final_column_name = str(ColumnInfo.Name.THERM_NEUTRON_COUNT)
+
+        epi_neutron_cols = [
+            col
+            for col in self.data_frame_config.column_data
+            if col.variable_type is neutron_column_type
+        ]
+
+        epi_neutron_unit = next(
+            col.unit
+            for col in self.data_frame_config.column_data
+            if col.variable_type is neutron_column_type
+        )
+
+        if len(epi_neutron_cols) > 1:
+            epi_col_names = [name.initial_name for name in epi_neutron_cols]
+
+            self.data_frame[final_column_name] = self.data_frame[
+                epi_col_names
+            ].sum(axis=1)
+        else:
+            epi_col_name = epi_neutron_cols[0].initial_name
+            self.data_frame.rename(
+                columns={epi_col_name: final_column_name},
+                inplace=True,
+            )
+
+        if epi_neutron_unit == "counts_per_hour":
+            pass
+        elif epi_neutron_unit == "absolute_count":
+            self.data_frame[final_column_name] = (
+                self.data_frame[final_column_name]
+                * self.data_frame_config.conversion_factor_to_counts_per_hour
+            )
+        elif epi_neutron_unit == "counts_per_second":
+            self.data_frame[final_column_name] = self.data_frame[
+                final_column_name
+            ] = (self.data_frame[final_column_name] * 3600)
 
     def format_data_and_return_data_frame(
         self,
