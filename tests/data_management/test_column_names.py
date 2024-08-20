@@ -49,4 +49,3 @@ def test_reset_names():
     assert changed_value == "new_name"
     assert reset_value != "new_name"
     assert reset_value == initial_value
-
