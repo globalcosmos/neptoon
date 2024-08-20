@@ -321,25 +321,11 @@ class CorrectionFactory:
             Intensity correction with values filled in.
         """
         if correction_theory is None:
-            return IncomingIntensityCorrectionHawdon2014(
-                incoming_neutron_intensity=(
-                    self.site_information.reference_incoming_neutron_value
-                ),
-                cutoff_rigidity=self.site_information.cutoff_rigidity,
-            )
+            return IncomingIntensityCorrectionHawdon2014()
         elif correction_theory == CorrectionTheory.ZREDA_2012:
-            return IncomingIntensityCorrectionZreda2012(
-                reference_incoming_neutron_value=(
-                    self.site_information.reference_incoming_neutron_value
-                )
-            )
+            return IncomingIntensityCorrectionZreda2012()
         elif correction_theory == CorrectionTheory.HAWDON_2014:
-            return IncomingIntensityCorrectionHawdon2014(
-                incoming_neutron_intensity=(
-                    self.site_information.reference_incoming_neutron_value
-                ),
-                cutoff_rigidity=self.site_information.cutoff_rigidity,
-            )
+            return IncomingIntensityCorrectionHawdon2014()
 
     def create_biomass_correction(self, correction_theory: CorrectionTheory):
         pass
@@ -362,14 +348,11 @@ class CorrectionFactory:
         correction_theory = (
             correction_theory  # TODO remove this or leave it for consistency?
         )
-        return PressureCorrectionZreda2012(
-            site_elevation=self.site_information.elevation,
-            reference_pressure_value=self.site_information.mean_pressure,
-            latitude=self.site_information.latitude,
-            cutoff_rigidity=self.site_information.cutoff_rigidity,
-        )
+        return PressureCorrectionZreda2012()
 
-    def create_humidity_correction(self, correction_theory: CorrectionTheory):
+    def create_humidity_correction(
+        self, correction_theory: CorrectionTheory = None
+    ):
         """
         Internal method for selecting the correct humidity correction to
         use

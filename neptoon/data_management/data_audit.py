@@ -214,7 +214,11 @@ class DataAuditLog:
         """
         Deletes the log file associated with the DataAuditLog
         """
-        self.log_file_path.unlink()
+        try:
+            self.log_file_path.unlink()
+        except PermissionError:
+            # TODO: should be a logger message/warning?
+            print("Permission error: Log file is used by another process.")
 
 
 class ParseDataAuditLog:
