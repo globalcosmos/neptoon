@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import Literal, Union, Optional
+import dataclasses
 from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataAttacher,
@@ -145,9 +146,6 @@ class CRNSDataHub:
     @correction_builder.setter
     def correction_builder(self, builder: CorrectionBuilder):
         self._correction_builder = builder
-
-    def _create_quality_assessor(self):
-        pass
 
     def validate_dataframe(self, schema: str):
         """
@@ -407,6 +405,37 @@ class CRNSDataHub:
         masked_df = self.crns_data_frame.copy()
         masked_df[~mask] = np.nan
         return masked_df
+
+    def prepare_static_values(self):
+        """
+        Attaches the static values from the SiteInformation object as
+        columns of values in the crns_data_frame
+
+        TODO
+         - Add a way to use str(ColumnInfo.Name.VARIABLE) for assigning
+           names.
+         - This must consider if people already have the variables and
+           don't want them changed.
+         - Must be a way to compare the SiteInformation key and the
+           appropriate ColumnInfo.Name
+        """
+
+        site_information_dict = dataclasses.asdict(self.site_information)
+        for key in site_information_dict:
+            if key in self.crns_data_frame.columns:
+                message = (
+                    f"{key} already found in columns of crns_data_frame"
+                    " when trying to add static values from site_information."
+                    "Values from SiteInformation were not writtent to the"
+                    " crns_data_frame."
+                )
+                core_logger.info(message)
+                continue
+            elif site_information_dict[key] is None:
+                # TODO add skip here
+                pass
+            else:
+                self.crns_data_frame[key] = site_information_dict[key]
 
     def save_data(self, folder_path, file_name, step):
         """
