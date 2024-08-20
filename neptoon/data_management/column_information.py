@@ -37,6 +37,7 @@ class ColumnInfo:  # TODO Change to Columns
 
         DATE_TIME = auto()
         EPI_NEUTRON_COUNT = auto()
+        EPI_NEUTRON_COUNT_FINAL = auto()
         AIR_PRESSURE = auto()
         AIR_RELATIVE_HUMIDITY = auto()
         AIR_TEMPERATURE = auto()
@@ -48,10 +49,11 @@ class ColumnInfo:  # TODO Change to Columns
         INTENSITY_CORRECTION = auto()
         PRESSURE_CORRECTION = auto()
         CORRECTED_EPI_NEUTRON_COUNT = auto()
-        CORRECTED_EPI_NEUTRON_COUNT_SMOOTH = auto()
+        CORRECTED_EPI_NEUTRON_COUNT_FINAL = auto()
         THERM_NEUTRON_COUNT = auto()
         PRECIPITATION = auto()
         SOIL_MOISTURE = auto()
+        SOIL_MOISTURE_FINAL = auto()
         SOIL_MOISTURE_UNCERTAINTY_UPPER = auto()
         SOIL_MOISTURE_UNCERTAINTY_LOWER = auto()
         SOIL_MOISTURE_MEASURMENT_DEPTH = auto()
@@ -76,6 +78,7 @@ class ColumnInfo:  # TODO Change to Columns
     _default_representation: dict["ColumnInfo.Name", str] = {
         Name.DATE_TIME: "date_time",
         Name.EPI_NEUTRON_COUNT: "epithermal_neutrons",
+        Name.EPI_NEUTRON_COUNT_FINAL: "epithermal_neutrons",
         Name.AIR_PRESSURE: "air_pressure",
         Name.AIR_RELATIVE_HUMIDITY: "air_relative_humidity",
         Name.AIR_TEMPERATURE: "air_temperature",
@@ -87,10 +90,11 @@ class ColumnInfo:  # TODO Change to Columns
         Name.INTENSITY_CORRECTION: "incoming_neutron_intensity_correction",
         Name.PRESSURE_CORRECTION: "atmospheric_pressure_correction",
         Name.CORRECTED_EPI_NEUTRON_COUNT: "corrected_epithermal_neutrons",
-        Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH: "corrected_epithermal_neutrons_smooth",
+        Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL: "corrected_epithermal_neutrons",
         Name.THERM_NEUTRON_COUNT: "thermal_neutron_count",
         Name.PRECIPITATION: "precipitation",
         Name.SOIL_MOISTURE: "soil_moisture",
+        Name.SOIL_MOISTURE_FINAL: "soil_moisture",  # updated to processed soil moisture
         Name.SOIL_MOISTURE_UNCERTAINTY_UPPER: "soil_moisture_uncertainty_upper",
         Name.SOIL_MOISTURE_UNCERTAINTY_LOWER: "soil_moisture_uncertainty_lower",
         Name.SOIL_MOISTURE_MEASURMENT_DEPTH: "crns_measurement_depth",
@@ -148,6 +152,7 @@ class ColumnInfo:  # TODO Change to Columns
             A string that represents the new column name to expect
             throughout processing.
         """
+        # print(f"Relabeling {column_name} to {new_label}")
         cls._current_representation[column_name] = new_label
 
     @classmethod
