@@ -26,23 +26,34 @@ core_logger = get_logger()
 
 
 class FileCollectionConfig:
-    """ """
+    """
+    Configuration class for file collection and parsing settings.
+
+    This class holds all the necessary parameters for locating, reading,
+    and parsing data files, providing a centralized configuration for
+    the data ingestion process.
+    """
 
     def __init__(
         self,
         data_location: Union[str, Path],
+        column_names: list = None,
         prefix="",
         suffix="",
         encoding="cp850",
         skip_lines: int = 0,
         seperator: str = ",",
         decimal: str = ".",
-        skipinitialspace: bool = True,
+        skip_initial_space: bool = True,
         parser_kw: dict = dict(
             # These could be defined in a specific YAML file
             strip_left=True,
             digit_first=True,
         ),
+        starts_with: any = "",
+        multi_header: bool = False,  # look for multiple lines
+        strip_names: bool = True,
+        remove_prefix: str = "//",
     ):
         """
         Initial parameters for data collection and merging
@@ -50,38 +61,45 @@ class FileCollectionConfig:
         Parameters
         ----------
         data_location : Union[str, Path]
-            The location of the data files. Can be either a string
-            representing folder/file location or a Path object (it will
-            be converted to a Path object if a string is presented).
+            The location of the data files. Can be either a string or
+            Path object
+        column_names : list, optional
+            List of column names for the data, by default None
         prefix : str, optional
-            start of file name - used for file filtering, by default
-            None
+            Start of file name for file filtering, by default None
         suffix : str, optional
-            end of file name - used for file filtering, by default None
+            End of file name - used for file filtering, by default None
         encoding : str, optional
-            encoder used for file encoding, by default "cp850"
+            Encoder used for file encoding, by default "cp850"
         skip_lines : int, optional
             Whether lines should be skipped when parsing files, by
             default 0
         seperator : str, optional
-            The default seperator used to divide columns, by default ","
+            Column seperator in the files, by default ","
         decimal : str, optional
             The default decimal character for floating point numbers ,
             by default "."
-        skipinitialspace : bool, optional
-            whether to skip intial space when creating dataframe, by
+        skip_initial_space : bool, optional
+            Whether to skip intial space when creating dataframe, by
             default True
         parser_kw : dict, optional
-            dictionary with parser values to use when parsing data, by
-            default
-            dict(
-                strip_left=True,
-                digit_first=True,
-                )
+            Dictionary with parser values to use when parsing data, by
+            default dict(
+                strip_left=True, digit_first=True, )
+        starts_with : any, optional
+            String that headers must start with, by default ""
+        multi_header : bool, optional
+            Whether to look for multiple header lines, by default False
+        strip_names : bool, optional
+            Whether to strip whitespace from column names, by default
+            True
+        remove_prefix : str, optional
+            Prefix to remove from column names, by default "//"
         """
         self._data_location = self._validate_and_convert_data_location(
             data_location=data_location
         )
+        self._column_names = column_names
         self._prefix = prefix
         self._suffix = suffix
         self._encoding = encoding
@@ -89,15 +107,22 @@ class FileCollectionConfig:
         self._parser_kw = parser_kw
         self._seperator = seperator
         self._decimal = decimal
-        self._skipinitialspace = skipinitialspace
+        self._skip_initial_space = skip_initial_space
         self._source_type = None
-        self.files = []
+        self._starts_with = starts_with
+        self._multi_header = multi_header
+        self._strip_names = strip_names
+        self._remove_prefix = remove_prefix
 
         self._determine_source_type()
 
     @property
     def data_location(self):
         return self._data_location
+
+    @property
+    def column_names(self):
+        return self._column_names
 
     @property
     def prefix(self):
@@ -112,8 +137,8 @@ class FileCollectionConfig:
         return self._encoding
 
     @property
-    def skipinitialspace(self):
-        return self._skipinitialspace
+    def skip_initial_space(self):
+        return self._skip_initial_space
 
     @property
     def decimal(self):
@@ -138,6 +163,22 @@ class FileCollectionConfig:
     @source_type.setter
     def source_type(self, value: str):
         self._source_type = value
+
+    @property
+    def starts_with(self):
+        return self._starts_with
+
+    @property
+    def multi_header(self):
+        return self._multi_header
+
+    @property
+    def strip_names(self):
+        return self._strip_names
+
+    @property
+    def remove_prefix(self):
+        return self._remove_prefix
 
     def _validate_and_convert_data_location(
         self, data_location: Union[str, Path]
@@ -237,180 +278,30 @@ class ManageFileCollection:
 
     Example:
     --------
-    >>> from neptoon.data_ingest_and_formatting.data_ingest import ManageFileCollection
-    >>> data_location_folder = "/path/to/folder"
-    >>> file_manager = ManageFileCollection(data_location_folder)
+    >>> config = FileCollectionConfig(data_location="/path/to/folder")
+    >>> file_manager = ManageFileCollection(config)
     >>> file_manager.get_list_of_files()
+    >>> file_manager.filter_files()
     """
 
     def __init__(
         self,
-        data_location: Union[str, Path],
-        prefix="",
-        suffix="",
-        encoding="cp850",
-        skip_lines: int = 0,
-        seperator: str = ",",
-        decimal: str = ".",
-        skipinitialspace: bool = True,
-        parser_kw: dict = dict(
-            # These could be defined in a specific YAML file
-            strip_left=True,
-            digit_first=True,
-        ),
+        config: FileCollectionConfig,
+        files: List = None,
     ):
         """
-        Initial parameters for data collection and merging
+        Initial parameters
 
         Parameters
         ----------
-        data_location : Union[str, Path]
-            The location of the data files. Can be either a string
-            representing folder/file location or a Path object (it will
-            be converted to a Path object if a string is presented).
-        prefix : str, optional
-            start of file name - used for file filtering, by default
-            None
-        suffix : str, optional
-            end of file name - used for file filtering, by default None
-        encoding : str, optional
-            encoder used for file encoding, by default "cp850"
-        skip_lines : int, optional
-            Whether lines should be skipped when parsing files, by
-            default 0
-        seperator : str, optional
-            The default seperator used to divide columns, by default ","
-        decimal : str, optional
-            The default decimal character for floating point numbers ,
-            by default "."
-        skipinitialspace : bool, optional
-            whether to skip intial space when creating dataframe, by
-            default True
-        parser_kw : dict, optional
-            dictionary with parser values to use when parsing data, by
-            default
-            dict(
-                strip_left=True,
-                digit_first=True,
-                )
+        config : FileCollectionConfig[str, Path]
+            The config file holding key information for collection
+        files : List
+            Placeholder for files
+
         """
-        self._data_location = self._validate_and_convert_data_location(
-            data_location=data_location
-        )
-        self._prefix = prefix
-        self._suffix = suffix
-        self._encoding = encoding
-        self._skip_lines = skip_lines
-        self._parser_kw = parser_kw
-        self._seperator = seperator
-        self._decimal = decimal
-        self._skipinitialspace = skipinitialspace
-        self._source_type = None
-        self.files = []
-
-        # init functions
-        self._determine_source_type()
-
-    @property
-    def data_location(self):
-        return self._data_location
-
-    @property
-    def prefix(self):
-        return self._prefix
-
-    @property
-    def suffix(self):
-        return self._suffix
-
-    @property
-    def encoding(self):
-        return self._encoding
-
-    @property
-    def skipinitialspace(self):
-        return self._skipinitialspace
-
-    @property
-    def decimal(self):
-        return self._decimal
-
-    @property
-    def skip_lines(self):
-        return self._skip_lines
-
-    @property
-    def parser_kw(self):
-        return self._parser_kw
-
-    @property
-    def seperator(self):
-        return self._seperator
-
-    @property
-    def source_type(self):
-        return self._source_type
-
-    @source_type.setter
-    def source_type(self, value: str):
-        self._source_type = value
-
-    def _validate_and_convert_data_location(
-        self, data_location: Union[str, Path]
-    ) -> Path:
-        """
-        Used when initialising the object. If a string is given as a
-        data_location, it is converted to a pathlib.Path object. If a
-        pathlib.Path object is given this is returned. Other types will
-        cause an error.
-
-        Parameters
-        ----------
-        data_location : Union[str, Path]
-            The data_location attribute from initialisation.
-
-        Returns
-        -------
-        pathlib.Path
-            The data_location as a pathlib.Path object.
-
-        Raises
-        ------
-        ValueError
-            Error if string or pathlib.Path given.
-        """
-        if isinstance(data_location, str):
-            return Path(data_location)
-        elif isinstance(data_location, Path):
-            return data_location
-        else:
-            message = (
-                "data_location must be of type str or pathlib.Path. \n"
-                f"{type(data_location).__name__} provided, "
-                "please change this."
-            )
-            core_logger.error(message)
-            raise ValueError(message)
-
-    def _determine_source_type(self):
-        """
-        Checks if the folder is a normal folder or an archive and sets
-        the internal attribute reflecting this.
-        """
-        if self.data_location.is_dir():
-            self.source_type = "folder"
-            core_logger.info("Extracting data from a folder")
-        elif tarfile.is_tarfile(self.data_location):
-            self.source_type = "tarfile"
-            core_logger.info("Extracting data from a tarfile")
-        elif zipfile.is_zipfile(self.data_location):
-            self.source_type = "zipfile"
-        else:
-            # TODO logging?
-            print(
-                "! Cannot read files, the source is neither a folder nor an archive."
-            )
-            return ""
+        self.config = config
+        self.files = files
 
     def _return_list_of_files_from_folder(self) -> list:
         """
@@ -423,21 +314,21 @@ class ManageFileCollection:
         """
 
         files = []
-        if self.data_location.is_dir():
+        if self.config.data_location.is_dir():
             try:
-                item_list = self.data_location.glob("**/*")
+                item_list = self.config.data_location.glob("**/*")
                 files = [x.name for x in item_list if x.is_file()]
 
             except FileNotFoundError as fnf_error:
                 message = (
-                    f"! Folder not found: {self.data_location}."
+                    f"! Folder not found: {self.config.data_location}."
                     f"Error: {fnf_error}"
                 )
                 core_logger.error(message)
                 raise
             except Exception as err:
                 message = (
-                    f"! Error accessing folder {self.data_location}."
+                    f"! Error accessing folder {self.config.data_location}."
                     f" Error: {err}"
                 )
                 core_logger.error(message)
@@ -456,19 +347,19 @@ class ManageFileCollection:
         """
         files = []
         try:
-            with zipfile.ZipFile(self.data_location, "r") as archive:
+            with zipfile.ZipFile(self.config.data_location, "r") as archive:
                 files = archive.namelist()
 
         except FileNotFoundError as fnf_error:
             message = (
-                f"! Archive file not found: {self.data_location}."
+                f"! Archive file not found: {self.config.data_location}."
                 f"Error: {fnf_error}"
             )
 
             raise
         except Exception as err:
             message = (
-                f"! Error accessing archive {self.data_location}. "
+                f"! Error accessing archive {self.config.data_location}. "
                 f"Error: {err}"
             )
             core_logger.error(message)
@@ -487,19 +378,19 @@ class ManageFileCollection:
         """
         files = []
         try:
-            with tarfile.TarFile(self.data_location, "r") as archive:
+            with tarfile.TarFile(self.config.data_location, "r") as archive:
                 files = archive.getnames()
 
         except FileNotFoundError as fnf_error:
             message = (
-                f"! Archive file not found: {self.data_location}."
+                f"! Archive file not found: {self.config.data_location}."
                 f"Error: {fnf_error}"
             )
 
             raise
         except Exception as err:
             message = (
-                f"! Error accessing archive {self.data_location}. "
+                f"! Error accessing archive {self.config.data_location}. "
                 f"Error: {err}"
             )
             core_logger.error(message)
@@ -512,11 +403,11 @@ class ManageFileCollection:
         Lists the files found at the data_source and assigns these to
         the file attribute.
         """
-        if self.source_type == "folder":
+        if self.config.source_type == "folder":
             self.files = self._return_list_of_files_from_folder()
-        elif self.source_type == "zipfile":
+        elif self.config.source_type == "zipfile":
             self.files = self._return_list_of_files_from_zip()
-        elif self.source_type == "tarfile":
+        elif self.config.source_type == "tarfile":
             self.files = self._return_list_of_files_from_tar()
         else:
             message = (
@@ -527,48 +418,52 @@ class ManageFileCollection:
 
     def filter_files(
         self,
-    ) -> list:
+    ):
         """
         Filters the files found in the data location using the prefix or
         suffix given during initialisation. Both of these default to
         None.
+
+        This method updates the `files` attribute of the class with the
+        filtered list.
 
         TODO maybe add regexp or * functionality
         """
         files_filtered = [
             filename
             for filename in self.files
-            if filename.startswith(self.prefix)
+            if filename.startswith(self.config.prefix)
         ]
         # End with ...
         files_filtered = [
             filename
             for filename in files_filtered
-            if filename.endswith(self.suffix)
+            if filename.endswith(self.config.suffix)
         ]
         self.files = files_filtered
 
 
 class ParseFilesIntoDataFrame:
     """
-    Take's an instance of the ManageFileColletion class which defines
-    data location and parsing parameters. Uses this to parse the raw
-    files into a single dataframe.
+    Parses raw files into a single pandas DataFrame.
+
+    This class takes instances of ManageFileCollection and
+    FileCollectionConfig to process and combine multiple data files into
+    a single DataFrame, handling various file formats and parsing
+    configurations.
 
     Example
     -------
-    >>> file_manager = ManageFileCollection(data_location='/path/to/data/folder/')
-    >>> file_parser = ParseFilesIntoDataFrame(file_manager)
+    >>> config = FileCollectionConfig(data_location='/path/to/data/folder/')
+    >>> file_manager = ManageFileCollection(config=config)
+    >>> file_parser = ParseFilesIntoDataFrame(file_manager, config)
     >>> df = file_parser.make_dataframe()
     """
 
     def __init__(
         self,
         file_manager: ManageFileCollection,
-        startswith: any = "",
-        multiheader: bool = False,  # look for multiple lines
-        strip_names: bool = True,
-        remove_prefix: str = "//",
+        config: FileCollectionConfig,
     ):
         """
         Initialisation files.
@@ -577,42 +472,14 @@ class ParseFilesIntoDataFrame:
         ----------
         file_manager : ManageFileCollection
             An instance fo the ManageFileCollection class
-        seperator : str, optional
-            column separator, by default ","
-        startswith : any, optional
-            headers start with a string, can be a list of multiple
-            strings. by default ""
-        multiheader : bool, optional
-            look for more than one headers which will eventually be
-            joined, by default False
-        remove_prefix : str, optional
-            remove first characters of a line, by default "//"
+
         """
         self.file_manager = file_manager
-        self._startswith = startswith
-        self._multiheader = multiheader
-        self._strip_names = strip_names
-        self._remove_prefix = remove_prefix
-
-    @property
-    def startswith(self):
-        return self._startswith
-
-    @property
-    def multiheader(self):
-        return self._multiheader
-
-    @property
-    def strip_names(self):
-        return self._strip_names
-
-    @property
-    def remove_prefix(self):
-        return self._remove_prefix
+        self.config = config
 
     def make_dataframe(
         self,
-        column_names: list = None,
+        column_names=None,
     ) -> pd.DataFrame:
         """
         Merges, parses and converts data it to a single DataFrame.
@@ -629,6 +496,10 @@ class ParseFilesIntoDataFrame:
             DataFrame with all data
         """
         if column_names is None:
+            column_names = self.config.column_names
+
+        if column_names is None:
+            # TODO Add option to check for supplied column names in config
             column_names = self._infer_column_names()
 
         data_str = self._merge_files()
@@ -636,24 +507,25 @@ class ParseFilesIntoDataFrame:
         data = pd.read_csv(
             io.StringIO(data_str),
             names=column_names,
-            encoding=self.file_manager.encoding,
-            skiprows=self.file_manager.skip_lines,
-            skipinitialspace=self.file_manager.skipinitialspace,
-            sep=self.file_manager.seperator,
-            decimal=self.file_manager.decimal,
+            encoding=self.config.encoding,
+            skiprows=self.config.skip_lines,
+            skipinitialspace=self.config.skip_initial_space,
+            sep=self.config.seperator,
+            decimal=self.config.decimal,
             on_bad_lines="skip",  # ignore all lines with bad columns
             dtype=object,  # Allows for reading strings
         )
-
         return data
 
     def _merge_files(
         self,
     ) -> str:
         """
-        Reads all selected files in a folder or archive, applies a basic
-        parsing of the lines using `_parse_file_line()`, and merges all
-        valid lines into a single large data string.
+        Reads all selected files and merges them into a single large
+        data string.
+
+        This method processes each file using the `_process_file` method
+        and combines the results.
 
         Returns
         -------
@@ -668,18 +540,23 @@ class ParseFilesIntoDataFrame:
 
     def _process_file(self, filename):
         """
-        Opens file and extracts each file line into a large data string.
+        Processes a single file and extracts its content into a string.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file to process
 
         Returns
         -------
-        data_str: str
-            Returns a large string containing data
+        str
+            A string containing the processed data from the file
         """
         data_str = ""
 
-        with self._open_file(filename, self.file_manager.encoding) as file:
+        with self._open_file(filename, self.config.encoding) as file:
 
-            for _ in range(self.file_manager.skip_lines):
+            for _ in range(self.config.skip_lines):
                 next(file)
             for line in file:
                 data_str += self._parse_file_line(
@@ -705,16 +582,16 @@ class ParseFilesIntoDataFrame:
         file
             returns the open file
         """
-        if self.file_manager.source_type == "folder":
+        if self.config.source_type == "folder":
             return open(
-                self.file_manager.data_location / filename,
+                self.config.data_location / filename,
                 encoding=encoding,
             )
-        elif self.file_manager.source_type == "tarfile":
-            archive = tarfile.open(self.file_manager.data_location, "r")
+        elif self.config.source_type == "tarfile":
+            archive = tarfile.open(self.config.data_location, "r")
             return archive.extractfile(filename)
-        elif self.file_manager.source_type == "zipfile":
-            archive = zipfile.ZipFile(self.file_manager.data_location, "r")
+        elif self.config.source_type == "zipfile":
+            archive = zipfile.ZipFile(self.config.data_location, "r")
             return archive.open(filename)
         else:
             message = (
@@ -740,17 +617,14 @@ class ParseFilesIntoDataFrame:
         str
             a valid line or an empty string
         """
-        if isinstance(line, bytes) and self.file_manager.encoding != "":
-            line = line.decode(self.file_manager.encoding, errors="ignore")
+        if isinstance(line, bytes) and self.config.encoding != "":
+            line = line.decode(self.config.encoding, errors="ignore")
 
-        if self.file_manager.parser_kw["strip_left"]:
+        if self.config.parser_kw["strip_left"]:
             line = line.lstrip()
 
         # If the line starts with a number, it likely is actual data
-        if (
-            self.file_manager.parser_kw["digit_first"]
-            and not line[:1].isdigit()
-        ):
+        if self.config.parser_kw["digit_first"] and not line[:1].isdigit():
             return ""
 
         return line
@@ -774,47 +648,40 @@ class ParseFilesIntoDataFrame:
 
         # Open file in either folder or archive
         with self._open_file(
-            self.file_manager.files[0], self.file_manager.encoding
+            self.file_manager.files[0], self.config.encoding
         ) as file:
 
-            for _ in range(self.file_manager.skip_lines):
+            for _ in range(self.config.skip_lines):
                 next(file)
 
             headers = []
             for line in file:
 
-                if (
-                    isinstance(line, bytes)
-                    and self.file_manager.encoding != ""
-                ):
-                    line = line.decode(
-                        self.file_manager.encoding, errors="ignore"
-                    )
+                if isinstance(line, bytes) and self.config.encoding != "":
+                    line = line.decode(self.config.encoding, errors="ignore")
 
-                if self.file_manager.seperator in line:
+                if self.config.seperator in line:
                     # headers must contain at least one separator
 
-                    if line.startswith(self.startswith):
+                    if line.startswith(self.config.starts_with):
                         # headers must start with certain letters
                         # Uses the first line if no letter given
 
                         headers.append(line)
 
-                        if not self.multiheader:
+                        if not self.config.multi_header:
                             # Stops after first found header, else browse the whole file
                             break
 
         # Join multiheaders and create a joint list
-        header_line = self.file_manager.seperator.join(headers)
-        header_list = header_line.split(self.file_manager.seperator)
-        if self.strip_names:
+        header_line = self.config.seperator.join(headers)
+        header_list = header_line.split(self.config.seperator)
+        if self.config.strip_names:
             header_list = [s.strip() for s in header_list]
-        if self.remove_prefix != "":
+        if self.config.remove_prefix != "":
             header_list = [
-                s.removeprefix(self.remove_prefix) for s in header_list
+                s.removeprefix(self.config.remove_prefix) for s in header_list
             ]
-
-        self.column_names = header_list
         return header_list
 
 
