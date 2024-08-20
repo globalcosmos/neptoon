@@ -16,7 +16,7 @@ from neptoon.logging import get_logger
 core_logger = get_logger()
 
 
-def pressure_correction_l_coeff(
+def calc_pressure_correction_l_coeff(
     current_pressure: float, reference_pressure: float, l_coeff: float
 ):
     """
@@ -55,7 +55,7 @@ def pressure_correction_l_coeff(
     return c_factor
 
 
-def pressure_correction_beta_coeff(
+def calc_pressure_correction_beta_coeff(
     current_pressure: float, reference_pressure: float, beta_coeff: float
 ):
     """

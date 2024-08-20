@@ -1,14 +1,18 @@
 from neptoon.data_management.column_information import ColumnInfo
 import pytest
 
-
 @pytest.fixture(autouse=True)
 def reset_column_info():
     """
-    Need to introduce this or the tests erroneously fail.
+    This function will be called before every test function here.
+    Since the test functions will change the original Class,
+    it is necessary to set the class labels back to default after the tests.
     """
-    ColumnInfo.reset_labels()
+    # Reset the labels (probably not necessary)
+    # ColumnInfo.reset_labels()
+    # Run the test function
     yield
+    # Reset labels again to the default class
     ColumnInfo.reset_labels()
 
 

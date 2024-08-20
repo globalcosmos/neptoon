@@ -8,7 +8,14 @@ class SiteInformation:
     A data class which stores information about the site which is needed
     in data processing
 
-    TODO: alternatively do we use pydantic and validate?
+    IMPORTANT: If updating this with new values in the code base, ensure
+    you also update ColumnInfo in
+    ..data_management.column_information.py to include a mapping to a
+    column name. This ensures when running the
+    CRNSDataHub.prepare_static_values() method that the name for the
+    column is consistent throughout processing.
+
+
     """
 
     latitude: float
@@ -21,6 +28,9 @@ class SiteInformation:
     cutoff_rigidity: float
     mean_pressure: Optional[float] = None
     site_biomass: Optional[float] = None
+    n0: Optional[float] = None
+    beta_coefficient: Optional[float] = None
+    l_coefficient: Optional[float] = None
 
     def add_custom_value(self, name: str, value):
         """
