@@ -25,6 +25,211 @@ from neptoon.configuration.configuration_input import (
 core_logger = get_logger()
 
 
+class FileCollectionConfig:
+    """ """
+
+    def __init__(
+        self,
+        data_location: Union[str, Path],
+        prefix="",
+        suffix="",
+        encoding="cp850",
+        skip_lines: int = 0,
+        seperator: str = ",",
+        decimal: str = ".",
+        skipinitialspace: bool = True,
+        parser_kw: dict = dict(
+            # These could be defined in a specific YAML file
+            strip_left=True,
+            digit_first=True,
+        ),
+    ):
+        """
+        Initial parameters for data collection and merging
+
+        Parameters
+        ----------
+        data_location : Union[str, Path]
+            The location of the data files. Can be either a string
+            representing folder/file location or a Path object (it will
+            be converted to a Path object if a string is presented).
+        prefix : str, optional
+            start of file name - used for file filtering, by default
+            None
+        suffix : str, optional
+            end of file name - used for file filtering, by default None
+        encoding : str, optional
+            encoder used for file encoding, by default "cp850"
+        skip_lines : int, optional
+            Whether lines should be skipped when parsing files, by
+            default 0
+        seperator : str, optional
+            The default seperator used to divide columns, by default ","
+        decimal : str, optional
+            The default decimal character for floating point numbers ,
+            by default "."
+        skipinitialspace : bool, optional
+            whether to skip intial space when creating dataframe, by
+            default True
+        parser_kw : dict, optional
+            dictionary with parser values to use when parsing data, by
+            default
+            dict(
+                strip_left=True,
+                digit_first=True,
+                )
+        """
+        self._data_location = self._validate_and_convert_data_location(
+            data_location=data_location
+        )
+        self._prefix = prefix
+        self._suffix = suffix
+        self._encoding = encoding
+        self._skip_lines = skip_lines
+        self._parser_kw = parser_kw
+        self._seperator = seperator
+        self._decimal = decimal
+        self._skipinitialspace = skipinitialspace
+        self._source_type = None
+        self.files = []
+
+        self._determine_source_type()
+
+    @property
+    def data_location(self):
+        return self._data_location
+
+    @property
+    def prefix(self):
+        return self._prefix
+
+    @property
+    def suffix(self):
+        return self._suffix
+
+    @property
+    def encoding(self):
+        return self._encoding
+
+    @property
+    def skipinitialspace(self):
+        return self._skipinitialspace
+
+    @property
+    def decimal(self):
+        return self._decimal
+
+    @property
+    def skip_lines(self):
+        return self._skip_lines
+
+    @property
+    def parser_kw(self):
+        return self._parser_kw
+
+    @property
+    def seperator(self):
+        return self._seperator
+
+    @property
+    def source_type(self):
+        return self._source_type
+
+    @source_type.setter
+    def source_type(self, value: str):
+        self._source_type = value
+
+    def _validate_and_convert_data_location(
+        self, data_location: Union[str, Path]
+    ) -> Path:
+        """
+        Used when initialising the object. If a string is given as a
+        data_location, it is converted to a pathlib.Path object. If a
+        pathlib.Path object is given this is returned. Other types will
+        cause an error.
+
+        Parameters
+        ----------
+        data_location : Union[str, Path]
+            The data_location attribute from initialisation.
+
+        Returns
+        -------
+        pathlib.Path
+            The data_location as a pathlib.Path object.
+
+        Raises
+        ------
+        ValueError
+            Error if string or pathlib.Path given.
+        """
+        if isinstance(data_location, str):
+            return Path(data_location)
+        elif isinstance(data_location, Path):
+            return data_location
+        else:
+            message = (
+                "data_location must be of type str or pathlib.Path. \n"
+                f"{type(data_location).__name__} provided, "
+                "please change this."
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+    def _determine_source_type(self):
+        """
+        Checks if the folder is a normal folder or an archive and sets
+        the internal attribute reflecting this.
+        """
+        if self.data_location.is_dir():
+            self.source_type = "folder"
+            core_logger.info("Extracting data from a folder")
+        elif tarfile.is_tarfile(self.data_location):
+            self.source_type = "tarfile"
+            core_logger.info("Extracting data from a tarfile")
+        elif zipfile.is_zipfile(self.data_location):
+            self.source_type = "zipfile"
+        else:
+            # TODO logging?
+            print(
+                "! Cannot read files, the source is neither a folder nor an archive."
+            )
+            return ""
+
+    def _return_list_of_files_from_folder(self) -> list:
+        """
+        Returns the list of files from a given folder.
+
+        Returns
+        -------
+        list
+            list of files contained in the folder
+        """
+
+        files = []
+        if self.data_location.is_dir():
+            try:
+                item_list = self.data_location.glob("**/*")
+                files = [x.name for x in item_list if x.is_file()]
+
+            except FileNotFoundError as fnf_error:
+                message = (
+                    f"! Folder not found: {self.data_location}."
+                    f"Error: {fnf_error}"
+                )
+                core_logger.error(message)
+                raise
+            except Exception as err:
+                message = (
+                    f"! Error accessing folder {self.data_location}."
+                    f" Error: {err}"
+                )
+                core_logger.error(message)
+                raise
+
+        return files
+
+
 class ManageFileCollection:
     """
     Manages the collection of files in preperation for parsing them into
@@ -624,14 +829,14 @@ class InputColumnDataType(Enum):
 
 
 class NeutronCountUnits(Enum):
-    ABSOLUTE_COUNT = "absolute_count"
-    COUNTS_PER_HOUR = "counts_per_hour"
-    COUNTS_PER_SECOND = "counts_per_second"
+    ABSOLUTE_COUNT = auto()
+    COUNTS_PER_HOUR = auto()
+    COUNTS_PER_SECOND = auto()
 
 
 class MergeMethod(Enum):
-    MEAN = "mean"
-    PRIORITY = "priority"
+    MEAN = auto()
+    PRIORITY = auto()
 
 
 @dataclass
