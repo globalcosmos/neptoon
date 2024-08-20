@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from typing import Literal, Union, Optional
 import dataclasses
 from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
@@ -21,6 +22,7 @@ from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
+from neptoon.quality_assesment.smoothing import SmoothData
 
 from neptoon.logging import get_logger
 
@@ -336,6 +338,48 @@ class CRNSDataHub:
                 correction_builder=self.correction_builder,
             )
             self.crns_data_frame = corrector.correct_neutrons()
+
+    def smooth_data(
+        self,
+        column_to_smooth: str,
+        smooth_method: Literal[
+            "rolling_mean", "savitsky_golay"
+        ] = "rolling_mean",
+        window: Optional[Union[int, str]] = 12,
+        poly_order: int = 4,
+        auto_update_final_col: bool = True,
+    ):
+        """
+        Applies a smoothing method to a series of data in the
+        crns_data_frame using the SmoothData class.
+
+        A `column_to_smooth` attribute must be supplied, and should be
+        written using the "str(ColumnInfo.Name.COLUMN)" format. The two
+        most likely to be used are:
+
+           - str(ColumnInfo.Name.SOIL_MOISTURE)
+           - str(ColumnInfo.Name.EPI_NEUTRONS)
+
+        If parameters are left as None, it uses defaults from SmoothData
+        (i.e., rolling_mean, window size == 12).
+
+        Parameters
+        ----------
+        column_to_smooth : str(ColumnInfo.Name.VALUE)
+            The column in the crns_data_frame that needs to be smoothed.
+            Automatically
+        """
+        series_to_smooth = pd.Series(self.crns_data_frame[column_to_smooth])
+        smoother = SmoothData(
+            data=series_to_smooth,
+            column_to_smooth=column_to_smooth,
+            smooth_method=smooth_method,
+            window=window,
+            poly_order=poly_order,
+            auto_update_final_col=auto_update_final_col,
+        )
+        col_name = smoother.create_new_column_name()
+        self.crns_data_frame[col_name] = smoother.apply_smoothing()
 
     def produce_soil_moisture_estimates(self, n0=None):
         if n0 is None:
