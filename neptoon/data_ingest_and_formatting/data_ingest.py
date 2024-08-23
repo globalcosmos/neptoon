@@ -14,7 +14,7 @@ import zipfile
 import io
 from saqc import SaQC
 from pathlib import Path
-from typing import Union, Literal, List
+from typing import Union, Literal, List, Optional
 from neptoon.data_management.data_audit import log_key_step
 from neptoon.logging import get_logger
 from neptoon.data_management.column_information import ColumnInfo
@@ -472,6 +472,9 @@ class ParseFilesIntoDataFrame:
         ----------
         file_manager : ManageFileCollection
             An instance fo the ManageFileCollection class
+        config : FileCollectionConfig
+            The config file containing information to support
+            processing.
 
         """
         self.file_manager = file_manager
@@ -499,7 +502,6 @@ class ParseFilesIntoDataFrame:
             column_names = self.config.column_names
 
         if column_names is None:
-            # TODO Add option to check for supplied column names in config
             column_names = self._infer_column_names()
 
         data_str = self._merge_files()
@@ -532,13 +534,37 @@ class ParseFilesIntoDataFrame:
         str
             A single large string containing all data lines
         """
-        data_str = ""
-        for filename in self.file_manager.files:
-            data_str += self._process_file(filename)
+        return "".join(
+            self._process_file(filename)
+            for filename in self.file_manager.files
+        )
 
-        return data_str
+    def _read_file_content(
+        self,
+        file,
+    ) -> str:
+        """
+        Reads the file content by parsing each line. Skips lines based
+        on config file selection.
 
-    def _process_file(self, filename):
+        Parameters
+        ----------
+        file : *
+            The file to parse.
+
+        Returns
+        -------
+        str
+            string representation of file
+        """
+        for _ in range(self.config.skip_lines):
+            next(file)
+        return "".join(self._parse_file_line(line) for line in file)
+
+    def _process_file(
+        self,
+        filename,
+    ) -> str:
         """
         Processes a single file and extracts its content into a string.
 
@@ -552,20 +578,14 @@ class ParseFilesIntoDataFrame:
         str
             A string containing the processed data from the file
         """
-        data_str = ""
-
         with self._open_file(filename, self.config.encoding) as file:
+            return self._read_file_content(file)
 
-            for _ in range(self.config.skip_lines):
-                next(file)
-            for line in file:
-                data_str += self._parse_file_line(
-                    line,
-                )
-
-        return data_str
-
-    def _open_file(self, filename, encoding):
+    def _open_file(
+        self,
+        filename: str,
+        encoding: str,
+    ):
         """
         Opens an individual file from either a folder, zipfile, or
         tarfile.
@@ -582,23 +602,27 @@ class ParseFilesIntoDataFrame:
         file
             returns the open file
         """
-        if self.config.source_type == "folder":
-            return open(
-                self.config.data_location / filename,
-                encoding=encoding,
-            )
-        elif self.config.source_type == "tarfile":
-            archive = tarfile.open(self.config.data_location, "r")
-            return archive.extractfile(filename)
-        elif self.config.source_type == "zipfile":
-            archive = zipfile.ZipFile(self.config.data_location, "r")
-            return archive.open(filename)
-        else:
-            message = (
-                "Unsupported data type at source folder. It must be "
-                "a folder, zipfile, or tarfile."
-            )
-            core_logger.error(message)
+        try:
+            if self.config.source_type == "folder":
+                return open(
+                    self.config.data_location / filename,
+                    encoding=encoding,
+                )
+            elif self.config.source_type == "tarfile":
+                archive = tarfile.open(self.config.data_location, "r")
+                return archive.extractfile(filename)
+            elif self.config.source_type == "zipfile":
+                archive = zipfile.ZipFile(self.config.data_location, "r")
+                return archive.open(filename)
+            else:
+                message = (
+                    "Unsupported data type at source folder. It must be "
+                    "a folder, zipfile, or tarfile."
+                )
+                core_logger.error(message)
+                raise ValueError(message)
+        except Exception as e:
+            raise IOError(f"Error opening file {filename}: {str(e)}")
 
     def _parse_file_line(
         self,
@@ -685,6 +709,19 @@ class ParseFilesIntoDataFrame:
         return header_list
 
 
+class CollectAndParseRawData:
+    def __init__(
+        self,
+        yaml_path: Union[str, Path] = None,
+        config: FileCollectionConfig = None,
+    ):
+        self.yaml_path = yaml_path
+        self.config = config
+
+    def create_data_frame(self):
+        pass
+
+
 class InputColumnDataType(Enum):
     DATE_TIME = auto()
     PRESSURE = auto()
@@ -721,6 +758,8 @@ class InputDataFrameConfig:
 
     Attributes
     ----------
+    yaml_path : str | Path
+        The path to the YAML file storing attribute information
     time_resolution : str
         Time resolution in format "<number> <unit>".
     pressure_merge_method : {'mean', 'priority'}, optional
@@ -730,28 +769,29 @@ class InputDataFrameConfig:
     relative_humidity_merge_method : {'mean', 'priority'}, optional
         Method for merging relative humidity data, by default
         'priority'.
+    neutron_count_units :
 
     Methods
     -------
-    parse_resolution
-    get_conversion_factor
-    add_column_meta_data
-    build_from_yaml
-    assign_merge_methods
-    add_meteo_columns
-    add_date_time_column_info
-    add_neutron_columns
+    - parse_resolution
+    - get_conversion_factor
+    - add_column_meta_data
+    - build_from_yaml
+    - assign_merge_methods
+    - add_meteo_columns
+    - add_date_time_column_info
+    - add_neutron_columns
     """
 
     def __init__(
         self,
-        yaml_path: Union[str, Path] = None,
+        yaml_path: Optional[Union[str, Path]] = None,
         time_resolution: str = "1hour",
         pressure_merge_method: MergeMethod = MergeMethod.PRIORITY,
         temperature_merge_method: MergeMethod = MergeMethod.PRIORITY,
         relative_humidity_merge_method: MergeMethod = MergeMethod.PRIORITY,
         neutron_count_units: NeutronCountUnits = NeutronCountUnits.ABSOLUTE_COUNT,
-        date_time_columns: str = None,
+        date_time_columns: Optional[Union[str, List[str]]] = None,
         date_time_format: str = "%Y/%m/%d %H:%M:%S",
         initial_time_zone: str = "utc",
         convert_time_zone_to: str = "utc",
@@ -1106,8 +1146,6 @@ class InputDataFrameConfig:
         unit : str
             The units associated with the column
         """
-        if meteo_columns is None:
-            return
 
         available_cols = [name for name in meteo_columns]
         priority = 1
@@ -1165,7 +1203,7 @@ class FormatDataForCRNSDataHub:
 
     data_frame: pd.DataFrame
         The time series dataframe
-    data_frame_config: InputDataFrameConfig
+    config: InputDataFrameConfig
         Config object with information about the dataframe, which
         supports formatting
 
@@ -1187,7 +1225,7 @@ class FormatDataForCRNSDataHub:
     def __init__(
         self,
         data_frame: pd.DataFrame,
-        data_frame_config: InputDataFrameConfig = None,
+        config: InputDataFrameConfig,
     ):
         """
         Attributes of class
@@ -1196,23 +1234,26 @@ class FormatDataForCRNSDataHub:
         ----------
         data_frame : pd.DataFrame
             The un-formatted dataframe
-        data_frame_config : InputDataFrameConfig, optional
+        config : InputDataFrameConfig
             Config Object which sets the options for formatting, by
             default None
         """
         self._data_frame = data_frame
-        self._data_frame_config = data_frame_config
+        self._config = config
 
     @property
     def data_frame(self):
         return self._data_frame
 
     @property
-    def data_frame_config(self):
-        return self._data_frame_config
+    def config(self):
+        return self._config
 
     @data_frame.setter
-    def data_frame(self, df: pd.DataFrame):
+    def data_frame(
+        self,
+        df: pd.DataFrame,
+    ):
         self._data_frame = df
 
     def extract_date_time_column(
@@ -1225,14 +1266,12 @@ class FormatDataForCRNSDataHub:
         Returns:
             pd.Series: the Datetime column.
         """
-        if isinstance(self.data_frame_config.date_time_columns, str):
-            dt_series = self.data_frame[
-                self.data_frame_config.date_time_columns
-            ]
-        elif isinstance(self.data_frame_config.date_time_columns, list):
+        if isinstance(self.config.date_time_columns, str):
+            dt_series = self.data_frame[self.config.date_time_columns]
+        elif isinstance(self.config.date_time_columns, list):
             # Select Columns
             temp_columns = []
-            for col_name in self.data_frame_config.date_time_columns:
+            for col_name in self.config.date_time_columns:
                 if isinstance(col_name, str):
                     temp_columns.append(self.data_frame[col_name])
                 else:
@@ -1261,8 +1300,8 @@ class FormatDataForCRNSDataHub:
         dt_series = pd.to_datetime(
             dt_series,
             errors="coerce",
-            unit="s" if self.data_frame_config.is_timestamp else None,
-            format=self.data_frame_config.date_time_format,
+            unit="s" if self.config.is_timestamp else None,
+            format=self.config.date_time_format,
         )
         return dt_series
 
@@ -1285,14 +1324,11 @@ class FormatDataForCRNSDataHub:
         """
         if date_time_series[0].tzinfo is None:
             date_time_series = date_time_series.dt.tz_localize(
-                self.data_frame_config.initial_time_zone
+                self.config.initial_time_zone
             )
-        if (
-            self.data_frame_config.initial_time_zone
-            != self.data_frame_config.convert_time_zone_to
-        ):
+        if self.config.initial_time_zone != self.config.convert_time_zone_to:
             date_time_series = date_time_series.dt.tz_convert(
-                self.data_frame_config.convert_time_zone_to
+                self.config.convert_time_zone_to
             )
         return date_time_series
 
@@ -1315,8 +1351,8 @@ class FormatDataForCRNSDataHub:
             Define how regular the timestamps should be, 1 hour by
             default, by default "1H"
         """
-        if self.data_frame_config.time_resolution:
-            freq = self.data_frame_config.time_resolution
+        if self.config.time_resolution:
+            freq = self.config.time_resolution
 
         try:
             timestamp_aligner = TimeStampAligner(self.data_frame)
@@ -1348,7 +1384,7 @@ class FormatDataForCRNSDataHub:
         date_time_column = self.convert_time_zone(date_time_column)
         self.data_frame.index = date_time_column
         self.data_frame.drop(
-            self.data_frame_config.date_time_columns, axis=1, inplace=True
+            self.config.date_time_columns, axis=1, inplace=True
         )
 
     def data_frame_to_numeric(
@@ -1358,7 +1394,7 @@ class FormatDataForCRNSDataHub:
         Convert DataFrame columns to numeric values.
         """
         # Cases when decimal is not '.', replace them by '.'
-        decimal = self.data_frame_config.decimal
+        decimal = self.config.decimal
         decimal = decimal.strip()
         if decimal != ".":
             self.data_frame = self.data_frame.apply(
@@ -1409,15 +1445,13 @@ class FormatDataForCRNSDataHub:
         """
 
         if column_data_type == InputColumnDataType.PRESSURE:
-            merge_method = self.data_frame_config.pressure_merge_method
+            merge_method = self.config.pressure_merge_method
             created_col_name = str(ColumnInfo.Name.AIR_PRESSURE)
         elif column_data_type == InputColumnDataType.TEMPERATURE:
-            merge_method = self.data_frame_config.temperature_merge_method
+            merge_method = self.config.temperature_merge_method
             created_col_name = str(ColumnInfo.Name.AIR_TEMPERATURE)
         elif column_data_type == InputColumnDataType.RELATIVE_HUMIDITY:
-            merge_method = (
-                self.data_frame_config.relative_humidity_merge_method
-            )
+            merge_method = self.config.relative_humidity_merge_method
             created_col_name = str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
         else:
             message = (
@@ -1431,14 +1465,14 @@ class FormatDataForCRNSDataHub:
             try:
                 priority_col = next(
                     col
-                    for col in self.data_frame_config.column_data
+                    for col in self.config.column_data
                     if col.variable_type is column_data_type
                     and col.priority == 1
                 )
 
                 additional_priority_cols = sum(
                     1
-                    for col in self.data_frame_config.column_data
+                    for col in self.config.column_data
                     if col.variable_type is column_data_type
                     and col.priority == 1
                 )
@@ -1463,7 +1497,7 @@ class FormatDataForCRNSDataHub:
         elif merge_method == "mean":
             available_cols = [
                 col
-                for col in self.data_frame_config.column_data
+                for col in self.config.column_data
                 if col.variable_type is column_data_type
             ]
             pressure_col_names = [col.initial_name for col in available_cols]
@@ -1529,13 +1563,13 @@ class FormatDataForCRNSDataHub:
 
         epi_neutron_cols = [
             col
-            for col in self.data_frame_config.column_data
+            for col in self.config.column_data
             if col.variable_type is neutron_column_type
         ]
 
         epi_neutron_unit = next(
             col.unit
-            for col in self.data_frame_config.column_data
+            for col in self.config.column_data
             if col.variable_type is neutron_column_type
         )
 
@@ -1557,7 +1591,7 @@ class FormatDataForCRNSDataHub:
         elif epi_neutron_unit == "absolute_count":
             self.data_frame[final_column_name] = (
                 self.data_frame[final_column_name]
-                * self.data_frame_config.conversion_factor_to_counts_per_hour
+                * self.config.conversion_factor_to_counts_per_hour
             )
         elif epi_neutron_unit == "counts_per_second":
             self.data_frame[final_column_name] = self.data_frame[
