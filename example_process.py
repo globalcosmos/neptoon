@@ -38,7 +38,10 @@ def import_crns_dataframe_and_format(filename):
     (which we can update later).
     """
     cwd = Path.cwd()
-    crns_df_path = cwd / "tests" / "sample_crns_data" / filename
+    if isinstance(filename, str):
+        crns_df_path = cwd / "tests" / "sample_crns_data" / filename
+    else:
+        crns_df_path = filename
     crns_df = pd.read_csv(crns_df_path)
     crns_df["date_time_utc"] = pd.to_datetime(
         crns_df["date_time_utc"], dayfirst=True
