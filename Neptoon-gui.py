@@ -18,7 +18,7 @@ pages = [
         title="Welcome"
     ),
     st.Page(
-        "GUI/Calibration    .py",
+        "GUI/Calibration.py",
         title="Calibration",
         icon=":material/adjust:"
     ),
