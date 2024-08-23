@@ -1,23 +1,20 @@
 raw_data_parse_options:
-  data_location: /Users/power/location
+  data_location: /Users/power/Documents/code/neptoon/tests/data_ingest_and_formatting/mock_data/CRNS-station_data-Hydroinnova-A.zip
   column_names:
-    - col1
-    - col2
-    - col3
-  prefix:
-  suffix:
+  prefix: ""
+  suffix: ""
   encoding: "cp850"
   skip_lines: 0
-  seperator: ","
+  separator: ","
   decimal: "."
   skip_initial_space: True
-  parser_kw:
-    strip_left: True,
-    digit_first: True,
-  starts_with:
-  multi_header:
+  parser_kw: # leave blank
+    strip_left: True
+    digit_first: True
+  starts_with: ""
+  multi_header: ""
   strip_names: True
-  remove_prefix: //
+  remove_prefix: "//"
 
 input_data:
   time_step_resolution: 15mins

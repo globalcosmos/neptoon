@@ -1,6 +1,4 @@
 """
-TODO: infer_column_names still has some parameter options to add. add
-these to the ManageFileCollection object?
 
 """
 
@@ -25,6 +23,46 @@ from neptoon.configuration.configuration_input import (
 core_logger = get_logger()
 
 
+######
+def validate_and_convert_file_path(file_path: Union[str, Path]) -> Path:
+    """
+    Used when initialising the object. If a string is given as a
+    data_location, it is converted to a pathlib.Path object. If a
+    pathlib.Path object is given this is returned. Other types will
+    cause an error.
+
+    Parameters
+    ----------
+    data_location : Union[str, Path]
+        The data_location attribute from initialisation.
+
+    Returns
+    -------
+    pathlib.Path
+        The data_location as a pathlib.Path object.
+
+    Raises
+    ------
+    ValueError
+        Error if string or pathlib.Path given.
+    """
+
+    if file_path is None:
+        return None
+    if isinstance(file_path, str):
+        return Path(file_path)
+    elif isinstance(file_path, Path):
+        return file_path
+    else:
+        message = (
+            "data_location must be of type str or pathlib.Path. \n"
+            f"{type(file_path).__name__} provided, "
+            "please change this."
+        )
+        core_logger.error(message)
+        raise ValueError(message)
+
+
 class FileCollectionConfig:
     """
     Configuration class for file collection and parsing settings.
@@ -36,22 +74,22 @@ class FileCollectionConfig:
 
     def __init__(
         self,
-        data_location: Union[str, Path],
+        path_to_yaml: Union[str, Path] = None,
+        data_location: Union[str, Path] = None,
         column_names: list = None,
         prefix="",
         suffix="",
         encoding="cp850",
         skip_lines: int = 0,
-        seperator: str = ",",
+        separator: str = ",",
         decimal: str = ".",
         skip_initial_space: bool = True,
         parser_kw: dict = dict(
-            # These could be defined in a specific YAML file
             strip_left=True,
             digit_first=True,
         ),
         starts_with: any = "",
-        multi_header: bool = False,  # look for multiple lines
+        multi_header: bool = False,
         strip_names: bool = True,
         remove_prefix: str = "//",
     ):
@@ -60,6 +98,9 @@ class FileCollectionConfig:
 
         Parameters
         ----------
+        path_to_yaml : Union[str, Path]
+            The location of the yaml file. Can be either a string or
+            Path object
         data_location : Union[str, Path]
             The location of the data files. Can be either a string or
             Path object
@@ -96,124 +137,86 @@ class FileCollectionConfig:
         remove_prefix : str, optional
             Prefix to remove from column names, by default "//"
         """
-        self._data_location = self._validate_and_convert_data_location(
-            data_location=data_location
+        self._path_to_yaml = validate_and_convert_file_path(
+            file_path=path_to_yaml
         )
-        self._column_names = column_names
-        self._prefix = prefix
-        self._suffix = suffix
-        self._encoding = encoding
-        self._skip_lines = skip_lines
-        self._parser_kw = parser_kw
-        self._seperator = seperator
+        self._data_location = validate_and_convert_file_path(
+            file_path=data_location
+        )
+        self._data_source = None
+        self.column_names = column_names
+        self.prefix = prefix
+        self.suffix = suffix
+        self.encoding = encoding
+        self.skip_lines = skip_lines
+        self.parser_kw = parser_kw
+        self._separator = separator
         self._decimal = decimal
-        self._skip_initial_space = skip_initial_space
-        self._source_type = None
-        self._starts_with = starts_with
-        self._multi_header = multi_header
-        self._strip_names = strip_names
+        self.skip_initial_space = skip_initial_space
+        self.starts_with = starts_with
+        self.multi_header = multi_header
+        self.strip_names = strip_names
         self._remove_prefix = remove_prefix
 
         self._determine_source_type()
 
     @property
+    def path_to_yaml(self):
+        return self._path_to_yaml
+
+    @path_to_yaml.setter
+    def path_to_yaml(self, new_path):
+        self._path_to_yaml = validate_and_convert_file_path(new_path)
+
+    @property
     def data_location(self):
         return self._data_location
 
-    @property
-    def column_names(self):
-        return self._column_names
+    @data_location.setter
+    def data_location(self, new_location):
+        self._data_location = validate_and_convert_file_path(new_location)
+        self._determine_source_type()
 
     @property
-    def prefix(self):
-        return self._prefix
+    def data_source(self):
+        return self._data_source
 
     @property
-    def suffix(self):
-        return self._suffix
+    def separator(self):
+        return self._separator
 
-    @property
-    def encoding(self):
-        return self._encoding
-
-    @property
-    def skip_initial_space(self):
-        return self._skip_initial_space
-
-    @property
-    def decimal(self):
-        return self._decimal
-
-    @property
-    def skip_lines(self):
-        return self._skip_lines
-
-    @property
-    def parser_kw(self):
-        return self._parser_kw
-
-    @property
-    def seperator(self):
-        return self._seperator
-
-    @property
-    def source_type(self):
-        return self._source_type
-
-    @source_type.setter
-    def source_type(self, value: str):
-        self._source_type = value
-
-    @property
-    def starts_with(self):
-        return self._starts_with
-
-    @property
-    def multi_header(self):
-        return self._multi_header
-
-    @property
-    def strip_names(self):
-        return self._strip_names
+    @separator.setter
+    def separator(self, value):
+        if isinstance(value, str):
+            self._separator = value.replace("'", "").replace('"', "")
+        else:
+            message = f"{value} is not a string type. It must be a string"
+            core_logger.error(message)
+            raise ValueError(message)
 
     @property
     def remove_prefix(self):
         return self._remove_prefix
 
-    def _validate_and_convert_data_location(
-        self, data_location: Union[str, Path]
-    ) -> Path:
-        """
-        Used when initialising the object. If a string is given as a
-        data_location, it is converted to a pathlib.Path object. If a
-        pathlib.Path object is given this is returned. Other types will
-        cause an error.
-
-        Parameters
-        ----------
-        data_location : Union[str, Path]
-            The data_location attribute from initialisation.
-
-        Returns
-        -------
-        pathlib.Path
-            The data_location as a pathlib.Path object.
-
-        Raises
-        ------
-        ValueError
-            Error if string or pathlib.Path given.
-        """
-        if isinstance(data_location, str):
-            return Path(data_location)
-        elif isinstance(data_location, Path):
-            return data_location
+    @remove_prefix.setter
+    def remove_prefix(self, value):
+        if isinstance(value, str):
+            self._remove_prefix = value.replace("'", "").replace('"', "")
         else:
-            message = (
-                "data_location must be of type str or pathlib.Path. \n"
-                f"{type(data_location).__name__} provided, "
-                "please change this."
-            )
+            message = f"{value} is not a string type. It must be a string"
+            core_logger.error(message)
+            raise ValueError(message)
+
+    @property
+    def decimal(self):
+        return self._decimal
+
+    @decimal.setter
+    def decimal(self, value):
+        if isinstance(value, str):
+            self._decimal = value.replace("'", "").replace('"', "")
+        else:
+            message = f"{value} is not a string type. It must be a string"
             core_logger.error(message)
             raise ValueError(message)
 
@@ -222,20 +225,21 @@ class FileCollectionConfig:
         Checks if the folder is a normal folder or an archive and sets
         the internal attribute reflecting this.
         """
-        if self.data_location.is_dir():
-            self.source_type = "folder"
+        if self._data_location is None:
+            self._data_source = None
+            return
+        if self._data_location.is_dir():
+            self._data_source = "folder"
             core_logger.info("Extracting data from a folder")
-        elif tarfile.is_tarfile(self.data_location):
-            self.source_type = "tarfile"
+        elif tarfile.is_tarfile(self._data_location):
+            self._data_source = "tarfile"
             core_logger.info("Extracting data from a tarfile")
-        elif zipfile.is_zipfile(self.data_location):
-            self.source_type = "zipfile"
+        elif zipfile.is_zipfile(self._data_location):
+            self._data_source = "zipfile"
+            core_logger.info("Extracting data from a zipfile")
         else:
-            # TODO logging?
-            print(
-                "! Cannot read files, the source is neither a folder nor an archive."
-            )
-            return ""
+            self._data_source = None
+            core_logger.warning("Cannot determine data source type")
 
     def _return_list_of_files_from_folder(self) -> list:
         """
@@ -246,29 +250,90 @@ class FileCollectionConfig:
         list
             list of files contained in the folder
         """
-
         files = []
-        if self.data_location.is_dir():
+        if self._data_location.is_dir():
             try:
-                item_list = self.data_location.glob("**/*")
+                item_list = self._data_location.glob("**/*")
                 files = [x.name for x in item_list if x.is_file()]
-
             except FileNotFoundError as fnf_error:
                 message = (
-                    f"! Folder not found: {self.data_location}."
+                    f"! Folder not found: {self._data_location}. "
                     f"Error: {fnf_error}"
                 )
                 core_logger.error(message)
                 raise
             except Exception as err:
                 message = (
-                    f"! Error accessing folder {self.data_location}."
-                    f" Error: {err}"
+                    f"! Error accessing folder {self._data_location}. "
+                    f"Error: {err}"
                 )
                 core_logger.error(message)
                 raise
-
         return files
+
+    def build_from_yaml(
+        self,
+        path_to_yaml: Optional[Union[Path, str]] = None,
+    ):
+        """
+        Imports the attributes for the instance of FileCollectionConfig
+        from a pre-configured YAML file
+
+        Parameters
+        ----------
+        path_to_yaml : Union[Path, str], optional
+            Path to the pre-configured YAML file, by default None
+
+        Raises
+        ------
+        ValueError
+            If no suitable path given
+        """
+        if path_to_yaml is None and self._path_to_yaml is None:
+            message = "No path given for yaml file"
+            core_logger.error(message)
+            raise ValueError(message)
+        else:
+            path = (
+                path_to_yaml
+                if path_to_yaml is not None
+                else self._path_to_yaml
+            )
+            path = validate_and_convert_file_path(path)
+
+        internal_config = ConfigurationManager()
+        internal_config.load_and_validate_configuration(
+            name="input_data",
+            file_path=path,
+        )
+        yaml_information = internal_config.get_configuration("input_data")
+
+        self.data_location = (
+            yaml_information.raw_data_parse_options.data_location
+        )
+        self.column_names = (
+            yaml_information.raw_data_parse_options.column_names
+        )
+        self.prefix = yaml_information.raw_data_parse_options.prefix
+        self.suffix = yaml_information.raw_data_parse_options.suffix
+        self.encoding = yaml_information.raw_data_parse_options.encoding
+        self.skip_lines = yaml_information.raw_data_parse_options.skip_lines
+        self.parser_kw = (
+            yaml_information.raw_data_parse_options.parser_kw.to_dict()
+        )
+        self.separator = yaml_information.raw_data_parse_options.separator
+        self.decimal = yaml_information.raw_data_parse_options.decimal
+        self.skip_initial_space = (
+            yaml_information.raw_data_parse_options.skip_initial_space
+        )
+        self.starts_with = yaml_information.raw_data_parse_options.starts_with
+        self.multi_header = (
+            yaml_information.raw_data_parse_options.multi_header
+        )
+        self.strip_names = yaml_information.raw_data_parse_options.strip_names
+        self.remove_prefix = (
+            yaml_information.raw_data_parse_options.remove_prefix
+        )
 
 
 class ManageFileCollection:
@@ -400,14 +465,14 @@ class ManageFileCollection:
 
     def get_list_of_files(self):
         """
-        Lists the files found at the data_source and assigns these to
+        Lists the files found at the data_location and assigns these to
         the file attribute.
         """
-        if self.config.source_type == "folder":
+        if self.config.data_source == "folder":
             self.files = self._return_list_of_files_from_folder()
-        elif self.config.source_type == "zipfile":
+        elif self.config.data_source == "zipfile":
             self.files = self._return_list_of_files_from_zip()
-        elif self.config.source_type == "tarfile":
+        elif self.config.data_source == "tarfile":
             self.files = self._return_list_of_files_from_tar()
         else:
             message = (
@@ -415,6 +480,7 @@ class ManageFileCollection:
                 "Cannot collect file names."
             )
             core_logger.error(message)
+            raise ValueError(message)
 
     def filter_files(
         self,
@@ -512,7 +578,7 @@ class ParseFilesIntoDataFrame:
             encoding=self.config.encoding,
             skiprows=self.config.skip_lines,
             skipinitialspace=self.config.skip_initial_space,
-            sep=self.config.seperator,
+            sep=self.config.separator,
             decimal=self.config.decimal,
             on_bad_lines="skip",  # ignore all lines with bad columns
             dtype=object,  # Allows for reading strings
@@ -603,15 +669,15 @@ class ParseFilesIntoDataFrame:
             returns the open file
         """
         try:
-            if self.config.source_type == "folder":
+            if self.config.data_source == "folder":
                 return open(
                     self.config.data_location / filename,
                     encoding=encoding,
                 )
-            elif self.config.source_type == "tarfile":
+            elif self.config.data_source == "tarfile":
                 archive = tarfile.open(self.config.data_location, "r")
                 return archive.extractfile(filename)
-            elif self.config.source_type == "zipfile":
+            elif self.config.data_source == "zipfile":
                 archive = zipfile.ZipFile(self.config.data_location, "r")
                 return archive.open(filename)
             else:
@@ -684,7 +750,7 @@ class ParseFilesIntoDataFrame:
                 if isinstance(line, bytes) and self.config.encoding != "":
                     line = line.decode(self.config.encoding, errors="ignore")
 
-                if self.config.seperator in line:
+                if self.config.separator in line:
                     # headers must contain at least one separator
 
                     if line.startswith(self.config.starts_with):
@@ -698,8 +764,8 @@ class ParseFilesIntoDataFrame:
                             break
 
         # Join multiheaders and create a joint list
-        header_line = self.config.seperator.join(headers)
-        header_list = header_line.split(self.config.seperator)
+        header_line = self.config.separator.join(headers)
+        header_list = header_line.split(self.config.separator)
         if self.config.strip_names:
             header_list = [s.strip() for s in header_list]
         if self.config.remove_prefix != "":
@@ -707,19 +773,6 @@ class ParseFilesIntoDataFrame:
                 s.removeprefix(self.config.remove_prefix) for s in header_list
             ]
         return header_list
-
-
-class CollectAndParseRawData:
-    def __init__(
-        self,
-        yaml_path: Union[str, Path] = None,
-        config: FileCollectionConfig = None,
-    ):
-        self.yaml_path = yaml_path
-        self.config = config
-
-    def create_data_frame(self):
-        pass
 
 
 class InputColumnDataType(Enum):
@@ -751,7 +804,7 @@ class InputColumnMetaData:
     priority: int
 
 
-class InputDataFrameConfig:
+class InputDataFrameFormattingConfig:
     """
     Configuration class storing necessary attributes to format a
     DataFrame using the FormatDataForCRNSDataHub.
@@ -785,7 +838,7 @@ class InputDataFrameConfig:
 
     def __init__(
         self,
-        yaml_path: Optional[Union[str, Path]] = None,
+        path_to_yaml: Optional[Union[str, Path]] = None,
         time_resolution: str = "1hour",
         pressure_merge_method: MergeMethod = MergeMethod.PRIORITY,
         temperature_merge_method: MergeMethod = MergeMethod.PRIORITY,
@@ -805,7 +858,7 @@ class InputDataFrameConfig:
 
         Parameters
         ----------
-        yaml_path : Union[str, Path], optional
+        path_to_yaml : Union[str, Path], optional
             path for a YAML file to automate the build, by default None
         time_resolution : str, optional
             Time resolution in format "<number><unit>, by default
@@ -852,12 +905,11 @@ class InputDataFrameConfig:
             - Mergemethod.PRIORITY: Select one column from available
               columns based on predefined priority.
         """
-
+        self.path_to_yaml = validate_and_convert_file_path(path_to_yaml)
         self._time_resolution = self.parse_resolution(time_resolution)
         self._conversion_factor_to_counts_per_hour = (
             self.get_conversion_factor()
         )
-        self.yaml_path = yaml_path
         self.pressure_merge_method = pressure_merge_method
         self.temperature_merge_method = temperature_merge_method
         self.relative_humidity_merge_method = relative_humidity_merge_method
@@ -1025,12 +1077,14 @@ class InputDataFrameConfig:
         ValueError
             When no path is given but the method is called.
         """
-        if path_to_yaml is None and self.yaml_path is None:
+        if path_to_yaml is None and self.path_to_yaml is None:
             message = "No path given for yaml file"
             core_logger.error(message)
             raise ValueError(message)
         else:
-            path = path_to_yaml if path_to_yaml is not None else self.yaml_path
+            path = (
+                path_to_yaml if path_to_yaml is not None else self.path_to_yaml
+            )
 
         internal_config = ConfigurationManager()
         internal_config.load_and_validate_configuration(
@@ -1146,7 +1200,8 @@ class InputDataFrameConfig:
         unit : str
             The units associated with the column
         """
-
+        if meteo_columns is None:
+            return
         available_cols = [name for name in meteo_columns]
         priority = 1
         for col in available_cols:
@@ -1203,7 +1258,7 @@ class FormatDataForCRNSDataHub:
 
     data_frame: pd.DataFrame
         The time series dataframe
-    config: InputDataFrameConfig
+    config: InputDataFrameFormattingConfig
         Config object with information about the dataframe, which
         supports formatting
 
@@ -1225,7 +1280,7 @@ class FormatDataForCRNSDataHub:
     def __init__(
         self,
         data_frame: pd.DataFrame,
-        config: InputDataFrameConfig,
+        config: InputDataFrameFormattingConfig,
     ):
         """
         Attributes of class
@@ -1713,4 +1768,51 @@ class TimeStampAligner:
             DataFrame of time series data
         """
         df = self.qc.data.to_pandas()
+        return df
+
+
+class CollectAndParseRawData:
+    """
+    Central class which allows us to do the entire ingest and
+    formatting routine. Designed to work with a YAML file.
+    """
+
+    def __init__(
+        self,
+        path_to_yaml: Union[str, Path],
+        file_collection_config: FileCollectionConfig = None,
+        input_formatter_config: InputDataFrameFormattingConfig = None,
+    ):
+        self._path_to_yaml = validate_and_convert_file_path(path_to_yaml)
+        self.file_collection_config = file_collection_config
+        self.input_formatter_config = input_formatter_config
+
+    @property
+    def path_to_yaml(self):
+        return self._path_to_yaml
+
+    @path_to_yaml.setter
+    def path_to_yaml(self, new_path):
+        return validate_and_convert_file_path(new_path)
+
+    def create_data_frame(self):
+        self.file_collection_config = FileCollectionConfig(self.path_to_yaml)
+        self.file_collection_config.build_from_yaml()
+        file_manager = ManageFileCollection(config=self.file_collection_config)
+        file_manager.get_list_of_files()
+        file_manager.filter_files()
+        file_parser = ParseFilesIntoDataFrame(
+            file_manager=file_manager, config=self.file_collection_config
+        )
+        parsed_data = file_parser.make_dataframe()
+
+        self.input_formatter_config = InputDataFrameFormattingConfig(
+            path_to_yaml=self.path_to_yaml
+        )
+        self.input_formatter_config.build_from_yaml()
+        data_formatter = FormatDataForCRNSDataHub(
+            data_frame=parsed_data,
+            config=self.input_formatter_config,
+        )
+        df = data_formatter.format_data_and_return_data_frame()
         return df
