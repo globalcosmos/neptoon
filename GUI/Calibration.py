@@ -21,7 +21,8 @@ handler = StreamlitLogHandler(st.sidebar.empty().code)
 logger.addHandler(handler)
 
 st.markdown("""
-# Find $N_0$
+# :material/adjust: Calibration
+In order to find the $N_0$ value, a CRNS probe needs to be calibrated on ground truth data, e.g., soil samples or TDR time serieses.
 """)
 
 uploaded_files = st.file_uploader(
@@ -35,5 +36,5 @@ for uploaded_file in uploaded_files:
 left, middle, right = st.columns(3, vertical_alignment="bottom")
 bd = left.slider("Bulk density", min_value=0.01, max_value=2.65, value=1.6)
 
-if st.button("Find N0!"):
-    st.write("OK.")
+if st.button("Calibrate!"):
+    st.write("Nothing to do yet.")
