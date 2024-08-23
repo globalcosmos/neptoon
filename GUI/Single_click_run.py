@@ -21,6 +21,9 @@ logger = get_logger(example_process.__name__)
 handler = StreamlitLogHandler(st.sidebar.empty().code)
 logger.addHandler(handler)
 
+def config_changed():
+    st.session_state.config_changed = True
+
 st.markdown("""
 # :material/web_traffic: Single click run
 """)
@@ -36,7 +39,7 @@ uploaded_files = st.file_uploader(
 if len(uploaded_files) > 0:
 
     left, middle, right = st.columns(3, vertical_alignment="bottom")
-    N0 = left.number_input("N0 parameter", min_value=1, value=1000)
+    N0 = left.number_input("N0 parameter", min_value=1, value=1000, on_change=config_changed)
 
     if st.button("Process data!"):
 

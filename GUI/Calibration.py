@@ -2,10 +2,6 @@ import streamlit as st
 import example_process
 import logging
 from streamlit.logger import get_logger
-import plotly.figure_factory as ff
-import plotly.graph_objects as go
-import plotly.express as px
-import numpy as np
 
 class StreamlitLogHandler(logging.Handler):
     def __init__(self, widget_update_func):
@@ -33,8 +29,11 @@ for uploaded_file in uploaded_files:
     # st.write("Filename:", uploaded_file.name)
     # st.write(bytes_data)
 
+def config_changed():
+    st.session_state.config_changed = True
+
 left, middle, right = st.columns(3, vertical_alignment="bottom")
-bd = left.slider("Bulk density", min_value=0.01, max_value=2.65, value=1.6)
+bd = left.slider("Bulk density", min_value=0.01, max_value=2.65, value=1.6, on_change=config_changed)
 
 if st.button("Calibrate!"):
     st.write("Nothing to do yet.")
