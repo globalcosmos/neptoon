@@ -63,13 +63,13 @@ def import_crns_dataframe_and_format(filename):
     return crns_df
 
 
-def run(*args, **kwargs):
+def run(csv="CUC001.csv", N0=1000, *args, **kwargs):
 
     logger.info("🏃 Create audit log ")
     DataAuditLog.create()
 
     logger.info("🏃 Import CSV")
-    crns_df = import_crns_dataframe_and_format("CUC001.csv")
+    crns_df = import_crns_dataframe_and_format(csv)
     
     logger.info("🏃 Make site information")
     site_information = SiteInformation(
@@ -84,7 +84,7 @@ def run(*args, **kwargs):
         cutoff_rigidity=2.94,
     )
 
-    site_information.add_custom_value("n0", 1000)
+    site_information.add_custom_value("n0", N0)
     site_information.add_custom_value("biomass", 1)
 
     logger.info("🏃 Make DataHub")
