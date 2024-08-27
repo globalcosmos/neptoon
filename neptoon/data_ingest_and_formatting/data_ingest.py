@@ -24,7 +24,10 @@ core_logger = get_logger()
 
 
 ######
-def validate_and_convert_file_path(file_path: Union[str, Path]) -> Path:
+def validate_and_convert_file_path(
+    file_path: Union[str, Path],
+    base: Union[str, Path] = "",
+) -> Path:
     """
     Used when initialising the object. If a string is given as a
     data_location, it is converted to a pathlib.Path object. If a
@@ -50,9 +53,9 @@ def validate_and_convert_file_path(file_path: Union[str, Path]) -> Path:
     if file_path is None:
         return None
     if isinstance(file_path, str):
-        return Path(file_path)
+        return base / Path(file_path)
     elif isinstance(file_path, Path):
-        return file_path
+        return base / file_path
     else:
         message = (
             "data_location must be of type str or pathlib.Path. \n"
@@ -141,7 +144,8 @@ class FileCollectionConfig:
             file_path=path_to_yaml
         )
         self._data_location = validate_and_convert_file_path(
-            file_path=data_location
+            file_path=data_location,
+            base=self._path_to_yaml.parent
         )
         self._data_source = None
         self.column_names = column_names
@@ -174,7 +178,10 @@ class FileCollectionConfig:
 
     @data_location.setter
     def data_location(self, new_location):
-        self._data_location = validate_and_convert_file_path(new_location)
+        self._data_location = validate_and_convert_file_path(
+            new_location,
+            base=self._path_to_yaml.parent
+        )
         self._determine_source_type()
 
     @property

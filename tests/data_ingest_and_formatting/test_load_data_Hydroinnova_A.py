@@ -1,7 +1,9 @@
+# %%
 import pandas as pd
 from pathlib import Path
 import pandas.api.types as ptypes
 
+# %%
 from neptoon.data_ingest_and_formatting.data_ingest import (
     ManageFileCollection,
     ParseFilesIntoDataFrame,
@@ -15,14 +17,16 @@ test_filename = (
     Path(__file__).parent / "mock_data" / "CRNS-station_data-Hydroinnova-A.zip"
 )
 
+yaml_path = Path(__file__).parent.parent.parent / "configuration_files" / "input_data_format.yaml"
+
 """
 Full tests to be written. For now we include a canary that checks the
 whole YAML run. If this breaks we investigate where it broke.
 """
 
-
+# %%
 def test_canary(
-    yaml_path="/Users/power/Documents/code/neptoon/configuration_files/input_data_format.yaml",
+    yaml_path = yaml_path,
 ):
     data_creator = CollectAndParseRawData(path_to_yaml=yaml_path)
     df = data_creator.create_data_frame()
@@ -40,6 +44,7 @@ def test_canary(
         df["epithermal_neutrons"].dtype == "float64"
     ), "epithermal_neutrons column is not float64"
 
+test_canary()
 
 # # %%
 # def test_collect_files_from_folder(
