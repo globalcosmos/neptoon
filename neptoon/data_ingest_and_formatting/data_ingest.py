@@ -53,9 +53,16 @@ def validate_and_convert_file_path(
     if file_path is None:
         return None
     if isinstance(file_path, str):
-        return base / Path(file_path)
+        new_file_path = Path(file_path)
+        if new_file_path.is_absolute():
+            return new_file_path
+        else:
+            return base / Path(file_path)
     elif isinstance(file_path, Path):
-        return base / file_path
+        if file_path.is_absolute():
+            return file_path
+        else:
+            return base / file_path
     else:
         message = (
             "data_location must be of type str or pathlib.Path. \n"
@@ -144,8 +151,7 @@ class FileCollectionConfig:
             file_path=path_to_yaml
         )
         self._data_location = validate_and_convert_file_path(
-            file_path=data_location,
-            base=self._path_to_yaml.parent
+            file_path=data_location, base=self._path_to_yaml.parent
         )
         self._data_source = None
         self.column_names = column_names
@@ -179,8 +185,7 @@ class FileCollectionConfig:
     @data_location.setter
     def data_location(self, new_location):
         self._data_location = validate_and_convert_file_path(
-            new_location,
-            base=self._path_to_yaml.parent
+            new_location, base=self._path_to_yaml.parent
         )
         self._determine_source_type()
 
@@ -1589,8 +1594,8 @@ class FormatDataForCRNSDataHub:
             self.prepare_neutron_count_columns(
                 neutron_column_type=InputColumnDataType.THERM_NEUTRON_COUNT
             )
-        except:
-            message = "Failed trying to process thermal_neutron_counts"
+        except Exception as e:
+            message = f"Failed trying to process thermal_neutron_counts. {e}"
             core_logger.error(message)
 
     def prepare_neutron_count_columns(
