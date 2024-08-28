@@ -1,5 +1,6 @@
 raw_data_parse_options:
   data_location: ../tests/data_ingest_and_formatting/mock_data/CRNS-station_data-Hydroinnova-A.zip
+  # data_location: /Users/power/Documents/code/neptoon/tests/data_ingest_and_formatting/mock_data/CRNS-station_data-Hydroinnova-A.zip
   column_names:
   prefix: ""
   suffix: ""
