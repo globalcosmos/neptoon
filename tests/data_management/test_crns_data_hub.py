@@ -57,5 +57,5 @@ def test_prepare_site_information(example_site_information, example_data_hub):
     )
     data_hub.prepare_static_values()
 
-    assert "bulk_density" in data_hub.crns_data_frame.columns
-    assert data_hub.crns_data_frame["bulk_density"].median() == 1.4
+    assert "dry_soil_bulk_density" in data_hub.crns_data_frame.columns
+    assert data_hub.crns_data_frame["dry_soil_bulk_density"].median() == 1.4
