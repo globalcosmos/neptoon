@@ -242,7 +242,7 @@ def site_information():
         longitude=12.55,
         elevation=140,
         reference_incoming_neutron_value=150,
-        bulk_density=1.4,
+        dry_soil_bulk_density=1.4,
         lattice_water=0.01,
         soil_organic_carbon=0,
         cutoff_rigidity=2.94,
