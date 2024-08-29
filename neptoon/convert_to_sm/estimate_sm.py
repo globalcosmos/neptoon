@@ -206,28 +206,11 @@ class NeutronsToSM:
         """
         pass
 
-    @log_key_step("smooth_window")
-    def smooth_neutron_count(self, smooth_window=12):
-        """
-        Smooth the neutron count to remove noise
-
-        Parameters
-        ----------
-        smooth_window : int, optional
-            The number of hours to smooth by, by default 12
-        """
-        self.crns_data_frame[self.smoothed_neutrons_col_name] = (
-            self.crns_data_frame[self.corrected_neutrons_col_name]
-            .rolling(window=smooth_window)
-            .mean()
-        )
-
     def process_data(self):
         """
         TODO: Overall process method which will chain together the other
         methods to produce a fully developed DataFrame.
         """
-        self.smooth_neutron_count()
         self.calculate_sm_estimates()
         self.calculate_depth_of_measurement()
         # self.calculate_horizontal_footprint()
