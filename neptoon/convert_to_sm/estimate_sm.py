@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
     convert_neutrons_to_soil_moisture,
@@ -111,21 +112,42 @@ class NeutronsToSM:
 
     def calculate_sm_estimates(
         self,
+        neutron_data_column_name: str,
+        soil_moisture_column_write_name: str,
     ):
         """
-        Calculates soil moisture and adds a column to the dataframe with
-        the soil moisture estimate.
+        Calculates soil moisture estimates and adds them to the
+        dataframe.
 
-        TODO: when we implement khöli method this could be divided into
-        two internal routines, and then a user can select which method
-        to apply.
+        This method applies the neutron-to-soil-moisture conversion for
+        each row in the dataframe and stores the results in a new
+        column.
+
+        Parameters
+        ----------
+        neutron_data_column_name : str
+            The name of the column containing neutron count data.
+        soil_moisture_column_write_name : str
+            The name of the new column to store calculated soil moisture
+            values.
+
+        Returns
+        -------
+        None
+            The method modifies the dataframe in-place.
+
+        Notes
+        -----
+        This method assumes that the neutron data has been properly
+        corrected and that all necessary parameters (n0, bulk density,
+        etc.) have been set.
         """
-        # TODO add check if smoothing has been done.
-        self.crns_data_frame[self.soil_moisture_col_name] = (
+
+        self.crns_data_frame[soil_moisture_column_write_name] = (
             self.crns_data_frame.apply(
                 lambda row: convert_neutrons_to_soil_moisture(
                     dry_soil_bulk_density=self.dry_soil_bulk_density,
-                    neutron_count=row[self.smoothed_neutrons_col_name],
+                    neutron_count=row[neutron_data_column_name],
                     n0=self.n0,
                     lattice_water=self.lattice_water,
                     water_equiv_soil_organic_matter=self.water_equiv_of_soil_organic_matter,
@@ -138,7 +160,86 @@ class NeutronsToSM:
         """
         TODO: produce the uncertainty
         """
-        pass
+        self.calculate_sm_estimates(
+            neutron_data_column_name=str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+            ),
+            soil_moisture_column_write_name=str(
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER
+            ),
+        )
+        self.calculate_sm_estimates(
+            neutron_data_column_name=str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+            ),
+            soil_moisture_column_write_name=str(
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER
+            ),
+        )
+
+    def calculate_neutron_count_uncertainty(self):
+        """
+        Adds a column to the DataFrame with the statistical error rate
+        of neutrons.
+
+        This method computes the statistical error of neutron counts
+        based on Poisson statistics, where the error is the square root
+        of the count. It then calculates this error as a proportion of
+        the original count and applies it to the corrected neutron
+        count.
+
+        The result is stored in a new column in the DataFrame.
+        """
+
+        self.crns_data_frame[
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
+        ] = (
+            np.sqrt(
+                self.crns_data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)]
+            )
+            / self.crns_data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)]
+        ) * self.crns_data_frame[
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+        ]
+
+    def calculate_neutron_count_bounds(self):
+        """
+        Calculates and adds upper and lower bounds for corrected neutron
+        counts to the DataFrame.
+
+        This method computes the upper and lower bounds of the corrected
+        epithermal neutron counts based on the previously calculated
+        uncertainty. These bounds represent a confidence interval around
+        the corrected neutron count.
+
+        Two new columns are added to the DataFrame:
+            1. Upper bound of the corrected neutron count
+            2. Lower bound of the corrected neutron count
+        """
+
+        # Calculate upper bound of neutron count
+        self.crns_data_frame[
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT)
+        ] = (
+            self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            ]
+            + self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
+            ]
+        )
+
+        # Calculate lower bound of neutron count
+        self.crns_data_frame[
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT)
+        ] = (
+            self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            ]
+            - self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
+            ]
+        )
 
     @log_key_step("radius")
     def calculate_depth_of_measurement(
@@ -172,32 +273,22 @@ class NeutronsToSM:
         """
         pass
 
-    @log_key_step("smooth_window")
-    def smooth_neutron_count(self, smooth_window=12):
-        """
-        Smooth the neutron count to remove noise
-
-        Parameters
-        ----------
-        smooth_window : int, optional
-            The number of hours to smooth by, by default 12
-        """
-        self.crns_data_frame[self.smoothed_neutrons_col_name] = (
-            self.crns_data_frame[self.corrected_neutrons_col_name]
-            .rolling(window=smooth_window)
-            .mean()
-        )
-
-    def process_data(self):
+    def calculate_all_soil_moisture_data(self):
         """
         TODO: Overall process method which will chain together the other
         methods to produce a fully developed DataFrame.
         """
-        self.smooth_neutron_count()
-        self.calculate_sm_estimates()
-        self.calculate_depth_of_measurement()
-        # self.calculate_horizontal_footprint()
+        self.calculate_neutron_count_uncertainty()
+        self.calculate_neutron_count_bounds()
+        self.calculate_sm_estimates(
+            neutron_data_column_name=str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+            ),
+            soil_moisture_column_write_name=str(ColumnInfo.Name.SOIL_MOISTURE),
+        )
         self.calculate_uncertainty_of_sm_estimates()
+        self.calculate_depth_of_measurement()
+        self.calculate_horizontal_footprint()
 
     def return_data_frame(self):
         """
