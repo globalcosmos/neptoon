@@ -82,26 +82,8 @@ def test_convert_soc_to_wsom():
     assert NeutronsToSM._convert_soc_to_wsom(0) == 0
 
 
-def test_smooth_neutron_count(neutrons_to_sm_instance):
-    """Test the smooth_neutron_count method."""
-    original_data = neutrons_to_sm_instance.crns_data_frame[
-        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)
-    ].copy()
-    neutrons_to_sm_instance.smooth_neutron_count(smooth_window=3)
-    smoothed_data = neutrons_to_sm_instance.crns_data_frame[
-        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
-    ]
-
-    assert not smoothed_data.equals(original_data)
-    assert (
-        smoothed_data.iloc[2:].notna().all()
-    )  # First two values should be NaN due to rolling window
-    assert len(smoothed_data) == len(original_data)
-
-
 def test_calculate_sm_estimates(neutrons_to_sm_instance):
     """Test the calculate_sm_estimates method."""
-    neutrons_to_sm_instance.smooth_neutron_count()
     neutrons_to_sm_instance.calculate_sm_estimates()
     assert (
         str(ColumnInfo.Name.SOIL_MOISTURE)
