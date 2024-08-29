@@ -381,20 +381,51 @@ class CRNSDataHub:
         col_name = smoother.create_new_column_name()
         self.crns_data_frame[col_name] = smoother.apply_smoothing()
 
-    def produce_soil_moisture_estimates(self, n0=None):
-        if n0 is None:
-            soil_moisture_calculator = NeutronsToSM(
-                crns_data_frame=self.crns_data_frame,
-                n0=self.site_information.n0,
-            )
-            soil_moisture_calculator.calculate_all_soil_moisture_data()
-            soil_moisture_calculator.return_data_frame()
-        else:
-            soil_moisture_calculator = NeutronsToSM(
-                crns_data_frame=self.crns_data_frame, n0=n0
-            )
-            soil_moisture_calculator.calculate_all_soil_moisture_data()
-            self.crns_data_frame = soil_moisture_calculator.return_data_frame()
+    def produce_soil_moisture_estimates(
+        self,
+        n0: float = None,
+        dry_soil_bulk_density: float = None,
+        lattice_water: float = None,
+        soil_organic_carbon: float = None,
+    ):
+        """
+        Produces SM estimates with the NeutronsToSM class. If values for
+        n0, dry_soil_bulk_density, lattice_water, or soil_organic_carbon
+        are not supplied, the values are taken from the internal
+        site_information class.
+
+        Parameters
+        ----------
+        n0 : float, optional
+            n0 calibration term, by default None
+        dry_soil_bulk_density : float, optional
+            given in g/cm3, by default None
+        lattice_water : float, optional
+            given as decimal percent e.g., 0.01, by default None
+        soil_organic_carbon : float, optional
+            Given as decimal percent, e.g., 0.001, by default None
+        """
+        # Create attributes for NeutronsToSM
+        default_params = {
+            "n0": self.site_information.n0,
+            "dry_soil_bulk_density": self.site_information.dry_soil_bulk_density,
+            "lattice_water": self.site_information.lattice_water,
+            "soil_organic_carbon": self.site_information.soil_organic_carbon,
+        }
+        provided_params = {
+            "n0": n0,
+            "dry_soil_bulk_density": dry_soil_bulk_density,
+            "lattice_water": lattice_water,
+            "soil_organic_carbon": soil_organic_carbon,
+        }
+        params = {k: v for k, v in provided_params.items() if v is not None}
+        default_params.update(params)
+
+        soil_moisture_calculator = NeutronsToSM(
+            crns_data_frame=self.crns_data_frame, **default_params
+        )
+        soil_moisture_calculator.process_data()
+        self.crns_data_frame = soil_moisture_calculator.return_data_frame()
 
     def mask_flagged_data(self):
         """
@@ -409,7 +440,7 @@ class CRNSDataHub:
     def prepare_static_values(self):
         """
         Attaches the static values from the SiteInformation object as
-        columns of values in the crns_data_frame
+        columns of values in the crns_data_frame.
 
         TODO
          - Add a way to use str(ColumnInfo.Name.VARIABLE) for assigning
@@ -460,7 +491,11 @@ class CRNSDataHub:
         file_name_and_save_location = folder_path + file_name + ".csv"
         self.crns_data_frame.to_csv(file_name_and_save_location)
 
-    def archive_data(self, folder_path, file_name):
+    def archive_data(
+        self,
+        folder_path,
+        file_name,
+    ):
         """
         Archive the data into a zip file. All the data tables in the
         instance will be collected and saved together.
