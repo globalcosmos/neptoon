@@ -17,6 +17,9 @@ def sample_crns_data():
     """
     np.random.seed(42)
     data = {
+        str(ColumnInfo.Name.EPI_NEUTRON_COUNT): np.random.randint(
+            500, 1500, 100
+        ),
         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT): np.random.randint(
             500, 1500, 100
         ),
@@ -96,15 +99,36 @@ def test_calculate_sm_estimates(neutrons_to_sm_instance):
     )
 
 
-# def test_process_data(neutrons_to_sm_instance):
-#     """Test the process_data method."""
-#     neutrons_to_sm_instance.calculate_all_soil_moisture_data()
-
-#     assert (
-#         str(ColumnInfo.Name.SOIL_MOISTURE)
-#         in neutrons_to_sm_instance.crns_data_frame.columns
-#     )
-#     assert (
-#         str(ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH)
-#         in neutrons_to_sm_instance.crns_data_frame.columns
-#     )
+def test_calculate_sm_estimates(neutrons_to_sm_instance):
+    """Test the calculate_sm_estimates method."""
+    neutrons_to_sm_instance.calculate_all_soil_moisture_data()
+    assert (
+        str(ColumnInfo.Name.SOIL_MOISTURE)
+        in neutrons_to_sm_instance.crns_data_frame.columns
+    )
+    assert (
+        str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER)
+        in neutrons_to_sm_instance.crns_data_frame.columns
+    )
+    assert (
+        str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER)
+        in neutrons_to_sm_instance.crns_data_frame.columns
+    )
+    assert (
+        neutrons_to_sm_instance.crns_data_frame[
+            str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER)
+        ].median()
+        is not np.nan
+    )
+    assert (
+        neutrons_to_sm_instance.crns_data_frame[
+            str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER)
+        ].median()
+        is not np.nan
+    )
+    assert (
+        neutrons_to_sm_instance.crns_data_frame[
+            str(ColumnInfo.Name.SOIL_MOISTURE)
+        ].median()
+        is not np.nan
+    )
