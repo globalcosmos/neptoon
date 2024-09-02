@@ -99,7 +99,7 @@ def test_calculate_sm_estimates(neutrons_to_sm_instance):
     )
 
 
-def test_calculate_sm_estimates(neutrons_to_sm_instance):
+def test_calculate_sm_estimates_uncertainty(neutrons_to_sm_instance):
     """Test the calculate_sm_estimates method."""
     neutrons_to_sm_instance.calculate_all_soil_moisture_data()
     assert (

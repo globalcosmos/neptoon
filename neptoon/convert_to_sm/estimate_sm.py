@@ -322,7 +322,7 @@ class NeutronsToSM:
         )
         self.calculate_uncertainty_of_sm_estimates()
         self.calculate_depth_of_measurement()
-        self.calculate_horizontal_footprint()
+        self.calculate_horizontal_footprint()  # TODO
 
     def return_data_frame(self):
         """
