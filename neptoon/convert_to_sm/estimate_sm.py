@@ -228,13 +228,14 @@ class NeutronsToSM:
         self.crns_data_frame[
             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
         ] = (
-            np.sqrt(
+            1
+            / np.sqrt(
                 self.crns_data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)]
             )
-            / self.crns_data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)]
-        ) * self.crns_data_frame[
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
-        ]
+            * self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            ]
+        )
 
     def calculate_neutron_count_bounds(self):
         """
