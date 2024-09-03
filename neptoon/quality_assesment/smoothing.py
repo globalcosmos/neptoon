@@ -132,7 +132,7 @@ class SmoothData:
         possible_names=[
             str(ColumnInfo.Name.SOIL_MOISTURE),
             str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
-            str(ColumnInfo.Name.EPI_NEUTRON_COUNT),
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
         ],
     ):
@@ -152,7 +152,7 @@ class SmoothData:
             _description_, by default [
             str(ColumnInfo.Name.SOIL_MOISTURE),
             str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
-            str(ColumnInfo.Name.EPI_NEUTRON_COUNT),
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL), ]
         """
         if not self.auto_update_final_col:
@@ -174,7 +174,7 @@ class SmoothData:
                 ColumnInfo.Name.SOIL_MOISTURE_FINAL, new_label=new_column_name
             )
         elif self.column_to_smooth in [
-            str(ColumnInfo.Name.EPI_NEUTRON_COUNT),
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
         ]:
             ColumnInfo.relabel(

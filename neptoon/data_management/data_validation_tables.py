@@ -17,7 +17,7 @@ class FormatCheck(pandera.DataFrameModel):
 
     # Essential Columns
     # pandera.Int is a nullable Integer type
-    epithermal_neutrons: float = pandera.Field(nullable=True)
+    epithermal_neutrons_cph: float = pandera.Field(nullable=True)
     air_pressure: float = pandera.Field(nullable=True)
     air_relative_humidity: float = pandera.Field(
         nullable=True,
@@ -36,7 +36,7 @@ class RawDataSchemaAfterFirstQA(FormatCheck):
     first formatting and validation steps.
     """
 
-    epithermal_neutrons: int = pandera.Field(nullable=True, gt=0)
+    epithermal_neutrons_cph: int = pandera.Field(nullable=True, gt=0)
     air_pressure: float = pandera.Field(gt=600)
     air_relative_humidity: float = pandera.Field(
         nullable=True,

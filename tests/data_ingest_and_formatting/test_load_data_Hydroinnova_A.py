@@ -37,7 +37,7 @@ def test_canary(
     data_creator = CollectAndParseRawData(path_to_yaml=yaml_path)
     df = data_creator.create_data_frame()
     assert "air_pressure" in df.columns
-    assert "epithermal_neutrons" in df.columns
+    assert "epithermal_neutrons_cph" in df.columns
     assert isinstance(
         df.index, pd.DatetimeIndex
     ), "DataFrame index is not a DatetimeIndex"
@@ -47,8 +47,8 @@ def test_canary(
         df["air_pressure"].dtype == "float64"
     ), "air_pressure column is not float64"
     assert (
-        df["epithermal_neutrons"].dtype == "float64"
-    ), "epithermal_neutrons column is not float64"
+        df["epithermal_neutrons_cph"].dtype == "float64"
+    ), "epithermal_neutrons_cph column is not float64"
 
 
 test_canary()

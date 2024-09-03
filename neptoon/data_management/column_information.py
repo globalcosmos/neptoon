@@ -36,7 +36,8 @@ class ColumnInfo:  # TODO Change to Columns
         """
 
         DATE_TIME = auto()
-        EPI_NEUTRON_COUNT = auto()
+        EPI_NEUTRON_COUNT_RAW = auto()
+        EPI_NEUTRON_COUNT_CPH = auto()
         EPI_NEUTRON_COUNT_FINAL = auto()
         AIR_PRESSURE = auto()
         AIR_RELATIVE_HUMIDITY = auto()
@@ -53,7 +54,8 @@ class ColumnInfo:  # TODO Change to Columns
         CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY = auto()
         CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT = auto()
         CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT = auto()
-        THERM_NEUTRON_COUNT = auto()
+        THERM_NEUTRON_COUNT_RAW = auto()
+        THERM_NEUTRON_COUNT_CPH = auto()
         PRECIPITATION = auto()
         SOIL_MOISTURE = auto()
         SOIL_MOISTURE_FINAL = auto()
@@ -80,8 +82,9 @@ class ColumnInfo:  # TODO Change to Columns
 
     _default_representation: dict["ColumnInfo.Name", str] = {
         Name.DATE_TIME: "date_time",
-        Name.EPI_NEUTRON_COUNT: "epithermal_neutrons",
-        Name.EPI_NEUTRON_COUNT_FINAL: "epithermal_neutrons",
+        Name.EPI_NEUTRON_COUNT_RAW: "epithermal_neutrons_raw",
+        Name.EPI_NEUTRON_COUNT_CPH: "epithermal_neutrons_cph",
+        Name.EPI_NEUTRON_COUNT_FINAL: "epithermal_neutrons_cph",
         Name.AIR_PRESSURE: "air_pressure",
         Name.AIR_RELATIVE_HUMIDITY: "air_relative_humidity",
         Name.AIR_TEMPERATURE: "air_temperature",
@@ -97,7 +100,8 @@ class ColumnInfo:  # TODO Change to Columns
         Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY: "corrected_epithermal_neutrons_uncertainty",
         Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT: "corrected_epithermal_neutrons_upper_count",
         Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT: "corrected_epithermal_neutrons_lower_count",
-        Name.THERM_NEUTRON_COUNT: "thermal_neutron_count",
+        Name.THERM_NEUTRON_COUNT_RAW: "thermal_neutron_count_raw",
+        Name.THERM_NEUTRON_COUNT_CPH: "thermal_neutron_count_cph",
         Name.PRECIPITATION: "precipitation",
         Name.SOIL_MOISTURE: "soil_moisture",
         Name.SOIL_MOISTURE_FINAL: "soil_moisture",  # updated to processed soil moisture

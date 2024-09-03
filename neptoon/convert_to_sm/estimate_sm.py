@@ -230,7 +230,9 @@ class NeutronsToSM:
         ] = (
             1
             / np.sqrt(
-                self.crns_data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)]
+                self.crns_data_frame[
+                    str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)
+                ]
             )
             * self.crns_data_frame[
                 str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)

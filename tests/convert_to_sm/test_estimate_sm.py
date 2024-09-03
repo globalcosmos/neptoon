@@ -17,7 +17,10 @@ def sample_crns_data():
     """
     np.random.seed(42)
     data = {
-        str(ColumnInfo.Name.EPI_NEUTRON_COUNT): np.random.randint(
+        str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW): np.random.randint(
+            500, 1500, 100
+        ),
+        str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH): np.random.randint(
             500, 1500, 100
         ),
         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT): np.random.randint(
