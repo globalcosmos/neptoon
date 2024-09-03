@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
     convert_neutrons_to_soil_moisture,
@@ -211,73 +210,6 @@ class NeutronsToSM:
             ),
         )
 
-    # def calculate_neutron_count_uncertainty(self):
-    #     """
-    #     Adds a column to the DataFrame with the statistical error rate
-    #     of neutrons.
-
-    #     This method computes the statistical error of neutron counts
-    #     based on Poisson statistics, where the error is the square root
-    #     of the count. It then calculates this error as a proportion of
-    #     the original count and applies it to the corrected neutron
-    #     count.
-
-    #     The result is stored in a new column in the DataFrame.
-    #     """
-
-    #     self.crns_data_frame[
-    #         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
-    #     ] = (
-    #         1
-    #         / np.sqrt(
-    #             self.crns_data_frame[
-    #                 str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)
-    #             ]
-    #         )
-    #         * self.crns_data_frame[
-    #             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
-    #         ]
-    #     )
-
-    # def calculate_neutron_count_bounds(self):
-    #     """
-    #     Calculates and adds upper and lower bounds for corrected neutron
-    #     counts to the DataFrame.
-
-    #     This method computes the upper and lower bounds of the corrected
-    #     epithermal neutron counts based on the previously calculated
-    #     uncertainty. These bounds represent a confidence interval around
-    #     the corrected neutron count.
-
-    #     Two new columns are added to the DataFrame:
-    #         1. Upper bound of the corrected neutron count
-    #         2. Lower bound of the corrected neutron count
-    #     """
-
-    #     # Calculate upper bound of neutron count
-    #     self.crns_data_frame[
-    #         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT)
-    #     ] = (
-    #         self.crns_data_frame[
-    #             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
-    #         ]
-    #         + self.crns_data_frame[
-    #             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
-    #         ]
-    #     )
-
-    #     # Calculate lower bound of neutron count
-    #     self.crns_data_frame[
-    #         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT)
-    #     ] = (
-    #         self.crns_data_frame[
-    #             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
-    #         ]
-    #         - self.crns_data_frame[
-    #             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
-    #         ]
-    #     )
-
     @log_key_step("radius")
     def calculate_depth_of_measurement(
         self,
@@ -315,8 +247,7 @@ class NeutronsToSM:
         TODO: Overall process method which will chain together the other
         methods to produce a fully developed DataFrame.
         """
-        # self.calculate_neutron_count_uncertainty()
-        # self.calculate_neutron_count_bounds()
+
         self.calculate_sm_estimates(
             neutron_data_column_name=str(
                 ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL

@@ -95,6 +95,20 @@ def sample_crns_data_corrected():
                 120,
                 120,
             ],
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT): [
+                100,
+                110,
+                120,
+                110,
+                110,
+            ],
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT): [
+                120,
+                130,
+                140,
+                130,
+                130,
+            ],
         }
     ).set_index("date_time")
 

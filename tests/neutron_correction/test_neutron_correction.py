@@ -143,7 +143,7 @@ def sample_df():
     return pd.DataFrame(
         {
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH): [100, 200, 300],
-            "other_data": [1, 2, 3],
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW): [100, 200, 300],
         }
     )
 

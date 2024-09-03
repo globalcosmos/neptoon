@@ -100,38 +100,3 @@ def test_calculate_sm_estimates(neutrons_to_sm_instance):
         str(ColumnInfo.Name.SOIL_MOISTURE)
         in neutrons_to_sm_instance.crns_data_frame.columns
     )
-
-
-def test_calculate_sm_estimates_uncertainty(neutrons_to_sm_instance):
-    """Test the calculate_sm_estimates method."""
-    neutrons_to_sm_instance.calculate_all_soil_moisture_data()
-    assert (
-        str(ColumnInfo.Name.SOIL_MOISTURE)
-        in neutrons_to_sm_instance.crns_data_frame.columns
-    )
-    assert (
-        str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER)
-        in neutrons_to_sm_instance.crns_data_frame.columns
-    )
-    assert (
-        str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER)
-        in neutrons_to_sm_instance.crns_data_frame.columns
-    )
-    assert (
-        neutrons_to_sm_instance.crns_data_frame[
-            str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER)
-        ].median()
-        is not np.nan
-    )
-    assert (
-        neutrons_to_sm_instance.crns_data_frame[
-            str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER)
-        ].median()
-        is not np.nan
-    )
-    assert (
-        neutrons_to_sm_instance.crns_data_frame[
-            str(ColumnInfo.Name.SOIL_MOISTURE)
-        ].median()
-        is not np.nan
-    )
