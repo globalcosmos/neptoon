@@ -1624,9 +1624,11 @@ class FormatDataForCRNSDataHub:
             The type of neutron data being processed
         """
         if neutron_column_type == InputColumnDataType.EPI_NEUTRON_COUNT:
-            final_column_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT)
+            raw_column_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)
+            final_column_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)
         elif neutron_column_type == InputColumnDataType.THERM_NEUTRON_COUNT:
-            final_column_name = str(ColumnInfo.Name.THERM_NEUTRON_COUNT)
+            raw_column_name = str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)
+            final_column_name = str(ColumnInfo.Name.THERM_NEUTRON_COUNT_CPH)
 
         epi_neutron_cols = [
             col
@@ -1643,27 +1645,29 @@ class FormatDataForCRNSDataHub:
         if len(epi_neutron_cols) > 1:
             epi_col_names = [name.initial_name for name in epi_neutron_cols]
 
-            self.data_frame[final_column_name] = self.data_frame[
+            self.data_frame[raw_column_name] = self.data_frame[
                 epi_col_names
             ].sum(axis=1)
         else:
             epi_col_name = epi_neutron_cols[0].initial_name
             self.data_frame.rename(
-                columns={epi_col_name: final_column_name},
+                columns={epi_col_name: raw_column_name},
                 inplace=True,
             )
 
         if epi_neutron_unit == "counts_per_hour":
-            pass
+            self.data_frame[final_column_name] = self.data_frame[
+                raw_column_name
+            ]
         elif epi_neutron_unit == "absolute_count":
             self.data_frame[final_column_name] = (
-                self.data_frame[final_column_name]
+                self.data_frame[raw_column_name]
                 * self.config.conversion_factor_to_counts_per_hour
             )
         elif epi_neutron_unit == "counts_per_second":
-            self.data_frame[final_column_name] = self.data_frame[
-                final_column_name
-            ] = (self.data_frame[final_column_name] * 3600)
+            self.data_frame[final_column_name] = (
+                self.data_frame[raw_column_name] * 3600
+            )
 
     def format_data_and_return_data_frame(
         self,

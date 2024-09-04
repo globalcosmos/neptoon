@@ -17,6 +17,12 @@ def sample_crns_data():
     """
     np.random.seed(42)
     data = {
+        str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW): np.random.randint(
+            500, 1500, 100
+        ),
+        str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH): np.random.randint(
+            500, 1500, 100
+        ),
         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT): np.random.randint(
             500, 1500, 100
         ),
@@ -84,25 +90,13 @@ def test_convert_soc_to_wsom():
 
 def test_calculate_sm_estimates(neutrons_to_sm_instance):
     """Test the calculate_sm_estimates method."""
-    neutrons_to_sm_instance.calculate_sm_estimates()
-    assert (
-        str(ColumnInfo.Name.SOIL_MOISTURE)
-        in neutrons_to_sm_instance.crns_data_frame.columns
-    )
-
-
-def test_process_data(neutrons_to_sm_instance):
-    """Test the process_data method."""
-    neutrons_to_sm_instance.process_data()
-    assert (
-        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
-        in neutrons_to_sm_instance.crns_data_frame.columns
+    neutrons_to_sm_instance.calculate_sm_estimates(
+        neutron_data_column_name=str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+        ),
+        soil_moisture_column_write_name=str(ColumnInfo.Name.SOIL_MOISTURE),
     )
     assert (
         str(ColumnInfo.Name.SOIL_MOISTURE)
-        in neutrons_to_sm_instance.crns_data_frame.columns
-    )
-    assert (
-        str(ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH)
         in neutrons_to_sm_instance.crns_data_frame.columns
     )

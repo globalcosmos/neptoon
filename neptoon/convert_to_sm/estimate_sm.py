@@ -145,21 +145,42 @@ class NeutronsToSM:
 
     def calculate_sm_estimates(
         self,
+        neutron_data_column_name: str,
+        soil_moisture_column_write_name: str,
     ):
         """
-        Calculates soil moisture and adds a column to the dataframe with
-        the soil moisture estimate.
+        Calculates soil moisture estimates and adds them to the
+        dataframe.
 
-        TODO: when we implement khöli method this could be divided into
-        two internal routines, and then a user can select which method
-        to apply.
+        This method applies the neutron-to-soil-moisture conversion for
+        each row in the dataframe and stores the results in a new
+        column.
+
+        Parameters
+        ----------
+        neutron_data_column_name : str
+            The name of the column containing neutron count data.
+        soil_moisture_column_write_name : str
+            The name of the new column to store calculated soil moisture
+            values.
+
+        Returns
+        -------
+        None
+            The method modifies the dataframe in-place.
+
+        Notes
+        -----
+        This method assumes that the neutron data has been properly
+        corrected and that all necessary parameters (n0, bulk density,
+        etc.) have been set.
         """
-        # TODO add check if smoothing has been done.
-        self.crns_data_frame[self.soil_moisture_col_name] = (
+
+        self.crns_data_frame[soil_moisture_column_write_name] = (
             self.crns_data_frame.apply(
                 lambda row: convert_neutrons_to_soil_moisture(
                     dry_soil_bulk_density=self.dry_soil_bulk_density,
-                    neutron_count=row[self.smoothed_neutrons_col_name],
+                    neutron_count=row[neutron_data_column_name],
                     n0=self.n0,
                     lattice_water=self.lattice_water,
                     water_equiv_soil_organic_matter=self.water_equiv_of_soil_organic_matter,
@@ -172,7 +193,22 @@ class NeutronsToSM:
         """
         TODO: produce the uncertainty
         """
-        pass
+        self.calculate_sm_estimates(
+            neutron_data_column_name=str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+            ),
+            soil_moisture_column_write_name=str(
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER
+            ),
+        )
+        self.calculate_sm_estimates(
+            neutron_data_column_name=str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+            ),
+            soil_moisture_column_write_name=str(
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER
+            ),
+        )
 
     @log_key_step("radius")
     def calculate_depth_of_measurement(
@@ -206,15 +242,21 @@ class NeutronsToSM:
         """
         pass
 
-    def process_data(self):
+    def calculate_all_soil_moisture_data(self):
         """
         TODO: Overall process method which will chain together the other
         methods to produce a fully developed DataFrame.
         """
-        self.calculate_sm_estimates()
-        self.calculate_depth_of_measurement()
-        # self.calculate_horizontal_footprint()
+
+        self.calculate_sm_estimates(
+            neutron_data_column_name=str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+            ),
+            soil_moisture_column_write_name=str(ColumnInfo.Name.SOIL_MOISTURE),
+        )
         self.calculate_uncertainty_of_sm_estimates()
+        self.calculate_depth_of_measurement()
+        self.calculate_horizontal_footprint()  # TODO
 
     def return_data_frame(self):
         """
