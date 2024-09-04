@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from neptoon.logging import get_logger
 from neptoon.data_management.site_information import SiteInformation
 from neptoon.data_management.column_information import ColumnInfo
@@ -14,6 +15,10 @@ from neptoon.neutron_correction.correction_classes import (
 
 
 core_logger = get_logger()
+
+
+def calculate_poisson_uncertainty():
+    pass
 
 
 class CorrectionBuilder:
@@ -218,6 +223,82 @@ class CorrectNeutrons:
             )
         return df
 
+    def calculate_neutron_count_uncertainty(
+        self,
+        df,
+    ):
+        """
+        Adds a column to the DataFrame with the statistical error rate
+        of neutrons.
+
+        This method computes the statistical error of neutron counts
+        based on Poisson statistics, where the error is the square root
+        of the count. It then calculates this error as a proportion of
+        the original count and applies it to the corrected neutron
+        count.
+
+        The result is stored in a new column in the DataFrame.
+        """
+
+        df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)] = (
+            1
+            / np.sqrt(df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)])
+            * df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)]
+        )
+        return df
+
+    def calculate_neutron_count_bounds(
+        self,
+        df,
+    ):
+        """
+        Calculates and adds upper and lower bounds for corrected neutron
+        counts to the DataFrame.
+
+        This method computes the upper and lower bounds of the corrected
+        epithermal neutron counts based on the previously calculated
+        uncertainty. These bounds represent a confidence interval around
+        the corrected neutron count.
+
+        Two new columns are added to the DataFrame:
+            1. Upper bound of the corrected neutron count
+            2. Lower bound of the corrected neutron count
+        """
+
+        # Calculate upper bound of neutron count
+        df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT)] = (
+            df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)]
+            + df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)]
+        )
+
+        # Calculate lower bound of neutron count
+        df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT)] = (
+            df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)]
+            - df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)]
+        )
+        return df
+
+    def add_neutron_uncertainty_columns(
+        self,
+        df,
+    ):
+        """
+        Creates uncertainty neutron columns
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            Input DataFrame
+
+        Returns
+        -------
+        pd.DataFrame
+            Output DataFrame with uncertainty columns
+        """
+        df = self.calculate_neutron_count_uncertainty(df)
+        df = self.calculate_neutron_count_bounds(df)
+        return df
+
     def correct_neutrons(self):
         """
         Corrects neutrons using the CorrectionBuilder. Returns the
@@ -230,6 +311,7 @@ class CorrectNeutrons:
         """
         df = self.create_correction_factors(self.crns_data_frame)
         df = self.create_corrected_neutron_column(df)
+        df = self.add_neutron_uncertainty_columns(df)
         return df
 
 

@@ -142,8 +142,8 @@ def test_get_corrections_stored_in_builder():
 def sample_df():
     return pd.DataFrame(
         {
-            str(ColumnInfo.Name.EPI_NEUTRON_COUNT): [100, 200, 300],
-            "other_data": [1, 2, 3],
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH): [100, 200, 300],
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW): [100, 200, 300],
         }
     )
 
@@ -199,7 +199,9 @@ def test_create_corrected_neutron_column(sample_df, correction_builder):
     assert (
         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT) in result_df.columns
     )
-    expected = sample_df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)] * 1.5 * 2.0
+    expected = (
+        sample_df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)] * 1.5 * 2.0
+    )
     assert (
         result_df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)] == expected
     ).all()
@@ -212,7 +214,9 @@ def test_correct_neutrons(sample_df, correction_builder):
     assert (
         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT) in result_df.columns
     )
-    expected = sample_df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)] * 1.5 * 2.0
+    expected = (
+        sample_df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)] * 1.5 * 2.0
+    )
     assert (
         result_df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)] == expected
     ).all()

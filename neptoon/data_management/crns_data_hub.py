@@ -424,7 +424,7 @@ class CRNSDataHub:
         soil_moisture_calculator = NeutronsToSM(
             crns_data_frame=self.crns_data_frame, **default_params
         )
-        soil_moisture_calculator.process_data()
+        soil_moisture_calculator.calculate_all_soil_moisture_data()
         self.crns_data_frame = soil_moisture_calculator.return_data_frame()
 
     def mask_flagged_data(self):
