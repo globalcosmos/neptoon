@@ -1,6 +1,7 @@
 import pytest
 import pandas as pd
 from neptoon.data_management.save_data import SaveAndArchiveOutputs
+from neptoon.data_management.site_information import SiteInformation
 
 
 # @pytest.fixture
@@ -19,13 +20,33 @@ def sample_crns_data():
     ).set_index("date_time")
 
 
+def sample_site_information():
+    site_information = SiteInformation(
+        site_name="Test_Site",
+        latitude=51.37,
+        longitude=12.55,
+        elevation=140,
+        reference_incoming_neutron_value=150,
+        dry_soil_bulk_density=1.4,
+        lattice_water=0.01,
+        soil_organic_carbon=0,
+        n0=700,
+        cutoff_rigidity=2.94,
+        site_biomass=1,
+    )
+    return site_information
+
+
 df = sample_crns_data()
+site_info = sample_site_information()
 
 test_saver = SaveAndArchiveOutputs(
     "test_folder",
     processed_data_frame=df,
     flag_data_frame=df,
-    site_information=None,
+    site_information=site_info,
 )
+test_saver.save_outputs()
 
 print(test_saver.save_folder_location)
+test_saver.create_save_folder()

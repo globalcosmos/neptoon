@@ -3,58 +3,9 @@ from pathlib import Path
 from typing import Union
 from neptoon.logging import get_logger
 from neptoon.data_management.site_information import SiteInformation
-
+from neptoon.utils.general_utils import validate_and_convert_file_path
 
 core_logger = get_logger()
-
-
-def validate_and_convert_file_path(
-    file_path: Union[str, Path, None],
-    base: Union[str, Path] = "",
-) -> Path:
-    """
-    Used when initialising the object. If a string is given as a
-    data_location, it is converted to a pathlib.Path object. If a
-    pathlib.Path object is given this is returned. Other types will
-    cause an error.
-
-    Parameters
-    ----------
-    data_location : Union[str, Path]
-        The data_location attribute from initialisation.
-
-    Returns
-    -------
-    pathlib.Path
-        The data_location as a pathlib.Path object.
-
-    Raises
-    ------
-    ValueError
-        Error if string or pathlib.Path given.
-    """
-
-    if file_path is None:
-        return None
-    if isinstance(file_path, str):
-        new_file_path = Path(file_path)
-        if new_file_path.is_absolute():
-            return new_file_path
-        else:
-            return base / Path(file_path)
-    elif isinstance(file_path, Path):
-        if file_path.is_absolute():
-            return file_path
-        else:
-            return base / file_path
-    else:
-        message = (
-            "data_location must be of type str or pathlib.Path. \n"
-            f"{type(file_path).__name__} provided, "
-            "please change this."
-        )
-        core_logger.error(message)
-        raise ValueError(message)
 
 
 class SaveAndArchiveOutputs:
@@ -89,6 +40,7 @@ class SaveAndArchiveOutputs:
         self.append_yaml_hash_to_folder_name = append_yaml_hash_to_folder_name
         self.use_custom_column_names = use_custom_column_names
         self.custom_column_names_dict = custom_column_names_dict
+        self.full_folder_location = None
 
     def _validate_save_folder(
         self,
@@ -116,6 +68,28 @@ class SaveAndArchiveOutputs:
         # TODO add additional check on whether YAML hash is appendable
         return save_path
 
+    def create_save_folder(
+        self,
+    ):
+        """
+        Creates the folder location where the data will be saved.
+        """
+        try:
+            self.save_folder_location.mkdir()
+        except FileExistsError as e:
+            message = "Folder already exists."
+            core_logger.info(message)
+
+        self.full_folder_location = (
+            self.save_folder_location / self.folder_name
+        )
+        try:
+            self.full_folder_location.mkdir(parents=True)
+        except FileExistsError:
+            message = "Error: {e} \nFolder already exists."
+            core_logger.error(message)
+            print(message + " Please change the folder name and try again.")
+
     def create_bespoke_output(
         self,
     ):
@@ -131,6 +105,8 @@ class SaveAndArchiveOutputs:
 
     def close_and_save_data_audit_log(
         self,
+        file_name,
+        append_hash,
     ):
         """
         Handles closing the data audit log and producing the YAML
@@ -179,14 +155,6 @@ class SaveAndArchiveOutputs:
         """
         pass
 
-    def create_save_location(
-        self,
-    ):
-        """
-        Creates the folder location where the data will be saved.
-        """
-        pass
-
     def save_custom_column_names(
         self,
     ):
@@ -197,6 +165,8 @@ class SaveAndArchiveOutputs:
 
     def save_outputs(
         self,
+        nan_bad_data: bool = True,
+        save_bespoke_data_frame: bool = False,
     ):
         """
         The main function which chains the options.
@@ -211,5 +181,14 @@ class SaveAndArchiveOutputs:
         8. Optional: rename folder
         9. Optional: compress data
         """
-
-        pass
+        file_name = self.site_information.site_name
+        self.create_save_folder()
+        if nan_bad_data:
+            self.mask_bad_data(self.processed_data_frame)
+        self.processed_data_frame.to_csv(
+            (
+                self.full_folder_location
+                / f"{file_name}_processed_time_series.csv"
+            )
+        )
+        self.close_and_save_data_audit_log()
