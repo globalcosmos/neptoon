@@ -1,5 +1,8 @@
 from pathlib import Path
 from typing import Union
+from neptoon.logging import get_logger
+
+core_logger = get_logger()
 
 
 def validate_and_convert_file_path(

@@ -1,7 +1,9 @@
 import pandas as pd
+import math
 from pathlib import Path
 from typing import Union
 from neptoon.logging import get_logger
+from neptoon.data_management.data_audit import DataAuditLog
 from neptoon.data_management.site_information import SiteInformation
 from neptoon.utils.general_utils import validate_and_convert_file_path
 
@@ -77,7 +79,7 @@ class SaveAndArchiveOutputs:
         try:
             self.save_folder_location.mkdir()
         except FileExistsError as e:
-            message = "Folder already exists."
+            message = f"Error: {e} \nFolder already exists."
             core_logger.info(message)
 
         self.full_folder_location = (
@@ -85,38 +87,30 @@ class SaveAndArchiveOutputs:
         )
         try:
             self.full_folder_location.mkdir(parents=True)
-        except FileExistsError:
-            message = "Error: {e} \nFolder already exists."
+        except FileExistsError as e:
+            message = f"Error: {e} \nFolder already exists."
             core_logger.error(message)
             print(message + " Please change the folder name and try again.")
 
-    def create_bespoke_output(
-        self,
-    ):
-        """
-        Provide an option which supports a specific type of output
-        table.
-
-        For example, creates a table which only includes meteo + SM
-        data.
-
-        """
-        pass
-
     def close_and_save_data_audit_log(
         self,
-        file_name,
-        append_hash,
+        append_hash=None,  # TODO
     ):
         """
         Handles closing the data audit log and producing the YAML
         output. Additionally can be used to append the save location
         with the hashed YAML output.
         """
-        # close DaL
+        try:
+            DataAuditLog.archive_and_delete_log(
+                site_name=self.site_information.site_name,
+                custom_log_location=self.full_folder_location,
+            )
         # create hash
         # optional - append the first 6 digits to the save folder name
-        pass
+        except Exception as e:
+            message = f"Error: {e} \nCould not close DataAuditLog, presumed not created"
+            core_logger.error(message)
 
     def create_pdf_output(
         self,
@@ -153,20 +147,16 @@ class SaveAndArchiveOutputs:
         """
         Masks out flagged data with nan values
         """
-        pass
-
-    def save_custom_column_names(
-        self,
-    ):
-        """
-        WIP - save custom variable names using ColumnInfo.
-        """
-        pass
+        mask = self.flag_data_frame == "UNFLAGGED"
+        masked_df = self.processed_data_frame.copy()
+        masked_df[~mask] = math.nan
+        return masked_df
 
     def save_outputs(
         self,
         nan_bad_data: bool = True,
         save_bespoke_data_frame: bool = False,
+        use_custom_column_names: bool = False,
     ):
         """
         The main function which chains the options.
@@ -181,10 +171,19 @@ class SaveAndArchiveOutputs:
         8. Optional: rename folder
         9. Optional: compress data
         """
+        if use_custom_column_names:
+            if self.custom_column_names_dict is None:
+                message = (
+                    "Cannot use custom column names if no "
+                    "column name dictionary supplied."
+                )
+                core_logger.error(message)
+                print(message)
+                raise ValueError
         file_name = self.site_information.site_name
         self.create_save_folder()
         if nan_bad_data:
-            self.mask_bad_data(self.processed_data_frame)
+            self.processed_data_frame = self.mask_bad_data()
         self.processed_data_frame.to_csv(
             (
                 self.full_folder_location
@@ -192,3 +191,24 @@ class SaveAndArchiveOutputs:
             )
         )
         self.close_and_save_data_audit_log()
+
+    def create_bespoke_output(
+        self,
+    ):
+        """
+        Provide an option which supports a specific type of output
+        table.
+
+        For example, creates a table which only includes meteo + SM
+        data.
+
+        """
+        pass
+
+    def save_custom_column_names(
+        self,
+    ):
+        """
+        WIP - save custom variable names using ColumnInfo.
+        """
+        pass
