@@ -93,7 +93,6 @@ class SaveAndArchiveOutputs:
         save_path = validate_and_convert_file_path(file_path=save_location)
         if save_path is None:
             save_path = validate_and_convert_file_path(file_path=Path.cwd())
-        # TODO add additional check on whether YAML hash is appendable
         return save_path
 
     def create_save_folder(
@@ -102,6 +101,7 @@ class SaveAndArchiveOutputs:
         """
         Creates the folder location where the data will be saved.
         """
+        # Make save folder if not already there
         try:
             self.save_folder_location.mkdir()
         except FileExistsError as e:
@@ -111,12 +111,15 @@ class SaveAndArchiveOutputs:
         self.full_folder_location = (
             self.save_folder_location / self.folder_name
         )
+
+        # Prevent overwriting station data
         try:
             self.full_folder_location.mkdir(parents=True)
         except FileExistsError as e:
             message = f"Error: {e} \nFolder already exists."
             core_logger.error(message)
             print(message + " Please change the folder name and try again.")
+            raise FileExistsError
 
     def close_and_save_data_audit_log(
         self,
