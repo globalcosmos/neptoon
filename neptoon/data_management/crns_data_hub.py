@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from typing import Literal, Union, Optional
 import dataclasses
+from pathlib import Path
 from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataAttacher,
@@ -471,7 +472,11 @@ class CRNSDataHub:
 
     def save_data(
         self,
-        folder_name=None,
+        folder_name: Union[str, None] = None,
+        save_folder_location: Union[str, Path, None] = None,
+        append_yaml_hash_to_folder_name: bool = False,
+        use_custom_column_names: bool = False,
+        custom_column_names_dict: Union[dict, None] = None,
     ):
         """
         Saves the file to a specified location. It must contain the
@@ -493,61 +498,17 @@ class CRNSDataHub:
         """
         if folder_name is None:
             folder_name = self.site_information.site_name
+        if save_folder_location is None:
+            save_folder_location = Path.cwd()
 
         saver = SaveAndArchiveOutputs(
             folder_name=folder_name,
             processed_data_frame=self.crns_data_frame,
             flag_data_frame=self.flags_data_frame,
             site_information=self.site_information,
+            save_folder_location=save_folder_location,
+            append_yaml_hash_to_folder_name=append_yaml_hash_to_folder_name,
+            use_custom_column_names=use_custom_column_names,
+            custom_column_names_dict=custom_column_names_dict,
         )
-
-    def archive_data(
-        self,
-        folder_path,
-        file_name,
-    ):
-        """
-        Archive the data into a zip file. All the data tables in the
-        instance will be collected and saved together.
-
-        Parameters
-        ----------
-        folder_path : _type_
-            _description_
-        file_name : _type_
-            _description_
-        """
-        pass
-
-    def add_column_to_crns_data_frame(
-        self,
-        source,
-        source_column_name: str = None,
-        new_column_name: str = None,
-    ):
-        if isinstance(source, pd.DataFrame):
-            if source_column_name is None:
-                raise ValueError(
-                    "Must specify a column name "
-                    "when the source is DataFrame"
-                )
-            if new_column_name is None:
-                new_column_name = source_column_name
-            if not isinstance(source.index, pd.DatetimeIndex):
-                raise ValueError("DataFrame source must have a DatetimeIndex.")
-            mapped_data = source[source_column_name].reindex(
-                self.crns_data_frame.index, method="nearest"
-            )
-        elif isinstance(source, dict):
-            if new_column_name is None:
-                raise ValueError(
-                    "New column name must be specified when source is a dictionary"
-                )
-            mapped_data = pd.Series(source).reindex(
-                self.crns_data_frame.index, method="nearest"
-            )
-        else:
-            raise TypeError(
-                "Source must be either a DataFrame or a dictionary"
-            )
-        self.crns_data_frame[new_column_name] = mapped_data
+        saver.save_outputs()

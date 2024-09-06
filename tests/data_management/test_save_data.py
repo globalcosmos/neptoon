@@ -102,5 +102,6 @@ test_saver = SaveAndArchiveOutputs(
     processed_data_frame=df,
     flag_data_frame=flag_df,
     site_information=site_info,
+    append_yaml_hash_to_folder_name=True,
 )
-test_saver.save_outputs(append_hash=True)
+test_saver.save_outputs()

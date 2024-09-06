@@ -150,30 +150,77 @@ class SaveAndArchiveOutputs:
                 custom_log_location=self.full_folder_location,
             )
             if append_hash:
-                folder_name = self.full_folder_location.name
-                data_audit_folder = (
-                    self.full_folder_location / "data_audit_log"
+                new_folder_path = self.append_hash_to_folder_name(
+                    self.full_folder_location
                 )
-
-                if not data_audit_folder.exists():
-                    raise FileNotFoundError(
-                        f"Data audit log folder not found: {data_audit_folder}"
-                    )
-                unknown_folder_name = next(data_audit_folder.glob("*/"))
-                hash_file = unknown_folder_name / "hash.txt"
-                with hash_file.open("r") as f:
-                    contents = f.read()
-                hash_append = contents[:6]
-                new_folder_name = f"{folder_name}_{hash_append}"
-                new_folder_path = (
-                    self.full_folder_location.parent / new_folder_name
-                )
-                self.full_folder_location.rename(new_folder_path)
                 # update internal attribute
                 self.full_folder_location = new_folder_path
         except Exception as e:
             message = f"Error: {e} \nCould not close DataAuditLog, presumed not created"
             core_logger.error(message)
+
+    def append_hash_to_folder_name(
+        self,
+        folder_path: Path,
+    ):
+        """
+        Appends the first 6 characters of the hash from hash.txt to the
+        folder name.
+
+        Parameters:
+        -----------
+        folder_path : pathlib.Path
+            The path to the folder to be renamed.
+
+        Returns:
+        --------
+        pathlib.Path
+            The path to the renamed folder.
+
+        Raises:
+        -------
+        FileNotFoundError
+            If the data audit log folder or hash.txt file is not found.
+        PermissionError
+            If permissions to access the folder are not available.
+        """
+        folder_name = folder_path.name
+        data_audit_folder = folder_path / "data_audit_log"
+
+        if not data_audit_folder.exists():
+            raise FileNotFoundError(
+                f"Data audit log folder not found: {data_audit_folder}"
+            )
+
+        try:
+            unknown_folder_name = next(data_audit_folder.glob("*/"))
+            hash_file = unknown_folder_name / "hash.txt"
+
+            if not hash_file.exists():
+                raise FileNotFoundError(f"Hash file not found: {hash_file}")
+
+            with hash_file.open("r") as f:
+                contents = f.read()
+
+            hash_append = contents[:6]
+            new_folder_name = f"{folder_name}_{hash_append}"
+            new_folder_path = folder_path.parent / new_folder_name
+            folder_path.rename(new_folder_path)
+
+            return new_folder_path
+
+        except StopIteration:
+            raise FileNotFoundError(
+                f"No subdirectories found in {data_audit_folder}"
+            )
+        except PermissionError:
+            raise PermissionError(
+                f"Permission denied when trying to access {folder_path}"
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"An error occurred while appending hash: {str(e)}"
+            )
 
     def mask_bad_data(
         self,
@@ -198,7 +245,6 @@ class SaveAndArchiveOutputs:
         self,
         nan_bad_data: bool = True,
         use_custom_column_names: bool = False,
-        append_hash: bool = False,
     ):
         """
         The main function which chains the options.
@@ -236,7 +282,9 @@ class SaveAndArchiveOutputs:
             (self.full_folder_location / f"{file_name}_flag_data_frame.csv")
         )
 
-        self.close_and_save_data_audit_log(append_hash=append_hash)
+        self.close_and_save_data_audit_log(
+            append_hash=self.append_yaml_hash_to_folder_name
+        )
 
     # ---- TODO below this line ----
     def parse_new_yaml(
