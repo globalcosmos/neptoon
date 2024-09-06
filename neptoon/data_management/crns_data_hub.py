@@ -22,6 +22,7 @@ from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
+from neptoon.data_management.save_data import SaveAndArchiveOutputs
 from neptoon.quality_assesment.smoothing import SmoothData
 
 from neptoon.logging import get_logger
@@ -468,7 +469,10 @@ class CRNSDataHub:
             else:
                 self.crns_data_frame[key] = site_information_dict[key]
 
-    def save_data(self, folder_path, file_name, step):
+    def save_data(
+        self,
+        folder_name=None,
+    ):
         """
         Saves the file to a specified location. It must contain the
         correct folder_path and file_name.
@@ -487,9 +491,15 @@ class CRNSDataHub:
         file_name : str
             Name of the file
         """
+        if folder_name is None:
+            folder_name = self.site_information.site_name
 
-        file_name_and_save_location = folder_path + file_name + ".csv"
-        self.crns_data_frame.to_csv(file_name_and_save_location)
+        saver = SaveAndArchiveOutputs(
+            folder_name=folder_name,
+            processed_data_frame=self.crns_data_frame,
+            flag_data_frame=self.flags_data_frame,
+            site_information=self.site_information,
+        )
 
     def archive_data(
         self,
