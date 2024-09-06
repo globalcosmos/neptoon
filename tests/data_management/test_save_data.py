@@ -1,11 +1,9 @@
 import pandas as pd
 import pytest
-import math
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from neptoon.data_management.save_data import SaveAndArchiveOutputs
 from neptoon.data_management.site_information import SiteInformation
-from neptoon.data_management.data_audit import DataAuditLog, log_key_step
 
 UNFLAGGED = "UNFLAGGED"
 BAD = "BAD"
