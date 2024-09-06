@@ -12,13 +12,13 @@ core_logger = get_logger()
 
 class SaveAndArchiveOutputs:
     """
-    Handles saving outputs from neptoons processes.
+    Handles saving the outputs from neptoons in an organised way.
 
     Future Ideas:
     -------------
-
     - options to compress outputs (zip_output: bool = True)
-    -
+    - cloud connection
+    - bespoke output formats
     """
 
     def __init__(
@@ -32,6 +32,32 @@ class SaveAndArchiveOutputs:
         use_custom_column_names: bool = False,
         custom_column_names_dict: dict = None,
     ):
+        """
+        Attributes
+
+        Parameters
+        ----------
+        folder_name : str
+            Desired name for the save folder
+        processed_data_frame : pd.DataFrame
+            The processed time series data
+        flag_data_frame : pd.DataFrame
+            The flag dataframe
+        site_information : SiteInformation
+            The SiteInformation object.
+        save_folder_location : Union[str, Path], optional
+            The folder where the data should be saved. If left as None
+        append_yaml_hash_to_folder_name : bool, optional
+            The DataAuditLog gets converted to a hash, meaning sites
+            procesed the same way share a hash. This can be appended to
+            the folder automatically helping to identify sites processed
+            differently, by default False
+        use_custom_column_names : bool, optional
+             Whether to use custom column names, by default False
+        custom_column_names_dict : dict, optional
+            A dictionary to convert standard neptoon names into custom a
+            custom naming convention, by default None
+        """
         self.folder_name = folder_name
         self.processed_data_frame = processed_data_frame
         self.flag_data_frame = flag_data_frame
@@ -94,52 +120,60 @@ class SaveAndArchiveOutputs:
 
     def close_and_save_data_audit_log(
         self,
-        append_hash=None,  # TODO
+        append_hash: bool = False,
     ):
         """
-        Handles closing the data audit log and producing the YAML
-        output. Additionally can be used to append the save location
-        with the hashed YAML output.
+        Handles closing the data audit log, producing the YAML output,
+        and optionally appending a hash to the save location folder
+        name.
+
+        This function performs the following steps:
+            1.  Archives and deletes the data audit log using
+                DataAuditLog.archive_and_delete_log()
+
+            2. If append_hash is True:
+                a. Locates the hash.txt file in the data_audit_log
+                   subfolder
+                b. Reads the first 6 characters of the hash
+                c. Renames the main folder to include this hash
+
+        Parameters:
+        -----------
+        append_hash : bool, optional (default=False)
+            If True, appends the first 6 characters of the hash from
+            hash.txt to the folder name.
+
         """
         try:
             DataAuditLog.archive_and_delete_log(
                 site_name=self.site_information.site_name,
                 custom_log_location=self.full_folder_location,
             )
-        # create hash
-        # optional - append the first 6 digits to the save folder name
+            if append_hash:
+                folder_name = self.full_folder_location.name
+                data_audit_folder = (
+                    self.full_folder_location / "data_audit_log"
+                )
+
+                if not data_audit_folder.exists():
+                    raise FileNotFoundError(
+                        f"Data audit log folder not found: {data_audit_folder}"
+                    )
+                unknown_folder_name = next(data_audit_folder.glob("*/"))
+                hash_file = unknown_folder_name / "hash.txt"
+                with hash_file.open("r") as f:
+                    contents = f.read()
+                hash_append = contents[:6]
+                new_folder_name = f"{folder_name}_{hash_append}"
+                new_folder_path = (
+                    self.full_folder_location.parent / new_folder_name
+                )
+                self.full_folder_location.rename(new_folder_path)
+                # update internal attribute
+                self.full_folder_location = new_folder_path
         except Exception as e:
             message = f"Error: {e} \nCould not close DataAuditLog, presumed not created"
             core_logger.error(message)
-
-    def create_pdf_output(
-        self,
-    ):
-        """
-        WIP - produce the PDF output and save in the folder.
-        """
-        # TODO
-        pass
-
-    def parse_new_yaml(
-        self,
-    ):
-        """
-        Creates a new station information YAML file and saves this in
-        the folder. For example, when new averages are created from new
-        data. Or when calibration produces a new N0.
-        """
-        # TODO
-        pass
-
-    def save_to_cloud(
-        self,
-    ):
-        """
-        WIP - future integration with cloud services.
-        """
-        # TODO
-        pass
 
     def mask_bad_data(
         self,
@@ -147,6 +181,14 @@ class SaveAndArchiveOutputs:
         """
         Masks out flagged data with nan values
         """
+        common_columns = self.flag_data_frame.columns.intersection(
+            self.processed_data_frame.columns
+        )
+        if len(common_columns) < len(self.processed_data_frame.columns):
+            core_logger.info(
+                "processed_data_frame has additional columns that "
+                "will not be masked."
+            )
         mask = self.flag_data_frame == "UNFLAGGED"
         masked_df = self.processed_data_frame.copy()
         masked_df[~mask] = math.nan
@@ -155,8 +197,8 @@ class SaveAndArchiveOutputs:
     def save_outputs(
         self,
         nan_bad_data: bool = True,
-        save_bespoke_data_frame: bool = False,
         use_custom_column_names: bool = False,
+        append_hash: bool = False,
     ):
         """
         The main function which chains the options.
@@ -190,7 +232,23 @@ class SaveAndArchiveOutputs:
                 / f"{file_name}_processed_time_series.csv"
             )
         )
-        self.close_and_save_data_audit_log()
+        self.flag_data_frame.to_csv(
+            (self.full_folder_location / f"{file_name}_flag_data_frame.csv")
+        )
+
+        self.close_and_save_data_audit_log(append_hash=append_hash)
+
+    # ---- TODO below this line ----
+    def parse_new_yaml(
+        self,
+    ):
+        """
+        Creates a new station information YAML file and saves this in
+        the folder. For example, when new averages are created from new
+        data. Or when calibration produces a new N0.
+        """
+        # TODO
+        pass
 
     def create_bespoke_output(
         self,
@@ -211,4 +269,22 @@ class SaveAndArchiveOutputs:
         """
         WIP - save custom variable names using ColumnInfo.
         """
+        pass
+
+    def save_to_cloud(
+        self,
+    ):
+        """
+        WIP - future integration with cloud services.
+        """
+        # TODO
+        pass
+
+    def create_pdf_output(
+        self,
+    ):
+        """
+        WIP - produce the PDF output and save in the folder.
+        """
+        # TODO
         pass

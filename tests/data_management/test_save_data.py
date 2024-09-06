@@ -103,4 +103,4 @@ test_saver = SaveAndArchiveOutputs(
     flag_data_frame=flag_df,
     site_information=site_info,
 )
-test_saver.save_outputs()
+test_saver.save_outputs(append_hash=True)
