@@ -206,35 +206,37 @@ class SensorConfigurationValidation(ValidateConfigurationFile):
         """
         Extracts the individual sections from the YAML file and stores
         them as attributes in the object instance.
+
+        TODO: return to this when built!!!
         """
-        full_yaml = self.config_yaml.whole_yaml_file
+        pass
+        # full_yaml = self.config_yaml.whole_yaml_file
 
-        self.general_site_metadata = full_yaml.get("general_site_metadata", {})
-        self.crns_sensor_information = full_yaml.get(
-            "crns_sensor_information", {}
-        )
+        # self.general_site_metadata = full_yaml.get("general_site_metadata", {})
+        # self.timeseries_data_format = full_yaml.get("time_series_data", {})
 
-        self.timeseries_data_format = full_yaml.get(
-            "timeseries_data_format", {}
-        )
-        self.timeseries_data_format_columns = self.timeseries_data_format[
-            "key_column_names"
-        ]
-        self.timeseries_data_format = self.remove_nested_dicts(
-            self.timeseries_data_format
-        )
+        # self.timeseries_data_format_columns = self.timeseries_data_format[
+        #     "key_column_info"
+        # ]
+        # self.timeseries_data_format = self.remove_nested_dicts(
+        #     self.timeseries_data_format
+        # )
 
-        self.calibration_data_format = full_yaml.get(
-            "calibration_data_format", {}
-        )
-        self.calibration_data_format_key_columns = (
-            self.calibration_data_format["key_column_names"]
-        )
-        self.calibration_data_format = self.remove_nested_dicts(
-            self.calibration_data_format
-        )
-        self.pdf_formatting = full_yaml.get("pdf_formatting", {})
-        self.data_storage = full_yaml.get("data_storage", {})
+        # self.calibration_data_format = full_yaml.get(
+        #     "calibration_data_format", {}
+        # )
+        # self.calibration_data_format_key_columns = (
+        #     self.calibration_data_format["key_column_names"]
+        # )
+        # self.calibration_data_format = self.remove_nested_dicts(
+        #     self.calibration_data_format
+        # )
+        # self.crns_sensor_information = full_yaml.get(
+        #     "crns_sensor_information", {}
+        # )
+
+        # self.pdf_formatting = full_yaml.get("pdf_formatting", {})
+        # self.data_storage = full_yaml.get("data_storage", {})
 
     def check_sections(self):
         """
@@ -242,16 +244,18 @@ class SensorConfigurationValidation(ValidateConfigurationFile):
         ensure data types are as expected. The models are not saved and
         are only used for validation.
 
+        TODO: return to this when built!!
         """
-        GeneralSiteMetadata(**self.general_site_metadata)
-        CRNSSensorInformation(**self.crns_sensor_information)
-        TimeseriesDataFormat(**self.timeseries_data_format)
-        CalibrationDataFormat(**self.calibration_data_format)
-        CalibrationDataFormat_ColumnNames(
-            **self.calibration_data_format_key_columns
-        )
-        PDFConfiguration(**self.pdf_formatting)
-        DataStorage(**self.data_storage)
+        pass
+        # GeneralSiteMetadata(**self.general_site_metadata)
+        # CRNSSensorInformation(**self.crns_sensor_information)
+        # TimeseriesDataFormat(**self.timeseries_data_format)
+        # CalibrationDataFormat(**self.calibration_data_format)
+        # CalibrationDataFormat_ColumnNames(
+        #     **self.calibration_data_format_key_columns
+        # )
+        # PDFConfiguration(**self.pdf_formatting)
+        # DataStorage(**self.data_storage)
         # SoilGridsMetadata(**self.)
 
 
@@ -291,10 +295,6 @@ class ProcessConfigurationValidation(ValidateConfigurationFile):
         InvalidData(**self.invalid_data)
         Interpolation(**self.interpolation)
         TemporalAggregation(**self.temporal_aggregation)
-
-
-class GlobalSettingsConfigurationValidataion(ValidateConfigurationFile):
-    pass
 
 
 class InputDataFrameConfigurationValidation:
