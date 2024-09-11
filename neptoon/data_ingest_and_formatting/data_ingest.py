@@ -1,7 +1,3 @@
-"""
-
-"""
-
 import pandas as pd
 import tarfile
 import re
@@ -151,7 +147,12 @@ class FileCollectionConfig:
             file_path=path_to_yaml
         )
         self._data_location = validate_and_convert_file_path(
-            file_path=data_location, base=self._path_to_yaml.parent
+            file_path=data_location,
+            base=(
+                self.path_to_yaml.parent
+                if self.path_to_yaml is not None
+                else None
+            ),
         )
         self._data_source = None
         self.column_names = column_names
@@ -1069,7 +1070,7 @@ class InputDataFrameFormattingConfig:
             )
         )
 
-    def build_from_yaml(
+    def import_yaml(
         self,
         path_to_yaml: str = None,
     ):
@@ -1104,60 +1105,64 @@ class InputDataFrameFormattingConfig:
             file_path=path,
         )
 
-        yaml_information = internal_config.get_configuration("station")
+        self.yaml_information = internal_config.get_configuration("station")
 
-        self.time_resolution = (
-            yaml_information.time_series_data.time_step_resolution
-        )
+    def build_from_yaml(self):
+        """
+        Assign attributes using the YAML information.
+        """
+        tmp = self.yaml_information
+
+        self.time_resolution = tmp.time_series_data.time_step_resolution
 
         self.neutron_count_units = (
-            yaml_information.time_series_data.key_column_info.neutron_count_units
+            tmp.time_series_data.key_column_info.neutron_count_units
         )
 
         self.add_meteo_columns(
-            meteo_columns=yaml_information.time_series_data.key_column_info.epithermal_neutron_counts_columns,
+            meteo_columns=tmp.time_series_data.key_column_info.epithermal_neutron_counts_columns,
             meteo_type=InputColumnDataType.EPI_NEUTRON_COUNT,
             unit=self.neutron_count_units,
         )
 
         self.add_meteo_columns(
-            meteo_columns=yaml_information.time_series_data.key_column_info.thermal_neutrons,
+            meteo_columns=tmp.time_series_data.key_column_info.thermal_neutrons,
             meteo_type=InputColumnDataType.THERM_NEUTRON_COUNT,
             unit=self.neutron_count_units,
         )
 
         self.add_meteo_columns(
-            meteo_columns=yaml_information.time_series_data.key_column_info.temperature_columns,
+            meteo_columns=tmp.time_series_data.key_column_info.temperature_columns,
             meteo_type=InputColumnDataType.TEMPERATURE,
-            unit=yaml_information.time_series_data.key_column_info.temperature_units,
+            unit=tmp.time_series_data.key_column_info.temperature_units,
         )
         self.add_meteo_columns(
-            meteo_columns=yaml_information.time_series_data.key_column_info.pressure_columns,
+            meteo_columns=tmp.time_series_data.key_column_info.pressure_columns,
             meteo_type=InputColumnDataType.PRESSURE,
-            unit=yaml_information.time_series_data.key_column_info.pressure_units,
+            unit=tmp.time_series_data.key_column_info.pressure_units,
         )
         self.add_meteo_columns(
-            meteo_columns=yaml_information.time_series_data.key_column_info.relative_humidity_columns,
+            meteo_columns=tmp.time_series_data.key_column_info.relative_humidity_columns,
             meteo_type=InputColumnDataType.RELATIVE_HUMIDITY,
-            unit=yaml_information.time_series_data.key_column_info.relative_humidity_units,
+            unit=tmp.time_series_data.key_column_info.relative_humidity_units,
         )
         self.assign_merge_methods(
             column_data_type=InputColumnDataType.PRESSURE,
-            merge_method=yaml_information.time_series_data.key_column_info.pressure_merge_method,
+            merge_method=tmp.time_series_data.key_column_info.pressure_merge_method,
         )
         self.assign_merge_methods(
             column_data_type=InputColumnDataType.TEMPERATURE,
-            merge_method=yaml_information.time_series_data.key_column_info.temperature_merge_method,
+            merge_method=tmp.time_series_data.key_column_info.temperature_merge_method,
         )
         self.assign_merge_methods(
             column_data_type=InputColumnDataType.RELATIVE_HUMIDITY,
-            merge_method=yaml_information.time_series_data.key_column_info.relative_humidity_merge_method,
+            merge_method=tmp.time_series_data.key_column_info.relative_humidity_merge_method,
         )
         self.add_date_time_column_info(
-            date_time_columns=yaml_information.time_series_data.key_column_info.date_time_columns,
-            date_time_format=yaml_information.time_series_data.key_column_info.date_time_format,
-            initial_time_zone=yaml_information.time_series_data.key_column_info.initial_time_zone,
-            convert_time_zone_to=yaml_information.time_series_data.key_column_info.convert_time_zone_to,
+            date_time_columns=tmp.time_series_data.key_column_info.date_time_columns,
+            date_time_format=tmp.time_series_data.key_column_info.date_time_format,
+            initial_time_zone=tmp.time_series_data.key_column_info.initial_time_zone,
+            convert_time_zone_to=tmp.time_series_data.key_column_info.convert_time_zone_to,
         )
 
     def assign_merge_methods(
@@ -1827,6 +1832,7 @@ class CollectAndParseRawData:
         self.input_formatter_config = InputDataFrameFormattingConfig(
             path_to_yaml=self.path_to_yaml
         )
+        self.input_formatter_config.import_yaml()
         self.input_formatter_config.build_from_yaml()
         data_formatter = FormatDataForCRNSDataHub(
             data_frame=parsed_data,

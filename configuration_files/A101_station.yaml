@@ -50,11 +50,13 @@ time_series_data:
     date_time_format: "%Y/%m/%d %H:%M:%S"
     initial_time_zone: utc
     convert_time_zone_to: utc
+    path_to_data:
+    cosmos_network:
 
 raw_data_parse_options:
   parse_raw_data: True
-  data_location: ../tests/data_ingest_and_formatting/mock_data/CRNS-station_data-Hydroinnova-A.zip
-  # data_location: /Users/power/Documents/code/neptoon/tests/data_ingest_and_formatting/mock_data/CRNS-station_data-Hydroinnova-A.zip
+  # data_location: ../tests/data_ingest_and_formatting/mock_data/CRNS-station_data-Hydroinnova-A.zip
+  data_location: /Users/power/Documents/code/neptoon/tests/data_ingest_and_formatting/mock_data/CRNS-station_data-Hydroinnova-A.zip
   column_names:
   prefix: ""
   suffix: ""

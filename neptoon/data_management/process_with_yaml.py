@@ -1,7 +1,15 @@
 import pandas as pd
-
+from typing import Literal
 from neptoon.data_management.crns_data_hub import CRNSDataHub
 from neptoon.data_management.site_information import SiteInformation
+from neptoon.data_ingest_and_formatting.data_ingest import (
+    FileCollectionConfig,
+    ManageFileCollection,
+    ParseFilesIntoDataFrame,
+    InputDataFrameFormattingConfig,
+    FormatDataForCRNSDataHub,
+    validate_and_convert_file_path,
+)
 from neptoon.configuration.configuration_input import ConfigurationManager
 
 
@@ -18,18 +26,99 @@ class ProcessWithYaml:
 
     def _get_config_object(
         self,
-        wanted_object: str,
+        wanted_object: Literal["station", "processing"],
     ):
+        """
+        Collects the specific config object from the larger
+        configuration object.
+
+        Parameters
+        ----------
+        wanted_object : Literal["station", "processing"]
+            The object to collect
+
+        Returns
+        -------
+        ConfigurationObject
+            The required configuration object.
+        """
         return self.configuration_object.get_configuration(name=wanted_object)
 
-    def create_data_hub(self):
+    def create_data_hub(
+        self,
+    ):
         pass
 
-    def process_site():
+    def process_site(
+        self,
+    ):
         pass
 
-    def _collect_data():
-        pass
+    def _parse_raw_data(
+        self,
+    ):
+        """
+        Parses raw data files.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame from raw files.
+        """
+        tmp = self.station_info.raw_data_parse_options
+
+        file_collection_config = FileCollectionConfig(
+            data_location=tmp.data_location,
+            column_names=tmp.column_names,
+            prefix=tmp.prefix,
+            suffix=tmp.suffix,
+            encoding=tmp.encoding,
+            skip_lines=tmp.skip_lines,
+            separator=tmp.separator,
+            decimal=tmp.decimal,
+            skip_initial_space=tmp.skip_initial_space,
+            parser_kw=tmp.parser_kw.to_dict(),
+            starts_with=tmp.starts_with,
+            multi_header=tmp.multi_header,
+            strip_names=tmp.strip_names,
+            remove_prefix=tmp.remove_prefix,
+        )
+        file_manager = ManageFileCollection(config=file_collection_config)
+        file_manager.get_list_of_files()
+        file_manager.filter_files()
+        file_parser = ParseFilesIntoDataFrame(
+            file_manager=file_manager, config=file_collection_config
+        )
+        parsed_data = file_parser.make_dataframe()
+
+        self.raw_data_parsed = parsed_data
+
+    def _prepare_time_series(
+        self,
+    ):
+        self.input_formatter_config = InputDataFrameFormattingConfig()
+        self.input_formatter_config.yaml_information = self.station_info
+        self.input_formatter_config.build_from_yaml()
+
+        data_formatter = FormatDataForCRNSDataHub(
+            data_frame=self.raw_data_parsed,
+            config=self.input_formatter_config,
+        )
+        df = data_formatter.format_data_and_return_data_frame()
+        return df
+
+    def _import_data(
+        self,
+    ):
+        if self.station_info.raw_data_parse_options.parse_raw_data:
+            self._parse_raw_data()
+        else:
+            self.raw_data_parsed = pd.to_csv(
+                validate_and_convert_file_path(
+                    file_path=self.station_info.time_series_data.path_to_data,
+                )
+            )
+        self.crns_data_frame = self._prepare_time_series()
 
     def _create_site_information(self):
         """
@@ -41,13 +130,13 @@ class ProcessWithYaml:
         SiteInformation
             The complete SiteInformation object.
         """
+        tmp = self.station_info.general_site_metadata
+
         site_info = SiteInformation(
-            latitude=(self.station_info.general_site_metadata.latitude),
-            longitude=(self.station_info.general_site_metadata.longitude),
-            elevation=(self.station_info.general_site_metadata.elevation),
-            reference_incoming_neutron_value=(
-                self.station_info.general_site_metadata.reference_incoming_neutron_value
-            ),
+            latitude=tmp.latitude,
+            longitude=tmp.longitude,
+            elevation=tmp.elevation,
+            reference_incoming_neutron_value=tmp.reference_incoming_neutron_value,
             dry_soil_bulk_density=(
                 self.station_info.general_site_metadata.avg_dry_soil_bulk_density
             ),

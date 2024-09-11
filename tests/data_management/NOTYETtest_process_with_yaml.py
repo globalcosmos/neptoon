@@ -12,6 +12,9 @@ config.load_and_validate_configuration(
     name="processing",
     file_path="/Users/power/Documents/code/neptoon/configuration_files/v1_processing_method.yaml",
 )
+y = config.get_configuration("processing")
 
+# tmp = config.get_configuration('station')
 yaml_processor = ProcessWithYaml(configuration_object=config)
-yaml_processor.process_info.
+yaml_processor._create_site_information()
+yaml_processor._import_data()

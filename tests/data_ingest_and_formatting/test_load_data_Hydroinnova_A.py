@@ -21,7 +21,7 @@ test_filename = (
 yaml_path = (
     Path(__file__).parent.parent.parent
     / "configuration_files"
-    / "input_data_format.yaml"
+    / "A101_station.yaml"
 )
 
 """
