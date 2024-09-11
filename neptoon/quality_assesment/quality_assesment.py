@@ -4,6 +4,7 @@ from abc import abstractmethod, ABC
 from typing import Union
 from neptoon.logging import get_logger
 from neptoon.data_management.data_audit import log_key_step
+from neptoon.data_management.column_information import ColumnInfo
 
 core_logger = get_logger()
 
@@ -107,16 +108,22 @@ class FlagNeutronGreaterThanN0(QualityCheck):
     """
 
     @log_key_step("neutron_col_name")
-    def __init__(self, neutron_col_name: str, N0: Union[int | float]):
+    def __init__(
+        self,
+        N0: Union[int | float],
+        neutron_col_name: str = str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+        ),
+    ):
         """
         Init Values
 
         Parameters
         ----------
-        neutron_col_name : str
-            Column name to flag
         N0 : int | float
             The N0 number neutrons cannot exceed.
+        neutron_col_name : str
+            Column name to flag
         """
         self.column = neutron_col_name
         self.N0 = N0
@@ -141,19 +148,26 @@ class FlagBelowMinimumPercentN0(QualityCheck):
     @log_key_step("neutron_col_name", "percent_minimum")
     def __init__(
         self,
-        neutron_col_name: str,
         N0: Union[int | float],
-        percent_minimum: Union[int | float],
+        percent_minimum: Union[int | float] = 0.3,
+        neutron_col_name: str = str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+        ),
     ):
         """
         Init Values
 
         Parameters
         ----------
-        neutron_col_name : str
-            Column name to flag
-        N0 : int | float
-            The N0 number neutrons cannot exceed.
+        N0 : Union[int  |  float]
+            The NO calibration term of the site
+        percent_minimum : Union[int  |  float], optional
+            The decimal percent value which, by default 0.3
+        neutron_col_name : str, optional
+            name of column where corrected neutrons are stored, by
+            default str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+                            )
         """
         self.column = neutron_col_name
         self.N0 = N0
