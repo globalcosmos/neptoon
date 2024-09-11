@@ -1,51 +1,58 @@
-method_signifier:
-  method_name: v1_method # A unique name that will be appended to data
+method_name: v1_method
 
 quality_assessment:
+  flag_corrected_neutrons:
+    flag_greater_than_N0:
+      above_N0_factor: 1.075 # Köhli 2021
+    flag_below_N0_factor:
+      not_below: 0.3
+    flag_spikes:
+      spike_detection_method: percent
+      max_percent_diff: 0.2
   air_humidity:
+    column_name: standard
     flag_range:
       min: 0
       max: 100
-    flag_spikes:
-      method: "spikedetector"
-  air_pressure:
-    flag_range:
-      min: 800
-      max: 1100
 
 correction_steps:
   air_humidity:
-    absolute_humidity_column_name: absolute_humidity
-    humidity_method: "Rosolem et al. (2013)"
-    alpha: 0.0054
+    humidity_method: Rosolem et al. (2013)
+    omega: 0.0054
     humidity_ref: 0
   air_pressure:
-    pressure_method: "Zreda et al. (2012)"
+    pressure_method: Zreda et al. (2012)
     Dunai_inclination:
   incoming_radiation:
-    new_incoming_column: NMDB_counts
-    incoming_method: "Hawdon et al. (2012)"
-    incoming_ref: 159
+    method: Hawdon et al. (2012)
+    reference_value: 159
     reference_neutron_monitor:
-      NM_auto_download: yes
-      NM_path: # Leave empty for automatic handling
-      NM_station: JUNG
-      NM_resolution: 1hour
+      station: JUNG
+      resolution: 1hour
+      nmdb_table: revori # recommend revori
 
-invalid_data:
-  invalid_data: replace by NaN
-  interpolate_neutrons: no
-  interpolate_neutrons_gapsize: 6
-  interpolate_coords: no
+data_smoothing:
+  smooth_raw_neutrons: False
+  smooth_corrected_neutrons: True
+  smooth_soil_moisture: False
+  settings:
+    algorithm: savitsky-golay
+    window: 12
+    poly_order: 4
+# invalid_data:
+#   invalid_data: replace by nan
+#   interpolate_neutrons: no
+#   interpolate_neutrons_gapsize: 6
+#   interpolate_coords: no
 
-interpolation:
-  interpolate_neutrons: no
-  interpolate_neutrons_gapsize: 6 # data points
+# interpolation:
+#   interpolate_neutrons: no
+#   interpolate_neutrons_gapsize: 6 # data points
 
-temporal_aggregation:
-  aggregate: 1day
-  aggregate_func: mean
-  aggregate_minor_vis: 1hour
+# temporal_aggregation:
+#   aggregate: 1day
+#   aggregate_func: mean
+#   aggregate_minor_vis: 1hour
 #   smoothing:
 #     smooth: 3
 #     smooth_radius:
@@ -68,4 +75,3 @@ temporal_aggregation:
 #     humidity_range: 0, 100
 #     temperature_range: -60, 60
 #     sm_range: 0, 1
-
