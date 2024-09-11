@@ -1,6 +1,7 @@
 import pandas as pd
 
 from neptoon.data_management.crns_data_hub import CRNSDataHub
+from neptoon.data_management.site_information import SiteInformation
 from neptoon.configuration.configuration_input import ConfigurationManager
 
 
@@ -19,9 +20,9 @@ class ProcessWithYaml:
         self,
         wanted_object: str,
     ):
-        self.configuration_object.get_configuration(wanted_object)
+        return self.configuration_object.get_configuration(name=wanted_object)
 
-    def create_data_hub():
+    def create_data_hub(self):
         pass
 
     def process_site():
@@ -30,8 +31,48 @@ class ProcessWithYaml:
     def _collect_data():
         pass
 
-    def _create_site_information():
-        pass
+    def _create_site_information(self):
+        """
+        Creates a SiteInformation object using the station_info
+        configuration object.
+
+        Returns
+        -------
+        SiteInformation
+            The complete SiteInformation object.
+        """
+        site_info = SiteInformation(
+            latitude=(self.station_info.general_site_metadata.latitude),
+            longitude=(self.station_info.general_site_metadata.longitude),
+            elevation=(self.station_info.general_site_metadata.elevation),
+            reference_incoming_neutron_value=(
+                self.station_info.general_site_metadata.reference_incoming_neutron_value
+            ),
+            dry_soil_bulk_density=(
+                self.station_info.general_site_metadata.avg_dry_soil_bulk_density
+            ),
+            lattice_water=(
+                self.station_info.general_site_metadata.avg_lattice_water
+            ),
+            soil_organic_carbon=(
+                self.station_info.general_site_metadata.avg_soil_organic_carbon
+            ),
+            cutoff_rigidity=(
+                self.station_info.general_site_metadata.cutoff_rigidity
+            ),
+            mean_pressure=(
+                self.station_info.general_site_metadata.mean_pressure
+            ),
+            site_biomass=(self.station_info.general_site_metadata.avg_biomass),
+            n0=(self.station_info.general_site_metadata.N0),
+            beta_coefficient=(
+                self.station_info.general_site_metadata.beta_coefficient
+            ),
+            l_coefficient=(
+                self.station_info.general_site_metadata.l_coefficient
+            ),
+        )
+        return site_info
 
     def _attach_nmdb_data():
         pass

@@ -17,9 +17,11 @@ general_site_metadata:
   reference_incoming_neutron_value:
   N0:
   beta_coefficient:
-  reference_pressure:
+  l_coefficient:
+  mean_pressure:
   avg_precipitation:
   avg_soil_moisture:
+  avg_biomass:
 
 time_series_data:
   time_step_resolution: 15mins
