@@ -39,8 +39,7 @@ class CRNSSensorInformation(BaseModel):
 
 
 class TimeseriesDataFormat(BaseModel):
-    data_format: Union[str, datetime.date]
-    resolution: str
+    time_step_resolution: str
 
 
 class TimeseriesDataFormat_ColumnNames(BaseModel):
