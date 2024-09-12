@@ -53,7 +53,7 @@ def validate_and_convert_file_path(
         if new_file_path.is_absolute():
             return new_file_path
         else:
-            return base / Path(file_path)
+            return base / Path(file_path).resolve()
     elif isinstance(file_path, Path):
         if file_path.is_absolute():
             return file_path
@@ -151,7 +151,7 @@ class FileCollectionConfig:
             base=(
                 self.path_to_yaml.parent
                 if self.path_to_yaml is not None
-                else None
+                else ""
             ),
         )
         self._data_source = None
