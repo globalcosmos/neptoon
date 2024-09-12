@@ -11,6 +11,7 @@ from neptoon.data_ingest_and_formatting.data_ingest import (
     FormatDataForCRNSDataHub,
     validate_and_convert_file_path,
 )
+from neptoon.data_management.column_information import ColumnInfo
 from neptoon.configuration.configuration_input import ConfigurationManager
 
 
@@ -82,10 +83,12 @@ class ProcessWithYaml:
                 site_information=self._create_site_information(),
             )
 
-    def process_site(
+    def run_full_process(
         self,
     ):
-        pass
+        self.create_data_hub(return_data_hub=False)
+        self._attach_nmdb_data()
+        self._prepare_static_values()
 
     def _parse_raw_data(
         self,
@@ -130,6 +133,14 @@ class ProcessWithYaml:
     def _prepare_time_series(
         self,
     ):
+        """
+        Method for preparing the time series data.
+
+        Returns
+        -------
+        pd.DataFrame
+            Returns a formatted dataframe
+        """
         self.input_formatter_config = InputDataFrameFormattingConfig()
         self.input_formatter_config.yaml_information = self.station_info
         self.input_formatter_config.build_from_yaml()
@@ -144,6 +155,18 @@ class ProcessWithYaml:
     def _import_data(
         self,
     ):
+        """
+        Imports data using information in the config file. If raw data
+        requires parsing it will do this. If not, it is presumed the
+        data is already available in a single csv file. It then uses the
+        supplied information in the YAML files to prepare this for use
+        in neptoon.
+
+        Returns
+        -------
+        pd.DataFrame
+            Prepared DataFrame
+        """
         if self.station_info.raw_data_parse_options.parse_raw_data:
             self._parse_raw_data()
         else:
@@ -152,9 +175,12 @@ class ProcessWithYaml:
                     file_path=self.station_info.time_series_data.path_to_data,
                 )
             )
-        return self._prepare_time_series()
+        df = self._prepare_time_series()
+        return df
 
-    def _create_site_information(self):
+    def _create_site_information(
+        self,
+    ):
         """
         Creates a SiteInformation object using the station_info
         configuration object.
@@ -197,19 +223,44 @@ class ProcessWithYaml:
         )
         return site_info
 
-    def _attach_nmdb_data():
-        pass
+    def _attach_nmdb_data(
+        self,
+    ):
+        """
+        Attaches incoming neutron data with NMDB database.
+        """
+        tmp = (
+            self.process_info.correction_steps.incoming_radiation.reference_neutron_monitor
+        )
+        self.data_hub.attach_nmdb_data(
+            station=tmp.station,
+            new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
+            resolution=tmp.resolution,
+            nmdb_table=tmp.nmdb_table,
+        )
 
-    def _prepare_static_values():
-        pass
+    def _prepare_static_values(
+        self,
+    ):
+        """
+        Prepares the SiteInformation values by converting them into
+        column in the data frame.
 
-    def _prepare_quality_assessment():
+        Currently it just uses method in the CRNSDataHub.
+        """
+        self.data_hub.prepare_static_values()
+
+    def _prepare_quality_assessment(
+        self,
+    ):
         pass
 
     def _apply_quality_assessment():
         pass
 
-    def _select_corrections():
+    def _select_corrections(
+        self,
+    ):
         pass
 
     def _correct_neutrons():

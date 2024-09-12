@@ -16,4 +16,9 @@ y = config.get_configuration("processing")
 
 # tmp = config.get_configuration('station')
 yaml_processor = ProcessWithYaml(configuration_object=config)
-data_hub = yaml_processor.create_data_hub()
+# data_hub = yaml_processor.create_data_hub()
+yaml_processor.create_data_hub(return_data_hub=False)
+yaml_processor._attach_nmdb_data()
+yaml_processor._prepare_static_values()
+
+yaml_processor.data_hub.crns_data_frame

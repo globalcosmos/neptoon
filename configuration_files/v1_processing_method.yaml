@@ -7,7 +7,7 @@ quality_assessment:
     flag_below_N0_factor:
       not_below: 0.3
     flag_spikes:
-      spike_detection_method: percent
+      spike_detection_method: percent_diff
       max_percent_diff: 0.2
   air_humidity:
     column_name: standard
@@ -28,7 +28,7 @@ correction_steps:
     reference_value: 159
     reference_neutron_monitor:
       station: JUNG
-      resolution: 1hour
+      resolution: 60 # minutes
       nmdb_table: revori # recommend revori
 
 data_smoothing:
