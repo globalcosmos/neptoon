@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Literal
 
-# from neptoon.data_management.crns_data_hub import CRNSDataHub
+from neptoon.data_management.crns_data_hub import CRNSDataHub
 from neptoon.data_management.site_information import SiteInformation
 from neptoon.data_ingest_and_formatting.data_ingest import (
     FileCollectionConfig,
@@ -24,6 +24,7 @@ class ProcessWithYaml:
         self.configuration_object = configuration_object
         self.process_info = self._get_config_object(wanted_object="processing")
         self.station_info = self._get_config_object(wanted_object="station")
+        self.data_hub = None
 
     def _get_config_object(
         self,
@@ -47,8 +48,39 @@ class ProcessWithYaml:
 
     def create_data_hub(
         self,
+        return_data_hub: bool = True,
     ):
-        pass
+        """
+        Creates a CRNSDataHub using the supplied information from the
+        YAML config file.
+
+        By default this method will return a configured CRNSDataHub.
+
+        When running the whole process with the run() method, it will
+        save the data hub to an attribute so that it can access it for
+        further steps.
+
+        Parameters
+        ----------
+        return_data_frame : bool, optional
+            Whether to return the CRNSDataHub directly, by default True
+
+        Returns
+        -------
+        CRNSDataHub
+            The CRNSDataHub
+        """
+
+        if return_data_hub:
+            return CRNSDataHub(
+                crns_data_frame=self._import_data(),
+                site_information=self._create_site_information(),
+            )
+        else:
+            self.data_hub = CRNSDataHub(
+                crns_data_frame=self._import_data(),
+                site_information=self._create_site_information(),
+            )
 
     def process_site(
         self,
@@ -66,6 +98,7 @@ class ProcessWithYaml:
         pd.DataFrame
             DataFrame from raw files.
         """
+        # create tmp object for more readable code
         tmp = self.station_info.raw_data_parse_options
 
         file_collection_config = FileCollectionConfig(
@@ -119,7 +152,7 @@ class ProcessWithYaml:
                     file_path=self.station_info.time_series_data.path_to_data,
                 )
             )
-        self.crns_data_frame = self._prepare_time_series()
+        return self._prepare_time_series()
 
     def _create_site_information(self):
         """

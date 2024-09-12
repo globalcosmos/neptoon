@@ -16,5 +16,4 @@ y = config.get_configuration("processing")
 
 # tmp = config.get_configuration('station')
 yaml_processor = ProcessWithYaml(configuration_object=config)
-yaml_processor._create_site_information()
-yaml_processor._import_data()
+data_hub = yaml_processor.create_data_hub()
