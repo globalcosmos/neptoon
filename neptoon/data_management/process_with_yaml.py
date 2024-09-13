@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import Literal
-
+from neptoon.logging import get_logger
 from neptoon.data_management.crns_data_hub import CRNSDataHub
 from neptoon.data_management.site_information import SiteInformation
 from neptoon.data_ingest_and_formatting.data_ingest import (
@@ -11,8 +11,16 @@ from neptoon.data_ingest_and_formatting.data_ingest import (
     FormatDataForCRNSDataHub,
     validate_and_convert_file_path,
 )
+from neptoon.quality_assesment.quality_assesment import (
+    QualityAssessmentFlagBuilder,
+    FlagSpikeDetectionUniLOF,
+    FlagNeutronGreaterThanN0,
+    FlagRangeCheck,
+)
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.configuration.configuration_input import ConfigurationManager
+
+core_logger = get_logger()
 
 
 class ProcessWithYaml:
@@ -89,6 +97,17 @@ class ProcessWithYaml:
         self.create_data_hub(return_data_hub=False)
         self._attach_nmdb_data()
         self._prepare_static_values()
+        # QA raw N spikes
+        self._apply_quality_assessment(
+            name_of_section="flag_raw_neutrons",
+            obj=self.process_info.neutron_quality_assessment.flag_raw_neutrons,
+        )
+        # QA meteo
+        # Corrections
+        # OPTIONAL: Calibration
+        # QA corrected neutrons
+        # Produce SM
+        # Save
 
     def _parse_raw_data(
         self,
@@ -252,11 +271,28 @@ class ProcessWithYaml:
 
     def _prepare_quality_assessment(
         self,
+        name_of_section: str,
+        obj,
     ):
-        pass
 
-    def _apply_quality_assessment():
-        pass
+        qa_builder = QualityAssessmentWithYaml(
+            name_of_section=name_of_section,
+            obj=obj,
+        )
+        list_of_checks = qa_builder.collect_and_return_checks()
+        return list_of_checks
+
+    def _apply_quality_assessment(
+        self,
+        name_of_section: str,
+        obj,
+    ):
+        list_of_checks = self._prepare_quality_assessment(
+            name_of_section=name_of_section,
+            obj=obj,
+        )
+        self.data_hub.add_quality_flags(add_check=list_of_checks)
+        self.data_hub.apply_quality_flags()
 
     def _select_corrections(
         self,
@@ -271,3 +307,49 @@ class ProcessWithYaml:
 
     def _save_data():
         pass
+
+
+class QualityAssessmentWithYaml:
+
+    def __init__(
+        self,
+        name_of_section: str,
+        obj,
+    ):
+        self.name_of_section = name_of_section
+        self.obj = obj
+        self.checks = []
+
+    def collect_and_return_checks(
+        self,
+    ):
+        if self.name_of_section == "flag_raw_neutrons":
+            self._flag_raw_neutrons()
+        if self.name_of_section == "extra_quality_assessment":
+            pass
+
+        return self.checks
+
+    def _flag_raw_neutrons(
+        self,
+    ):
+        obj_as_dict = vars(self.obj)
+
+        for key, value in obj_as_dict.items():
+            if key == "spikes":
+                if value.col_name == "default":
+                    col_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)
+                else:
+                    col_name = value.col_name
+
+                if value.method.lower() == "unilof":
+                    self.checks.append(
+                        FlagSpikeDetectionUniLOF(
+                            column_name=col_name,
+                            periods_in_calculation=value.periods_in_calculation,
+                            threshold=value.threshold,
+                        )
+                    )
+
+            else:
+                print("No")

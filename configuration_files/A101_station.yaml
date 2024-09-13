@@ -15,7 +15,7 @@ general_site_metadata:
   avg_soil_organic_carbon: 0.05
   avg_dry_soil_bulk_density: 1.42
   reference_incoming_neutron_value:
-  N0:
+  N0: 200 # TODO remove
   beta_coefficient:
   l_coefficient:
   mean_pressure:
@@ -74,6 +74,11 @@ raw_data_parse_options:
   remove_prefix: "//"
 
 extra_quality_assessment:
+  air_humidity:
+    column_name: standard
+    flag_range:
+      min: 0
+      max: 100
 
 calibration_data:
   format: standard #cosmoz, cosmos-usa, cosmos-uk

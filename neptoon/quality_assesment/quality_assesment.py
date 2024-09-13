@@ -195,7 +195,7 @@ class FlagSpikeDetectionUniLOF(QualityCheck):
         self,
         column_name: str,
         periods_in_calculation: Union[int | float] = 24,
-        threshold: Union[int | float] = 1.5,
+        threshold: Union[int | float] = 1.2,
     ):
         """
         Initialisation parameters
