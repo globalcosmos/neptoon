@@ -114,6 +114,7 @@ class FlagNeutronGreaterThanN0(QualityCheck):
         neutron_col_name: str = str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ),
+        above_N0_factor: float = 1,
     ):
         """
         Init Values
@@ -127,9 +128,13 @@ class FlagNeutronGreaterThanN0(QualityCheck):
         """
         self.column = neutron_col_name
         self.N0 = N0
+        self.above_N0_factor = above_N0_factor
 
     def apply(self, qc: SaQC):
-        return qc.flagGeneric(field=self.column, func=lambda x: x > self.N0)
+        no_greater_than = self.N0 * self.above_N0_factor
+        return qc.flagGeneric(
+            field=self.column, func=lambda x: x > no_greater_than
+        )
 
 
 class FlagBelowMinimumPercentN0(QualityCheck):

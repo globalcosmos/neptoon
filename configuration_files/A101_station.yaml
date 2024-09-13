@@ -1,5 +1,6 @@
 # This is essential information that will be unique to each sensor
 # Please refer to documentation for descriptions of each data point and its units.
+output_folder:
 
 general_site_metadata:
   site_name: A site somewhere
@@ -15,7 +16,7 @@ general_site_metadata:
   avg_soil_organic_carbon: 0.05
   avg_dry_soil_bulk_density: 1.42
   reference_incoming_neutron_value:
-  N0: 200 # TODO remove
+  N0:
   beta_coefficient:
   l_coefficient:
   mean_pressure:
@@ -101,6 +102,7 @@ pdf_formatting:
   cover_image: input/station.png
 
 data_storage:
+  save_folder:
   data_source: None
   local_storage_path: input/station-data.zip
   local_storage_prefix: CRS03_Data

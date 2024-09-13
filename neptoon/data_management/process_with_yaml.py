@@ -1,5 +1,6 @@
 import pandas as pd
 from typing import Literal
+from pathlib import Path
 from neptoon.logging import get_logger
 from neptoon.data_management.crns_data_hub import CRNSDataHub
 from neptoon.data_management.site_information import SiteInformation
@@ -15,7 +16,7 @@ from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     FlagSpikeDetectionUniLOF,
     FlagNeutronGreaterThanN0,
-    FlagRangeCheck,
+    FlagBelowMinimumPercentN0,
 )
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.configuration.configuration_input import ConfigurationManager
@@ -94,20 +95,52 @@ class ProcessWithYaml:
     def run_full_process(
         self,
     ):
+        """
+        Full process run with YAML file
+
+        Raises
+        ------
+        ValueError
+            When no N0 supplied and no calibration completed.
+        """
         self.create_data_hub(return_data_hub=False)
         self._attach_nmdb_data()
         self._prepare_static_values()
         # QA raw N spikes
         self._apply_quality_assessment(
             name_of_section="flag_raw_neutrons",
-            obj=self.process_info.neutron_quality_assessment.flag_raw_neutrons,
+            partial_config=(
+                self.process_info.neutron_quality_assessment.flag_raw_neutrons
+            ),
         )
         # QA meteo
+        # TODO
+
         # Corrections
+        # TODO
+
         # OPTIONAL: Calibration
-        # QA corrected neutrons
-        # Produce SM
-        # Save
+        # TODO
+
+        if self.station_info.general_site_metadata.N0 is None:
+            message = (
+                "Cannot proceed with quality assessment or processing "
+                "without an N0 number. Supply an N0 number in the YAML "
+                "file or complete site calibration"
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+        self._apply_quality_assessment(
+            name_of_section="flag_corrected_neutrons",
+            partial_config=(
+                self.process_info.neutron_quality_assessment.flag_raw_neutrons
+            ),
+        )
+        # Produce SM estimates.
+        # TODO
+
+        self._save_data()
 
     def _parse_raw_data(
         self,
@@ -269,30 +302,76 @@ class ProcessWithYaml:
         """
         self.data_hub.prepare_static_values()
 
-    def _prepare_quality_assessment(
-        self,
-        name_of_section: str,
-        obj,
-    ):
-
-        qa_builder = QualityAssessmentWithYaml(
-            name_of_section=name_of_section,
-            obj=obj,
-        )
-        list_of_checks = qa_builder.collect_and_return_checks()
-        return list_of_checks
-
     def _apply_quality_assessment(
         self,
         name_of_section: str,
-        obj,
+        partial_config,
     ):
+        """
+        Method to create quality flags
+
+        Parameters
+        ----------
+        name_of_section : str
+            Name of the section of the partial_config
+        partial_config : ConfigurationObject
+            A ConfigurationObject section
+
+        Notes
+        -----
+
+        The name_of_section should match the final part of the supplied
+        partial_config. For example:
+
+        partial_config = (
+            config.process_info.neutron_quality_assessment.flag_raw_neutrons
+            )
+
+        Therefore:
+
+        name_of_section = 'flag_raw_neutrons'
+
+        """
         list_of_checks = self._prepare_quality_assessment(
             name_of_section=name_of_section,
-            obj=obj,
+            partial_config=partial_config,
         )
         self.data_hub.add_quality_flags(add_check=list_of_checks)
         self.data_hub.apply_quality_flags()
+
+    def _prepare_quality_assessment(
+        self,
+        name_of_section: str,
+        partial_config,
+    ):
+        """
+
+
+        Parameters
+        ----------
+        name_of_section : str
+            Name of the section of the partial_config
+        partial_config : ConfigurationObject
+            A ConfigurationObject section
+
+        Notes
+        -----
+
+        See _apply_quality_assessment() above.
+
+        Returns
+        -------
+        List
+            List of QualityChecks
+        """
+
+        qa_builder = QualityAssessmentWithYaml(
+            name_of_section=name_of_section,
+            partial_config=partial_config,
+            station_info=self.station_info,
+        )
+        list_of_checks = qa_builder.collect_and_return_checks()
+        return list_of_checks
 
     def _select_corrections(
         self,
@@ -305,51 +384,173 @@ class ProcessWithYaml:
     def _produce_soil_moisture_estimates():
         pass
 
-    def _save_data():
-        pass
+    def _save_data(
+        self,
+    ):
+        """
+        Arranges saving the data in the folder.
+        """
+        initial_folder_str = self.station_info.data_storage.save_folder
+        file_name = self.station_info.general_site_metadata.site_name
+        folder = [
+            (
+                Path.cwd()
+                if initial_folder_str is None
+                else Path(initial_folder_str)
+            )
+        ]
+        self.data_hub.save_data(
+            folder_path=folder,
+            file_name=file_name,
+        )
 
 
 class QualityAssessmentWithYaml:
+    """
+    Handles bulding out QualityChecks from config files.
+    """
 
     def __init__(
         self,
         name_of_section: str,
-        obj,
+        partial_config,
+        station_info,
     ):
+        """
+        Attributes.
+
+        Parameters
+        ----------
+        name_of_section : str
+            The name of the section that has been supplied. See Notes.
+        partial_config : ConfigurationObject
+            A selection from the ConfigurationObject.
+        station_info : ConfigurationObject
+            The config object describing station variables
+
+        Notes
+        -----
+
+        The name_of_section should match the final part of the supplied
+        partial_config. For example:
+
+        partial_config = (
+            config.process_info.neutron_quality_assessment.flag_raw_neutrons
+            )
+
+        Means:
+
+        name_of_section = 'flag_raw_neutrons'
+        """
         self.name_of_section = name_of_section
-        self.obj = obj
+        self.partial_config = partial_config
+        self.station_info = station_info
         self.checks = []
 
     def collect_and_return_checks(
         self,
     ):
+        """
+        Base function which chooses correct internal method to use
+        depending on the supplied config section.
+
+        Returns
+        -------
+        List[QualityCheck]
+            A list of QualityChecks
+        """
         if self.name_of_section == "flag_raw_neutrons":
             self._flag_raw_neutrons()
-        if self.name_of_section == "extra_quality_assessment":
-            pass
+        elif self.name_of_section == "extra_quality_assessment":
+            pass  # TODO
+        elif self.name_of_section == "flag_corrected_neutrons":
+            self._flag_corrected_neutrons()
 
         return self.checks
 
-    def _flag_raw_neutrons(
-        self,
-    ):
-        obj_as_dict = vars(self.obj)
-
+    def _flag_raw_neutrons(self):
+        """
+        Process to prepare flags for raw neutron values.
+        """
+        obj_as_dict = vars(self.partial_config)
         for key, value in obj_as_dict.items():
             if key == "spikes":
-                if value.col_name == "default":
-                    col_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)
-                else:
-                    col_name = value.col_name
+                self._process_spikes(value)
 
-                if value.method.lower() == "unilof":
-                    self.checks.append(
-                        FlagSpikeDetectionUniLOF(
-                            column_name=col_name,
-                            periods_in_calculation=value.periods_in_calculation,
-                            threshold=value.threshold,
-                        )
-                    )
+    def _process_spikes(self, config) -> None:
+        """
+        Helper method to process spike configuration.
+        """
 
-            else:
-                print("No")
+        col_name = (
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)
+            if config.col_name == "default"
+            else config.col_name
+        )
+
+        if config.method.lower() == "unilof":
+            self.checks.append(
+                FlagSpikeDetectionUniLOF(
+                    column_name=col_name,
+                    periods_in_calculation=config.periods_in_calculation,
+                    threshold=config.threshold,
+                )
+            )
+        else:
+            message = f"Unsupported spike detection method: {config.method}"
+            core_logger.error(message)
+
+    def _flag_corrected_neutrons(self):
+        """
+        Process to prepare flags for corrected neutron values.
+        """
+        obj_as_dict = vars(self.partial_config)
+        for key, value in obj_as_dict.items():
+            if key == "greater_than_N0":
+                self._process_greater_than_N0(value)
+            elif key == "below_N0_factor":
+                self._process_below_N0_factor(value)
+
+    def _process_greater_than_N0(self, config):
+        """
+        Helper method to process greater_than_N0 configuration.
+        """
+        col_name = (
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            if config.col_name == "default"
+            else config.col_name
+        )
+
+        self.checks.append(
+            FlagNeutronGreaterThanN0(
+                N0=self.station_info.general_site_metadata.N0,
+                neutron_col_name=col_name,
+                above_N0_factor=config.above_N0_factor,
+            )
+        )
+
+    def _process_below_N0_factor(self, config):
+        """
+        Helper method to process below_N0_factor configuration.
+        """
+        col_name = (
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            if config.col_name == "default"
+            else config.col_name
+        )
+
+        self.checks.append(
+            FlagBelowMinimumPercentN0(
+                N0=self.station_info.general_site_metadata.N0,
+                neutron_col_name=col_name,
+                percent_minimum=config.not_below,
+            )
+        )
+
+
+class CorrectionSelectorWithYaml:
+
+    def __init__(
+        self,
+    ):
+        pass
