@@ -21,7 +21,6 @@ from neptoon.data_management.site_information import SiteInformation
 from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
-    QualityCheck,
 )
 from neptoon.quality_assesment.smoothing import SmoothData
 

@@ -2,7 +2,8 @@
 
 from neptoon.data_management.process_with_yaml import ProcessWithYaml
 from neptoon.configuration.configuration_input import ConfigurationManager
-from neptoon.quality_assesment.quality_assesment import FlagRangeCheck
+
+# from neptoon.quality_assesment.quality_assesment import FlagRangeCheck
 
 config = ConfigurationManager()
 config.load_and_validate_configuration(

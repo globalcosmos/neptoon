@@ -13,7 +13,6 @@ from neptoon.data_ingest_and_formatting.data_ingest import (
     validate_and_convert_file_path,
 )
 from neptoon.quality_assesment.quality_assesment import (
-    QualityAssessmentFlagBuilder,
     FlagSpikeDetectionUniLOF,
     FlagNeutronGreaterThanN0,
     FlagBelowMinimumPercentN0,
@@ -376,6 +375,9 @@ class ProcessWithYaml:
     def _select_corrections(
         self,
     ):
+        """
+        See CorrectionSelectorWithYaml!!!!
+        """
         pass
 
     def _correct_neutrons():
@@ -549,6 +551,17 @@ class QualityAssessmentWithYaml:
 
 
 class CorrectionSelectorWithYaml:
+    """
+    Idea is to work with the Enum objects and Correction Factory based
+    on values.
+
+    I'm hoping it will be simply a matter of:
+
+    if processing.pressure == desilets_2012
+        factory add - CorrectionType = pressure - CorrectionTheory =
+        desilets
+
+    """
 
     def __init__(
         self,
