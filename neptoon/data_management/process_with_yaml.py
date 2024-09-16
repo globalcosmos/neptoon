@@ -17,6 +17,10 @@ from neptoon.quality_assesment.quality_assesment import (
     FlagNeutronGreaterThanN0,
     FlagBelowMinimumPercentN0,
 )
+from neptoon.neutron_correction.neutron_correction import (
+    CorrectionType,
+    CorrectionTheory,
+)
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.configuration.configuration_input import ConfigurationManager
 
@@ -117,6 +121,8 @@ class ProcessWithYaml:
 
         # Corrections
         # TODO
+        self._select_corrections()
+        self._correct_neutrons()
 
         # OPTIONAL: Calibration
         # TODO
@@ -137,9 +143,9 @@ class ProcessWithYaml:
             ),
         )
         # Produce SM estimates.
-        # TODO
+        self._produce_soil_moisture_estimates()
 
-        self._save_data()
+        # self._save_data() # TODO need to merge save function first
 
     def _parse_raw_data(
         self,
@@ -378,13 +384,24 @@ class ProcessWithYaml:
         """
         See CorrectionSelectorWithYaml!!!!
         """
-        pass
+        selector = CorrectionSelectorWithYaml(
+            data_hub=self.data_hub,
+            process_info=self.process_info,
+            station_info=self.station_info,
+        )
+        self.data_hub = selector.select_corrections()
 
-    def _correct_neutrons():
-        pass
+    def _correct_neutrons(self):
+        """
+        Runs the correction routine.
+        """
+        self.data_hub.correct_neutrons()
 
-    def _produce_soil_moisture_estimates():
-        pass
+    def _produce_soil_moisture_estimates(self):
+        """
+        Completes the soil moisture estimation step
+        """
+        self.data_hub.produce_soil_moisture_estimates()
 
     def _save_data(
         self,
@@ -565,5 +582,116 @@ class CorrectionSelectorWithYaml:
 
     def __init__(
         self,
+        data_hub: CRNSDataHub,
+        process_info,
+        station_info,
     ):
+        """
+        Attributes
+
+        Parameters
+        ----------
+        data_hub : CRNSDataHub
+            A CRNSDataHub hub instance
+        process_info :
+            The process YAML as an object.
+        station_info :
+            The station information YAML as an object
+        """
+        self.data_hub = data_hub
+        self.process_info = process_info
+        self.station_info = station_info
+
+    def _pressure_correction(self):
+        """
+        Assigns the chosen pressure correction method.
+
+        Raises
+        ------
+        ValueError
+            Unknown correction method
+        """
+        tmp = self.process_info.correction_steps.air_pressure
+
+        if tmp.method.lower() == "zreda_2012":
+            self.data_hub.select_correction(
+                correction_type=CorrectionType.PRESSURE,
+                correction_theory=CorrectionTheory.ZREDA_2012,
+            )
+        else:
+            message = (
+                f"{tmp.method} is not a known pressure correction theory. \n"
+                "Please choose another."
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+    def _humidity_correction(self):
+        """
+        Assigns the chosen humidity correction method.
+
+        Raises
+        ------
+        ValueError
+            Unknown correction method
+        """
+        tmp = self.process_info.correction_steps.air_humidity
+
+        if tmp.method.lower() == "rosolem_2013":
+            self.data_hub.select_correction(
+                correction_type=CorrectionType.HUMIDITY,
+                correction_theory=CorrectionTheory.ROSOLEM_2013,
+            )
+        else:
+            message = (
+                f"{tmp.method} is not a known humidity correction theory. \n"
+                "Please choose another."
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+    def _incoming_intensity_correction(self):
+        """
+        Assigns the chosen incoming intensity correction method.
+
+        Raises
+        ------
+        ValueError
+            Unknown correction method
+        """
+        tmp = self.process_info.correction_steps.incoming_radiation
+
+        if tmp.method.lower() == "hawdon_2014":
+            self.data_hub.select_correction(
+                correction_type=CorrectionType.INCOMING_INTENSITY,
+                correction_theory=CorrectionTheory.HAWDON_2014,
+            )
+        else:
+            message = (
+                f"{tmp.method} is not a known incoming intensity correction theory. \n"
+                "Please choose another."
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+    def _above_ground_biomass_correction(self):
+        """
+        TODO
+        """
         pass
+
+    def select_corrections(self):
+        """
+        Chains together each correction step and outputs the data_hub.
+
+        Returns
+        -------
+        CRNSDataHub
+            With corrections selected.
+        """
+        self._pressure_correction()
+        self._humidity_correction()
+        self._incoming_intensity_correction()
+        self._above_ground_biomass_correction()
+
+        return self.data_hub

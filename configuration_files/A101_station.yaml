@@ -15,8 +15,8 @@ general_site_metadata:
   avg_lattice_water: 0.01
   avg_soil_organic_carbon: 0.05
   avg_dry_soil_bulk_density: 1.42
-  reference_incoming_neutron_value:
-  N0:
+  reference_incoming_neutron_value: 152
+  N0: 550
   beta_coefficient:
   l_coefficient:
   mean_pressure:
