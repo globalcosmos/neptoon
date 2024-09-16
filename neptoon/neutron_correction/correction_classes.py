@@ -17,8 +17,8 @@ from neptoon.corrections_and_functions.air_humidity_corrections import (
     humidity_correction_rosolem2013,
 )
 from neptoon.corrections_and_functions.pressure_corrections import (
-    pressure_correction_beta_coeff,
-    pressure_correction_l_coeff,
+    calc_pressure_correction_beta_coeff,
+    calc_pressure_correction_l_coeff,
     calc_mean_pressure,
     calc_beta_coefficient,
 )
@@ -48,6 +48,29 @@ class CorrectionTheory(Enum):
     ROSOLEM_2013 = "rosolem_2013"
     HAWDON_2014 = "hawdon_2014"
     # TODO the rest
+
+
+def is_column_missing_or_empty(data_frame, column_name):
+    """
+    Find whether a column is missing or empty in a dataframe. Useful for
+    checking data before making calculations.
+
+    Parameters
+    ----------
+    data_frame : pd.DataFrame
+        _description_
+    column_name : str
+        Name of column to check for
+
+    Returns
+    -------
+    bool
+        True or False whether column is missing or empty
+    """
+    return (
+        column_name not in data_frame.columns
+        or data_frame[column_name].isnull().all()
+    )
 
 
 class Correction(ABC):
@@ -111,7 +134,9 @@ class IncomingIntensityCorrectionZreda2012(Correction):
 
     def __init__(
         self,
-        reference_incoming_neutron_value: float,
+        reference_incoming_neutron_value: str = str(
+            ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE
+        ),
         correction_type: str = CorrectionType.INCOMING_INTENSITY,
         correction_factor_column_name: str = str(
             ColumnInfo.Name.INTENSITY_CORRECTION
@@ -167,7 +192,7 @@ class IncomingIntensityCorrectionZreda2012(Correction):
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_zreda_2012(
                 row[self.incoming_neutron_column_name],
-                self.reference_incoming_neutron_value,
+                row[self.reference_incoming_neutron_value],
             ),
             axis=1,
         )
@@ -179,8 +204,10 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
 
     def __init__(
         self,
-        incoming_neutron_intensity: float,
-        cutoff_rigidity: float,
+        reference_incoming_neutron_value: str = str(
+            ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE
+        ),
+        cutoff_rigidity: str = str(ColumnInfo.Name.CUTOFF_RIGIDITY),
         correction_type: CorrectionType = CorrectionType.INCOMING_INTENSITY,
         correction_factor_column_name: str = str(
             ColumnInfo.Name.INTENSITY_CORRECTION
@@ -193,7 +220,9 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
             correction_type=correction_type,
             correction_factor_column_name=correction_factor_column_name,
         )
-        self.incoming_neutron_intensity = incoming_neutron_intensity
+        self.reference_incoming_neutron_value = (
+            reference_incoming_neutron_value
+        )
         self.cutoff_rigidity = cutoff_rigidity
         self.incoming_neutron_column_name = incoming_neutron_column_name
 
@@ -201,8 +230,8 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_adjustment_rc_corrected(
                 incoming_intensity=row[self.incoming_neutron_column_name],
-                incoming_ref=self.incoming_neutron_intensity,
-                cutoff_rigidity=self.cutoff_rigidity,
+                incoming_ref=row[self.incoming_neutron_intensity],
+                cutoff_rigidity=row[self.cutoff_rigidity],
             ),
             axis=1,
         )
@@ -334,16 +363,16 @@ class PressureCorrectionZreda2012(Correction):
 
     def __init__(
         self,
-        site_elevation: float = None,
-        reference_pressure_value: float = None,
+        site_elevation: str = str(ColumnInfo.Name.ELEVATION),
+        reference_pressure_value: str = str(ColumnInfo.Name.MEAN_PRESSURE),
         correction_type: str = CorrectionType.PRESSURE,
         correction_factor_column_name: str = str(
             ColumnInfo.Name.PRESSURE_CORRECTION
         ),
-        beta_coefficient: float = None,
-        l_coefficient: float = None,
-        latitude: float = None,
-        cutoff_rigidity=None,
+        beta_coefficient: str = str(ColumnInfo.Name.BETA_COEFFICIENT),
+        l_coefficient: str = str(ColumnInfo.Name.L_COEFFICIENT),
+        latitude: str = str(ColumnInfo.Name.LATITUDE),
+        cutoff_rigidity: str = str(ColumnInfo.Name.CUTOFF_RIGIDITY),
     ):
         """
         Required attributes for creation.
@@ -380,7 +409,7 @@ class PressureCorrectionZreda2012(Correction):
         self.latitude = latitude
         self.cutoff_rigidity = cutoff_rigidity
 
-    def _prepare_for_correction(self):
+    def _prepare_for_correction(self, data_frame):
         """
         Prepare to correction process. Check to see if reference
         pressure needs calculating and then checks for coefficients
@@ -388,38 +417,15 @@ class PressureCorrectionZreda2012(Correction):
         calculate the beta_coefficient.
         """
 
-        self._ensure_reference_pressure_available()
-        self._check_coefficient_available()
+        self._ensure_reference_pressure_available(data_frame)
+        self._check_coefficient_available(data_frame)
 
-    def _check_coefficient_available(self):
-        """
-        Checks for coefficients. If none given it will create the
-        beta_coefficient from supplied data.
-        """
-        if (self.l_coefficeint is None) and (self.beta_coefficient is None):
-            message = (
-                "No coefficient given for pressure correction. "
-                "Calculating beta coefficient."
-            )
-            core_logger.info(message)
-            self.beta_coefficient = calc_beta_coefficient(
-                self.reference_pressure_value,
-                self.latitude,
-                self.site_elevation,
-                self.cutoff_rigidity,
-            )
-            self.method_to_use = "beta"
-        elif self.beta_coefficient:
-            self.method_to_use = "beta"
-        elif self.l_coefficeint:
-            self.method_to_use = "l_coeff"
-
-    def _ensure_reference_pressure_available(self):
+    def _ensure_reference_pressure_available(self, data_frame):
         """
         Checks for reference pressure.
 
         NOTE: Important to note that changing reference pressure from
-        the value used during when calibrating will impact the results.
+        the value used during calibration will impact the results.
         If reference pressure is changed for processing the site must be
         re-calibrated so that the N0 has the same reference pressure.
 
@@ -429,8 +435,10 @@ class PressureCorrectionZreda2012(Correction):
             If no reference pressure and no elevation it cannot work.
             Raises error.
         """
-        if self.reference_pressure_value is None:
-            if self.site_elevation is None:
+        column_name_press = self.reference_pressure_value
+        column_name_elev = self.site_elevation
+        if is_column_missing_or_empty(data_frame, column_name_press):
+            if is_column_missing_or_empty(data_frame, column_name_elev):
                 message = (
                     "You must supply a reference pressure or a site elevation"
                 )
@@ -442,9 +450,42 @@ class PressureCorrectionZreda2012(Correction):
                 "using elevation information and using this value"
             )
             core_logger.info(message)
-            self.reference_pressure_value = calc_mean_pressure(
-                self.site_elevation
+            data_frame[self.reference_pressure_value] = data_frame.apply(
+                lambda row: calc_mean_pressure(row[self.site_elevation]),
+                axis=1,
             )
+
+    def _check_coefficient_available(self, data_frame):
+        """
+        Checks for coefficients. If none given it will create the
+        beta_coefficient from supplied data.
+        """
+        column_name_beta = self.beta_coefficient
+        column_name_l = self.l_coefficeint
+
+        if is_column_missing_or_empty(
+            data_frame, column_name_beta
+        ) and is_column_missing_or_empty(data_frame, column_name_l):
+            message = (
+                "No coefficient given for pressure correction. "
+                "Calculating beta coefficient."
+            )
+            core_logger.info(message)
+            data_frame[self.beta_coefficient] = data_frame.apply(
+                lambda row: calc_beta_coefficient(
+                    row[self.reference_pressure_value],
+                    row[self.latitude],
+                    row[self.site_elevation],
+                    row[self.cutoff_rigidity],
+                ),
+                axis=1,
+            )
+
+            self.method_to_use = "beta"
+        elif is_column_missing_or_empty(data_frame, column_name_beta):
+            self.method_to_use = "beta"
+        elif is_column_missing_or_empty(data_frame, column_name_l):
+            self.method_to_use = "l_coeff"
 
     def apply(self, data_frame):
         """
@@ -463,29 +504,39 @@ class PressureCorrectionZreda2012(Correction):
 
         # TODO validation here
 
-        self._prepare_for_correction()
-
-        if self.method_to_use == "beta":
-            data_frame[str(ColumnInfo.Name.PRESSURE_CORRECTION)] = (
-                data_frame.apply(
-                    lambda row: pressure_correction_beta_coeff(
-                        row[str(ColumnInfo.Name.AIR_PRESSURE)],
-                        self.reference_pressure_value,
-                        self.beta_coefficient,
-                    ),
-                    axis=1,
-                )
+        if not is_column_missing_or_empty(
+            data_frame, self.correction_factor_column_name
+        ):
+            message = (
+                "The correction already appears in the data_frame as"
+                f"'{self.correction_factor_column_name}'. Skipping correction to prevent "
+                "unwanted overwrites. "
             )
-        elif self.method_to_use == "l_coeff":
-            data_frame[str(ColumnInfo.Name.PRESSURE_CORRECTION)] = (
-                data_frame.apply(
-                    lambda row: pressure_correction_l_coeff(
-                        row[str(ColumnInfo.Name.AIR_PRESSURE)],
-                        self.reference_pressure_value,
-                        self.l_coefficeint,
-                    ),
-                    axis=1,
-                )
-            )
+            core_logger.info(message)
+            return data_frame
 
-        return data_frame
+        else:
+            self._prepare_for_correction(data_frame)
+            if self.method_to_use == "beta":
+                data_frame[self.correction_factor_column_name] = (
+                    data_frame.apply(
+                        lambda row: calc_pressure_correction_beta_coeff(
+                            row[str(ColumnInfo.Name.AIR_PRESSURE)],
+                            row[self.reference_pressure_value],
+                            row[self.beta_coefficient],
+                        ),
+                        axis=1,
+                    )
+                )
+            elif self.method_to_use == "l_coeff":
+                data_frame[self.correction_factor_column_name] = (
+                    data_frame.apply(
+                        lambda row: calc_pressure_correction_l_coeff(
+                            row[str(ColumnInfo.Name.AIR_PRESSURE)],
+                            row[self.reference_pressure_value],
+                            row[self.l_coefficeint],
+                        ),
+                        axis=1,
+                    )
+                )
+            return data_frame

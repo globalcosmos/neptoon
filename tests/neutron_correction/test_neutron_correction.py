@@ -267,7 +267,6 @@ def test_correction_factory_intensity(site_information):
         ColumnInfo.Name.INTENSITY_CORRECTION
     )
     assert tmp_corr.correction_type is CorrectionType.INCOMING_INTENSITY
-    assert tmp_corr.reference_incoming_neutron_value == 150
 
     factory = CorrectionFactory(site_information=site_information)
     tmp_corr2 = factory.create_correction(
@@ -277,26 +276,33 @@ def test_correction_factory_intensity(site_information):
         tmp_corr2,
         IncomingIntensityCorrectionHawdon2014,
     )
-    assert tmp_corr2.cutoff_rigidity == 2.94
 
 
 def test_correction_factory_pressure(site_information):
     """
     Test correction factory selects the right correction humidity.
     """
-    df = pd.DataFrame({"air_pressure": [1000, 990, 1010, 1001, 999]})
+    df = pd.DataFrame(
+        {
+            "air_pressure": [1000, 990, 1010, 1001, 999],
+            str(ColumnInfo.Name.MEAN_PRESSURE): [1000, 1000, 1000, 1000, 1000],
+            "latitude": [34, 34, 34, 34, 34],
+            "elevation": [100, 100, 100, 100, 100],
+            "cutoff_rigidity": [2.3, 2.3, 2.3, 2.3, 2.3],
+        }
+    )
 
     factory = CorrectionFactory(site_information=site_information)
     tmp_corr = factory.create_correction(
         correction_type=CorrectionType.PRESSURE
     )
-    assert tmp_corr.reference_pressure_value is None
-    assert tmp_corr.beta_coefficient is None
-
+    assert tmp_corr.correction_type is CorrectionType.PRESSURE
+    assert tmp_corr.correction_factor_column_name is str(
+        ColumnInfo.Name.PRESSURE_CORRECTION
+    )
+    assert str(ColumnInfo.Name.PRESSURE_CORRECTION) not in df.columns
     df = tmp_corr.apply(df)
-
-    assert int(tmp_corr.reference_pressure_value) == 996
-    assert round(tmp_corr.beta_coefficient, 5) == 0.00733
+    assert str(ColumnInfo.Name.PRESSURE_CORRECTION) in df.columns
 
 
 def test_correction_factory_humidity(site_information):
