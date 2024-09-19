@@ -85,8 +85,8 @@ class SampleProfile:
         # Scalar values
         self.distance = distance
         self.D86 = np.nan
-        self.sm_tot_wavg_grv = np.nan
-        self.sm_tot_wavg_vol = np.nan
+        self.sm_total_weighted_avg_grv = np.nan
+        self.sm_total_weghted_avg_vol = np.nan
         self.w_r = np.nan
 
     def update_data(self):
@@ -109,30 +109,30 @@ class SampleProfile:
 
         self._calculate_sm_total_vol()
         self._calculate_sm_total_grv()
-        self.data["sm_tot_vol"] = self.sm_tot_vol
-        self.data["sm_tot_grv"] = self.sm_tot_grv
+        self.data["sm_total_vol"] = self.sm_total_vol
+        self.data["sm_total_grv"] = self.sm_total_grv
 
     def _calculate_sm_total_vol(self):
         """
         Calculate total volumetric soil moisture.
         """
-        sm_tot_vol = (
+        sm_total_vol = (
             self.data["soil_moisture_gravimetric"]
             + self.data["lattice_water"]
             + self.data["soil_organic_carbon"] * 0.555
         ) * self.data["bulk_density"]
-        self.sm_tot_vol = sm_tot_vol
+        self.sm_total_vol = sm_total_vol
 
     def _calculate_sm_total_grv(self):
         """
         Calculate total gravimetric soil moisture.
         """
-        sm_tot_grv = (
+        sm_total_grv = (
             self.data["soil_moisture_gravimetric"]
             + self.data["lattice_water"]
             + self.data["soil_organic_carbon"] * 0.555
         )
-        self.sm_tot_grv = sm_tot_grv
+        self.sm_total_grv = sm_total_grv
 
 
 class PrepareCalibrationData:
@@ -146,17 +146,33 @@ class PrepareCalibrationData:
         bulk_density_of_sample_column: str = str(
             ColumnInfo.Name.CALIB_BULK_DENSITY
         ),
+        profile_id_column: str = str(ColumnInfo.Name.CALIB_PROFILE_ID),
+        soil_moisture_gravimetric_column: str = str(
+            ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC
+        ),
+        soil_organic_carbon_column: str = str(
+            ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON
+        ),
+        lattice_water_column: str = str(ColumnInfo.Name.CALIB_LATTICE_WATER),
     ):
+
         self.calibration_data_frame = calibration_data_frame
         self.date_time_column_name = date_time_column_name
         self.sample_depth_column = sample_depth_column
         self.distance_column = distance_column
         self.bulk_density_of_sample_column = bulk_density_of_sample_column
+        self.profile_id_column = profile_id_column
+        self.soil_moisture_gravimetric_column = (
+            soil_moisture_gravimetric_column
+        )
+        self.soil_organic_carbon_column = soil_organic_carbon_column
+        self.lattice_water_column = lattice_water_column
         self._ensure_date_time_index()
 
         self.unique_calibration_days = np.unique(
             self.calibration_data_frame[self.date_time_column_name]
         )
+        self.list_of_data_frames = []
         self.list_of_profiles = []
 
     def _ensure_date_time_index(self):
@@ -167,3 +183,78 @@ class PrepareCalibrationData:
                 utc=True,
             )
         )
+
+    def _create_list_of_df(self):
+
+        self.list_of_data_frames = [
+            self.calibration_data_frame[
+                self.calibration_data_frame[self.date_time_column_name]
+                == calibration_day
+            ]
+            for calibration_day in self.unique_calibration_days
+        ]
+
+    def _create_list_of_profiles(self):
+
+        for data_frame in self.list_of_data_frames:
+            calibration_day_profiles = []
+            profile_ids = np.unique(
+                self.calibration_data_frame[self.profile_id_column]
+            )
+            calibration_day_profiles.append(
+                self._create_calibration_day_profiles(profile_ids)
+            )
+
+    def _create_calibration_day_profiles(
+        self,
+        single_day_data_frame,
+    ):
+        calibration_day_profiles = []
+        profile_ids = np.unique(single_day_data_frame[self.profile_id_column])
+        for pid in profile_ids:
+            temp_df = single_day_data_frame[
+                single_day_data_frame[self.profile_id_column] == pid
+            ]
+            soil_profile = self._create_individual_profile(
+                pid=pid,
+                profile_data_frame=temp_df,
+            )
+
+            calibration_day_profiles.append(soil_profile)
+        return calibration_day_profiles
+
+    def _create_individual_profile(
+        self,
+        pid,
+        profile_data_frame,
+    ):
+        distances = profile_data_frame[self.distance_column].median()
+        depths = profile_data_frame[self.sample_depth_column]
+        bulk_density = profile_data_frame[self.bulk_density_of_sample_column]
+        soil_moisture_gravimetric = profile_data_frame[
+            self.soil_moisture_gravimetric_column
+        ]
+        soil_organic_carbon = profile_data_frame[
+            self.soil_organic_carbon_column
+        ]
+        lattice_water = profile_data_frame[self.lattice_water_column]
+        soil_profile = SampleProfile(
+            soil_moisture_gravimetric=soil_moisture_gravimetric,
+            depth=depths,
+            bulk_density=bulk_density,
+            distance=distances,
+            lattice_water=lattice_water,
+            soil_organic_carbon=soil_organic_carbon,
+            pid=pid,
+        )
+        return soil_profile
+
+    def prepare_calibration_data(self):
+
+        self._create_list_of_df()
+
+        for data_frame in self.list_of_data_frames:
+            calibration_day_profiles = self._create_calibration_day_profiles(
+                data_frame
+            )
+            self.list_of_profiles.append(calibration_day_profiles)
