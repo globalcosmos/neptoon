@@ -53,6 +53,7 @@ class CRNSDataHub:
         validation: bool = True,
         site_information: SiteInformation = None,
         process_with_config: bool = False,
+        calibration_samples_data: pd.DataFrame = None,
     ):
         """
         Inputs to the CRNSDataHub.
@@ -77,6 +78,8 @@ class CRNSDataHub:
         site_information : SiteInformation
             Object which contains information about a site necessary for
             processing crns data. e.g., bulk density data
+        calibration_samples_data : pd.DataFrame
+            The sample data taken during the calibration campaign.
         """
 
         self._crns_data_frame = crns_data_frame

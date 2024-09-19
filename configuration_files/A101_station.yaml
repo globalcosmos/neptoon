@@ -40,8 +40,9 @@ timeseries_data_format:
     incoming_neutron_intensity: Jung
 
 calibration_data_format:
-  format: standard #cosmoz, cosmos-usa, cosmos-uk
+  format: custom # cosmoz, cosmos-usa, cosmos-uk
   key_column_names:
+    date_time:
     profile: PROF
     sample_depth: DETPH_AVG
     radial_distance_from_sensor: LOC_rad
