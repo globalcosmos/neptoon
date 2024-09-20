@@ -6,7 +6,8 @@ from neptoon.corrections_and_functions.calibration_functions import Schroen2017
 from pathlib import Path
 from neptoon.calibration.station_calibration import (
     PrepareCalibrationData,
-    SampleProfile,
+    CalibrationWeightsCalculator,
+    PrepareNeutronCorrectedData,
 )
 
 
@@ -101,7 +102,7 @@ calibration_data = pandas.read_csv(
 
 
 # %%
-prepper = PrepareCalibrationData(
+calib_prepper = PrepareCalibrationData(
     calibration_data_frame=calibration_data,
     date_time_column_name="DateTime_utc",
     distance_column="Distance_to_CRNS_m",
@@ -113,7 +114,8 @@ prepper = PrepareCalibrationData(
     profile_id_column="Profile_ID",
 )
 
-prepper.prepare_calibration_data()
+calib_prepper.prepare_calibration_data()
+
 
 # %%
 # cdata
@@ -152,12 +154,24 @@ prepper.prepare_calibration_data()
 
 # %%
 CRNS_data = pandas.read_csv(
-    "c:/Users/schroen/Projects/Neptoon/neptoon/tests/calibration/mock_data/Sheepdrove2-CRNS.csv",
+    Path.cwd() / Path("tests/calibration/mock_data/Sheepdrove2-CRNS.csv"),
     index_col=0,
     parse_dates=True,
 )
+times_series_prepper = PrepareNeutronCorrectedData(
+    corrected_neutron_data_frame=CRNS_data,
+    calibration_data_prepper=calib_prepper,
+)
+
+times_series_prepper.extract_calibration_day_values()
 # %%
-indices = CRNS_data.index.get_indexer(list(calibration_days), method="nearest")
+calibrator = CalibrationWeightsCalculator(
+    time_series_data_object=times_series_prepper,
+    calib_data_object=calib_prepper,
+)
+calibrator.apply_weighting_steps()
+# %%
+# indices = CRNS_data.index.get_indexer(list(calibration_days), method="nearest")
 # %%
 df = pandas.DataFrame()
 df["calibration_day"] = calibration_days

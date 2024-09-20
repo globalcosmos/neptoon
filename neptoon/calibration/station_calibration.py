@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from datetime import timedelta
 from typing import Dict, List
 from neptoon.data_management.column_information import ColumnInfo
 
@@ -20,6 +21,7 @@ class SampleProfile:
         "distance",  # distance from the CRNS in m
         "lattice_water",  # lattice water in g/g
         "soil_organic_carbon",  # soil organic carbon in g/g
+        "calibration_day",  # the calibration day for the sample - datetime
         # Calculated
         "D86",  # penetration depth
         "w_r",  # radial weight of this profile
@@ -33,6 +35,7 @@ class SampleProfile:
         soil_moisture_gravimetric,
         depth,
         bulk_density,
+        calibration_day,
         distance=1,
         lattice_water=None,
         soil_organic_carbon=None,
@@ -70,6 +73,7 @@ class SampleProfile:
         self.depth = np.array(depth)
         self.bulk_density = np.array(bulk_density)
         self.bulk_density_mean = np.array(bulk_density).mean()
+        self.calibration_day = calibration_day
         self.soil_organic_carbon = (
             np.array(soil_organic_carbon)
             if soil_organic_carbon is None
@@ -305,6 +309,7 @@ class PrepareCalibrationData:
             self.soil_organic_carbon_column
         ]
         lattice_water = profile_data_frame[self.lattice_water_column]
+        calibration_datetime = profile_data_frame[self.date_time_column_name]
         soil_profile = SampleProfile(
             soil_moisture_gravimetric=soil_moisture_gravimetric,
             depth=depths,
@@ -313,6 +318,7 @@ class PrepareCalibrationData:
             lattice_water=lattice_water,
             soil_organic_carbon=soil_organic_carbon,
             pid=pid,
+            calibration_day=calibration_datetime,
         )
         return soil_profile
 
@@ -336,12 +342,52 @@ class PrepareNeutronCorrectedData:
         self,
         corrected_neutron_data_frame: pd.DataFrame,
         calibration_data_prepper: PrepareCalibrationData,
+        hours_of_data_around_calib: int = 6,
     ):
         self.corrected_neutron_data_frame = corrected_neutron_data_frame
         self.calibration_data_prepper = calibration_data_prepper
+        self.hours_of_data_around_calib = hours_of_data_around_calib
+        self.data_dict = {}
+
+        self._ensure_date_time_index()
+
+    def _ensure_date_time_index(self):
+        """
+        Converts the date time column so the values are datetime type.
+        """
+
+        self.corrected_neutron_data_frame.index = pd.to_datetime(
+            self.corrected_neutron_data_frame.index,
+            utc=True,
+        )
 
     def extract_calibration_day_values(self):
-        pass
+        calibration_indicies_dict = self._extract_calibration_day_indices(
+            hours_of_data=self.hours_of_data_around_calib
+        )
+        dict_of_data = {}
+        for value in calibration_indicies_dict.values():
+            tmp_df = self.corrected_neutron_data_frame.loc[value]
+            calib_day = None
+            # Find calibration day index to use as dict key
+            for day in self.calibration_data_prepper.unique_calibration_days:
+                calib_day = self._find_nearest_calib_day_in_indicies(
+                    day=day, data_frame=tmp_df
+                )
+                if calib_day is not None:
+                    break
+            dict_of_data[calib_day] = tmp_df
+
+        self.data_dict = dict_of_data
+
+    def _find_nearest_calib_day_in_indicies(self, day, data_frame):
+        day = pd.to_datetime(day)
+        mask = (data_frame.index >= day - timedelta(hours=1)) & (
+            data_frame.index <= day + timedelta(hours=1)
+        )
+        if mask.any():
+            calib_day = day
+            return calib_day
 
     def _extract_calibration_day_indices(
         self,
@@ -353,7 +399,8 @@ class PrepareNeutronCorrectedData:
         Parameters
         ----------
         hours_of_data : int, optional
-            _description_, by default 6
+            The hours of data around the calibration time stampe to
+            collect, by default 6
 
         Returns
         -------
@@ -361,7 +408,7 @@ class PrepareNeutronCorrectedData:
             A dictionary for each calibration date with the indices to
             extract from corrected neutron data.
         """
-        extractor = CalibrationIndicesExtractor(
+        extractor = IndicesExtractor(
             corrected_neutron_data_frame=self.corrected_neutron_data_frame,
             calibration_data_prepper=self.calibration_data_prepper,
             hours_of_data_to_extract=hours_of_data,
@@ -371,7 +418,7 @@ class PrepareNeutronCorrectedData:
         return calibration_indices
 
 
-class CalibrationIndicesExtractor:
+class IndicesExtractor:
     """
     Extracts indices from the corrected neutron data based on the
     supplied calibration days
@@ -449,3 +496,29 @@ class CalibrationIndicesExtractor:
             )
 
         return calibration_indices
+
+
+class CalibrationWeightsCalculator:
+    def __init__(
+        self,
+        time_series_data_object: PrepareNeutronCorrectedData,
+        calib_data_object: PrepareCalibrationData,
+    ):
+        self.time_series_data_object = time_series_data_object
+        self.calib_data_object = calib_data_object
+
+    def _get_time_series_data_for_day(
+        self,
+        day,
+    ):
+        return self.time_series_data_object.data_dict[day]
+
+    def apply_weighting_steps(self):
+        for day in self.calib_data_object.unique_calibration_days:
+            tmp_data = self._get_time_series_data_for_day(day)
+            day_list_of_profiles = [
+                profile
+                for profile in self.calib_data_object.list_of_profiles
+                if profile.calibration_day == day
+            ]
+            print(day_list_of_profiles)
