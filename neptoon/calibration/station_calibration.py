@@ -3,6 +3,7 @@ import numpy as np
 from datetime import timedelta
 from typing import Dict, List
 from neptoon.data_management.column_information import ColumnInfo
+from neptoon.corrections_and_functions.calibration_functions import Schroen2017
 
 
 class SampleProfile:
@@ -27,6 +28,7 @@ class SampleProfile:
         "w_r",  # radial weight of this profile
         "sm_total_weghted_avg_vol",  # vertically weighted average sm
         "sm_total_weighted_avg_grv",  # vertically weighted average sm
+        "vertical_weights",
         "data",  # DataFrame
     ]
 
@@ -309,7 +311,10 @@ class PrepareCalibrationData:
             self.soil_organic_carbon_column
         ]
         lattice_water = profile_data_frame[self.lattice_water_column]
-        calibration_datetime = profile_data_frame[self.date_time_column_name]
+        # only need one calibration datetime
+        calibration_datetime = profile_data_frame[
+            self.date_time_column_name
+        ].iloc[0]
         soil_profile = SampleProfile(
             soil_moisture_gravimetric=soil_moisture_gravimetric,
             depth=depths,
@@ -333,7 +338,7 @@ class PrepareCalibrationData:
             calibration_day_profiles = self._create_calibration_day_profiles(
                 data_frame
             )
-            self.list_of_profiles.append(calibration_day_profiles)
+            self.list_of_profiles.extend(calibration_day_profiles)
 
 
 class PrepareNeutronCorrectedData:
@@ -503,9 +508,17 @@ class CalibrationWeightsCalculator:
         self,
         time_series_data_object: PrepareNeutronCorrectedData,
         calib_data_object: PrepareCalibrationData,
+        air_humidity_column_name: str = str(
+            ColumnInfo.Name.AIR_RELATIVE_HUMIDITY
+        ),
+        neutron_column_name: str = str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+        ),
     ):
         self.time_series_data_object = time_series_data_object
         self.calib_data_object = calib_data_object
+        self.air_humidity_column_name = air_humidity_column_name
+        self.neutron_column_name = neutron_column_name
 
     def _get_time_series_data_for_day(
         self,
@@ -514,11 +527,42 @@ class CalibrationWeightsCalculator:
         return self.time_series_data_object.data_dict[day]
 
     def apply_weighting_steps(self):
+
         for day in self.calib_data_object.unique_calibration_days:
             tmp_data = self._get_time_series_data_for_day(day)
+            print(self.calib_data_object.list_of_profiles)
             day_list_of_profiles = [
                 profile
                 for profile in self.calib_data_object.list_of_profiles
                 if profile.calibration_day == day
             ]
-            print(day_list_of_profiles)
+            for profile in day_list_of_profiles:
+                sm_estimate = profile.sm_total_vol.mean()
+
+                profile.D86 = w = Schroen2017.calculate_measurement_depth(
+                    distance=profile.distance,
+                    bulk_density=profile.bulk_density.mean(),
+                    soil_moisture=sm_estimate,
+                )
+
+                profile.vertical_weights = Schroen2017.vertical_weighting(
+                    profile.depth,
+                    bulk_density=profile.bulk_density.mean(),
+                    soil_moisture=sm_estimate,
+                )
+
+                # Calculate weighted sm average
+                profile.sm_total_weghted_avg_vol = np.average(
+                    profile.sm_total_vol, weights=profile.vertical_weights
+                )
+                profile.sm_total_weighted_avg_grv = np.average(
+                    profile.sm_total_grv, weights=profile.vertical_weights
+                )
+                print(tmp_data)
+                profile.w_r = Schroen2017.horizontal_weighting(
+                    distance=profile.distance,
+                    soil_moisture=profile.sm_total_weghted_avg_vol,
+                    air_humidity=tmp_data[
+                        self.air_humidity_column_name
+                    ].mean(),
+                )

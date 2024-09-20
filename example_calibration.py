@@ -168,9 +168,23 @@ times_series_prepper.extract_calibration_day_values()
 calibrator = CalibrationWeightsCalculator(
     time_series_data_object=times_series_prepper,
     calib_data_object=calib_prepper,
+    air_humidity_column_name="AirHumidity_gapfilled",
+    neutron_column_name="NeutronCount_Epithermal_MovAvg24h_corrected",
 )
 calibrator.apply_weighting_steps()
 # %%
+"""
+
+
+
+
+
+
+
+
+
+"""
+
 # indices = CRNS_data.index.get_indexer(list(calibration_days), method="nearest")
 # %%
 df = pandas.DataFrame()
@@ -232,6 +246,9 @@ for index, row in df.iterrows():
             "  Profile %.0f: vertical wt. avg. SM: %.3f, CRNS depth: %3.0f cm, distance: %2.0f m, horizontal weight: %7.0f"
             % (i, P.sm_tot_wavg_vol, P.D86, P.r, P.w_r)
         )
+
+    ### ABOVE IS DONE TODO
+    ### CONTINUE BELOW HERE TODO
 
     # Horizontal average
     profiles_sm_tot_wavg_vol = [P.sm_tot_wavg_vol for P in row["profiles"]]
