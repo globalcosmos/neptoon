@@ -38,6 +38,7 @@ def test_crns_data_hub_initialization(sample_crns_data):
 @pytest.fixture
 def example_site_information():
     site_information = SiteInformation(
+        site_name="test",
         latitude=51.37,
         longitude=12.55,
         elevation=140,

@@ -18,6 +18,7 @@ class SiteInformation:
 
     """
 
+    site_name: str
     latitude: float
     longitude: float
     elevation: float
