@@ -103,9 +103,11 @@ class CalibrationConfiguration:
 
 class CalibrationStation:
     """
-    Abstract class to do full claibration steps in one go. Can be used
-    on its own, but is mainly designed to facilitate CRNSDataHub
-    calibration.
+    Abstract which does the complete claibration steps. Can be used on
+    its own, but is mainly designed to facilitate CRNSDataHub
+    calibration. Simply include the calibration data, the time series
+    data and the config object and run find_n0_value(), to return the
+    optimum N0.
     """
 
     def __init__(
@@ -123,6 +125,14 @@ class CalibrationStation:
         self.calibrator = None
 
     def find_n0_value(self):
+        """
+        Runs the full process to obtain an N0 estimate.
+
+        Returns
+        -------
+        float
+            N0 estimate after calibration.
+        """
         self.calib_prepper = PrepareCalibrationData(
             calibration_data_frame=self.calibration_data,
             config=self.config,
@@ -142,6 +152,19 @@ class CalibrationStation:
         self.calibrator.apply_weighting_to_multiple_days()
         optimal_n0 = self.calibrator.find_optimal_N0()
         return optimal_n0
+
+    def return_calibration_results_data_frame(self):
+        """
+        Returns the daily results as a data frame. When multiple days
+        calibration is undertaken on each day. The outputs of this are
+        saved and this method returns them for viewing.
+
+        Returns
+        -------
+        pd.DataFrame
+            data frame with the results in it.
+        """
+        return self.calibrator.return_output_dict_as_dataframe()
 
 
 class SampleProfile:
@@ -429,7 +452,6 @@ class PrepareNeutronCorrectedData:
         self.corrected_neutron_data_frame = corrected_neutron_data_frame
         self.calibration_data_prepper = calibration_data_prepper
         self.config = config
-        # self.hours_of_data_around_calib = hours_of_data_around_calib
         self.data_dict = {}
 
         self._ensure_date_time_index()

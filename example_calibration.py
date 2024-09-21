@@ -27,6 +27,7 @@ crns_data = pandas.read_csv(
     index_col=0,
     parse_dates=True,
 )
+
 calib_config = CalibrationConfiguration(
     date_time_column_name="DateTime_utc",
     distance_column="Distance_to_CRNS_m",
@@ -46,10 +47,36 @@ calibration_station = CalibrationStation(
     time_series_data=crns_data,
     config=calib_config,
 )
-calibration_station.find_n0_value()
-calibration_station.calibrator.return_output_dict_as_dataframe()
+estimate_n0 = calibration_station.find_n0_value()
+print(f"N0 number is {estimate_n0}")
+calibration_station.return_calibration_results_data_frame()
 # %%
+"""
 
+Run above this line. 
+
+I've left the plot scripts below here, they are likely broken when used
+in the refactored claibration routine. We can fix them up later.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
 
 # %%
 
