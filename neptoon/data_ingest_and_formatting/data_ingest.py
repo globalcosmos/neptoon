@@ -1,7 +1,3 @@
-"""
-
-"""
-
 import pandas as pd
 import tarfile
 import re
@@ -51,27 +47,27 @@ core_logger = get_logger()
 #         Error if string or pathlib.Path given.
 #     """
 
-#     if file_path is None:
-#         return None
-#     if isinstance(file_path, str):
-#         new_file_path = Path(file_path)
-#         if new_file_path.is_absolute():
-#             return new_file_path
-#         else:
-#             return base / Path(file_path)
-#     elif isinstance(file_path, Path):
-#         if file_path.is_absolute():
-#             return file_path
-#         else:
-#             return base / file_path
+# if file_path is None:
+#     return None
+# if isinstance(file_path, str):
+#     new_file_path = Path(file_path)
+#     if new_file_path.is_absolute():
+#         return new_file_path
 #     else:
-#         message = (
-#             "data_location must be of type str or pathlib.Path. \n"
-#             f"{type(file_path).__name__} provided, "
-#             "please change this."
-#         )
-#         core_logger.error(message)
-#         raise ValueError(message)
+#         return base / Path(file_path).resolve()
+# elif isinstance(file_path, Path):
+#     if file_path.is_absolute():
+#         return file_path
+#     else:
+#         return base / file_path
+# else:
+#     message = (
+#         "data_location must be of type str or pathlib.Path. \n"
+#         f"{type(file_path).__name__} provided, "
+#         "please change this."
+#     )
+#     core_logger.error(message)
+#     raise ValueError(message)
 
 
 class FileCollectionConfig:
@@ -152,7 +148,12 @@ class FileCollectionConfig:
             file_path=path_to_yaml
         )
         self._data_location = validate_and_convert_file_path(
-            file_path=data_location, base=self._path_to_yaml.parent
+            file_path=data_location,
+            base=(
+                self.path_to_yaml.parent
+                if self.path_to_yaml is not None
+                else ""
+            ),
         )
         self._data_source = None
         self.column_names = column_names
@@ -1070,7 +1071,7 @@ class InputDataFrameFormattingConfig:
             )
         )
 
-    def build_from_yaml(
+    def import_yaml(
         self,
         path_to_yaml: str = None,
     ):
@@ -1101,62 +1102,68 @@ class InputDataFrameFormattingConfig:
 
         internal_config = ConfigurationManager()
         internal_config.load_and_validate_configuration(
-            name="input_data",
+            name="station",
             file_path=path,
         )
 
-        yaml_information = internal_config.get_configuration("input_data")
+        self.yaml_information = internal_config.get_configuration("station")
 
-        self.time_resolution = yaml_information.input_data.time_step_resolution
+    def build_from_yaml(self):
+        """
+        Assign attributes using the YAML information.
+        """
+        tmp = self.yaml_information
+
+        self.time_resolution = tmp.time_series_data.time_step_resolution
 
         self.neutron_count_units = (
-            yaml_information.input_data.key_column_info.neutron_count_units
+            tmp.time_series_data.key_column_info.neutron_count_units
         )
 
         self.add_meteo_columns(
-            meteo_columns=yaml_information.input_data.key_column_info.epithermal_neutron_counts_columns,
+            meteo_columns=tmp.time_series_data.key_column_info.epithermal_neutron_counts_columns,
             meteo_type=InputColumnDataType.EPI_NEUTRON_COUNT,
             unit=self.neutron_count_units,
         )
 
         self.add_meteo_columns(
-            meteo_columns=yaml_information.input_data.key_column_info.thermal_neutrons,
+            meteo_columns=tmp.time_series_data.key_column_info.thermal_neutrons,
             meteo_type=InputColumnDataType.THERM_NEUTRON_COUNT,
             unit=self.neutron_count_units,
         )
 
         self.add_meteo_columns(
-            meteo_columns=yaml_information.input_data.key_column_info.temperature_columns,
+            meteo_columns=tmp.time_series_data.key_column_info.temperature_columns,
             meteo_type=InputColumnDataType.TEMPERATURE,
-            unit=yaml_information.input_data.key_column_info.temperature_units,
+            unit=tmp.time_series_data.key_column_info.temperature_units,
         )
         self.add_meteo_columns(
-            meteo_columns=yaml_information.input_data.key_column_info.pressure_columns,
+            meteo_columns=tmp.time_series_data.key_column_info.pressure_columns,
             meteo_type=InputColumnDataType.PRESSURE,
-            unit=yaml_information.input_data.key_column_info.pressure_units,
+            unit=tmp.time_series_data.key_column_info.pressure_units,
         )
         self.add_meteo_columns(
-            meteo_columns=yaml_information.input_data.key_column_info.relative_humidity_columns,
+            meteo_columns=tmp.time_series_data.key_column_info.relative_humidity_columns,
             meteo_type=InputColumnDataType.RELATIVE_HUMIDITY,
-            unit=yaml_information.input_data.key_column_info.relative_humidity_units,
+            unit=tmp.time_series_data.key_column_info.relative_humidity_units,
         )
         self.assign_merge_methods(
             column_data_type=InputColumnDataType.PRESSURE,
-            merge_method=yaml_information.input_data.key_column_info.pressure_merge_method,
+            merge_method=tmp.time_series_data.key_column_info.pressure_merge_method,
         )
         self.assign_merge_methods(
             column_data_type=InputColumnDataType.TEMPERATURE,
-            merge_method=yaml_information.input_data.key_column_info.temperature_merge_method,
+            merge_method=tmp.time_series_data.key_column_info.temperature_merge_method,
         )
         self.assign_merge_methods(
             column_data_type=InputColumnDataType.RELATIVE_HUMIDITY,
-            merge_method=yaml_information.input_data.key_column_info.relative_humidity_merge_method,
+            merge_method=tmp.time_series_data.key_column_info.relative_humidity_merge_method,
         )
         self.add_date_time_column_info(
-            date_time_columns=yaml_information.input_data.key_column_info.date_time_columns,
-            date_time_format=yaml_information.input_data.key_column_info.date_time_format,
-            initial_time_zone=yaml_information.input_data.key_column_info.initial_time_zone,
-            convert_time_zone_to=yaml_information.input_data.key_column_info.convert_time_zone_to,
+            date_time_columns=tmp.time_series_data.key_column_info.date_time_columns,
+            date_time_format=tmp.time_series_data.key_column_info.date_time_format,
+            initial_time_zone=tmp.time_series_data.key_column_info.initial_time_zone,
+            convert_time_zone_to=tmp.time_series_data.key_column_info.convert_time_zone_to,
         )
 
     def assign_merge_methods(
@@ -1826,6 +1833,7 @@ class CollectAndParseRawData:
         self.input_formatter_config = InputDataFrameFormattingConfig(
             path_to_yaml=self.path_to_yaml
         )
+        self.input_formatter_config.import_yaml()
         self.input_formatter_config.build_from_yaml()
         data_formatter = FormatDataForCRNSDataHub(
             data_frame=parsed_data,

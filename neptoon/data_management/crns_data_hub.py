@@ -226,11 +226,28 @@ class CRNSDataHub:
         attacher.fetch_data()
         attacher.attach_data()
 
-    def apply_quality_flags(
+    def add_quality_flags(
         self,
         custom_flags: QualityAssessmentFlagBuilder = None,
-        flags_from_config: bool = False,
-        flags_default: str = None,
+        add_check=None,
+    ):
+        if self.quality_assessor is None:
+            self.quality_assessor = DataQualityAssessor(
+                data_frame=self.crns_data_frame
+            )
+
+        if custom_flags:
+            self.quality_assessor.add_custom_flag_builder(custom_flags)
+
+        if add_check:
+            if isinstance(add_check, list):
+                for check in add_check:
+                    self.quality_assessor.add_quality_check(check)
+            else:
+                self.quality_assessor.add_quality_check(add_check)
+
+    def apply_quality_flags(
+        self,
     ):
         """
         Flags data based on quality assessment. A user can supply a
@@ -251,29 +268,11 @@ class CRNSDataHub:
             A string representing a default version of flagging, by
             default None
         """
-        if self.quality_assessor is None:
-            self.quality_assessor = DataQualityAssessor(
-                data_frame=self.crns_data_frame
-            )
 
-        if flags_from_config:
-            # validate config flags section is complete
-            # compile flag_builder using config object
-            # apply flags
-            pass
-
-        if custom_flags:
-            self.quality_assessor.add_custom_flag_builder(custom_flags)
-            self.quality_assessor.apply_quality_assessment()
-            self.flags_data_frame = (
-                self.quality_assessor.return_flags_data_frame()
-            )
-            message = "Flagging of data complete using Custom Flags"
-            core_logger.info(message)
-
-        if flags_default:
-            # Do we include a default system here? Is this possible?
-            pass
+        self.quality_assessor.apply_quality_assessment()
+        self.flags_data_frame = self.quality_assessor.return_flags_data_frame()
+        message = "Flagging of data complete using Custom Flags"
+        core_logger.info(message)
 
     def select_correction(
         self,

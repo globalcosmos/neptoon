@@ -187,8 +187,6 @@ class IncomingIntensityCorrectionZreda2012(Correction):
             DataFrame now corrected
         """
 
-        # TODO validation here
-
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_zreda_2012(
                 row[self.incoming_neutron_column_name],
@@ -226,11 +224,29 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
         self.cutoff_rigidity = cutoff_rigidity
         self.incoming_neutron_column_name = incoming_neutron_column_name
 
+    def _check_required_columns(self, data_frame):
+        required_columns = [
+            self.incoming_neutron_column_name,
+            self.reference_incoming_neutron_value,
+            self.cutoff_rigidity,
+        ]
+        missing_columns = [
+            col
+            for col in required_columns
+            if is_column_missing_or_empty(data_frame, col)
+        ]
+        if missing_columns:
+            raise ValueError(
+                f"Required columns are missing or empty: {', '.join(missing_columns)}"
+            )
+
     def apply(self, data_frame):
+        self._check_required_columns(data_frame=data_frame)
+
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_adjustment_rc_corrected(
                 incoming_intensity=row[self.incoming_neutron_column_name],
-                incoming_ref=row[self.incoming_neutron_intensity],
+                incoming_ref=row[self.reference_incoming_neutron_value],
                 cutoff_rigidity=row[self.cutoff_rigidity],
             ),
             axis=1,
