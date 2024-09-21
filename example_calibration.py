@@ -170,21 +170,12 @@ calibrator = CalibrationWeightsCalculator(
     calib_data_object=calib_prepper,
     air_humidity_column_name="AirHumidity_gapfilled",
     neutron_column_name="NeutronCount_Epithermal_MovAvg24h_corrected",
+    # air_pressure_column_name=""
 )
-calibrator.apply_weighting_steps()
+calibrator.apply_weighting_to_multiple_days()
 # %%
-"""
 
-
-
-
-
-
-
-
-
-"""
-
+calibrator.find_optimal_N0()
 # indices = CRNS_data.index.get_indexer(list(calibration_days), method="nearest")
 # %%
 df = pandas.DataFrame()

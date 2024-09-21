@@ -1,9 +1,14 @@
 import pandas as pd
 import numpy as np
+import copy
 from datetime import timedelta
+from scipy.optimize import minimize
 from typing import Dict, List
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.corrections_and_functions.calibration_functions import Schroen2017
+from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
+    neutrons_to_grav_sm_desilets,
+)
 
 
 class SampleProfile:
@@ -19,16 +24,17 @@ class SampleProfile:
         "depth",  # depth values in cm
         "bulk_density",  # bulk density
         "bulk_density_mean",
-        "distance",  # distance from the CRNS in m
+        "_distance",  # distance from the CRNS in m
         "lattice_water",  # lattice water in g/g
         "soil_organic_carbon",  # soil organic carbon in g/g
         "calibration_day",  # the calibration day for the sample - datetime
         # Calculated
         "D86",  # penetration depth
-        "w_r",  # radial weight of this profile
+        "horizontal_weight",  # radial weight of this profile
         "sm_total_weghted_avg_vol",  # vertically weighted average sm
         "sm_total_weighted_avg_grv",  # vertically weighted average sm
         "vertical_weights",
+        "rescaled_distance",
         "data",  # DataFrame
     ]
 
@@ -86,15 +92,21 @@ class SampleProfile:
             if lattice_water is not None
             else np.zeros_like(soil_moisture_gravimetric)
         )
+        self.vertical_weights = np.ones_like(soil_moisture_gravimetric)
         self.data = None
         self.update_data()
 
         # Scalar values
-        self.distance = distance
+        self._distance = distance
+        self.rescaled_distance = distance  # initialise as distance first
         self.D86 = np.nan
         self.sm_total_weighted_avg_grv = np.nan
         self.sm_total_weghted_avg_vol = np.nan
-        self.w_r = np.nan
+        self.horizontal_weight = 1  # intialise as 1
+
+    @property
+    def distance(self):
+        return self._distance
 
     def update_data(self):
         """
@@ -508,17 +520,22 @@ class CalibrationWeightsCalculator:
         self,
         time_series_data_object: PrepareNeutronCorrectedData,
         calib_data_object: PrepareCalibrationData,
+        converge_accuracy: float = 0.01,
         air_humidity_column_name: str = str(
             ColumnInfo.Name.AIR_RELATIVE_HUMIDITY
         ),
         neutron_column_name: str = str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ),
+        air_pressure_column_name: str = str(ColumnInfo.Name.AIR_PRESSURE),
     ):
         self.time_series_data_object = time_series_data_object
         self.calib_data_object = calib_data_object
+        self.converge_accuracy = converge_accuracy
         self.air_humidity_column_name = air_humidity_column_name
         self.neutron_column_name = neutron_column_name
+        self.air_pressure_column_name = air_pressure_column_name
+        self.output_dictionary = {}
 
     def _get_time_series_data_for_day(
         self,
@@ -526,21 +543,98 @@ class CalibrationWeightsCalculator:
     ):
         return self.time_series_data_object.data_dict[day]
 
-    def apply_weighting_steps(self):
+    def apply_weighting_to_multiple_days(self):
 
         for day in self.calib_data_object.unique_calibration_days:
+
             tmp_data = self._get_time_series_data_for_day(day)
-            print(self.calib_data_object.list_of_profiles)
             day_list_of_profiles = [
                 profile
                 for profile in self.calib_data_object.list_of_profiles
                 if profile.calibration_day == day
             ]
+
+            # Get initial average SM
+            sm_total_vol_values = [
+                np.array(profile.sm_total_vol).flatten()
+                for profile in day_list_of_profiles
+                if profile.sm_total_vol is not None
+            ]
+            flattened = np.concatenate(sm_total_vol_values)
+            valid_values = flattened[~np.isnan(flattened)]
+            sm_estimate = np.mean(valid_values)
+
+            # Get average air humidity and air pressure
+            average_air_humidity = tmp_data[
+                self.air_humidity_column_name
+            ].mean()
+            average_air_pressure = tmp_data[
+                self.air_pressure_column_name
+            ].mean()
+
+            field_average_sm_vol, field_average_sm_grav, footprint = (
+                self.calculate_weighted_sm_average(
+                    day_list_of_profiles=day_list_of_profiles,
+                    initial_sm_estimate=sm_estimate,
+                    average_air_humidity=average_air_humidity,
+                    average_air_pressure=average_air_pressure,
+                )
+            )
+
+            info_dictionary = {
+                "field_average_soil_moisture_volumetric": field_average_sm_vol,
+                "field_average_soil_moisture_gravimetric": field_average_sm_grav,
+                "horizontal_footprint_radius_in_meters": footprint,
+            }
+
+            self.output_dictionary[day] = info_dictionary
+
+    def calculate_weighted_sm_average(
+        self,
+        day_list_of_profiles,
+        initial_sm_estimate: float,
+        average_air_humidity: float,
+        average_air_pressure: float,
+    ):
+        """_summary_
+
+        Parameters
+        ----------
+        day_list_of_profiles : _type_
+            _description_
+        initial_sm_estimate : float
+            _description_
+        average_air_humidity : float
+            _description_
+        average_air_pressure : float
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+
+        sm_estimate = copy.deepcopy(initial_sm_estimate)
+        accuracy = 1
+        field_average_sm_volumetric = None
+        field_average_sm_gravimetric = None
+
+        while accuracy > self.converge_accuracy:
+            profile_sm_averages_volumetric = []
+            profile_sm_averages_gravimetric = []
+            profiles_horizontal_weights = []
+
             for profile in day_list_of_profiles:
-                sm_estimate = profile.sm_total_vol.mean()
+
+                profile.rescaled_distance = Schroen2017.rescale_distance(
+                    distance=profile.rescaled_distance,
+                    pressure=average_air_pressure,
+                    soil_moisture=sm_estimate,
+                )
 
                 profile.D86 = w = Schroen2017.calculate_measurement_depth(
-                    distance=profile.distance,
+                    distance=profile.rescaled_distance,
                     bulk_density=profile.bulk_density.mean(),
                     soil_moisture=sm_estimate,
                 )
@@ -558,11 +652,157 @@ class CalibrationWeightsCalculator:
                 profile.sm_total_weighted_avg_grv = np.average(
                     profile.sm_total_grv, weights=profile.vertical_weights
                 )
-                print(tmp_data)
-                profile.w_r = Schroen2017.horizontal_weighting(
-                    distance=profile.distance,
+
+                profile.horizontal_weight = Schroen2017.horizontal_weighting(
+                    distance=profile.rescaled_distance,
                     soil_moisture=profile.sm_total_weghted_avg_vol,
-                    air_humidity=tmp_data[
-                        self.air_humidity_column_name
-                    ].mean(),
+                    air_humidity=average_air_humidity,
                 )
+
+                # create a list of average sm and horizontal weights
+                profile_sm_averages_volumetric.append(
+                    profile.sm_total_weghted_avg_vol
+                )
+                profile_sm_averages_gravimetric.append(
+                    profile.sm_total_weighted_avg_grv
+                )
+                profiles_horizontal_weights.append(profile.horizontal_weight)
+
+            # mask out nan values from list
+            profile_sm_averages_volumetric = np.ma.MaskedArray(
+                profile_sm_averages_volumetric,
+                mask=np.isnan(profile_sm_averages_volumetric),
+            )
+            profile_sm_averages_gravimetric = np.ma.MaskedArray(
+                profile_sm_averages_gravimetric,
+                mask=np.isnan(profile_sm_averages_gravimetric),
+            )
+            profiles_horizontal_weights = np.ma.MaskedArray(
+                profiles_horizontal_weights,
+                mask=np.isnan(profiles_horizontal_weights),
+            )
+
+            # create field averages of soil moisture
+
+            field_average_sm_volumetric = np.average(
+                profile_sm_averages_volumetric,
+                weights=profiles_horizontal_weights,
+            )
+            field_average_sm_gravimetric = np.average(
+                profile_sm_averages_gravimetric,
+                weights=profiles_horizontal_weights,
+            )
+
+            # check convergence accuracy
+            accuracy = abs(
+                (field_average_sm_volumetric - sm_estimate) / sm_estimate
+            )
+            if accuracy > self.converge_accuracy:
+                print(accuracy)
+                print(field_average_sm_volumetric)
+                sm_estimate = copy.deepcopy(field_average_sm_volumetric)
+                profile_sm_averages_volumetric = []
+                profile_sm_averages_gravimetric = []
+                profiles_horizontal_weights = []
+
+        footprint_m = Schroen2017.calculate_footprint_radius(
+            soil_moisture=field_average_sm_volumetric,
+            air_humidity=average_air_humidity,
+            pressure=average_air_pressure,
+        )
+
+        return (
+            field_average_sm_volumetric,
+            field_average_sm_gravimetric,
+            footprint_m,
+        )
+
+    def return_output_dict_as_dataframe(self):
+        df = pd.DataFrame.from_dict(self.output_dictionary, orient="index")
+        df = df.reset_index()
+        df = df.rename(
+            columns={
+                "index": "calibration_day",
+                "field_average_soil_moisture_volumetric": "field_average_soil_moisture_volumetric",
+                "field_average_soil_moisture_gravimetric": "field_average_soil_moisture_gravimetric",
+                "horizontal_footprint_in_meters": "horizontal_footprint_radius",
+            }
+        )
+        return df
+
+    def find_optimal_N0(
+        self,
+    ):
+        df = self.return_output_dict_as_dataframe()
+        for index, row in df.iterrows():
+            calib_day = pd.to_datetime(row["calibration_day"])
+            calib_data_frame = self.time_series_data_object.data_dict[
+                calib_day
+            ]
+            gravimetric_sm_on_day = row[
+                "field_average_soil_moisture_gravimetric"
+            ]
+
+            N0_optimal, absolute_error = (
+                self.find_optimal_N0_single_day_iteration_style(
+                    gravimetric_sm_on_day=gravimetric_sm_on_day,
+                    calib_data_frame_subset=calib_data_frame,
+                )
+            )
+
+            # Update the original dictionary
+            self.output_dictionary[calib_day]["optimal_N0"] = N0_optimal
+            self.output_dictionary[calib_day][
+                "absolute_error"
+            ] = absolute_error
+
+    def find_optimal_N0_single_day_iteration_style(
+        self,
+        gravimetric_sm_on_day,
+        calib_data_frame_subset,
+    ):
+        neutron_mean = calib_data_frame_subset[self.neutron_column_name].mean()
+        n0_range = pd.Series(range(int(neutron_mean), int(neutron_mean * 2.5)))
+
+        def calculate_sm_and_error(n0):
+            sm_prediction = neutrons_to_grav_sm_desilets(
+                neutrons=neutron_mean, N0=n0
+            )
+            absolute_error = abs(sm_prediction - gravimetric_sm_on_day)
+            return pd.Series(
+                {
+                    "N0": n0,
+                    "soil_moisture_prediction": sm_prediction,
+                    "absolute_error": absolute_error,
+                }
+            )
+
+        results_df = n0_range.apply(calculate_sm_and_error)
+        min_error_idx = results_df["absolute_error"].idxmin()
+        n0_optimal = results_df.loc[min_error_idx, "N0"]
+        minimum_error = results_df.loc[min_error_idx, "absolute_error"]
+        return n0_optimal, minimum_error
+
+    def find_optimal_N0_single_day_minimise_style(
+        self,
+        gravimetric_sm_on_day,
+        average_neutrons_on_day,
+        N0_initial=1000,
+        N0_bounds=(400, 4000),
+    ):
+        """TODO"""
+        # result = minimize(
+        #     self.find_N0_error_function,
+        #     N0_initial,
+        #     args=(
+        #         gravimetric_sm_on_day,
+        #         self.time_series_data_object.corrected_neutron_data_frame[
+        #             self.neutron_column_name
+        #         ],
+        #     ),
+        #     bounds=[N0_bounds],
+        # )
+        # N0_optimal = result.x[0]
+        # rmse = result["fun"]
+        # return N0_optimal, rmse
+        pass
