@@ -8,89 +8,11 @@ from neptoon.calibration.station_calibration import (
     PrepareCalibrationData,
     CalibrationWeightsCalculator,
     PrepareNeutronCorrectedData,
+    CalibrationConfiguration,
 )
 
 
 # %%
-# class Profile:
-
-#     latest_pid = 0
-
-#     __slots__ = [
-#         # Input
-#         "pid",  # arbitrary profile id
-#         "sm",  # soil moisture values in g/g
-#         "sm_tot_grv",  # soil moisture values in g/g
-#         "sm_tot_vol",  # soil moisture values in g/g
-#         "d",  # depth values in cm
-#         "bd",  # bulk density
-#         "bd_mean",
-#         "r",  # distance from the CRNS in m
-#         "lw",  # lattice water in g/g
-#         "soc",  # soil organic carbon in g/g
-#         # Calculated
-#         "D86",  # penetration depth
-#         "w_r",  # radial weight of this profile
-#         "sm_tot_wavg_vol",  # vertically weighted average sm
-#         "sm_tot_wavg_grv",  # vertically weighted average sm
-#         "data",  # DataFrame
-#     ]
-
-#     def __init__(self, sm, d, bd, r=1, lw=0, soc=0, pid=None):
-
-#         # Vector data
-#         if pid is None:
-#             Profile.latest_pid += 1
-#             self.pid = Profile.latest_pid
-#         else:
-#             self.pid = pid
-#         self.sm = np.array(sm)
-#         self.d = np.array(d)
-#         self.bd = np.array(bd)
-#         self.bd_mean = np.array(bd).mean()
-#         self.soc = np.array(soc)
-#         self.lw = np.array(lw)
-#         self.data = None
-#         self.update_data()
-
-#         # Scalar values
-#         self.r = r
-#         self.D86 = np.nan
-#         self.sm_tot_wavg_grv = np.nan
-#         self.sm_tot_wavg_vol = np.nan
-#         self.w_r = np.nan
-
-#     def update_data(self):
-#         if not self.data:
-#             self.data = pandas.DataFrame()
-#         self.data["pid"] = self.pid
-#         self.data["sm"] = self.sm
-#         self.data["d"] = self.d
-#         self.data["bd"] = self.bd
-#         self.data["lw"] = self.lw
-#         self.data["soc"] = self.soc
-#         if not "weight" in self.data.columns:
-#             self.data["weight"] = np.nan
-#         self.calculate_sm_tot_vol()
-#         self.calculate_sm_tot_grv()
-#         self.data["sm_tot_vol"] = self.sm_tot_vol
-#         self.data["sm_tot_grv"] = self.sm_tot_grv
-
-#     def calculate_sm_tot_vol(self):
-#         sm_tot_vol = (
-#             self.data["sm"] + self.data["lw"] + self.data["soc"] * 0.555
-#         ) * self.data["bd"]
-#         self.sm_tot_vol = sm_tot_vol
-
-#     def calculate_sm_tot_grv(self):
-#         sm_tot_grv = (
-#             self.data["sm"] + self.data["lw"] + self.data["soc"] * 0.555
-#         )
-#         self.sm_tot_grv = sm_tot_grv
-
-
-# %%
-this_path = Path(__file__).absolute().parent
 
 calibration_data = pandas.read_csv(
     (
@@ -99,11 +21,16 @@ calibration_data = pandas.read_csv(
     ),
     skipinitialspace=True,
 )
+crns_data = pandas.read_csv(
+    Path.cwd() / Path("tests/calibration/mock_data/Sheepdrove2-CRNS.csv"),
+    index_col=0,
+    parse_dates=True,
+)
 
 
 # %%
-calib_prepper = PrepareCalibrationData(
-    calibration_data_frame=calibration_data,
+
+calib_config = CalibrationConfiguration(
     date_time_column_name="DateTime_utc",
     distance_column="Distance_to_CRNS_m",
     sample_depth_column="Profile_Depth_cm",
@@ -112,64 +39,39 @@ calib_prepper = PrepareCalibrationData(
     soil_organic_carbon_column="SoilOrganicCarbon_g_g",
     lattice_water_column="LatticeWater_g_g",
     profile_id_column="Profile_ID",
+    air_humidity_column_name="AirHumidity_gapfilled",
+    neutron_column_name="NeutronCount_Epithermal_MovAvg24h_corrected",
+)
+
+calib_prepper = PrepareCalibrationData(
+    calibration_data_frame=calibration_data,
+    config=calib_config,
 )
 
 calib_prepper.prepare_calibration_data()
-
-
-# %%
-# cdata
-# calibration_data["DateTime_utc"] = pandas.to_datetime(
-#     calibration_data["DateTime_utc"], utc=True
-# )
-# calibration_days = np.unique(calibration_data["DateTime_utc"])
-# list_of_profiles = []
-
-# for calibration_day in calibration_days:
-#     calibration_day_data = calibration_data[
-#         calibration_data["DateTime_utc"] == calibration_day
-#     ]
-#     calibration_day_profiles = []
-#     profile_ids = np.unique(calibration_day_data["Profile_ID"])
-
-#     for pid in profile_ids:
-#         df = calibration_day_data[calibration_day_data["Profile_ID"] == pid]
-#         distances = df["Distance_to_CRNS_m"].median()
-#         depths = df["Profile_Depth_cm"]
-#         bd = df["DryBulkDensity_g_cm3"]
-#         sm_gg = df["SoilMoisture_g_g"]
-#         soc_gg = df["SoilOrganicCarbon_g_g"]
-#         lw_gg = df["LatticeWater_g_g"]
-#         P = Profile(
-#             pid=pid,
-#             r=distances,
-#             d=depths,
-#             bd=bd,
-#             sm=sm_gg,
-#             lw=lw_gg,
-#             soc=soc_gg,
-#         )
-#         calibration_day_profiles.append(P)
-#     list_of_profiles.append(calibration_day_profiles)
-
-# %%
-CRNS_data = pandas.read_csv(
-    Path.cwd() / Path("tests/calibration/mock_data/Sheepdrove2-CRNS.csv"),
-    index_col=0,
-    parse_dates=True,
-)
 times_series_prepper = PrepareNeutronCorrectedData(
-    corrected_neutron_data_frame=CRNS_data,
+    corrected_neutron_data_frame=crns_data,
     calibration_data_prepper=calib_prepper,
+    config=calib_config,
 )
 
 times_series_prepper.extract_calibration_day_values()
+
+calibrator = CalibrationWeightsCalculator(
+    time_series_data_object=times_series_prepper,
+    calib_data_object=calib_prepper,
+    config=calib_config,
+)
+calibrator.apply_weighting_to_multiple_days()
+calibrator.find_optimal_N0()
+
+# %%
+
+
 # %%
 calibrator = CalibrationWeightsCalculator(
     time_series_data_object=times_series_prepper,
     calib_data_object=calib_prepper,
-    air_humidity_column_name="AirHumidity_gapfilled",
-    neutron_column_name="NeutronCount_Epithermal_MovAvg24h_corrected",
     # air_pressure_column_name=""
 )
 calibrator.apply_weighting_to_multiple_days()
@@ -178,22 +80,7 @@ calibrator.apply_weighting_to_multiple_days()
 calibrator.find_optimal_N0()
 # indices = CRNS_data.index.get_indexer(list(calibration_days), method="nearest")
 # %%
-df = pandas.DataFrame()
-df["calibration_day"] = calibration_days
-df["profiles"] = list_of_profiles
-df["sm_tot_wavg_vol"] = np.nan
-df["sm_tot_wavg_grv"] = np.nan
-df["bd"] = np.nan
-df["footprint_depth"] = np.nan
-df["footprint_radius"] = np.nan
-df["air_pressure"] = 993  # to be taken from CRNS dataset
-df["air_humidity"] = CRNS_data.iloc[indices][
-    "AirHumidity_gapfilled"
-].values  # to be taken from CRNS dataset or DataHub Object
-df["neutrons"] = CRNS_data.iloc[indices][
-    "NeutronCount_Epithermal_MovAvg24h_corrected"
-].values
-df
+
 # %%
 for index, row in df.iterrows():
     i = 0

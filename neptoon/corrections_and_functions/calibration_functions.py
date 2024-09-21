@@ -10,6 +10,7 @@ from neptoon.logging import get_logger
 
 core_logger = get_logger()
 
+
 # TODO: should this go into the Schroen2017 class? How?
 def _load_footprint_lookup():
     """
@@ -31,10 +32,10 @@ class Schroen2017:
 
     @staticmethod
     def horizontal_weighting(
-        distance = 1,
+        distance=1,
         soil_moisture: float = 0.1,
-        air_humidity:  float = 5.0,
-        normalize: bool = False
+        air_humidity: float = 5.0,
+        normalize: bool = False,
     ):
         """
         W_r is the radial weighting function
@@ -68,54 +69,117 @@ class Schroen2017:
         y = soil_moisture
 
         # Parameters
-        a00 = 8735; a01 = 22.689; a02 = 11720; a03 = 0.00978; a04 = 9306; a05 = 0.003632
-        a10 = 2.7925e-002; a11 = 6.6577; a12 = 0.028544; a13 = 0.002455; a14 = 6.851e-005; a15 = 12.2755
-        a20 = 247970; a21 = 23.289; a22 = 374655; a23 = 0.00191; a24 = 258552
-        a30 = 5.4818e-002; a31 = 21.032; a32 = 0.6373; a33 = 0.0791; a34 = 5.425e-004
-        b00 = 39006; b01 = 15002337; b02 = 2009.24; b03 = 0.01181; b04 = 3.146; b05 = 16.7417; b06 = 3727
-        b10 = 6.031e-005; b11 = 98.5; b12 = 0.0013826
-        b20 = 11747; b21 = 55.033; b22 = 4521; b23 = 0.01998; b24 = 0.00604; b25 = 3347.4; b26 = 0.00475
-        b30 = 1.543e-002; b31 = 13.29; b32 = 1.807e-002; b33 = 0.0011; b34 = 8.81e-005; b35 = 0.0405; b36 = 26.74
-        
+        a00 = 8735
+        a01 = 22.689
+        a02 = 11720
+        a03 = 0.00978
+        a04 = 9306
+        a05 = 0.003632
+        a10 = 2.7925e-002
+        a11 = 6.6577
+        a12 = 0.028544
+        a13 = 0.002455
+        a14 = 6.851e-005
+        a15 = 12.2755
+        a20 = 247970
+        a21 = 23.289
+        a22 = 374655
+        a23 = 0.00191
+        a24 = 258552
+        a30 = 5.4818e-002
+        a31 = 21.032
+        a32 = 0.6373
+        a33 = 0.0791
+        a34 = 5.425e-004
+        b00 = 39006
+        b01 = 15002337
+        b02 = 2009.24
+        b03 = 0.01181
+        b04 = 3.146
+        b05 = 16.7417
+        b06 = 3727
+        b10 = 6.031e-005
+        b11 = 98.5
+        b12 = 0.0013826
+        b20 = 11747
+        b21 = 55.033
+        b22 = 4521
+        b23 = 0.01998
+        b24 = 0.00604
+        b25 = 3347.4
+        b26 = 0.00475
+        b30 = 1.543e-002
+        b31 = 13.29
+        b32 = 1.807e-002
+        b33 = 0.0011
+        b34 = 8.81e-005
+        b35 = 0.0405
+        b36 = 26.74
+
         # Parameter functions
-        A0 = (a00*(1+a03*x)*np.exp(-a01*y)+a02*(1+a05*x)-a04*y)
-        A1 = ((-a10+a14*x)*np.exp(-a11*y/(1+a15*y))+a12)*(1+x*a13)
-        A2 = (a20*(1+a23*x)*np.exp(-a21*y)+a22-a24*y)
-        A3 = a30*np.exp(-a31*y)+a32-a33*y+a34*x
-        B0 = (b00-b01/(b02*y+x-0.13))*(b03-y)*np.exp(-b04*y)-b05*x*y+b06
-        B1 = b10*(x+b11)+b12*y
-        B2 = (b20*(1-b26*x)*np.exp(-b21*y*(1-x*b24))+b22-b25*y)*(2+x*b23)
-        B3 = ((-b30+b34*x)*np.exp(-b31*y/(1+b35*x+b36*y))+b32)*(2+x*b33)
-        
+        A0 = (
+            a00 * (1 + a03 * x) * np.exp(-a01 * y)
+            + a02 * (1 + a05 * x)
+            - a04 * y
+        )
+        A1 = ((-a10 + a14 * x) * np.exp(-a11 * y / (1 + a15 * y)) + a12) * (
+            1 + x * a13
+        )
+        A2 = a20 * (1 + a23 * x) * np.exp(-a21 * y) + a22 - a24 * y
+        A3 = a30 * np.exp(-a31 * y) + a32 - a33 * y + a34 * x
+        B0 = (
+            (b00 - b01 / (b02 * y + x - 0.13)) * (b03 - y) * np.exp(-b04 * y)
+            - b05 * x * y
+            + b06
+        )
+        B1 = b10 * (x + b11) + b12 * y
+        B2 = (
+            b20 * (1 - b26 * x) * np.exp(-b21 * y * (1 - x * b24))
+            + b22
+            - b25 * y
+        ) * (2 + x * b23)
+        B3 = (
+            (-b30 + b34 * x) * np.exp(-b31 * y / (1 + b35 * x + b36 * y)) + b32
+        ) * (2 + x * b33)
+
         # Scalar or vector calculation
         if np.isscalar(r):
             # Using scalars
-            if r <= 1:               w = (A0*(np.exp(-A1*r)) + A2*np.exp(-A3*r))*(1-np.exp(-3.7*r))
-            elif (r > 1) & (r < 50): w =  A0*(np.exp(-A1*r)) + A2*np.exp(-A3*r)
-            elif (r >= 50):          w =  B0*(np.exp(-B1*r)) + B2*np.exp(-B3*r)
-            return(w)
+            if r <= 1:
+                w = (A0 * (np.exp(-A1 * r)) + A2 * np.exp(-A3 * r)) * (
+                    1 - np.exp(-3.7 * r)
+                )
+            elif (r > 1) & (r < 50):
+                w = A0 * (np.exp(-A1 * r)) + A2 * np.exp(-A3 * r)
+            elif r >= 50:
+                w = B0 * (np.exp(-B1 * r)) + B2 * np.exp(-B3 * r)
+            return w
         else:
             # Using vectors
             W = pd.DataFrame(dtype=float)
-            W['r'] = r
-            W['w'] = 0.0
-            W.loc[W.r <=  1,'w'] = (A0*(np.exp(-A1*W.loc[W.r <=  1,'r'])) + A2*np.exp(-A3*W.loc[W.r <=  1,'r']))*(1-np.exp(-3.7*W.loc[W.r <= 1,'r']))
-            W.loc[W.r >   1,'w'] =  A0*(np.exp(-A1*W.loc[W.r >   1,'r'])) + A2*np.exp(-A3*W.loc[W.r >   1,'r'])
-            W.loc[W.r >= 50,'w'] =  B0*(np.exp(-B1*W.loc[W.r >= 50,'r'])) + B2*np.exp(-B3*W.loc[W.r >= 50,'r'])
-            
+            W["r"] = r
+            W["w"] = 0.0
+            W.loc[W.r <= 1, "w"] = (
+                A0 * (np.exp(-A1 * W.loc[W.r <= 1, "r"]))
+                + A2 * np.exp(-A3 * W.loc[W.r <= 1, "r"])
+            ) * (1 - np.exp(-3.7 * W.loc[W.r <= 1, "r"]))
+            W.loc[W.r > 1, "w"] = A0 * (
+                np.exp(-A1 * W.loc[W.r > 1, "r"])
+            ) + A2 * np.exp(-A3 * W.loc[W.r > 1, "r"])
+            W.loc[W.r >= 50, "w"] = B0 * (
+                np.exp(-B1 * W.loc[W.r >= 50, "r"])
+            ) + B2 * np.exp(-B3 * W.loc[W.r >= 50, "r"])
+
             if normalize:
                 # Normalize weights by the sum of weights
                 W.w /= W.w.sum()
 
-            return(W.w.values)
-        
+            return W.w.values
+
     W_r = horizontal_weighting
-        
+
     @staticmethod
-    def horizontal_weighting_approx(
-        distance = 1,
-        normalize: bool = False
-    ):
+    def horizontal_weighting_approx(distance=1, normalize: bool = False):
         """
         W_r_approx is an approximation of the radial weighting function
         for point measurements taken in the footprint of the sensor.
@@ -145,31 +209,29 @@ class Schroen2017:
         p2 = 0.01
         p3 = 1.0
         p4 = 3.7
-        
-        w = (p0 * np.exp(-p1*r) + np.exp(-p2*r)) * (p3 - np.exp(-p4*r))
-    
+
+        w = (p0 * np.exp(-p1 * r) + np.exp(-p2 * r)) * (p3 - np.exp(-p4 * r))
+
         # Scalar or vector calculation
         if np.isscalar(r):
             # Using scalars
-            return(w)
+            return w
         else:
             # Using vectors
             W = pd.DataFrame()
-            W['r'] = r
-            W['w'] = w
-            
+            W["r"] = r
+            W["w"] = w
+
             if normalize:
                 # Normalize weights by the sum of weights
                 W.w /= W.w.sum()
 
-            return(W.w.values)
-        
+            return W.w.values
+
     W_r_approx = horizontal_weighting_approx
 
     @staticmethod
-    def calculate_measurement_depth(
-        distance, bulk_density, soil_moisture
-    ):
+    def calculate_measurement_depth(distance, bulk_density, soil_moisture):
         """
         Calculates the depth of sensor measurement (taken as the
         depth from which 86% of neutrons originate)
@@ -212,7 +274,7 @@ class Schroen2017:
         depth,
         distance: float = 1.0,
         bulk_density: float = 1.6,
-        soil_moisture: float = 0.1
+        soil_moisture: float = 0.1,
     ):
         """
         Wd Weighting function to be applied on samples to calculate
@@ -238,22 +300,17 @@ class Schroen2017:
             The weight to give the sample.
         """
         D86 = Schroen2017.calculate_measurement_depth(
-            distance,
-            bulk_density,
-            soil_moisture
+            distance, bulk_density, soil_moisture
         )
-        
-        w = np.exp(-2 * depth / D86 )
+
+        w = np.exp(-2 * depth / D86)
         return w
-    
+
     W_d = vertical_weighting
 
     @staticmethod
     def rescale_distance(
-        distance,
-        pressure = 1013.25,
-        height_veg = 0,
-        soil_moisture = 0.1
+        distance, pressure=1013.25, height_veg=0, soil_moisture=0.1
     ):
         """
         Rescales the distance to account for influences from atmospheric
@@ -285,9 +342,7 @@ class Schroen2017:
 
     @staticmethod
     def calculate_footprint_radius(
-        soil_moisture: float = 0.1,
-        air_humidity:  float = 5.0,
-        **kwargs
+        soil_moisture: float = 0.1, air_humidity: float = 5.0, **kwargs
     ):
         """
         Parameters
@@ -306,28 +361,30 @@ class Schroen2017:
         """
         # Filter input and extend over limits
         if np.isnan(soil_moisture) or np.isnan(air_humidity):
-            return(np.nan)
-        if soil_moisture <  0.01: soil_moisture =  0.01
-        if soil_moisture >  0.49: soil_moisture =  0.49
-        if air_humidity  > 29   : air_humidity  = 29
+            return np.nan
+        if soil_moisture < 0.01:
+            soil_moisture = 0.01
+        if soil_moisture > 0.49:
+            soil_moisture = 0.49
+        if air_humidity > 29:
+            air_humidity = 29
 
         lookup_table = Schroen2017._footprint_lookup
-        R86 = lookup_table[int(round(100*soil_moisture))][int(round(air_humidity))]
+        R86 = lookup_table[int(round(100 * soil_moisture))][
+            int(round(air_humidity))
+        ]
 
         if "pressure" in kwargs or "height_veg" in kwargs:
             R86 = Schroen2017.rescale_distance(
                 R86, soil_moisture=soil_moisture, **kwargs
             )
 
-        return R86 
+        return R86
 
     R86 = calculate_footprint_radius
 
     def calculate_footprint_volume(
-        D86_1m,
-        soil_moisture,
-        bulk_density,
-        footprint_radius
+        D86_1m, soil_moisture, bulk_density, footprint_radius
     ):
         """
         Footprint volume in m³
@@ -348,12 +405,12 @@ class Schroen2017:
         V86
             Footprint volume in m³
         """
-        
+
         D86_at_R86 = Schroen2017.D86(
             soil_moisture, bulk_density, footprint_radius
         )
-        
-        average_depth = (D86_1m + D86_at_R86)*0.01*0.47
+
+        average_depth = (D86_1m + D86_at_R86) * 0.01 * 0.47
         # 0.44 (dry) ..0.5 (wet) is roughly the average D over radii
         footprint_area = 3.141 * footprint_radius**2
 

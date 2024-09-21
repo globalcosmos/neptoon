@@ -2,13 +2,103 @@ import pandas as pd
 import numpy as np
 import copy
 from datetime import timedelta
-from scipy.optimize import minimize
-from typing import Dict, List
+
+# from scipy.optimize import minimize
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.corrections_and_functions.calibration_functions import Schroen2017
 from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
     neutrons_to_grav_sm_desilets,
 )
+
+
+class CalibrationConfiguration:
+    """
+    Configuration class for calibration steps
+    """
+
+    def __init__(
+        self,
+        hours_of_data_around_calib: int = 6,
+        converge_accuracy: float = 0.01,
+        date_time_column_name: str = str(ColumnInfo.Name.DATE_TIME),
+        sample_depth_column: str = str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE),
+        distance_column: str = str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR),
+        bulk_density_of_sample_column: str = str(
+            ColumnInfo.Name.CALIB_BULK_DENSITY
+        ),
+        profile_id_column: str = str(ColumnInfo.Name.CALIB_PROFILE_ID),
+        soil_moisture_gravimetric_column: str = str(
+            ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC
+        ),
+        soil_organic_carbon_column: str = str(
+            ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON
+        ),
+        lattice_water_column: str = str(ColumnInfo.Name.CALIB_LATTICE_WATER),
+        air_humidity_column_name: str = str(
+            ColumnInfo.Name.AIR_RELATIVE_HUMIDITY
+        ),
+        neutron_column_name: str = str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+        ),
+        air_pressure_column_name: str = str(ColumnInfo.Name.AIR_PRESSURE),
+    ):
+        """
+        Attributes.
+
+        Parameters
+        ----------
+        date_time_column_name : str, optional
+            The name of the column with date time information, by
+            default str(ColumnInfo.Name.DATE_TIME)
+        sample_depth_column : str, optional
+            The name of the column with sample depth values (cm), by
+            default str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE)
+        distance_column : str, optional
+            The name of the column stating the distance of the sample
+            from the sensor (meters), by default
+            str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR)
+        bulk_density_of_sample_column : str, optional
+            The name of the column with bulk density values of the
+            samples (g/cm^3), by default str(
+            ColumnInfo.Name.CALIB_BULK_DENSITY )
+        profile_id_column : str, optional
+            Name of the column with profile IDs, by default
+            str(ColumnInfo.Name.CALIB_PROFILE_ID)
+        soil_moisture_gravimetric_column : str, optional
+            Name of the column with gravimetric soil moisture values
+            (g/g), by default str(
+            ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC )
+        soil_organic_carbon_column : str, optional
+            Name of the column with soil organic carbon values (g/g), by
+            default str( ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON )
+        lattice_water_column : str, optional
+            Name of the column with lattice water values (g/g), by
+            default str(ColumnInfo.Name.CALIB_LATTICE_WATER)
+        air_humidity_column_name : str, optional
+            Name of the column with air humidity values (%), by default
+            str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
+        neutron_column_name : str, optional
+            Name of the column with corrected neutrons in it, by default
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+        air_pressure_column_name : str, optional
+            Name of the column with air pressure vlaues in it, by
+            default str(ColumnInfo.Name.AIR_PRESSURE)
+        """
+        self.hours_of_data_around_calib = hours_of_data_around_calib
+        self.converge_accuracy = converge_accuracy
+        self.date_time_column_name = date_time_column_name
+        self.sample_depth_column = sample_depth_column
+        self.distance_column = distance_column
+        self.bulk_density_of_sample_column = bulk_density_of_sample_column
+        self.profile_id_column = profile_id_column
+        self.soil_moisture_gravimetric_column = (
+            soil_moisture_gravimetric_column
+        )
+        self.soil_organic_carbon_column = soil_organic_carbon_column
+        self.lattice_water_column = lattice_water_column
+        self.air_humidity_column_name = air_humidity_column_name
+        self.neutron_column_name = neutron_column_name
+        self.air_pressure_column_name = air_pressure_column_name
 
 
 class SampleProfile:
@@ -93,8 +183,8 @@ class SampleProfile:
             else np.zeros_like(soil_moisture_gravimetric)
         )
         self.vertical_weights = np.ones_like(soil_moisture_gravimetric)
-        self.data = None
-        self.update_data()
+        self._calculate_sm_total_vol()
+        self._calculate_sm_total_grv()
 
         # Scalar values
         self._distance = distance
@@ -108,38 +198,15 @@ class SampleProfile:
     def distance(self):
         return self._distance
 
-    def update_data(self):
-        """
-        Update the internal DataFrame with current values and perform
-        calculations.
-        """
-        if not self.data:
-            self.data = pd.DataFrame()
-
-        self.data["pid"] = self.pid
-        self.data["soil_moisture_gravimetric"] = self.soil_moisture_gravimetric
-        self.data["depth"] = self.depth
-        self.data["bulk_density"] = self.bulk_density
-        self.data["lattice_water"] = self.lattice_water
-        self.data["soil_organic_carbon"] = self.soil_organic_carbon
-
-        if "weight" not in self.data.columns:
-            self.data["weight"] = np.nan
-
-        self._calculate_sm_total_vol()
-        self._calculate_sm_total_grv()
-        self.data["sm_total_vol"] = self.sm_total_vol
-        self.data["sm_total_grv"] = self.sm_total_grv
-
     def _calculate_sm_total_vol(self):
         """
         Calculate total volumetric soil moisture.
         """
         sm_total_vol = (
-            self.data["soil_moisture_gravimetric"]
-            + self.data["lattice_water"]
-            + self.data["soil_organic_carbon"] * 0.555
-        ) * self.data["bulk_density"]
+            self.soil_moisture_gravimetric
+            + self.lattice_water
+            + self.soil_organic_carbon * 0.555
+        ) * self.bulk_density
         self.sm_total_vol = sm_total_vol
 
     def _calculate_sm_total_grv(self):
@@ -147,9 +214,9 @@ class SampleProfile:
         Calculate total gravimetric soil moisture.
         """
         sm_total_grv = (
-            self.data["soil_moisture_gravimetric"]
-            + self.data["lattice_water"]
-            + self.data["soil_organic_carbon"] * 0.555
+            self.soil_moisture_gravimetric
+            + self.lattice_water
+            + self.soil_organic_carbon * 0.555
         )
         self.sm_total_grv = sm_total_grv
 
@@ -162,20 +229,7 @@ class PrepareCalibrationData:
     def __init__(
         self,
         calibration_data_frame: pd.DataFrame,
-        date_time_column_name: str = str(ColumnInfo.Name.DATE_TIME),
-        sample_depth_column: str = str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE),
-        distance_column: str = str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR),
-        bulk_density_of_sample_column: str = str(
-            ColumnInfo.Name.CALIB_BULK_DENSITY
-        ),
-        profile_id_column: str = str(ColumnInfo.Name.CALIB_PROFILE_ID),
-        soil_moisture_gravimetric_column: str = str(
-            ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC
-        ),
-        soil_organic_carbon_column: str = str(
-            ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON
-        ),
-        lattice_water_column: str = str(ColumnInfo.Name.CALIB_LATTICE_WATER),
+        config: CalibrationConfiguration,
     ):
         """
         Instantiate attributes
@@ -186,50 +240,14 @@ class PrepareCalibrationData:
             The dataframe with the calibration sample data in it. If
             multiple calibration days are available these should be
             stacked in the same dataframe.
-        date_time_column_name : str, optional
-            The name of the column with date time information, by
-            default str(ColumnInfo.Name.DATE_TIME)
-        sample_depth_column : str, optional
-            The name of the column with sample depth values (cm), by
-            default str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE)
-        distance_column : str, optional
-            The name of the column stating the distance of the sample
-            from the sensor (meters), by default
-            str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR)
-        bulk_density_of_sample_column : str, optional
-            The name of the column with bulk density values of the
-            samples (g/cm^3), by default str(
-            ColumnInfo.Name.CALIB_BULK_DENSITY )
-        profile_id_column : str, optional
-            Name of the column with profile IDs, by default
-            str(ColumnInfo.Name.CALIB_PROFILE_ID)
-        soil_moisture_gravimetric_column : str, optional
-            Name of the column with gravimetric soil moisture values
-            (g/g), by default str(
-            ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC )
-        soil_organic_carbon_column : str, optional
-            Name of the column with soil organic carbon values (g/g), by
-            default str( ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON )
-        lattice_water_column : str, optional
-            Name of the column with lattice water values (g/g), by
-            default str(ColumnInfo.Name.CALIB_LATTICE_WATER)
         """
 
         self.calibration_data_frame = calibration_data_frame
-        self.date_time_column_name = date_time_column_name
-        self.sample_depth_column = sample_depth_column
-        self.distance_column = distance_column
-        self.bulk_density_of_sample_column = bulk_density_of_sample_column
-        self.profile_id_column = profile_id_column
-        self.soil_moisture_gravimetric_column = (
-            soil_moisture_gravimetric_column
-        )
-        self.soil_organic_carbon_column = soil_organic_carbon_column
-        self.lattice_water_column = lattice_water_column
+        self.config = config
         self._ensure_date_time_index()
 
         self.unique_calibration_days = np.unique(
-            self.calibration_data_frame[self.date_time_column_name]
+            self.calibration_data_frame[self.config.date_time_column_name]
         )
         self.list_of_data_frames = []
         self.list_of_profiles = []
@@ -239,9 +257,9 @@ class PrepareCalibrationData:
         Converts the date time column so the values are datetime type.
         """
 
-        self.calibration_data_frame[self.date_time_column_name] = (
+        self.calibration_data_frame[self.config.date_time_column_name] = (
             pd.to_datetime(
-                self.calibration_data_frame[self.date_time_column_name],
+                self.calibration_data_frame[self.config.date_time_column_name],
                 utc=True,
             )
         )
@@ -254,7 +272,7 @@ class PrepareCalibrationData:
 
         self.list_of_data_frames = [
             self.calibration_data_frame[
-                self.calibration_data_frame[self.date_time_column_name]
+                self.calibration_data_frame[self.config.date_time_column_name]
                 == calibration_day
             ]
             for calibration_day in self.unique_calibration_days
@@ -279,10 +297,12 @@ class PrepareCalibrationData:
             A list of created SampleProfiles
         """
         calibration_day_profiles = []
-        profile_ids = np.unique(single_day_data_frame[self.profile_id_column])
+        profile_ids = np.unique(
+            single_day_data_frame[self.config.profile_id_column]
+        )
         for pid in profile_ids:
             temp_df = single_day_data_frame[
-                single_day_data_frame[self.profile_id_column] == pid
+                single_day_data_frame[self.config.profile_id_column] == pid
             ]
             soil_profile = self._create_individual_profile(
                 pid=pid,
@@ -313,19 +333,21 @@ class PrepareCalibrationData:
         SampleProfile
             A SampleProfile object is returned.
         """
-        distances = profile_data_frame[self.distance_column].median()
-        depths = profile_data_frame[self.sample_depth_column]
-        bulk_density = profile_data_frame[self.bulk_density_of_sample_column]
+        distances = profile_data_frame[self.config.distance_column].median()
+        depths = profile_data_frame[self.config.sample_depth_column]
+        bulk_density = profile_data_frame[
+            self.config.bulk_density_of_sample_column
+        ]
         soil_moisture_gravimetric = profile_data_frame[
-            self.soil_moisture_gravimetric_column
+            self.config.soil_moisture_gravimetric_column
         ]
         soil_organic_carbon = profile_data_frame[
-            self.soil_organic_carbon_column
+            self.config.soil_organic_carbon_column
         ]
-        lattice_water = profile_data_frame[self.lattice_water_column]
+        lattice_water = profile_data_frame[self.config.lattice_water_column]
         # only need one calibration datetime
         calibration_datetime = profile_data_frame[
-            self.date_time_column_name
+            self.config.date_time_column_name
         ].iloc[0]
         soil_profile = SampleProfile(
             soil_moisture_gravimetric=soil_moisture_gravimetric,
@@ -359,11 +381,12 @@ class PrepareNeutronCorrectedData:
         self,
         corrected_neutron_data_frame: pd.DataFrame,
         calibration_data_prepper: PrepareCalibrationData,
-        hours_of_data_around_calib: int = 6,
+        config: CalibrationConfiguration,
     ):
         self.corrected_neutron_data_frame = corrected_neutron_data_frame
         self.calibration_data_prepper = calibration_data_prepper
-        self.hours_of_data_around_calib = hours_of_data_around_calib
+        self.config = config
+        # self.hours_of_data_around_calib = hours_of_data_around_calib
         self.data_dict = {}
 
         self._ensure_date_time_index()
@@ -380,7 +403,7 @@ class PrepareNeutronCorrectedData:
 
     def extract_calibration_day_values(self):
         calibration_indicies_dict = self._extract_calibration_day_indices(
-            hours_of_data=self.hours_of_data_around_calib
+            hours_of_data=self.config.hours_of_data_around_calib
         )
         dict_of_data = {}
         for value in calibration_indicies_dict.values():
@@ -520,21 +543,12 @@ class CalibrationWeightsCalculator:
         self,
         time_series_data_object: PrepareNeutronCorrectedData,
         calib_data_object: PrepareCalibrationData,
-        converge_accuracy: float = 0.01,
-        air_humidity_column_name: str = str(
-            ColumnInfo.Name.AIR_RELATIVE_HUMIDITY
-        ),
-        neutron_column_name: str = str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
-        ),
-        air_pressure_column_name: str = str(ColumnInfo.Name.AIR_PRESSURE),
+        config: CalibrationConfiguration,
     ):
         self.time_series_data_object = time_series_data_object
         self.calib_data_object = calib_data_object
-        self.converge_accuracy = converge_accuracy
-        self.air_humidity_column_name = air_humidity_column_name
-        self.neutron_column_name = neutron_column_name
-        self.air_pressure_column_name = air_pressure_column_name
+        self.config = config
+
         self.output_dictionary = {}
 
     def _get_time_series_data_for_day(
@@ -566,10 +580,10 @@ class CalibrationWeightsCalculator:
 
             # Get average air humidity and air pressure
             average_air_humidity = tmp_data[
-                self.air_humidity_column_name
+                self.config.air_humidity_column_name
             ].mean()
             average_air_pressure = tmp_data[
-                self.air_pressure_column_name
+                self.config.air_pressure_column_name
             ].mean()
 
             field_average_sm_vol, field_average_sm_grav, footprint = (
@@ -620,7 +634,7 @@ class CalibrationWeightsCalculator:
         field_average_sm_volumetric = None
         field_average_sm_gravimetric = None
 
-        while accuracy > self.converge_accuracy:
+        while accuracy > self.config.converge_accuracy:
             profile_sm_averages_volumetric = []
             profile_sm_averages_gravimetric = []
             profiles_horizontal_weights = []
@@ -633,7 +647,7 @@ class CalibrationWeightsCalculator:
                     soil_moisture=sm_estimate,
                 )
 
-                profile.D86 = w = Schroen2017.calculate_measurement_depth(
+                profile.D86 = Schroen2017.calculate_measurement_depth(
                     distance=profile.rescaled_distance,
                     bulk_density=profile.bulk_density.mean(),
                     soil_moisture=sm_estimate,
@@ -697,9 +711,8 @@ class CalibrationWeightsCalculator:
             accuracy = abs(
                 (field_average_sm_volumetric - sm_estimate) / sm_estimate
             )
-            if accuracy > self.converge_accuracy:
-                print(accuracy)
-                print(field_average_sm_volumetric)
+            if accuracy > self.config.converge_accuracy:
+
                 sm_estimate = copy.deepcopy(field_average_sm_volumetric)
                 profile_sm_averages_volumetric = []
                 profile_sm_averages_gravimetric = []
@@ -755,13 +768,16 @@ class CalibrationWeightsCalculator:
             self.output_dictionary[calib_day][
                 "absolute_error"
             ] = absolute_error
+        df = self.return_output_dict_as_dataframe()
 
     def find_optimal_N0_single_day_iteration_style(
         self,
         gravimetric_sm_on_day,
         calib_data_frame_subset,
     ):
-        neutron_mean = calib_data_frame_subset[self.neutron_column_name].mean()
+        neutron_mean = calib_data_frame_subset[
+            self.config.neutron_column_name
+        ].mean()
         n0_range = pd.Series(range(int(neutron_mean), int(neutron_mean * 2.5)))
 
         def calculate_sm_and_error(n0):
