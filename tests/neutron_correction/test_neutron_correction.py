@@ -242,6 +242,7 @@ def test_property_setters(sample_df, correction_builder):
 @pytest.fixture
 def site_information():
     site_information = SiteInformation(
+        site_name="test",
         latitude=51.37,
         longitude=12.55,
         elevation=140,

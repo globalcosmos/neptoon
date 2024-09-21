@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Union, Literal, List, Optional
 from neptoon.data_management.data_audit import log_key_step
 from neptoon.logging import get_logger
+from neptoon.utils.general_utils import validate_and_convert_file_path
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.configuration.configuration_input import (
     ConfigurationManager,
@@ -19,32 +20,32 @@ from neptoon.configuration.configuration_input import (
 core_logger = get_logger()
 
 
-######
-def validate_and_convert_file_path(
-    file_path: Union[str, Path],
-    base: Union[str, Path] = "",
-) -> Path:
-    """
-    Used when initialising the object. If a string is given as a
-    data_location, it is converted to a pathlib.Path object. If a
-    pathlib.Path object is given this is returned. Other types will
-    cause an error.
+# ######
+# def validate_and_convert_file_path(
+#     file_path: Union[str, Path],
+#     base: Union[str, Path] = "",
+# ) -> Path:
+#     """
+#     Used when initialising the object. If a string is given as a
+#     data_location, it is converted to a pathlib.Path object. If a
+#     pathlib.Path object is given this is returned. Other types will
+#     cause an error.
 
-    Parameters
-    ----------
-    data_location : Union[str, Path]
-        The data_location attribute from initialisation.
+#     Parameters
+#     ----------
+#     data_location : Union[str, Path]
+#         The data_location attribute from initialisation.
 
-    Returns
-    -------
-    pathlib.Path
-        The data_location as a pathlib.Path object.
+#     Returns
+#     -------
+#     pathlib.Path
+#         The data_location as a pathlib.Path object.
 
-    Raises
-    ------
-    ValueError
-        Error if string or pathlib.Path given.
-    """
+#     Raises
+#     ------
+#     ValueError
+#         Error if string or pathlib.Path given.
+#     """
 
     if file_path is None:
         return None
