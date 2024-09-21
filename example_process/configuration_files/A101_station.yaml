@@ -3,7 +3,7 @@
 output_folder:
 
 general_site_metadata:
-  site_name: A site somewhere
+  site_name: my_test_site
   site_country: Germany
   site_identifier: A101
   install_date: 2016-10-21
@@ -104,6 +104,7 @@ pdf_formatting:
 data_storage:
   save_folder:
   data_source: None
+  append_yaml_to_folder_name: True
   local_storage_path: input/station-data.zip
   local_storage_prefix: CRS03_Data
   local_storage_suffix: .txt

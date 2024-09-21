@@ -2,6 +2,7 @@
 from pathlib import Path
 from neptoon.data_management.process_with_yaml import ProcessWithYaml
 from neptoon.configuration.configuration_input import ConfigurationManager
+from neptoon.data_management.data_audit import DataAuditLog
 
 # from neptoon.quality_assesment.quality_assesment import FlagRangeCheck
 
@@ -11,6 +12,13 @@ station_config_path = Path("./configuration_files/A101_station.yaml")
 processing_config_path = Path(
     "./configuration_files/v1_processing_method.yaml"
 )
+
+station_config_path = Path("./configuration_files/A101_station.yaml")
+processing_config_path = Path(
+    "./configuration_files/v1_processing_method.yaml"
+)
+
+
 config.load_and_validate_configuration(
     name="station",
     file_path=station_config_path,
@@ -21,7 +29,7 @@ config.load_and_validate_configuration(
 )
 y = config.get_configuration("processing")
 
-# tmp = config.get_configuration('station')
+DataAuditLog.create()
 yaml_processor = ProcessWithYaml(configuration_object=config)
 
 ## OPTION 1:

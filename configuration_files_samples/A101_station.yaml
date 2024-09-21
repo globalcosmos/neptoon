@@ -103,6 +103,7 @@ pdf_formatting:
 
 data_storage:
   save_folder:
+  append_yaml_to_folder_name: True
   data_source: None
   local_storage_path: input/station-data.zip
   local_storage_prefix: CRS03_Data

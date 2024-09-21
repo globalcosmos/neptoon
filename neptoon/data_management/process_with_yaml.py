@@ -23,6 +23,7 @@ from neptoon.neutron_correction.neutron_correction import (
 )
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.configuration.configuration_input import ConfigurationManager
+from neptoon.data_management.save_data import SaveAndArchiveOutputs
 
 core_logger = get_logger()
 
@@ -119,8 +120,6 @@ class ProcessWithYaml:
         # QA meteo
         # TODO
 
-        # Corrections
-        # TODO
         self._select_corrections()
         self._correct_neutrons()
 
@@ -142,10 +141,8 @@ class ProcessWithYaml:
                 self.process_info.neutron_quality_assessment.flag_raw_neutrons
             ),
         )
-        # Produce SM estimates.
         self._produce_soil_moisture_estimates()
-
-        # self._save_data() # TODO need to merge save function first
+        self._save_data()
 
     def _parse_raw_data(
         self,
@@ -410,18 +407,25 @@ class ProcessWithYaml:
         """
         Arranges saving the data in the folder.
         """
-        initial_folder_str = self.station_info.data_storage.save_folder
+
         file_name = self.station_info.general_site_metadata.site_name
-        folder = [
-            (
-                Path.cwd()
-                if initial_folder_str is None
-                else Path(initial_folder_str)
-            )
-        ]
+        initial_folder_str = self.station_info.data_storage.save_folder
+        folder = (
+            Path.cwd()
+            if initial_folder_str is None
+            else Path(initial_folder_str)
+        )
+
+        append_yaml_bool = bool(
+            self.station_info.data_storage.append_yaml_to_folder_name
+        )
+        print(file_name)
+        print(folder)
+
         self.data_hub.save_data(
-            folder_path=folder,
-            file_name=file_name,
+            folder_name=file_name,
+            save_folder_location=folder,
+            append_yaml_hash_to_folder_name=append_yaml_bool,
         )
 
 
