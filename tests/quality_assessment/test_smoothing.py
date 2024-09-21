@@ -101,7 +101,7 @@ def test_update_col_name_final(data_to_smooth_hourly):
     """
     smoother = SmoothData(
         data=data_to_smooth_hourly,
-        column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT),
+        column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
         smooth_method="rolling_mean",
         window=12,
         auto_update_final_col=True,

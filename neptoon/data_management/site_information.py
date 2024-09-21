@@ -18,11 +18,12 @@ class SiteInformation:
 
     """
 
+    site_name: str
     latitude: float
     longitude: float
     elevation: float
     reference_incoming_neutron_value: float
-    bulk_density: float
+    dry_soil_bulk_density: float
     lattice_water: float
     soil_organic_carbon: float
     cutoff_rigidity: float

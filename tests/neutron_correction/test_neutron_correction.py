@@ -142,8 +142,8 @@ def test_get_corrections_stored_in_builder():
 def sample_df():
     return pd.DataFrame(
         {
-            str(ColumnInfo.Name.EPI_NEUTRON_COUNT): [100, 200, 300],
-            "other_data": [1, 2, 3],
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH): [100, 200, 300],
+            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW): [100, 200, 300],
         }
     )
 
@@ -199,7 +199,9 @@ def test_create_corrected_neutron_column(sample_df, correction_builder):
     assert (
         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT) in result_df.columns
     )
-    expected = sample_df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)] * 1.5 * 2.0
+    expected = (
+        sample_df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)] * 1.5 * 2.0
+    )
     assert (
         result_df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)] == expected
     ).all()
@@ -212,7 +214,9 @@ def test_correct_neutrons(sample_df, correction_builder):
     assert (
         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT) in result_df.columns
     )
-    expected = sample_df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT)] * 1.5 * 2.0
+    expected = (
+        sample_df[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)] * 1.5 * 2.0
+    )
     assert (
         result_df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)] == expected
     ).all()
@@ -238,11 +242,12 @@ def test_property_setters(sample_df, correction_builder):
 @pytest.fixture
 def site_information():
     site_information = SiteInformation(
+        site_name="test",
         latitude=51.37,
         longitude=12.55,
         elevation=140,
         reference_incoming_neutron_value=150,
-        bulk_density=1.4,
+        dry_soil_bulk_density=1.4,
         lattice_water=0.01,
         soil_organic_carbon=0,
         cutoff_rigidity=2.94,

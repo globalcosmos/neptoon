@@ -440,6 +440,7 @@ class CacheHandler:
             df = pd.read_csv(self.cache_file_path)
             df["datetime"] = pd.to_datetime(df["datetime"])
             df.set_index("datetime", inplace=True)
+            df.index = df.index.tz_localize("UTC")
             return df
 
     def write_cache(self, cache_df):
@@ -638,6 +639,7 @@ class DataFetcher:
             data = pd.read_csv(data, delimiter=";", comment="#")
             data.columns = ["count"]
             data.index.name = "datetime"
+            data.index = pd.to_datetime(data.index).tz_localize("UTC")
             data.index = pd.to_datetime(data.index)
         except requests.exceptions.RequestException as e:
             logging.error(f"HTTP Request failed: {e}")
@@ -805,7 +807,12 @@ class DataManager:
         if "datetime" not in df_cache.index.names:
             df_cache.set_index("datetime", inplace=True)
         if "datetime" not in df_download.index.names:
-            df_download.set_index("datetime", inplace=True)
+            df_download.index = df_download.index.tz_localize("UTC")
+
+        if df_cache.index.tz is None:
+            df_cache.index = df_cache.index.tz_localize("UTC")
+        if df_download.index.tz is None:
+            df_download.index = df_download.index.tz_localize("UTC")
 
         combined_df = pd.concat([df_cache, df_download])
         combined_df.reset_index(inplace=True)

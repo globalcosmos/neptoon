@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from typing import Literal, Union, Optional
 import dataclasses
+from pathlib import Path
 from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataAttacher,
@@ -22,6 +23,7 @@ from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
+from neptoon.data_management.save_data import SaveAndArchiveOutputs
 from neptoon.quality_assesment.smoothing import SmoothData
 
 from neptoon.logging import get_logger
@@ -384,20 +386,51 @@ class CRNSDataHub:
         col_name = smoother.create_new_column_name()
         self.crns_data_frame[col_name] = smoother.apply_smoothing()
 
-    def produce_soil_moisture_estimates(self, n0=None):
-        if n0 is None:
-            soil_moisture_calculator = NeutronsToSM(
-                crns_data_frame=self.crns_data_frame,
-                n0=self.site_information.n0,
-            )
-            soil_moisture_calculator.process_data()
-            soil_moisture_calculator.return_data_frame()
-        else:
-            soil_moisture_calculator = NeutronsToSM(
-                crns_data_frame=self.crns_data_frame, n0=n0
-            )
-            soil_moisture_calculator.process_data()
-            self.crns_data_frame = soil_moisture_calculator.return_data_frame()
+    def produce_soil_moisture_estimates(
+        self,
+        n0: float = None,
+        dry_soil_bulk_density: float = None,
+        lattice_water: float = None,
+        soil_organic_carbon: float = None,
+    ):
+        """
+        Produces SM estimates with the NeutronsToSM class. If values for
+        n0, dry_soil_bulk_density, lattice_water, or soil_organic_carbon
+        are not supplied, the values are taken from the internal
+        site_information class.
+
+        Parameters
+        ----------
+        n0 : float, optional
+            n0 calibration term, by default None
+        dry_soil_bulk_density : float, optional
+            given in g/cm3, by default None
+        lattice_water : float, optional
+            given as decimal percent e.g., 0.01, by default None
+        soil_organic_carbon : float, optional
+            Given as decimal percent, e.g., 0.001, by default None
+        """
+        # Create attributes for NeutronsToSM
+        default_params = {
+            "n0": self.site_information.n0,
+            "dry_soil_bulk_density": self.site_information.dry_soil_bulk_density,
+            "lattice_water": self.site_information.lattice_water,
+            "soil_organic_carbon": self.site_information.soil_organic_carbon,
+        }
+        provided_params = {
+            "n0": n0,
+            "dry_soil_bulk_density": dry_soil_bulk_density,
+            "lattice_water": lattice_water,
+            "soil_organic_carbon": soil_organic_carbon,
+        }
+        params = {k: v for k, v in provided_params.items() if v is not None}
+        default_params.update(params)
+
+        soil_moisture_calculator = NeutronsToSM(
+            crns_data_frame=self.crns_data_frame, **default_params
+        )
+        soil_moisture_calculator.calculate_all_soil_moisture_data()
+        self.crns_data_frame = soil_moisture_calculator.return_data_frame()
 
     def mask_flagged_data(self):
         """
@@ -412,7 +445,7 @@ class CRNSDataHub:
     def prepare_static_values(self):
         """
         Attaches the static values from the SiteInformation object as
-        columns of values in the crns_data_frame
+        columns of values in the crns_data_frame.
 
         TODO
          - Add a way to use str(ColumnInfo.Name.VARIABLE) for assigning
@@ -440,7 +473,14 @@ class CRNSDataHub:
             else:
                 self.crns_data_frame[key] = site_information_dict[key]
 
-    def save_data(self, folder_path, file_name, step):
+    def save_data(
+        self,
+        folder_name: Union[str, None] = None,
+        save_folder_location: Union[str, Path, None] = None,
+        append_yaml_hash_to_folder_name: bool = False,
+        use_custom_column_names: bool = False,
+        custom_column_names_dict: Union[dict, None] = None,
+    ):
         """
         Saves the file to a specified location. It must contain the
         correct folder_path and file_name.
@@ -459,53 +499,19 @@ class CRNSDataHub:
         file_name : str
             Name of the file
         """
+        if folder_name is None:
+            folder_name = self.site_information.site_name
+        if save_folder_location is None:
+            save_folder_location = Path.cwd()
 
-        file_name_and_save_location = folder_path + file_name + ".csv"
-        self.crns_data_frame.to_csv(file_name_and_save_location)
-
-    def archive_data(self, folder_path, file_name):
-        """
-        Archive the data into a zip file. All the data tables in the
-        instance will be collected and saved together.
-
-        Parameters
-        ----------
-        folder_path : _type_
-            _description_
-        file_name : _type_
-            _description_
-        """
-        pass
-
-    def add_column_to_crns_data_frame(
-        self,
-        source,
-        source_column_name: str = None,
-        new_column_name: str = None,
-    ):
-        if isinstance(source, pd.DataFrame):
-            if source_column_name is None:
-                raise ValueError(
-                    "Must specify a column name "
-                    "when the source is DataFrame"
-                )
-            if new_column_name is None:
-                new_column_name = source_column_name
-            if not isinstance(source.index, pd.DatetimeIndex):
-                raise ValueError("DataFrame source must have a DatetimeIndex.")
-            mapped_data = source[source_column_name].reindex(
-                self.crns_data_frame.index, method="nearest"
-            )
-        elif isinstance(source, dict):
-            if new_column_name is None:
-                raise ValueError(
-                    "New column name must be specified when source is a dictionary"
-                )
-            mapped_data = pd.Series(source).reindex(
-                self.crns_data_frame.index, method="nearest"
-            )
-        else:
-            raise TypeError(
-                "Source must be either a DataFrame or a dictionary"
-            )
-        self.crns_data_frame[new_column_name] = mapped_data
+        saver = SaveAndArchiveOutputs(
+            folder_name=folder_name,
+            processed_data_frame=self.crns_data_frame,
+            flag_data_frame=self.flags_data_frame,
+            site_information=self.site_information,
+            save_folder_location=save_folder_location,
+            append_yaml_hash_to_folder_name=append_yaml_hash_to_folder_name,
+            use_custom_column_names=use_custom_column_names,
+            custom_column_names_dict=custom_column_names_dict,
+        )
+        saver.save_outputs()
