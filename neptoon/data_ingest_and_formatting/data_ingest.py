@@ -47,27 +47,27 @@ core_logger = get_logger()
 #         Error if string or pathlib.Path given.
 #     """
 
-    if file_path is None:
-        return None
-    if isinstance(file_path, str):
-        new_file_path = Path(file_path)
-        if new_file_path.is_absolute():
-            return new_file_path
-        else:
-            return base / Path(file_path).resolve()
-    elif isinstance(file_path, Path):
-        if file_path.is_absolute():
-            return file_path
-        else:
-            return base / file_path
-    else:
-        message = (
-            "data_location must be of type str or pathlib.Path. \n"
-            f"{type(file_path).__name__} provided, "
-            "please change this."
-        )
-        core_logger.error(message)
-        raise ValueError(message)
+# if file_path is None:
+#     return None
+# if isinstance(file_path, str):
+#     new_file_path = Path(file_path)
+#     if new_file_path.is_absolute():
+#         return new_file_path
+#     else:
+#         return base / Path(file_path).resolve()
+# elif isinstance(file_path, Path):
+#     if file_path.is_absolute():
+#         return file_path
+#     else:
+#         return base / file_path
+# else:
+#     message = (
+#         "data_location must be of type str or pathlib.Path. \n"
+#         f"{type(file_path).__name__} provided, "
+#         "please change this."
+#     )
+#     core_logger.error(message)
+#     raise ValueError(message)
 
 
 class FileCollectionConfig:

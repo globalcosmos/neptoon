@@ -18,11 +18,7 @@ test_filename = (
     Path(__file__).parent / "mock_data" / "CRNS-station_data-Hydroinnova-A.zip"
 )
 
-yaml_path = (
-    Path(__file__).parent.parent.parent
-    / "configuration_files"
-    / "A101_station.yaml"
-)
+yaml_path = Path(__file__).parent / "mock_data" / "A101_station_test.yaml"
 
 """
 Full tests to be written. For now we include a canary that checks the

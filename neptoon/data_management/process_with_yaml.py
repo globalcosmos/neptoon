@@ -250,6 +250,7 @@ class ProcessWithYaml:
         tmp = self.station_info.general_site_metadata
 
         site_info = SiteInformation(
+            site_name=tmp.site_name,
             latitude=tmp.latitude,
             longitude=tmp.longitude,
             elevation=tmp.elevation,
