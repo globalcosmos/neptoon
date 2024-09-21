@@ -23,7 +23,6 @@ from neptoon.neutron_correction.neutron_correction import (
 )
 from neptoon.data_management.column_information import ColumnInfo
 from neptoon.configuration.configuration_input import ConfigurationManager
-from neptoon.data_management.save_data import SaveAndArchiveOutputs
 
 core_logger = get_logger()
 
