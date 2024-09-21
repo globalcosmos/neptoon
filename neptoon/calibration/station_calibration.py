@@ -101,6 +101,49 @@ class CalibrationConfiguration:
         self.air_pressure_column_name = air_pressure_column_name
 
 
+class CalibrationStation:
+    """
+    Abstract class to do full claibration steps in one go. Can be used
+    on its own, but is mainly designed to facilitate CRNSDataHub
+    calibration.
+    """
+
+    def __init__(
+        self,
+        calibration_data: pd.DataFrame,
+        time_series_data: pd.DataFrame,
+        config: CalibrationConfiguration,
+    ):
+        self.calibration_data = calibration_data
+        self.time_series_data = time_series_data
+        self.config = config
+        # place holders
+        self.calib_prepper = None
+        self.times_series_prepper = None
+        self.calibrator = None
+
+    def find_n0_value(self):
+        self.calib_prepper = PrepareCalibrationData(
+            calibration_data_frame=self.calibration_data,
+            config=self.config,
+        )
+        self.calib_prepper.prepare_calibration_data()
+        times_series_prepper = PrepareNeutronCorrectedData(
+            corrected_neutron_data_frame=self.time_series_data,
+            calibration_data_prepper=self.calib_prepper,
+            config=self.config,
+        )
+        times_series_prepper.extract_calibration_day_values()
+        self.calibrator = CalibrationWeightsCalculator(
+            time_series_data_object=times_series_prepper,
+            calib_data_object=self.calib_prepper,
+            config=self.config,
+        )
+        self.calibrator.apply_weighting_to_multiple_days()
+        optimal_n0 = self.calibrator.find_optimal_N0()
+        return optimal_n0
+
+
 class SampleProfile:
 
     latest_pid = 0
@@ -769,6 +812,8 @@ class CalibrationWeightsCalculator:
                 "absolute_error"
             ] = absolute_error
         df = self.return_output_dict_as_dataframe()
+        average_n0 = df["optimal_N0"].mean()
+        return average_n0
 
     def find_optimal_N0_single_day_iteration_style(
         self,

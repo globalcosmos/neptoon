@@ -9,6 +9,7 @@ from neptoon.calibration.station_calibration import (
     CalibrationWeightsCalculator,
     PrepareNeutronCorrectedData,
     CalibrationConfiguration,
+    CalibrationStation,
 )
 
 
@@ -26,10 +27,6 @@ crns_data = pandas.read_csv(
     index_col=0,
     parse_dates=True,
 )
-
-
-# %%
-
 calib_config = CalibrationConfiguration(
     date_time_column_name="DateTime_utc",
     distance_column="Distance_to_CRNS_m",
@@ -42,150 +39,20 @@ calib_config = CalibrationConfiguration(
     air_humidity_column_name="AirHumidity_gapfilled",
     neutron_column_name="NeutronCount_Epithermal_MovAvg24h_corrected",
 )
+# %%
 
-calib_prepper = PrepareCalibrationData(
-    calibration_data_frame=calibration_data,
+calibration_station = CalibrationStation(
+    calibration_data=calibration_data,
+    time_series_data=crns_data,
     config=calib_config,
 )
-
-calib_prepper.prepare_calibration_data()
-times_series_prepper = PrepareNeutronCorrectedData(
-    corrected_neutron_data_frame=crns_data,
-    calibration_data_prepper=calib_prepper,
-    config=calib_config,
-)
-
-times_series_prepper.extract_calibration_day_values()
-
-calibrator = CalibrationWeightsCalculator(
-    time_series_data_object=times_series_prepper,
-    calib_data_object=calib_prepper,
-    config=calib_config,
-)
-calibrator.apply_weighting_to_multiple_days()
-calibrator.find_optimal_N0()
-
+calibration_station.find_n0_value()
+calibration_station.calibrator.return_output_dict_as_dataframe()
 # %%
 
 
 # %%
-calibrator = CalibrationWeightsCalculator(
-    time_series_data_object=times_series_prepper,
-    calib_data_object=calib_prepper,
-    # air_pressure_column_name=""
-)
-calibrator.apply_weighting_to_multiple_days()
-# %%
 
-calibrator.find_optimal_N0()
-# indices = CRNS_data.index.get_indexer(list(calibration_days), method="nearest")
-# %%
-
-# %%
-for index, row in df.iterrows():
-    i = 0
-    calibration_day = row["calibration_day"]
-    print("Calibration day %s" % calibration_day.strftime("%Y-%m-%d %H:%M"))
-    for P in row["profiles"]:
-
-        i += 1
-
-        # Calculate volumetric SM from sm_gg, lw, soc, bd
-        # P.calculate_sm_vol()
-        # First order estimate of the average soil moisture
-        sm_estimate = P.sm_tot_vol.mean()
-
-        # Neutron penetration depth at this location
-        P.D86 = w = Schroen2017.calculate_measurement_depth(
-            distance=P.r, bulk_density=P.bd.mean(), soil_moisture=sm_estimate
-        )
-
-        # Weights for this profile
-        # data = P.data.copy()
-        P.data["weight"] = Schroen2017.vertical_weighting(
-            P.data["d"], bulk_density=P.bd.mean(), soil_moisture=sm_estimate
-        )
-        # Calculate weighted sm average
-        P.sm_tot_wavg_vol = np.average(
-            P.data["sm_tot_vol"], weights=P.data["weight"]
-        )
-        P.sm_tot_wavg_grv = np.average(
-            P.data["sm_tot_grv"], weights=P.data["weight"]
-        )
-
-        # Calculate horizontal weight for this profile
-        P.w_r = Schroen2017.horizontal_weighting(
-            distance=P.r,
-            soil_moisture=P.sm_tot_wavg_vol,
-            air_humidity=row["air_humidity"],
-        )
-
-        print(
-            "  Profile %.0f: vertical wt. avg. SM: %.3f, CRNS depth: %3.0f cm, distance: %2.0f m, horizontal weight: %7.0f"
-            % (i, P.sm_tot_wavg_vol, P.D86, P.r, P.w_r)
-        )
-
-    ### ABOVE IS DONE TODO
-    ### CONTINUE BELOW HERE TODO
-
-    # Horizontal average
-    profiles_sm_tot_wavg_vol = [P.sm_tot_wavg_vol for P in row["profiles"]]
-    profiles_sm_tot_wavg_grv = [P.sm_tot_wavg_grv for P in row["profiles"]]
-    # if index == 0:
-    #     print(profiles_sm_wavg)
-    profiles_weights = [P.w_r for P in row["profiles"]]
-    profiles_weights_without_nans = np.ma.MaskedArray(
-        profiles_weights, mask=np.isnan(profiles_weights)
-    )
-    profiles_sm_tot_wavg_vol_without_nans = np.ma.MaskedArray(
-        profiles_sm_tot_wavg_vol, mask=np.isnan(profiles_sm_tot_wavg_vol)
-    )
-    sm_tot_wavg_vol = np.average(
-        profiles_sm_tot_wavg_vol_without_nans,
-        weights=profiles_weights_without_nans,
-    )
-    profiles_sm_tot_wavg_grv_without_nans = np.ma.MaskedArray(
-        profiles_sm_tot_wavg_grv, mask=np.isnan(profiles_sm_tot_wavg_grv)
-    )
-    sm_tot_wavg_grv = np.average(
-        profiles_sm_tot_wavg_grv_without_nans,
-        weights=profiles_weights_without_nans,
-    )
-    # print("Horizontal wt. avg. SM: %.3f" % sm_wavg)
-
-    df.loc[df["calibration_day"] == calibration_day, "sm_tot_wavg_vol"] = (
-        sm_tot_wavg_vol
-    )
-    df.loc[df["calibration_day"] == calibration_day, "sm_tot_wavg_grv"] = (
-        sm_tot_wavg_grv
-    )
-
-    # Footprint
-    footprint_m = Schroen2017.calculate_footprint_radius(
-        soil_moisture=sm_tot_wavg_vol,
-        air_humidity=row["air_humidity"],
-        pressure=row["air_pressure"],
-    )
-    print("Footprint radius: %.0f m" % footprint_m)
-
-    df.loc[df["calibration_day"] == calibration_day, "footprint_radius"] = (
-        footprint_m
-    )
-
-    D86s = [P.D86 for P in row["profiles"]]
-    D86s_without_nans = np.ma.MaskedArray(D86s, mask=np.isnan(D86s))
-    df.loc[df["calibration_day"] == calibration_day, "footprint_depth"] = (
-        np.average(D86s_without_nans)
-    )
-
-    bds = [P.bd_mean for P in row["profiles"]]
-    bds_without_nans = np.ma.MaskedArray(bds, mask=np.isnan(bds))
-    df.loc[df["calibration_day"] == calibration_day, "bd"] = np.average(
-        bds_without_nans
-    )
-
-# %%
-df
 # %%
 # Plot vertical profiles
 for index, row in df.iterrows():
