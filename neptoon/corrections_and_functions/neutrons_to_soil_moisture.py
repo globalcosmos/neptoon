@@ -3,6 +3,16 @@
 """
 
 
+def neutrons_to_grav_sm_desilets(
+    neutrons,
+    N0=1000,
+    a0=0.0808,
+    a1=0.372,
+    a2=0.115,
+):
+    return a0 / (neutrons / N0 - a1) - a2
+
+
 def convert_neutrons_to_soil_moisture(
     dry_soil_bulk_density: float,
     neutron_count: float,

@@ -440,7 +440,10 @@ class CacheHandler:
             df = pd.read_csv(self.cache_file_path)
             df["datetime"] = pd.to_datetime(df["datetime"])
             df.set_index("datetime", inplace=True)
-            df.index = df.index.tz_localize("UTC")
+            if df.index.tzinfo is None:
+                df.index = df.index.tz_localize("UTC")
+            else:
+                df.index = df.index.tz_convert("UTC")
             return df
 
     def write_cache(self, cache_df):

@@ -197,6 +197,7 @@ class ProcessWithYaml:
         self.input_formatter_config = InputDataFrameFormattingConfig()
         self.input_formatter_config.yaml_information = self.station_info
         self.input_formatter_config.build_from_yaml()
+        # date_time_column = self.input_formatter_config.
 
         data_formatter = FormatDataForCRNSDataHub(
             data_frame=self.raw_data_parsed,
@@ -223,11 +224,17 @@ class ProcessWithYaml:
         if self.station_info.raw_data_parse_options.parse_raw_data:
             self._parse_raw_data()
         else:
-            self.raw_data_parsed = pd.to_csv(
+            self.raw_data_parsed = pd.read_csv(
                 validate_and_convert_file_path(
                     file_path=self.station_info.time_series_data.path_to_data,
                 )
             )
+            # self.raw_data_parsed.set_index(
+            #     self.raw_data_parsed[
+            #         self.station_info.time_series_data.date_time_column
+            #     ],
+            #     drop=True,
+            # )
         df = self._prepare_time_series()
         return df
 

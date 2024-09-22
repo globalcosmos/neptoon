@@ -76,6 +76,13 @@ class ColumnInfo:  # TODO Change to Columns
         N0 = auto()
         BETA_COEFFICIENT = auto()
         L_COEFFICIENT = auto()
+        CALIB_DEPTH_OF_SAMPLE = auto()
+        CALIB_DISTANCE_TO_SENSOR = auto()
+        CALIB_BULK_DENSITY = auto()
+        CALIB_PROFILE_ID = auto()
+        CALIB_SOIL_MOISTURE_GRAVIMETRIC = auto()
+        CALIB_SOIL_ORGANIC_CARBON = auto()
+        CALIB_LATTICE_WATER = auto()
 
         def __str__(self):
             return ColumnInfo._current_representation[self]
@@ -122,6 +129,13 @@ class ColumnInfo:  # TODO Change to Columns
         Name.N0: "n0",
         Name.BETA_COEFFICIENT: "beta_coefficient",
         Name.L_COEFFICIENT: "l_coefficient",
+        Name.CALIB_DEPTH_OF_SAMPLE: "depth_of_sample",
+        Name.CALIB_DISTANCE_TO_SENSOR: "distance_to_sensor",
+        Name.CALIB_BULK_DENSITY: "bulk_density",
+        Name.CALIB_PROFILE_ID: "profile_id",
+        Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC: "soil_moisture_gravimetric",
+        Name.CALIB_SOIL_ORGANIC_CARBON: "soil_organic_carbon",
+        Name.CALIB_LATTICE_WATER: "lattice_water",
     }
 
     _current_representation = copy.deepcopy(_default_representation)

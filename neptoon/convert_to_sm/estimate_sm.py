@@ -4,7 +4,7 @@ from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
     convert_neutrons_to_soil_moisture,
 )
 from neptoon.corrections_and_functions.calibration_functions import (
-    Schroen2017CalibrationFunctions,
+    Schroen2017,
 )
 from neptoon.logging import get_logger
 from neptoon.data_management.data_audit import log_key_step
@@ -67,11 +67,17 @@ class NeutronsToSM:
         """
         self._crns_data_frame = crns_data_frame
         self._n0 = n0
-        self._dry_soil_bulk_density = dry_soil_bulk_density
-        self._lattice_water = lattice_water
-        self._soil_organic_carbon = soil_organic_carbon
+        self._dry_soil_bulk_density = (
+            dry_soil_bulk_density
+            if dry_soil_bulk_density is not None
+            else 1.42
+        )
+        self._lattice_water = lattice_water if lattice_water is not None else 0
+        self._soil_organic_carbon = (
+            soil_organic_carbon if soil_organic_carbon is not None else 0
+        )
         self._water_equiv_of_soil_organic_matter = self._convert_soc_to_wsom(
-            soil_organic_carbon
+            self._soil_organic_carbon
         )
         self._corrected_neutrons_col_name = corrected_neutrons_col_name
         self._smoothed_neutrons_col_name = smoothed_neutrons_col_name
@@ -227,8 +233,8 @@ class NeutronsToSM:
         """
         self.crns_data_frame[self.depth_column_name] = (
             self.crns_data_frame.apply(
-                lambda row: Schroen2017CalibrationFunctions.calculate_measurement_depth(
-                    rescaled_distance=radius,
+                lambda row: Schroen2017.calculate_measurement_depth(
+                    distance=radius,
                     bulk_density=self.dry_soil_bulk_density,
                     soil_moisture=row[self.soil_moisture_col_name],
                 ),
