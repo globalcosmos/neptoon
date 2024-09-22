@@ -4,7 +4,7 @@ from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
     convert_neutrons_to_soil_moisture,
 )
 from neptoon.corrections_and_functions.calibration_functions import (
-    Schroen2017CalibrationFunctions,
+    Schroen2017,
 )
 from neptoon.logging import get_logger
 from neptoon.data_management.data_audit import log_key_step
