@@ -67,11 +67,17 @@ class NeutronsToSM:
         """
         self._crns_data_frame = crns_data_frame
         self._n0 = n0
-        self._dry_soil_bulk_density = dry_soil_bulk_density
-        self._lattice_water = lattice_water
-        self._soil_organic_carbon = soil_organic_carbon
+        self._dry_soil_bulk_density = (
+            dry_soil_bulk_density
+            if dry_soil_bulk_density is not None
+            else 1.42
+        )
+        self._lattice_water = lattice_water if lattice_water is not None else 0
+        self._soil_organic_carbon = (
+            soil_organic_carbon if soil_organic_carbon is not None else 0
+        )
         self._water_equiv_of_soil_organic_matter = self._convert_soc_to_wsom(
-            soil_organic_carbon
+            self._soil_organic_carbon
         )
         self._corrected_neutrons_col_name = corrected_neutrons_col_name
         self._smoothed_neutrons_col_name = smoothed_neutrons_col_name

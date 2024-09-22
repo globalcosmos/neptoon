@@ -7,6 +7,10 @@ from neptoon.configuration.configuration_input import ConfigurationManager
 from neptoon.ancillary_data_collection.nmdb_data_collection import (
     NMDBDataAttacher,
 )
+from neptoon.calibration.station_calibration import (
+    CalibrationConfiguration,
+    CalibrationStation,
+)
 from neptoon.neutron_correction.neutron_correction import (
     CorrectionBuilder,
     CorrectionFactory,
@@ -92,8 +96,10 @@ class CRNSDataHub:
         self._quality_assessor = quality_assessor
         self._process_with_config = process_with_config
         self._site_information = site_information
+        self._calibration_samples_data = calibration_samples_data
         self._correction_factory = CorrectionFactory(self._site_information)
         self._correction_builder = CorrectionBuilder()
+        self.calibrator = None
 
     @property
     def crns_data_frame(self):
@@ -143,6 +149,15 @@ class CRNSDataHub:
     @property
     def correction_factory(self):
         return self._correction_factory
+
+    @property
+    def calibration_samples_data(self):
+        return self._calibration_samples_data
+
+    @calibration_samples_data.setter
+    def calibration_samples_data(self, data: pd.DataFrame):
+        # TODO add verification
+        self._calibration_samples_data = data
 
     @property
     def correction_builder(self):
@@ -384,6 +399,28 @@ class CRNSDataHub:
         )
         col_name = smoother.create_new_column_name()
         self.crns_data_frame[col_name] = smoother.apply_smoothing()
+
+    def calibrate_station(
+        self,
+        config: CalibrationConfiguration = None,
+    ):
+        if self.calibration_samples_data is None:
+            message = "No calibration_samples_data found. Cannot calibrate."
+            core_logger.error(message)
+            raise ValueError(message)
+        if config == None:
+            message = "No CalibrationConfiguration provided - using defaults"
+            core_logger.info(message)
+            config = CalibrationConfiguration()
+
+        self.calibrator = CalibrationStation(
+            calibration_data=self.calibration_samples_data,
+            time_series_data=self.crns_data_frame,
+            config=config,
+        )
+        n0 = self.calibrator.find_n0_value()
+        self.site_information.n0 = n0
+        print(f"N0 number is {n0}")
 
     def produce_soil_moisture_estimates(
         self,
