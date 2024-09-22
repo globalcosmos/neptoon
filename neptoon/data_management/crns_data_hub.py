@@ -408,7 +408,7 @@ class CRNSDataHub:
             message = "No calibration_samples_data found. Cannot calibrate."
             core_logger.error(message)
             raise ValueError(message)
-        if config == None:
+        if config is None:
             message = "No CalibrationConfiguration provided - using defaults"
             core_logger.info(message)
             config = CalibrationConfiguration()
