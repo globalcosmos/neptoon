@@ -25,7 +25,7 @@ general_site_metadata:
   avg_biomass:
 
 time_series_data:
-  path_to_data: ./example_data/FSC001_time_series.csv
+  path_to_data: example_process/example_data/FSC001_time_series.csv
   time_step_resolution: 1hour
   key_column_info:
     date_time_columns:
@@ -81,7 +81,7 @@ extra_quality_assessment:
 calibration_data:
   calibrate: True
   format: standard #cosmoz, cosmos-usa, cosmos-uk
-  location: /example_data/FSC001_calibration.csv
+  location: example_process/example_data/FSC001_calibration.csv
   key_column_names:
     profile: Profile_ID
     sample_depth: Profile_Depth_cm

@@ -7,8 +7,7 @@ from neptoon.data_management.data_audit import DataAuditLog
 # from neptoon.quality_assesment.quality_assesment import FlagRangeCheck
 
 config = ConfigurationManager()
-
-station_config_path = Path("./configuration_files/A101_station.yaml")
+station_config_path = Path("./configuration_files/sheepdrove.yaml")
 processing_config_path = Path(
     "./configuration_files/v1_processing_method.yaml"
 )

@@ -6,29 +6,43 @@ from neptoon.data_management.data_audit import DataAuditLog
 
 # from neptoon.quality_assesment.quality_assesment import FlagRangeCheck
 
-config = ConfigurationManager()
 
-station_config_path = Path.cwd() / "configuration_files" / "A101_station.yaml"
-processing_config_path = (
-    Path.cwd() / "configuration_files" / "v1_processing_method.yaml"
-)
+def load_configuration():
+    config = ConfigurationManager()
 
-config.load_and_validate_configuration(
-    name="station",
-    file_path=station_config_path,
-)
-config.load_and_validate_configuration(
-    name="processing",
-    file_path=processing_config_path,
-)
+    # abspath = Path.cwd()
+    abspath = Path("example_process")
 
-DataAuditLog.create()
-yaml_processor = ProcessWithYaml(configuration_object=config)
+    station_config_path = (
+        abspath / "configuration_files" / "Sheepdrove02.yaml"
+    )  # "A101_station.yaml"
+    processing_config_path = (
+        abspath / "configuration_files" / "v1_processing_method.yaml"
+    )
 
-## OPTION 1:
-data_hub = yaml_processor.create_data_hub()
+    config.load_and_validate_configuration(
+        name="station",
+        file_path=station_config_path,
+    )
+    config.load_and_validate_configuration(
+        name="processing",
+        file_path=processing_config_path,
+    )
 
-## OPTION 2:
-yaml_processor.run_full_process()
-data_hub.site_information
-yaml_processor.data_hub.crns_data_frame
+    DataAuditLog.create()
+    yaml_processor = ProcessWithYaml(configuration_object=config)
+
+    ## OPTION 1:
+    yaml_processor.create_data_hub(return_data_hub=False)
+
+    return yaml_processor
+
+
+def run_full_process(yaml_processor):
+
+    ## OPTION 2:
+    yaml_processor.run_full_process()
+
+    return yaml_processor
+
+    # yaml_processor.data_hub.crns_data_frame
