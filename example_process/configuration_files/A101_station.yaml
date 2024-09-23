@@ -46,7 +46,8 @@ time_series_data:
       - RH1
     relative_humidity_units: percent
     relative_humidity_merge_method: priority
-    date_time_column: Date Time(UTC)
+    date_time_columns:
+      - Date Time(UTC)
     date_time_format: "%Y/%m/%d %H:%M:%S"
     initial_time_zone: utc
     convert_time_zone_to: utc
