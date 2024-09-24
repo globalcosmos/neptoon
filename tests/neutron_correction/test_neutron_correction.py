@@ -12,8 +12,8 @@ from neptoon.neutron_correction.correction_classes import (
     IncomingIntensityCorrectionHawdon2014,
     HumidityCorrectionRosolem2013,
 )
-from neptoon.data_management.site_information import SiteInformation
-from neptoon.data_management.column_information import ColumnInfo
+from neptoon.site_information import SiteInformation
+from neptoon.column_names.column_information import ColumnInfo
 from neptoon.neutron_correction.correction_classes import Correction
 
 

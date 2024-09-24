@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import pytest
 from neptoon.quality_assesment.smoothing import SmoothData
-from neptoon.data_management.column_information import ColumnInfo
+from neptoon.column_names.column_information import ColumnInfo
 
 
 @pytest.fixture

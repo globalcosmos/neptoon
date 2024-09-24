@@ -1,13 +1,13 @@
 import pandas as pd
-from neptoon.data_management.column_information import ColumnInfo
+from neptoon.column_names.column_information import ColumnInfo
 from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
     convert_neutrons_to_soil_moisture,
 )
 from neptoon.corrections_and_functions.calibration_functions import (
     Schroen2017,
 )
-from neptoon.logging import get_logger
-from neptoon.data_management.data_audit import log_key_step
+from neptoon.logging.logging import get_logger
+from neptoon.data_audit import log_key_step
 
 core_logger = get_logger()
 

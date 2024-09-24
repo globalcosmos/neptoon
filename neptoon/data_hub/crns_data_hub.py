@@ -19,10 +19,10 @@ from neptoon.neutron_correction.neutron_correction import (
     CorrectNeutrons,
 )
 from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
-from neptoon.data_management.data_validation_tables import (
+from neptoon.data_validation import (
     FormatCheck,
 )
-from neptoon.data_management.site_information import SiteInformation
+from neptoon.site_information import SiteInformation
 from neptoon.quality_assesment.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
@@ -30,7 +30,7 @@ from neptoon.quality_assesment.quality_assesment import (
 from neptoon.data_management.save_data import SaveAndArchiveOutputs
 from neptoon.quality_assesment.smoothing import SmoothData
 
-from neptoon.logging import get_logger
+from neptoon.logging.logging import get_logger
 
 core_logger = get_logger()
 

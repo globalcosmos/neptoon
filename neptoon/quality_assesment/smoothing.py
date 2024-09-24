@@ -2,8 +2,8 @@ import pandas as pd
 from typing import Literal, Optional, Union
 from scipy.signal import savgol_filter
 
-from neptoon.logging import get_logger
-from neptoon.data_management.column_information import ColumnInfo
+from neptoon.logging.logging import get_logger
+from neptoon.column_names.column_information import ColumnInfo
 
 core_logger = get_logger()
 

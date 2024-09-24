@@ -1,9 +1,9 @@
 import pandas as pd
 from typing import Literal
 from pathlib import Path
-from neptoon.logging import get_logger
-from neptoon.data_management.crns_data_hub import CRNSDataHub
-from neptoon.data_management.site_information import SiteInformation
+from neptoon.logging.logging import get_logger
+from neptoon.data_hub.crns_data_hub import CRNSDataHub
+from neptoon.site_information import SiteInformation
 from neptoon.data_ingest_and_formatting.data_ingest import (
     FileCollectionConfig,
     ManageFileCollection,
@@ -21,7 +21,7 @@ from neptoon.neutron_correction.neutron_correction import (
     CorrectionType,
     CorrectionTheory,
 )
-from neptoon.data_management.column_information import ColumnInfo
+from neptoon.column_names.column_information import ColumnInfo
 from neptoon.configuration.configuration_input import ConfigurationManager
 
 core_logger = get_logger()

@@ -1,7 +1,7 @@
 import logging
 from functools import wraps
 from inspect import signature
-from neptoon.logging import get_logger
+from neptoon.logging.logging import get_logger
 from pathlib import Path
 from typing import Union
 import yaml

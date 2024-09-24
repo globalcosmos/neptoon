@@ -1,20 +1,5 @@
 import logging
-
-
-def get_log_path():
-    """
-    Function for finding the main log file location
-
-    Returns
-    -------
-    pathlib.Path
-        The full Path (including filename) of the log file
-    """
-    from neptoon.configuration.global_configuration import GlobalConfig
-
-    cache_file_path = GlobalConfig.get_cache_dir()
-    log_file_path = cache_file_path / "logs" / "core_log.log"
-    return log_file_path
+from .log_utils import get_log_path
 
 
 def configure_logger():

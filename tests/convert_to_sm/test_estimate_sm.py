@@ -1,5 +1,5 @@
 from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
-from neptoon.data_management.column_information import ColumnInfo
+from neptoon.column_names.column_information import ColumnInfo
 import pytest
 import pandas as pd
 import numpy as np

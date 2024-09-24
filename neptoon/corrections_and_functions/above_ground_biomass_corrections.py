@@ -7,7 +7,7 @@ Functions in this module:
     above_ground_biomass_correction_baatz2015
 """
 
-from neptoon.logging import get_logger
+from neptoon.logging.logging import get_logger
 
 core_logger = get_logger()
 

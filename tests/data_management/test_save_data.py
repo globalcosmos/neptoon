@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock
 from neptoon.data_management.save_data import SaveAndArchiveOutputs
-from neptoon.data_management.site_information import SiteInformation
+from neptoon.site_information import SiteInformation
 
 UNFLAGGED = "UNFLAGGED"
 BAD = "BAD"

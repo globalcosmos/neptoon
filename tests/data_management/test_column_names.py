@@ -1,5 +1,6 @@
-from neptoon.data_management.column_information import ColumnInfo
+from neptoon.column_names.column_information import ColumnInfo
 import pytest
+
 
 @pytest.fixture(autouse=True)
 def reset_column_info():

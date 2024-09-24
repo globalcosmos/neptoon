@@ -2,9 +2,9 @@ from saqc import SaQC
 import pandas as pd
 from abc import abstractmethod, ABC
 from typing import Union
-from neptoon.logging import get_logger
-from neptoon.data_management.data_audit import log_key_step
-from neptoon.data_management.column_information import ColumnInfo
+from neptoon.logging.logging import get_logger
+from neptoon.data_audit import log_key_step
+from neptoon.column_names.column_information import ColumnInfo
 
 core_logger = get_logger()
 

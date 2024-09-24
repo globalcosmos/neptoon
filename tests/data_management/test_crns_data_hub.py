@@ -1,7 +1,7 @@
 import pandas as pd
-from neptoon.data_management.crns_data_hub import CRNSDataHub
-from neptoon.data_management.column_information import ColumnInfo
-from neptoon.data_management.site_information import SiteInformation
+from neptoon.data_hub.crns_data_hub import CRNSDataHub
+from neptoon.column_names.column_information import ColumnInfo
+from neptoon.site_information import SiteInformation
 import pytest
 
 

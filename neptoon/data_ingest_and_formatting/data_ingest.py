@@ -9,10 +9,10 @@ import io
 from saqc import SaQC
 from pathlib import Path
 from typing import Union, Literal, List, Optional
-from neptoon.data_management.data_audit import log_key_step
-from neptoon.logging import get_logger
+from neptoon.data_audit import log_key_step
+from neptoon.logging.logging import get_logger
 from neptoon.utils.general_utils import validate_and_convert_file_path
-from neptoon.data_management.column_information import ColumnInfo
+from neptoon.column_names.column_information import ColumnInfo
 from neptoon.configuration.configuration_input import (
     ConfigurationManager,
 )

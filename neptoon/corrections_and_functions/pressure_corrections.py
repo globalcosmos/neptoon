@@ -11,7 +11,7 @@ Functions in this module:
 """
 
 import numpy as np
-from neptoon.logging import get_logger
+from neptoon.logging.logging import get_logger
 
 core_logger = get_logger()
 

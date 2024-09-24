@@ -6,7 +6,7 @@ This module contains functions related to calibration steps
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from neptoon.logging import get_logger
+from neptoon.logging.logging import get_logger
 
 core_logger = get_logger()
 
