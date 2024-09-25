@@ -3,6 +3,7 @@ image: python:3.10
 # Define the stages of pipeline
 stages:
   - test
+  - lint
   - build
   - package_testpypi
   - package_pypi
