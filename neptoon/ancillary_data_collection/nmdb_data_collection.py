@@ -5,21 +5,52 @@ import pandas as pd
 from pathlib import Path
 from io import StringIO
 from dateutil import parser
+from neptoon.data_management.column_information import ColumnInfo
 from neptoon.configuration.global_configuration import GlobalConfig
 from neptoon.data_management.data_audit import log_key_step
-from neptoon.data_management.crns_data_hub import CRNSDataHub
+from neptoon.logging import get_logger
+
+# from neptoon.data_management.crns_data_hub import CRNSDataHub
+core_logger = get_logger()
 
 
 class NMDBDataAttacher:
+    """
+    This is the core class that a user interacts with when wanting to
+    attach data from the NMDB.eu database to a dataframe. It includes
+    methods for configuring the NMDBConfig class which is then used by
+    other classes for fetching and parsing data from the NMDB.eu API.
+
+    TODO - add validation steps to ensure dataframe is correct format
+    """
+
     def __init__(
         self,
-        data_hub: CRNSDataHub,
+        data_frame: pd.DataFrame,
+        new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
     ):
-        self.data_hub = data_hub
+        """
+        Initialisation parameters
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame which requires data to be attached. It must have a
+            datetime index.
+        new_column_name : str, optional
+            column name for the new column were neutron count data is
+            appended, by default "incoming_neutron_intensity"
+        """
+        self.data_frame = data_frame
+        self._new_column_name = new_column_name
+
+    @property
+    def new_column_name(self):
+        return self._new_column_name
 
     def configure(self, station="JUNG", resolution="60", nmdb_table="revori"):
-        start_date_from_data = self.data_hub.crns_data_frame.index[0]
-        end_date_from_data = self.data_hub.crns_data_frame.index[-1]
+        start_date_from_data = self.data_frame.index[0]
+        end_date_from_data = self.data_frame.index[-1]
         self.config = NMDBConfig(
             start_date_wanted=start_date_from_data,
             end_date_wanted=end_date_from_data,
@@ -29,15 +60,40 @@ class NMDBDataAttacher:
         )
 
     def fetch_data(self):
+        """
+        Creates a NMDBDataHandler using the config and collects the data
+        whilst storing it under self.tmp_data
+        """
         handler = NMDBDataHandler(self.config)
         self.tmp_data = handler.collect_nmdb_data()
 
     def attach_data(self):
-        self.data_hub.add_column_to_crns_data_frame(
-            self.tmp_data,
-            column_name="count",
-            new_column_name="incoming_neutron_intensity",
+        """
+        Attaches the data stored in self.tmp_data to self.data_frame.
+        This occurs inplace.
+
+        Raises
+        ------
+        ValueError
+            When index of the data is not Datetime an error occurs
+        """
+        if not isinstance(self.tmp_data.index, pd.DatetimeIndex):
+            raise ValueError("DataFrame source must have a DatetimeIndex.")
+        mapped_data = self.tmp_data["count"].reindex(
+            self.data_frame.index, method="nearest"
         )
+        self.data_frame[self.new_column_name] = mapped_data
+
+    def return_data_frame(self):
+        """
+        Returns the DataFrame attached in the object.
+
+        Returns
+        -------
+        pd.DataFrame
+            The DataFrame
+        """
+        return self.data_frame
 
 
 class DateTimeHandler:
@@ -384,6 +440,10 @@ class CacheHandler:
             df = pd.read_csv(self.cache_file_path)
             df["datetime"] = pd.to_datetime(df["datetime"])
             df.set_index("datetime", inplace=True)
+            if df.index.tzinfo is None:
+                df.index = df.index.tz_localize("UTC")
+            else:
+                df.index = df.index.tz_convert("UTC")
             return df
 
     def write_cache(self, cache_df):
@@ -537,7 +597,8 @@ class DataFetcher:
         return response.text
 
     def parse_http_data(self, raw_data):
-        """Parse the HTTP response data into a dataframe
+        """
+        Parse the HTTP response data into a dataframe
 
         Parameters
         ----------
@@ -581,6 +642,7 @@ class DataFetcher:
             data = pd.read_csv(data, delimiter=";", comment="#")
             data.columns = ["count"]
             data.index.name = "datetime"
+            data.index = pd.to_datetime(data.index).tz_localize("UTC")
             data.index = pd.to_datetime(data.index)
         except requests.exceptions.RequestException as e:
             logging.error(f"HTTP Request failed: {e}")
@@ -748,7 +810,12 @@ class DataManager:
         if "datetime" not in df_cache.index.names:
             df_cache.set_index("datetime", inplace=True)
         if "datetime" not in df_download.index.names:
-            df_download.set_index("datetime", inplace=True)
+            df_download.index = df_download.index.tz_localize("UTC")
+
+        if df_cache.index.tz is None:
+            df_cache.index = df_cache.index.tz_localize("UTC")
+        if df_download.index.tz is None:
+            df_download.index = df_download.index.tz_localize("UTC")
 
         combined_df = pd.concat([df_cache, df_download])
         combined_df.reset_index(inplace=True)
@@ -762,14 +829,14 @@ class DataManager:
 
 class NMDBDataHandler:
     """
-    Orchestrates the retrieval and management of NMDB data.
+    Handles the retrieval and management of NMDB data.
 
     This class integrates the `CacheHandler`, `DataFetcher`, and
-    `DataManager` to manage NMDB data efficiently. It ensures that data
-    is fetched from the NMDB source only when necessary, preferring
-    cached data to minimize network requests. The class handles cases
-    where new data needs to be fetched either because it's not present
-    in the cache or only partial data is available.
+    `DataManager` to manage NMDB data. It ensures that data is fetched
+    from the NMDB source only when necessary, preferring cached data to
+    minimize network requests. The class handles cases where new data
+    needs to be fetched either because it's not present in the cache or
+    only partial data is available.
 
     Parameters
     ----------
@@ -854,7 +921,7 @@ class NMDBDataHandler:
                 self.data_manager.need_data_before_cache is False
                 and self.data_manager.need_data_after_cache is False
             ):
-                logging.info("All data is present in the cache.")
+                core_logger.info("All data is present in the cache.")
                 df_cache = self.cache_handler.read_cache()
                 return df_cache
 
@@ -868,7 +935,7 @@ class NMDBDataHandler:
                 self.cache_handler.write_cache(df_combined)
                 return df_combined
         else:
-            logging.info(
+            core_logger.info(
                 f"No cache file found at"
                 f" {self.cache_handler.cache_file_path}."
             )

@@ -16,7 +16,7 @@ from neptoon.logging import get_logger
 core_logger = get_logger()
 
 
-def pressure_correction_l_coeff(
+def calc_pressure_correction_l_coeff(
     current_pressure: float, reference_pressure: float, l_coeff: float
 ):
     """
@@ -55,7 +55,7 @@ def pressure_correction_l_coeff(
     return c_factor
 
 
-def pressure_correction_beta_coeff(
+def calc_pressure_correction_beta_coeff(
     current_pressure: float, reference_pressure: float, beta_coeff: float
 ):
     """
@@ -122,7 +122,7 @@ def calc_beta_coefficient(mean_pressure, latitude, elevation, cutoff_rigidity):
     Parameters
     ----------
     mean_pressure : float
-        Mean atmospheric pressure in millibars (mb).
+        Mean atmospheric pressure in millibars (hPa).
     latitude : float
         Geographic latitude of the site in degrees.
     elevation : float

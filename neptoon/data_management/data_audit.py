@@ -3,6 +3,7 @@ from functools import wraps
 from inspect import signature
 from neptoon.logging import get_logger
 from pathlib import Path
+from typing import Union
 import yaml
 import hashlib
 import time
@@ -128,12 +129,12 @@ class DataAuditLog:
             core_logger.warning("No log_file_path available")
 
     @classmethod
-    def create_log_folder(cls, site_name=None, custom_log_location=None):
+    def create_log_folder(
+        cls, site_name: str, custom_log_location: Union[Path, None] = None
+    ):
         if cls._instance and hasattr(cls._instance, "log_file_path"):
             if site_name is None:
-                raise Exception(
-                    "You must select a name for the log (recommend: a site identifier)"
-                )
+                raise Exception("You must select a name for the log.")
             timestamp = time.strftime("%Y-%m-%d %H-%M-%S")
 
             folder_name = f"{site_name} {timestamp}"
@@ -156,7 +157,7 @@ class DataAuditLog:
         archive_folder = cls._instance.archive_folder_location
 
         yaml_string = ParseDataAuditLog.parse_log_to_yaml_string(
-            cls._instance.get_log_file_path()
+            log_file_path=cls._instance.get_log_file_path()
         )
         yaml_hash = ParseDataAuditLog.hash_yaml_string(yaml_string=yaml_string)
         save_hash = archive_folder / "hash.txt"
@@ -183,6 +184,7 @@ class DataAuditLog:
         formatter = logging.Formatter("%(message)s")
         data_audit_log_handler.setFormatter(formatter)
         self.logger.addHandler(data_audit_log_handler)
+        self.archive_folder_location = None
 
     def add_step(self, function_name, parameters):
         """
@@ -214,7 +216,11 @@ class DataAuditLog:
         """
         Deletes the log file associated with the DataAuditLog
         """
-        self.log_file_path.unlink()
+        try:
+            self.log_file_path.unlink()
+        except PermissionError:
+            # TODO: should be a logger message/warning?
+            print("Permission error: Log file is used by another process.")
 
 
 class ParseDataAuditLog:
@@ -230,7 +236,7 @@ class ParseDataAuditLog:
 
         Parameters
         ----------
-        log_path : pathlib.Path | str
+        log_file_path : pathlib.Path | str
             Path to the log file
 
         Returns
@@ -256,7 +262,12 @@ class ParseDataAuditLog:
                     if value.replace(".", "", 1).isdigit():
                         value = float(value) if "." in value else int(value)
                     params_dict[key] = value
-                functions_dict[function_name] = params_dict
+
+                if function_name not in functions_dict:
+                    functions_dict[function_name] = []
+                functions_dict[function_name].append(params_dict)
+
+                # functions_dict[function_name] = params_dict
         yaml_str = yaml.dump(functions_dict)
         return yaml_str
 

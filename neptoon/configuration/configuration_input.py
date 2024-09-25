@@ -1,25 +1,26 @@
-import logging
 import yaml
+from typing import Literal
 from abc import ABC, abstractmethod
 from neptoon.logging import get_logger
-from neptoon.configuration.yaml_classes import (
-    GeneralSiteMetadata,
-    CRNSSensorInformation,
-    TimeseriesDataFormat,
-    CalibrationDataFormat,
-    CalibrationDataFormat_ColumnNames,
-    PDFConfiguration,
-    DataStorage,
-    MethodSignifier,
-    IncomingRadiation,
-    AirPressure,
-    AirHumidity,
-    InvalidData,
-    Interpolation,
-    TemporalAggregation,
-)
 
-corelogger = get_logger()
+# from neptoon.configuration.yaml_classes import (
+#     GeneralSiteMetadata,
+#     CRNSSensorInformation,
+#     TimeseriesDataFormat,
+#     CalibrationDataFormat,
+#     CalibrationDataFormat_ColumnNames,
+#     PDFConfiguration,
+#     DataStorage,
+#     MethodSignifier,
+#     IncomingRadiation,
+#     AirPressure,
+#     AirHumidity,
+#     InvalidData,
+#     Interpolation,
+#     TemporalAggregation,
+# )
+
+core_logger = get_logger()
 
 
 class ConfigurationObject:
@@ -205,35 +206,37 @@ class SensorConfigurationValidation(ValidateConfigurationFile):
         """
         Extracts the individual sections from the YAML file and stores
         them as attributes in the object instance.
+
+        TODO: return to this when built!!!
         """
-        full_yaml = self.config_yaml.whole_yaml_file
+        pass
+        # full_yaml = self.config_yaml.whole_yaml_file
 
-        self.general_site_metadata = full_yaml.get("general_site_metadata", {})
-        self.crns_sensor_information = full_yaml.get(
-            "crns_sensor_information", {}
-        )
+        # self.general_site_metadata = full_yaml.get("general_site_metadata", {})
+        # self.timeseries_data_format = full_yaml.get("time_series_data", {})
 
-        self.timeseries_data_format = full_yaml.get(
-            "timeseries_data_format", {}
-        )
-        self.timeseries_data_format_columns = self.timeseries_data_format[
-            "key_column_names"
-        ]
-        self.timeseries_data_format = self.remove_nested_dicts(
-            self.timeseries_data_format
-        )
+        # self.timeseries_data_format_columns = self.timeseries_data_format[
+        #     "key_column_info"
+        # ]
+        # self.timeseries_data_format = self.remove_nested_dicts(
+        #     self.timeseries_data_format
+        # )
 
-        self.calibration_data_format = full_yaml.get(
-            "calibration_data_format", {}
-        )
-        self.calibration_data_format_key_columns = (
-            self.calibration_data_format["key_column_names"]
-        )
-        self.calibration_data_format = self.remove_nested_dicts(
-            self.calibration_data_format
-        )
-        self.pdf_formatting = full_yaml.get("pdf_formatting", {})
-        self.data_storage = full_yaml.get("data_storage", {})
+        # self.calibration_data_format = full_yaml.get(
+        #     "calibration_data_format", {}
+        # )
+        # self.calibration_data_format_key_columns = (
+        #     self.calibration_data_format["key_column_names"]
+        # )
+        # self.calibration_data_format = self.remove_nested_dicts(
+        #     self.calibration_data_format
+        # )
+        # self.crns_sensor_information = full_yaml.get(
+        #     "crns_sensor_information", {}
+        # )
+
+        # self.pdf_formatting = full_yaml.get("pdf_formatting", {})
+        # self.data_storage = full_yaml.get("data_storage", {})
 
     def check_sections(self):
         """
@@ -241,16 +244,18 @@ class SensorConfigurationValidation(ValidateConfigurationFile):
         ensure data types are as expected. The models are not saved and
         are only used for validation.
 
+        TODO: return to this when built!!
         """
-        GeneralSiteMetadata(**self.general_site_metadata)
-        CRNSSensorInformation(**self.crns_sensor_information)
-        TimeseriesDataFormat(**self.timeseries_data_format)
-        CalibrationDataFormat(**self.calibration_data_format)
-        CalibrationDataFormat_ColumnNames(
-            **self.calibration_data_format_key_columns
-        )
-        PDFConfiguration(**self.pdf_formatting)
-        DataStorage(**self.data_storage)
+        pass
+        # GeneralSiteMetadata(**self.general_site_metadata)
+        # CRNSSensorInformation(**self.crns_sensor_information)
+        # TimeseriesDataFormat(**self.timeseries_data_format)
+        # CalibrationDataFormat(**self.calibration_data_format)
+        # CalibrationDataFormat_ColumnNames(
+        #     **self.calibration_data_format_key_columns
+        # )
+        # PDFConfiguration(**self.pdf_formatting)
+        # DataStorage(**self.data_storage)
         # SoilGridsMetadata(**self.)
 
 
@@ -260,21 +265,22 @@ class ProcessConfigurationValidation(ValidateConfigurationFile):
         Extracts the individual sections from the YAML file and stores
         them as attributes in the object instance.
         """
-        full_yaml = self.config_yaml.whole_yaml_file
-        correction_steps = full_yaml.get("correction_steps", {})
+        pass
+        # full_yaml = self.config_yaml.whole_yaml_file
+        # correction_steps = full_yaml.get("correction_steps", {})
 
-        self.method_signifier = full_yaml.get("method_signifier", {})
-        self.air_humidity = correction_steps.get("air_humidity", {})
-        self.air_pressure = correction_steps.get("air_pressure", {})
-        self.incoming_radiation = correction_steps.get(
-            "incoming_radiation", {}
-        )
-        self.reference_neutron_monitor = self.incoming_radiation.get(
-            "reference_neutron_monitor", {}
-        )
-        self.invalid_data = full_yaml.get("invalid_data", {})
-        self.interpolation = full_yaml.get("interpolation", {})
-        self.temporal_aggregation = full_yaml.get("temporal_aggregation", {})
+        # self.method_signifier = full_yaml.get("method_signifier", {})
+        # self.air_humidity = correction_steps.get("air_humidity", {})
+        # self.air_pressure = correction_steps.get("air_pressure", {})
+        # self.incoming_radiation = correction_steps.get(
+        #     "incoming_radiation", {}
+        # )
+        # self.reference_neutron_monitor = self.incoming_radiation.get(
+        #     "reference_neutron_monitor", {}
+        # )
+        # self.invalid_data = full_yaml.get("invalid_data", {})
+        # self.interpolation = full_yaml.get("interpolation", {})
+        # self.temporal_aggregation = full_yaml.get("temporal_aggregation", {})
 
     def check_sections(self):
         """
@@ -283,16 +289,17 @@ class ProcessConfigurationValidation(ValidateConfigurationFile):
         are only used for validation.
 
         """
-        MethodSignifier(**self.method_signifier)
-        AirHumidity(**self.air_humidity)
-        AirPressure(**self.air_pressure)
-        IncomingRadiation(**self.incoming_radiation)
-        InvalidData(**self.invalid_data)
-        Interpolation(**self.interpolation)
-        TemporalAggregation(**self.temporal_aggregation)
+        pass
+        # MethodSignifier(**self.method_signifier)
+        # AirHumidity(**self.air_humidity)
+        # AirPressure(**self.air_pressure)
+        # IncomingRadiation(**self.incoming_radiation)
+        # InvalidData(**self.invalid_data)
+        # Interpolation(**self.interpolation)
+        # TemporalAggregation(**self.temporal_aggregation)
 
 
-class GlobalSettingsConfigurationValidataion(ValidateConfigurationFile):
+class InputDataFrameConfigurationValidation:
     pass
 
 
@@ -330,7 +337,16 @@ class ConfigurationManager:
 
         return configuration_object
 
-    def load_and_validate_configuration(self, name: str, file_path: str):
+    def load_and_validate_configuration(
+        self,
+        name: Literal[
+            "station",
+            "processing",
+            "global",
+            "input_data",
+        ],
+        file_path: str,
+    ):
         """
         This class handles loading and validating of YAML configuration
         files. The output is a ConfigurationObject that has been type
@@ -345,6 +361,7 @@ class ConfigurationManager:
             - sensor
             - processing
             - global
+            - input_data
 
         file_path : str
             File path of the configuration YAML file
@@ -360,28 +377,43 @@ class ConfigurationManager:
         name_lower = name.lower()
         if name_lower == "station":
             validation_object = SensorConfigurationValidation(pre_load)
+            validation_object.validate_configuration()
         elif name_lower == "processing":
             validation_object = ProcessConfigurationValidation(pre_load)
+            validation_object.validate_configuration()
         elif name_lower == "global":
-            validation_object = GlobalSettingsConfigurationValidataion(
-                pre_load
-            )
+            pass
+            # validation_object = GlobalSettingsConfigurationValidataion(
+            #     pre_load
+            # )
+            # validation_object.validate_configuration()
+        elif name_lower == "input_data":
+            pass
+            # validation_object = InputDataFrameConfigurationValidation(pre_load)
+            # validation_object.validate_configuration()
+
         else:
-            logging.error(
+            core_logger.error(
                 "Incompatible name given when configuration file loaded."
             )
             raise NameError(
                 f"{name} is not an accepted name for configuration file "
-                f"type. Accepted names are [station, processing, global]"
+                f"type. Accepted names are [station, processing]"
             )
-
-        validation_object.validate_configuration()
 
         self._configs[name] = self.convert_configuration_dictionary(
             pre_load.whole_yaml_file
         )
 
-    def get_configuration(self, name):
+    def get_configuration(
+        self,
+        name: Literal[
+            "station",
+            "processing",
+            "global",
+            "input_data",
+        ],
+    ):
         """
         Get the configuration file
 

@@ -193,6 +193,7 @@ def test_parse_http_date():
     df_to_compare = pandas.read_csv(assert_file_path)
     df_to_compare["datetime"] = pandas.to_datetime(df_to_compare["datetime"])
     df_to_compare.set_index("datetime", inplace=True)
+    df_to_compare.index = df_to_compare.index.tz_localize("UTC")
 
     data_fetcher = DataFetcher(config)
     with open(mock_file_path, "r") as file:
@@ -284,6 +285,7 @@ def test_combine_cache_and_new_data(monkeypatch):
     df_assert = pandas.read_csv(df_assert_path)
     df_assert["datetime"] = pandas.to_datetime(df_assert["datetime"])
     df_assert.set_index("datetime", inplace=True)
+    df_assert.index = df_assert.index.tz_localize("UTC")
 
     combined_df = data_manager.combine_cache_and_new_data(
         df_cache, df_download
