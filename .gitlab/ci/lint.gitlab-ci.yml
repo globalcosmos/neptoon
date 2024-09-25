@@ -1,0 +1,14 @@
+test:
+  stage: lint
+  image: python:3.10
+  before_script:
+    - pip install --upgrade pip
+    - pip install poetry
+    - poetry install
+  script:
+    - poetry run flake8 .
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - .cache/pip
+      - .venv
