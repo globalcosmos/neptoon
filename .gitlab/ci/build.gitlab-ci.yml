@@ -7,7 +7,7 @@ build:package:
     - poetry install
     - poetry build
   rules:
-    - if: "$CI_COMMIT_BRANCH == 'main''"
+    - if: "$CI_COMMIT_BRANCH == 'main'"
     - changes:
         - ".gitlab/ci/build.gitlab-ci.yml"
         - "neptoon/**/*"

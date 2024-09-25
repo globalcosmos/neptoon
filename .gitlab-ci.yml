@@ -13,3 +13,8 @@ include:
   - local: .gitlab/ci/test.gitlab-ci.yml
   - local: .gitlab/ci/package.gitlab-ci.yml
   - local: .gitlab/ci/lint.gitlab-ci.yml
+
+cache:
+  paths:
+    - .cache/pip
+    - .venv/
