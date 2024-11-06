@@ -1,24 +1,21 @@
-build-job:
-  stage: build
-  script:
-    - echo "Hello, $GITLAB_USER_LOGIN!"
+image: python:3.10
 
-tests:
-  stage: test
-  image: python:3.10
-  script:
-    - pip install .
-    - pytest
+# Define the stages of pipeline
+stages:
+  - test
+  - lint
+  - build
+  - package_testpypi
+  - package_pypi
 
-lint:
-  stage: test
-  image: python:3.10
-  script:
-    - pip install flake8
-    - flake8 .
+# Include CI/CD configuration files
+include:
+  - local: .gitlab/ci/build.gitlab-ci.yml
+  - local: .gitlab/ci/test.gitlab-ci.yml
+  - local: .gitlab/ci/package.gitlab-ci.yml
+  - local: .gitlab/ci/lint.gitlab-ci.yml
 
-deploy-prod:
-  stage: deploy
-  script:
-    - echo "This job deploys something from the $CI_COMMIT_BRANCH branch."
-  environment: production
+cache:
+  paths:
+    - .cache/pip
+    - .venv/

@@ -1,6 +1,0 @@
-# Contains global configuration values for cosmosbase functioning
-
-global_settings:
-  working_directory_path: /path/to/work/
-  cache_handling: standard # alternative is custom
-  cache_handling_directory: # if above is custom set this to the cache folder you want

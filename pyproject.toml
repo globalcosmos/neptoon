@@ -1,13 +1,15 @@
 [tool.poetry]
 name = "neptoon"
 version = "0.1.0"
-description = "The neptoon package serves as the building blocks for other CRNS flavoured python packages. This ensure consistency between developed tools."
+description = "The neptoon package makes CRNS processing and research simple."
 authors = [
     "Daniel Power <daniel.power@ufz.de>",
     "Martin Schroen <martin.schroen@ufz.de>",
 ]
 license = "MIT"
 readme = "README.md"
+repository = "https://codebase.helmholtz.cloud/cosmos/neptoon"
+documentation = "https://neptoon-docs.readthedocs.io/en/latest/"
 
 [tool.poetry.dependencies]
 python = "^3.10"
