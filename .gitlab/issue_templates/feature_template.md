@@ -1,7 +1,7 @@
 ## Overview
 [Brief description of the feature]
 
-## Motivation and need
+## Motivation
 [Explain why this feature is needed]
 
 ## Technical Requirements
