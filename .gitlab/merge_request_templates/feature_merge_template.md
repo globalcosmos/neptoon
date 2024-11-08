@@ -1,5 +1,5 @@
 ## Issue being addressed
-This merge request addresses issue #
+This merge request Closes #
 
 ## Implementation Details
 [Include here information about implementation decisions.]
