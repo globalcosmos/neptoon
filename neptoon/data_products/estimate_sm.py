@@ -1,8 +1,8 @@
 import pandas as pd
 
-from neptoon.core.column_information import ColumnInfo
+from neptoon.columns.column_information import ColumnInfo
 from neptoon.corrections import convert_neutrons_to_soil_moisture, Schroen2017
-from neptoon.logging.logging import get_logger
+from neptoon.logging import get_logger
 from neptoon.quality_control.data_audit import log_key_step
 
 core_logger = get_logger()

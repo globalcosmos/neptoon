@@ -3,9 +3,9 @@ import math
 from pathlib import Path
 from typing import Union
 
-from neptoon.logging.logging import get_logger
+from neptoon.logging import get_logger
 from neptoon.quality_control.data_audit import DataAuditLog
-from neptoon.core import SiteInformation
+from neptoon.config.site_information import SiteInformation
 from neptoon.utils.general_utils import validate_and_convert_file_path
 
 core_logger = get_logger()

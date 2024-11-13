@@ -8,4 +8,4 @@ from .quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
-from ..preprocessing.smoothing import SmoothData
+from ..data_prep.smoothing import SmoothData

@@ -1,4 +1,4 @@
-from neptoon.core.column_information import ColumnInfo
+from neptoon.columns.column_information import ColumnInfo
 import pytest
 
 

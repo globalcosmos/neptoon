@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import pytest
-from neptoon.io.data_ingest import (
+from neptoon.io.read_in.data_ingest import (
     TimeStampAligner,
 )
 

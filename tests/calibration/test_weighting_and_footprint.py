@@ -1,7 +1,7 @@
 # %%
 import pandas as pd
 import numpy as np
-from neptoon.corrections.calibration_functions import Schroen2017
+from neptoon.corrections import Schroen2017
 
 
 # %%

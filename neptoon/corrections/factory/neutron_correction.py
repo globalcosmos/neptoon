@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
-from neptoon.logging.logging import get_logger
-from neptoon.core.site_information import SiteInformation
-from neptoon.core.column_information import ColumnInfo
+from neptoon.logging import get_logger
+from neptoon.config.site_information import SiteInformation
+from neptoon.columns.column_information import ColumnInfo
 
 from .correction_classes import (
     Correction,

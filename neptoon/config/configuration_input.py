@@ -1,7 +1,8 @@
 import yaml
 from typing import Literal
 from abc import ABC, abstractmethod
-from neptoon.logging.logging import get_logger
+
+from neptoon.logging import get_logger
 
 # from neptoon.configuration.yaml_classes import (
 #     GeneralSiteMetadata,

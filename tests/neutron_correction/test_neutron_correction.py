@@ -1,20 +1,20 @@
 import pandas as pd
 import pytest
-from neptoon.neutron_correction.neutron_correction import (
+from neptoon.corrections.factory.neutron_correction import (
     CorrectionBuilder,
     CorrectNeutrons,
     CorrectionFactory,
     CorrectionTheory,
     CorrectionType,
 )
-from neptoon.neutron_correction.correction_classes import (
+from neptoon.corrections import (
     IncomingIntensityCorrectionZreda2012,
     IncomingIntensityCorrectionHawdon2014,
     HumidityCorrectionRosolem2013,
 )
-from neptoon.site_information import SiteInformation
-from neptoon.core.column_information import ColumnInfo
-from neptoon.neutron_correction.correction_classes import Correction
+from neptoon.config.site_information import SiteInformation
+from neptoon.columns.column_information import ColumnInfo
+from neptoon.corrections.factory.neutron_correction import Correction
 
 
 ### Test Correction class

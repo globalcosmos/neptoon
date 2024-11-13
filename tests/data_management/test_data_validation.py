@@ -2,7 +2,7 @@ import pandas as pd
 from pandera.errors import SchemaError
 import pytest
 
-from neptoon.preprocessing import (
+from neptoon.quality_control.data_validation_tables import (
     RawDataSchemaAfterFirstQA,
 )
 

@@ -1,7 +1,7 @@
 # %%
 import pandas
 from pathlib import Path
-from neptoon.calibration import (
+from neptoon.calibration.station_calibration import (
     CalibrationConfiguration,
     CalibrationStation,
 )

@@ -1,7 +1,7 @@
 import pytest
 import os
 from pathlib import Path
-from neptoon.data_audit import DataAuditLog
+from neptoon.quality_control.data_audit import DataAuditLog
 
 
 # Setup a fixture for the DataAuditLog instance

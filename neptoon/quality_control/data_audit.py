@@ -1,12 +1,14 @@
 import logging
 from functools import wraps
 from inspect import signature
-from neptoon.logging.logging import get_logger
 from pathlib import Path
 from typing import Union
 import yaml
 import hashlib
 import time
+
+from neptoon.logging import get_logger
+
 
 core_logger = get_logger()
 

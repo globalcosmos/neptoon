@@ -1,6 +1,6 @@
 # import pandas as pd
 from pathlib import Path
-from neptoon.products.process_with_yaml import ProcessWithYaml
+from neptoon.data_products.process_with_yaml import ProcessWithYaml
 from neptoon.config.configuration_input import ConfigurationManager
 from neptoon.quality_control.data_audit import DataAuditLog
 

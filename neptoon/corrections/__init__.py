@@ -40,3 +40,10 @@ from .factory.neutron_correction import (
     CorrectionTheory,
     CorrectionType,
 )
+
+from .factory.correction_classes import (
+    IncomingIntensityCorrectionZreda2012,
+    IncomingIntensityCorrectionHawdon2014,
+    HumidityCorrectionRosolem2013,
+    PressureCorrectionZreda2012,
+)
