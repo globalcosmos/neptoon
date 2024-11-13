@@ -23,7 +23,7 @@ from neptoon.corrections import (
     CorrectionTheory,
 )
 
-from neptoon.columns.column_information import ColumnInfo
+from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import ConfigurationManager
 
 core_logger = get_logger()

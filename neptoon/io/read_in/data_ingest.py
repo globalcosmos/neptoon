@@ -13,7 +13,7 @@ from typing import Union, Literal, List, Optional
 from neptoon.quality_control.data_audit import log_key_step
 from neptoon.logging import get_logger
 from neptoon.utils.general_utils import validate_and_convert_file_path
-from neptoon.columns.column_information import ColumnInfo
+from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import (
     ConfigurationManager,
 )

@@ -4,7 +4,7 @@ import copy
 from datetime import timedelta
 
 # from scipy.optimize import minimize
-from neptoon.columns.column_information import ColumnInfo
+from neptoon.columns import ColumnInfo
 from neptoon.corrections import Schroen2017, neutrons_to_grav_sm_desilets
 
 
