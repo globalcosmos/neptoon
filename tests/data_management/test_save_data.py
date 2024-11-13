@@ -2,8 +2,8 @@ import pandas as pd
 import pytest
 from pathlib import Path
 from unittest.mock import Mock
-from neptoon.data_management.save_data import SaveAndArchiveOutputs
-from neptoon.site_information import SiteInformation
+from neptoon.io.save_out.save_data import SaveAndArchiveOutputs
+from neptoon.core import SiteInformation
 
 UNFLAGGED = "UNFLAGGED"
 BAD = "BAD"

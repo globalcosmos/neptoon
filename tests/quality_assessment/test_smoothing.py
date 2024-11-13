@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 import pytest
-from neptoon.quality_assesment.smoothing import SmoothData
-from neptoon.column_names.column_information import ColumnInfo
+from neptoon.preprocessing.smoothing import SmoothData
+from neptoon.core.column_information import ColumnInfo
 
 
 @pytest.fixture

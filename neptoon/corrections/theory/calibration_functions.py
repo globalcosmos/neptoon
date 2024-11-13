@@ -17,7 +17,7 @@ def _load_footprint_lookup():
     Load the Footprint lookup table into cache
     """
 
-    this_path = Path(__file__).absolute().parent
+    this_path = Path(__file__).absolute().parent.parent
 
     _footprint_lookup = np.loadtxt(
         this_path / "assets" / "footprint_radius.csv"

@@ -13,7 +13,7 @@ from neptoon.neutron_correction.correction_classes import (
     HumidityCorrectionRosolem2013,
 )
 from neptoon.site_information import SiteInformation
-from neptoon.column_names.column_information import ColumnInfo
+from neptoon.core.column_information import ColumnInfo
 from neptoon.neutron_correction.correction_classes import Correction
 
 

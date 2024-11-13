@@ -23,7 +23,7 @@ def get_log_path():
         The full Path (including filename) of the log file
     """
     try:
-        from neptoon.configuration.global_configuration import GlobalConfig
+        from neptoon.config.global_configuration import GlobalConfig
 
         cache_file_path = GlobalConfig.get_cache_dir()
         return cache_file_path / "logs" / "core_log.log"

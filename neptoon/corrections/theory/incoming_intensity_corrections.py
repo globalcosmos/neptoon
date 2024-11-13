@@ -60,6 +60,7 @@ def cutoff_rigidity_adjustment_to_jung(cutoff_rigidity):
     -------
     rc_corr: float
         adjustment for differences in cutoff rigidity
+
     """
 
     jung_cutoff_rigidity = 4.49

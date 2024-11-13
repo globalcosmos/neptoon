@@ -2,7 +2,7 @@
 import numpy as np
 import pandas
 import matplotlib.pyplot as plt
-from neptoon.corrections_and_functions.calibration_functions import Schroen2017
+from neptoon.corrections.calibration_functions import Schroen2017
 from pathlib import Path
 from neptoon.calibration.station_calibration import (
     PrepareCalibrationData,

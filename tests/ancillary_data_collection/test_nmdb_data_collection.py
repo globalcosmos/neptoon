@@ -2,7 +2,7 @@ import pandas
 import requests
 import pandas.testing as pdt
 from pathlib import Path
-from neptoon.ancillary_data_collection.nmdb_data_collection import (
+from neptoon.external.nmdb_data_collection import (
     DateTimeHandler,
     NMDBConfig,
     NMDBDataHandler,

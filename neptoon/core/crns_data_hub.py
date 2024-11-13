@@ -3,32 +3,33 @@ import numpy as np
 from typing import Literal, Union, Optional
 import dataclasses
 from pathlib import Path
-from neptoon.configuration.configuration_input import ConfigurationManager
-from neptoon.ancillary_data_collection.nmdb_data_collection import (
+from neptoon.core import SiteInformation
+from neptoon.config.configuration_input import ConfigurationManager
+from neptoon.external import (
     NMDBDataAttacher,
 )
 from neptoon.calibration.station_calibration import (
     CalibrationConfiguration,
     CalibrationStation,
 )
-from neptoon.neutron_correction.neutron_correction import (
+from neptoon.corrections.factory.neutron_correction import (
     CorrectionBuilder,
     CorrectionFactory,
     CorrectionType,
     CorrectionTheory,
     CorrectNeutrons,
 )
-from neptoon.convert_to_sm.estimate_sm import NeutronsToSM
-from neptoon.data_validation import (
+from neptoon.products.estimate_sm import NeutronsToSM
+from neptoon.preprocessing import (
     FormatCheck,
 )
-from neptoon.site_information import SiteInformation
-from neptoon.quality_assesment.quality_assesment import (
+
+from neptoon.quality_control.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
-from neptoon.data_management.save_data import SaveAndArchiveOutputs
-from neptoon.quality_assesment.smoothing import SmoothData
+from neptoon.io.save_out.save_data import SaveAndArchiveOutputs
+from neptoon.preprocessing.smoothing import SmoothData
 
 from neptoon.logging.logging import get_logger
 

@@ -2,21 +2,16 @@ import pandas as pd
 from enum import Enum
 from abc import ABC, abstractmethod
 from neptoon.logging.logging import get_logger
-from neptoon.column_names.column_information import ColumnInfo
+from neptoon.core.column_information import ColumnInfo
 
 # read in the specific functions here
-from neptoon.corrections_and_functions.incoming_intensity_corrections import (
+from neptoon.corrections import (
     incoming_intensity_zreda_2012,
     incoming_intensity_adjustment_rc_corrected,
-)
-
-from neptoon.corrections_and_functions.air_humidity_corrections import (
     calc_absolute_humidity,
     calc_saturation_vapour_pressure,
     calc_actual_vapour_pressure,
     humidity_correction_rosolem2013,
-)
-from neptoon.corrections_and_functions.pressure_corrections import (
     calc_pressure_correction_beta_coeff,
     calc_pressure_correction_l_coeff,
     calc_mean_pressure,

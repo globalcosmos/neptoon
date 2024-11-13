@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 import pandas as pd
 from saqc import SaQC
-from neptoon.quality_assesment.quality_assesment import (
+from neptoon.quality_control.quality_assesment import (
     DateTimeIndexValidator,
     QualityCheck,
     FlagRangeCheck,

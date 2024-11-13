@@ -3,7 +3,7 @@ from typing import Literal, Optional, Union
 from scipy.signal import savgol_filter
 
 from neptoon.logging.logging import get_logger
-from neptoon.column_names.column_information import ColumnInfo
+from neptoon.core.column_information import ColumnInfo
 
 core_logger = get_logger()
 
