@@ -13,7 +13,7 @@ from neptoon.io.read_in.data_ingest import (
     FormatDataForCRNSDataHub,
     validate_and_convert_file_path,
 )
-from neptoon.quality_control.quality_assesment import (
+from neptoon.quality_control import (
     FlagSpikeDetectionUniLOF,
     FlagNeutronGreaterThanN0,
     FlagBelowMinimumPercentN0,

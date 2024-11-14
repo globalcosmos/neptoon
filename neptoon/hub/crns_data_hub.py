@@ -8,7 +8,7 @@ from neptoon.config.configuration_input import ConfigurationManager
 from neptoon.external.nmdb_data_collection import (
     NMDBDataAttacher,
 )
-from neptoon.calibration.station_calibration import (
+from neptoon.calibration import (
     CalibrationConfiguration,
     CalibrationStation,
 )

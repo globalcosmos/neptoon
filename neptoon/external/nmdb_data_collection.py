@@ -8,7 +8,7 @@ from dateutil import parser
 
 from neptoon.columns import ColumnInfo
 from neptoon.config.global_configuration import GlobalConfig
-from neptoon.quality_control.data_audit import log_key_step
+from neptoon.data_audit import log_key_step
 from neptoon.logging import get_logger
 
 core_logger = get_logger()

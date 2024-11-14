@@ -1,4 +1,4 @@
-import pandas
+import pandas as pd
 import requests
 import pandas.testing as pdt
 from pathlib import Path
@@ -22,12 +22,10 @@ def test_standardize_date_input():
     assert DateTimeHandler.standardize_date_input("23/01/2024") == "2024-01-23"
     assert DateTimeHandler.standardize_date_input("01-23-2024") == "2024-01-23"
     assert (
-        DateTimeHandler.standardize_date_input(pandas.Timestamp("2024-01-23"))
+        DateTimeHandler.standardize_date_input(pd.Timestamp("2024-01-23"))
         == "2024-01-23"
     )
-    assert DateTimeHandler.standardize_date_input(
-        pandas.to_datetime("2024-01-23")
-    )
+    assert DateTimeHandler.standardize_date_input(pd.to_datetime("2024-01-23"))
     standardized_date = DateTimeHandler.standardize_date_input("invalid-date")
     assert (
         standardized_date is None
@@ -54,10 +52,10 @@ def test_read_cache():
     cache_handler.cache_file_path = mock_file_path
     df = cache_handler.read_cache()
 
-    assert isinstance(df, pandas.DataFrame)
+    assert isinstance(df, pd.DataFrame)
     assert not df.empty
     assert "count" in df.columns
-    assert isinstance(df.index, pandas.DatetimeIndex)
+    assert isinstance(df.index, pd.DatetimeIndex)
 
 
 def test_check_cache_range():
@@ -73,8 +71,8 @@ def test_check_cache_range():
     config.cache_exists = True
     cache_handler.cache_file_path = mock_file_path
     cache_handler.check_cache_range()
-    df = pandas.read_csv(mock_file_path)
-    df["datetime"] = pandas.to_datetime(df["datetime"])
+    df = pd.read_csv(mock_file_path)
+    df["datetime"] = pd.to_datetime(df["datetime"])
 
     assert config.cache_start_date == df["datetime"].min().date()
     assert config.cache_end_date == df["datetime"].max().date()
@@ -190,8 +188,8 @@ def test_parse_http_date():
         Path(__file__).parent / "mock_data" / "example_cache_1516.csv"
     )
 
-    df_to_compare = pandas.read_csv(assert_file_path)
-    df_to_compare["datetime"] = pandas.to_datetime(df_to_compare["datetime"])
+    df_to_compare = pd.read_csv(assert_file_path)
+    df_to_compare["datetime"] = pd.to_datetime(df_to_compare["datetime"])
     df_to_compare.set_index("datetime", inplace=True)
     df_to_compare.index = df_to_compare.index.tz_localize("UTC")
 
@@ -219,32 +217,32 @@ def test_check_if_need_extra_data(monkeypatch):
     cache_handler = CacheHandler(config)
     data_fetcher = DataFetcher(config)
     data_manager = DataManager(config, cache_handler, data_fetcher)
-    config.cache_start_date = pandas.to_datetime("2015-10-10").date()
-    config.cache_end_date = pandas.to_datetime("2016-10-10").date()
+    config.cache_start_date = pd.to_datetime("2015-10-10").date()
+    config.cache_end_date = pd.to_datetime("2016-10-10").date()
 
     data_manager.check_if_need_extra_data()
 
     assert data_manager.need_data_before_cache is False
     assert data_manager.need_data_after_cache is False
 
-    config.cache_start_date = pandas.to_datetime("2015-11-10").date()
-    config.cache_end_date = pandas.to_datetime("2016-10-10").date()
+    config.cache_start_date = pd.to_datetime("2015-11-10").date()
+    config.cache_end_date = pd.to_datetime("2016-10-10").date()
 
     data_manager.check_if_need_extra_data()
 
     assert data_manager.need_data_before_cache is True
     assert data_manager.need_data_after_cache is False
 
-    config.cache_start_date = pandas.to_datetime("2015-11-10").date()
-    config.cache_end_date = pandas.to_datetime("2016-09-10").date()
+    config.cache_start_date = pd.to_datetime("2015-11-10").date()
+    config.cache_end_date = pd.to_datetime("2016-09-10").date()
 
     data_manager.check_if_need_extra_data()
 
     assert data_manager.need_data_before_cache is True
     assert data_manager.need_data_after_cache is True
 
-    config.cache_start_date = pandas.to_datetime("2015-11-10").date()
-    config.cache_end_date = pandas.to_datetime("2016-09-10").date()
+    config.cache_start_date = pd.to_datetime("2015-11-10").date()
+    config.cache_end_date = pd.to_datetime("2016-09-10").date()
 
     data_manager.check_if_need_extra_data()
 
@@ -264,8 +262,8 @@ def test_combine_cache_and_new_data(monkeypatch):
     df_cache_path = (
         Path(__file__).parent / "mock_data" / "example_cache_merge1.csv"
     )
-    df_cache = pandas.read_csv(df_cache_path)
-    df_cache["datetime"] = pandas.to_datetime(df_cache["datetime"])
+    df_cache = pd.read_csv(df_cache_path)
+    df_cache["datetime"] = pd.to_datetime(df_cache["datetime"])
     df_cache.set_index("datetime", inplace=True)
 
     print(df_cache_path)
@@ -273,8 +271,8 @@ def test_combine_cache_and_new_data(monkeypatch):
     df_download_path = (
         Path(__file__).parent / "mock_data" / "example_cache_merge2.csv"
     )
-    df_download = pandas.read_csv(df_download_path)
-    df_download["datetime"] = pandas.to_datetime(df_download["datetime"])
+    df_download = pd.read_csv(df_download_path)
+    df_download["datetime"] = pd.to_datetime(df_download["datetime"])
     df_download.set_index("datetime", inplace=True)
 
     print(df_download_path)
@@ -282,8 +280,8 @@ def test_combine_cache_and_new_data(monkeypatch):
     df_assert_path = (
         Path(__file__).parent / "mock_data" / "example_cache_merge_assert.csv"
     )
-    df_assert = pandas.read_csv(df_assert_path)
-    df_assert["datetime"] = pandas.to_datetime(df_assert["datetime"])
+    df_assert = pd.read_csv(df_assert_path)
+    df_assert["datetime"] = pd.to_datetime(df_assert["datetime"])
     df_assert.set_index("datetime", inplace=True)
     df_assert.index = df_assert.index.tz_localize("UTC")
 
@@ -291,7 +289,7 @@ def test_combine_cache_and_new_data(monkeypatch):
         df_cache, df_download
     )
 
-    assert isinstance(combined_df, pandas.DataFrame)
+    assert isinstance(combined_df, pd.DataFrame)
     assert not combined_df.empty
     assert "count" in combined_df.columns
     pdt.assert_frame_equal(combined_df, df_assert)

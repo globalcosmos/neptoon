@@ -4,7 +4,7 @@ from abc import abstractmethod, ABC
 from typing import Union
 
 from neptoon.logging import get_logger
-from neptoon.quality_control.data_audit import log_key_step
+from neptoon.data_audit import log_key_step
 from neptoon.columns import ColumnInfo
 
 core_logger = get_logger()
