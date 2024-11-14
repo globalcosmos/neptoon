@@ -87,6 +87,7 @@ class ProcessWithYaml:
         CRNSDataHub
             The CRNSDataHub
         """
+        # import here to avoid circular dependency
         from neptoon.hub import CRNSDataHub
 
         if return_data_hub:
