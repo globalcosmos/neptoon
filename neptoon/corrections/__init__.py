@@ -39,6 +39,7 @@ from .theory.pressure_corrections import (
 from .factory.neutron_correction import (
     CorrectionTheory,
     CorrectionType,
+    Correction,
 )
 
 from .factory.correction_classes import (

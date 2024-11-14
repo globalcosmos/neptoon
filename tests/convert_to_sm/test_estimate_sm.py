@@ -1,4 +1,4 @@
-from neptoon.data_products.estimate_sm import NeutronsToSM
+from neptoon.products.estimate_sm import NeutronsToSM
 from neptoon.columns.column_information import ColumnInfo
 import pytest
 import pandas as pd

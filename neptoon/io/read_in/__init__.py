@@ -11,4 +11,4 @@
 #     TimeStampAligner,
 #     CollectAndParseRawData,
 # )
-from .data_ingest import ConfigurationManager
+from .data_ingest import ConfigurationManager, CollectAndParseRawData

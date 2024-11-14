@@ -19,7 +19,7 @@ from neptoon.corrections.factory.neutron_correction import (
     CorrectionTheory,
     CorrectNeutrons,
 )
-from neptoon.data_products.estimate_sm import NeutronsToSM
+from neptoon.products.estimate_sm import NeutronsToSM
 from neptoon.quality_control.data_validation_tables import (
     FormatCheck,
 )
