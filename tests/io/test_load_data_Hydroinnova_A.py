@@ -12,13 +12,21 @@ from neptoon.io.read.data_ingest import (
     CollectAndParseRawData,
 )
 
-test_dir_path = Path(__file__).parent / "mock_data" / "test_dir"
+test_dir_path = Path(__file__).parent.parent / "test_data" / "io" / "test_dir"
 
 test_filename = (
-    Path(__file__).parent / "mock_data" / "CRNS-station_data-Hydroinnova-A.zip"
+    Path(__file__).parent.parent
+    / "test_data"
+    / "io"
+    / "CRNS-station_data-Hydroinnova-A.zip"
 )
 
-yaml_path = Path(__file__).parent / "mock_data" / "A101_station_test.yaml"
+yaml_path = (
+    Path(__file__).parent.parent
+    / "test_data"
+    / "io"
+    / "A101_station_test.yaml"
+)
 
 """
 Full tests to be written. For now we include a canary that checks the

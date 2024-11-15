@@ -11,7 +11,7 @@ def test_create_aligner_object_correct_format():
     Test the creation of the object. Test checks for when data is
     formatted correctly.
     """
-    data_path = Path(__file__).parent / "mock_data"
+    data_path = Path(__file__).parent.parent / "test_data" / "io"
     data_correct_format = pd.read_csv(
         data_path / "unprocessed_df.csv",
         index_col=0,
@@ -26,7 +26,7 @@ def test_create_aligner_object_wrong_format():
     Test the creation of the object. Test checks for when data is not
     formatted correctly (i.e., not datetime index).
     """
-    data_path = Path(__file__).parent / "mock_data"
+    data_path = Path(__file__).parent.parent / "test_data" / "io"
     data_incorrect_format = pd.read_csv(
         data_path / "unprocessed_df.csv",
     )
@@ -60,7 +60,7 @@ def test_create_aligner_object_wrong_format():
 
 
 def test_return_dataframe():
-    data_path = Path(__file__).parent / "mock_data"
+    data_path = Path(__file__).parent.parent / "test_data" / "io"
     data_correct_format = pd.read_csv(
         data_path / "unprocessed_df.csv",
         index_col=0,
