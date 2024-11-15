@@ -4,11 +4,8 @@ import copy
 from datetime import timedelta
 
 # from scipy.optimize import minimize
-from neptoon.data_management.column_information import ColumnInfo
-from neptoon.corrections_and_functions.calibration_functions import Schroen2017
-from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
-    neutrons_to_grav_sm_desilets,
-)
+from neptoon.columns import ColumnInfo
+from neptoon.corrections import Schroen2017, neutrons_to_grav_sm_desilets
 
 
 class CalibrationConfiguration:

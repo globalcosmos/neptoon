@@ -1,8 +1,8 @@
 # import pandas as pd
 from pathlib import Path
-from neptoon.data_management.process_with_yaml import ProcessWithYaml
-from neptoon.configuration.configuration_input import ConfigurationManager
-from neptoon.data_management.data_audit import DataAuditLog
+from neptoon.workflow import ProcessWithYaml
+from neptoon.config import ConfigurationManager
+from neptoon.data_audit import DataAuditLog
 
 
 config = ConfigurationManager()
