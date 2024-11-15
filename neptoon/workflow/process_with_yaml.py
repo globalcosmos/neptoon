@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 from neptoon.logging import get_logger
 from neptoon.config.site_information import SiteInformation
-from neptoon.io.read_in.data_ingest import (
+from neptoon.io.read.data_ingest import (
     FileCollectionConfig,
     ManageFileCollection,
     ParseFilesIntoDataFrame,

@@ -1,6 +1,6 @@
 import pandas as pd
-from neptoon.hub.crns_data_hub import CRNSDataHub
-from neptoon.columns.column_information import ColumnInfo
+from neptoon.hub import CRNSDataHub
+from neptoon.columns import ColumnInfo
 from neptoon.config.site_information import SiteInformation
 import pytest
 

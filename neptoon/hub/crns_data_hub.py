@@ -28,7 +28,7 @@ from neptoon.quality_control.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
-from neptoon.io.save_out.save_data import SaveAndArchiveOutputs
+from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
 
 from neptoon.logging import get_logger

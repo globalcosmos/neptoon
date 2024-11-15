@@ -5,7 +5,7 @@ from pathlib import Path
 # import pandas.api.types as ptypes
 
 # %%
-from neptoon.io.read_in.data_ingest import (
+from neptoon.io.read.data_ingest import (
     # ManageFileCollection,
     # ParseFilesIntoDataFrame,
     # FormatDataForCRNSDataHub,
