@@ -15,13 +15,13 @@ prepare-release:
   - VERSION=`echo $CI_COMMIT_TAG | grep -oP '^pre-\K.*$'`
   - echo "Preparing release of $VERSION"
   # Update metadata with version and date
-  - facile-rs release prepare --version=$VERSION
+  - prepare_release --version=$VERSION
   # Reserve a DOI on RADAR and include it to metadata
   - >
     if [ $ENABLE_RADAR = true ];
     then
         echo "preparing RADAR release, make sure the credentials are defined as gitlab CI/CD variables";
-        facile-rs radar prepare;
+        prepare_radar;
     else
         echo "RADAR skipped, change ENABLE_RADAR in .gitlab-ci.yml if you have the credentials";
     fi
@@ -30,12 +30,12 @@ prepare-release:
     if [ $ENABLE_ZENODO = true ];
     then
         echo "preparing Zenodo release, make sure the Zenodo token is defined as gitlab CI/CD variables";
-        facile-rs zenodo prepare;
+        prepare_zenodo;
     else
         echo "Zenodo skipped, change ENABLE_ZENODO in .gitlab-ci.yml if you want to do a Zenodo release";
     fi
   # Generate a CFF file
-  - facile-rs cff create
+  - cff_create
   # Commit and push updated metadata files
   - git add ${CODEMETA_LOCATION} ${CFF_PATH}
   - git commit -m "Release ${VERSION}"
@@ -75,6 +75,6 @@ gitlab-release-create:
     fi
   # Create GitLab release including DataCite metadata
   - >
-    facile-rs gitlab publish --release-description "$RELEASE_DESCRIPTION" \
+    release_create --release-description "$RELEASE_DESCRIPTION" \
     ${DATACITE_REGISTRY_URL}/${DATACITE_RELEASE}
 

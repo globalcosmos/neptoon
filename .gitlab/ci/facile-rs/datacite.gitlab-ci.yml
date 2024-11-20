@@ -6,7 +6,7 @@ build-datacite:
   before_script:
   - pip install FACILE-RS==${FACILE_RS_VERSION}
   script:
-  - facile-rs datacite create
+  - datacite_create
   artifacts:
     paths:
     - $DATACITE_PATH

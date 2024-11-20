@@ -1,3 +1,3 @@
 include:
-# Include FACILE-RS CI/CD pipeline
+# Include FACILE-RS CI/CD template
 - local: .gitlab/ci/facile-rs/.gitlab-ci.yml
