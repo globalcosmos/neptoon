@@ -1,0 +1,80 @@
+# Pre-release job:
+# Reserve an identifier on Zenodo or RADAR if needed,
+# and update metadata files for the release.
+# This job is run only for pre-release tags, starting with "pre"
+prepare-release:
+  image: python:3.11
+  stage: release
+  rules:
+  - if: $CI_COMMIT_TAG =~ /^pre/
+  before_script:
+  - pip install FACILE-RS==${FACILE_RS_VERSION}
+  - git config --global user.name "${GITLAB_USER_NAME}"
+  - git config --global user.email "${GITLAB_USER_EMAIL}"
+  script:
+  - VERSION=`echo $CI_COMMIT_TAG | grep -oP '^pre-\K.*$'`
+  - echo "Preparing release of $VERSION"
+  # Update metadata with version and date
+  - facile-rs release prepare --version=$VERSION
+  # Reserve a DOI on RADAR and include it to metadata
+  - >
+    if [ $ENABLE_RADAR = true ];
+    then
+        echo "preparing RADAR release, make sure the credentials are defined as gitlab CI/CD variables";
+        facile-rs radar prepare;
+    else
+        echo "RADAR skipped, change ENABLE_RADAR in .gitlab-ci.yml if you have the credentials";
+    fi
+  # Reserve a DOI on Zenodo and include it to metadata
+  - >
+    if [ $ENABLE_ZENODO = true ];
+    then
+        echo "preparing Zenodo release, make sure the Zenodo token is defined as gitlab CI/CD variables";
+        facile-rs zenodo prepare;
+    else
+        echo "Zenodo skipped, change ENABLE_ZENODO in .gitlab-ci.yml if you want to do a Zenodo release";
+    fi
+  # Generate a CFF file
+  - facile-rs cff create
+  # Commit and push updated metadata files
+  - git add ${CODEMETA_LOCATION} ${CFF_PATH}
+  - git commit -m "Release ${VERSION}"
+  - git push "https://PUSH_TOKEN:${PRIVATE_TOKEN}@${CI_REPOSITORY_URL#*@}" "HEAD:${CI_DEFAULT_BRANCH}"
+  # Create a release tag to trigger the release pipeline
+  - git tag $VERSION
+  - git push "https://PUSH_TOKEN:${PRIVATE_TOKEN}@${CI_REPOSITORY_URL#*@}" --tags
+
+
+# Create a GitLab release including DataCite metadata
+# This job is run only for release tags, starting with "v" (release tags)
+# Usually, these tags are created in the prepare-release job
+gitlab-release-create:
+  stage: release
+  image: python:3.11
+  rules:
+  - if: $CI_COMMIT_TAG =~ /^v/
+  before_script:
+  - git config --global user.name "${GITLAB_USER_NAME}"
+  - git config --global user.email "${GITLAB_USER_EMAIL}"
+  - pip install FACILE-RS==${FACILE_RS_VERSION}
+  - export DEBIAN_FRONTEND="noninteractive"
+  - apt update
+  - apt-get install -y jq
+  script:
+  # Retrieve DOI from CodeMeta metadata
+  - DOI_URL=`jq -r ".[\"@id\"]" ${CODEMETA_LOCATION}`
+  - DOI=${DOI_URL#"https://doi.org/"}
+  # Create release description
+  - >
+    if [ $ENABLE_RADAR = true ];
+    then
+      RELEASE_DESCRIPTION="${RELEASE_DESCRIPTION}<br/>Find the archived version of the ${CI_COMMIT_TAG} release in the RADAR4KIT repository - [doi:${DOI}](${DOI_URL}).";
+    elif [ $ENABLE_ZENODO = true ];
+    then
+      RELEASE_DESCRIPTION="${RELEASE_DESCRIPTION}<br/>Find the archived version of the ${CI_COMMIT_TAG} release on Zenodo - [doi:${DOI}](${DOI_URL}).";
+    fi
+  # Create GitLab release including DataCite metadata
+  - >
+    facile-rs gitlab publish --release-description "$RELEASE_DESCRIPTION" \
+    ${DATACITE_REGISTRY_URL}/${DATACITE_RELEASE}
+
