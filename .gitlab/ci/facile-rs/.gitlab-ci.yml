@@ -55,10 +55,10 @@ variables:
   # NOTIFICATION_EMAIL: your.name@example.com
 
 include:
-- local: .gitlab/ci/cff.gitlab-ci.yml
-- local: .gitlab/ci/datacite.gitlab-ci.yml
-- local: .gitlab/ci/release.gitlab-ci.yml
-- local: .gitlab/ci/archive.gitlab-ci.yml
+- local: .gitlab/ci/facile-rs/cff.gitlab-ci.yml
+- local: .gitlab/ci/facile-rs/datacite.gitlab-ci.yml
+- local: .gitlab/ci/facile-rs/release.gitlab-ci.yml
+- local: .gitlab/ci/facile-rs/archive.gitlab-ci.yml
 
 default:
   tags:
