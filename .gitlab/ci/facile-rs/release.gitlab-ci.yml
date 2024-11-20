@@ -35,7 +35,7 @@ prepare-release:
         echo "Zenodo skipped, change ENABLE_ZENODO in .gitlab-ci.yml if you want to do a Zenodo release";
     fi
   # Generate a CFF file
-  - cff_create
+  - create_cff
   # Commit and push updated metadata files
   - git add ${CODEMETA_LOCATION} ${CFF_PATH}
   - git commit -m "Release ${VERSION}"
@@ -75,6 +75,6 @@ gitlab-release-create:
     fi
   # Create GitLab release including DataCite metadata
   - >
-    release_create --release-description "$RELEASE_DESCRIPTION" \
+    create_release --release-description "$RELEASE_DESCRIPTION" \
     ${DATACITE_REGISTRY_URL}/${DATACITE_RELEASE}
 

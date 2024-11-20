@@ -9,7 +9,7 @@ archive-radar:
   - pip install FACILE-RS==${FACILE_RS_VERSION}
   script:
   - >
-    radar_create
+    create_radar
     $RELEASE_ARCHIVE_URL
 
 # Upload release on Zenodo
@@ -23,7 +23,7 @@ archive-zenodo:
   - pip install FACILE-RS==${FACILE_RS_VERSION}
   script:
   - >
-    zenodo_create
+    create_zenodo
     $RELEASE_ARCHIVE_URL
 
 # Create a BagPack archive and upload it to the GitLab registry
@@ -38,5 +38,5 @@ archive-bagpack:
   - apt-get update && apt-get install -y curl
   - pip install FACILE-RS==${FACILE_RS_VERSION}
   script:
-  - bagpack_create $RELEASE_ARCHIVE_URL
+  - create_bagpack $RELEASE_ARCHIVE_URL
   - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${BAG_PATH} ${BAGPACK_REGISTRY_URL}/${BAG_PATH}'
