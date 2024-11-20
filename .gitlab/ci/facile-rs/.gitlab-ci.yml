@@ -26,11 +26,12 @@ variables:
   CFF_PATH: CITATION.cff
 
   # GitLab releases
+  RELEASE_BRANCH: ${CI_DEFAULT_BRANCH} # Replace with the branch on which the release tag is created
   RELEASE_TAG: ${CI_COMMIT_TAG}
   RELEASE_API_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases
   RELEASE_ARCHIVE_URL: ${CI_PROJECT_URL}/-/archive/${CI_COMMIT_TAG}/${PROJECT_NAME}-${CI_COMMIT_TAG}.tar.gz
   RELEASE_DESCRIPTION: |
-    Find the changelog [here](${CI_PROJECT_URL}/blob/${CI_DEFAULT_BRANCH}/CHANGELOG.md).
+    Find the changelog [here](${CI_PROJECT_URL}/blob/${RELEASE_BRANCH}/CHANGELOG.md).
   
   # BagPack
   ENABLE_BAGPACK: "true"

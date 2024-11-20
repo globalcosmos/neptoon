@@ -39,7 +39,7 @@ prepare-release:
   # Commit and push updated metadata files
   - git add ${CODEMETA_LOCATION} ${CFF_PATH}
   - git commit -m "Release ${VERSION}"
-  - git push "https://PUSH_TOKEN:${PRIVATE_TOKEN}@${CI_REPOSITORY_URL#*@}" "HEAD:${CI_DEFAULT_BRANCH}"
+  - git push "https://PUSH_TOKEN:${PRIVATE_TOKEN}@${CI_REPOSITORY_URL#*@}" "HEAD:${RELEASE_BRANCH}"
   # Create a release tag to trigger the release pipeline
   - git tag $VERSION
   - git push "https://PUSH_TOKEN:${PRIVATE_TOKEN}@${CI_REPOSITORY_URL#*@}" --tags
