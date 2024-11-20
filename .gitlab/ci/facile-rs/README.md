@@ -23,8 +23,6 @@ The release pipeline triggered by the creation of this tag will then:
 - create a GitLab release integrating the DataCite metadata file
 - create a BagPack bag and upload it to the GitLab registry
 
-Triggering this release workflow requires more configuration steps than those described here. Please refer to the FACILE-RS documentation for more information.
-
 ## Optional workflows
 
 You can optionally trigger releases on RADAR or Zenodo by turning `ENABLE_ZENODO` or `ENABLE_RADAR` to "true" in `.gitlab/ci/facile-rs/.gitlab-ci.yml`.
@@ -61,14 +59,31 @@ To fix this, open `.gitlab-ci.yml` and fix the conflict manually by removing the
 ## Configure the template
 
 Open `.gitlab/ci/facile-rs/.gitlab-ci.yml` and configure at least:
-- the name of your project
-- the location of your CodeMeta metadata file (`codemeta.json` by default)
-- the location of the CFF file to create or update (`CITATION.cff` by default)
+- PROJECT_NAME: the name of your project
+- CODEMETA_LOCATION: the location of your CodeMeta metadata file (`codemeta.json` by default)
+- CFF_PATH: the location of the CFF file to create or update (`CITATION.cff` by default)
+- RELEASE_BRANCH: the branch from which you will create releases (`$CI_DEFAULT_BRANCH` by default, the default branch of your repository)
 
 ## Run your first pipeline
 
 Ensure you have Docker runners available on your GitLab instance, and push the changes.
 A GitLab CI/CD pipeline should have been triggered and can be seen from your GitLab project in Build > Pipelines.
+
+## Configure your GitLab project for the release workflow
+
+If you want your pipeline to be able to update your repository metadata and trigger releases, you should additionally:
+- Create a Project Access Token. Go to your project on GitLab and then in Settings -> Access Tokens, choose the name of your token, expiration date (can be removed), role as a Maintainer and Scopes as `api` and `write_repository`. After the token has been created, copy its value and keep it for later.
+- Go to Settings -> CI/CD -> Variables and choose Add Variable. As a key write `PRIVATE_TOKEN` and as value paste the copied token. This variable should be made "masked" (so that it is not displayed) and "protected" (which means that it is only usable on protected branches and tags).
+- Make release tags protected (otherwise, `PRIVATE_TOKEN` can not be used when creating releases): go to Settings > Repository > Protected tags. Click on Add tag and protect the tags matching wildcard `pre-v*`. Then add a new tag and protect the tags matching `v*`.
+- If you will create releases from another branch than your default branch, you also need to protect this branch: go to Settings > Repository > Protected branches and protect the branch from which you will create the releases.
+
+**Note:** protecting the PRIVATE_TOKEN variable, branches and tags is important in order to avoid that any developer can use the token which has write permissions on the whole repository. It also avoids that releases are triggered from a feature branch. 
+
+## Trigger a software release
+
+To trigger a software release, go to your project on GitLab, then to Code > Tags. Create a new tag with a name starting with `pre-v`, for example `pre-v0.0.1`. Create it from the protected branch in which you've integrated the FACILE-RS template.
+
+The pre-release workflow should then be triggered, followed by the release workflow. GitLab CI/CD Pipelines can be checked in Build > Pipelines.
 
 ## Troubleshooting
 
