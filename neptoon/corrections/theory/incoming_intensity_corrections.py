@@ -45,7 +45,10 @@ def incoming_intensity_zreda_2012(incoming_intensity, incoming_ref):
     return c_factor
 
 
-def cutoff_rigidity_adjustment_to_jung(cutoff_rigidity):
+def cutoff_rigidity_adjustment(
+    site_cutoff_rigidity,
+    reference_monitor_cutoff_rigidity,
+):
     """
     Creates adjustment parameter required to adjust for cutoff
     rigidities between a location and jungfraujoch. As described in
@@ -53,27 +56,32 @@ def cutoff_rigidity_adjustment_to_jung(cutoff_rigidity):
 
     Parameters
     ----------
-    cutoff_rigidity : float
-        Cutoff rigidity given in Gigavolts (Gv)
+    site_cutoff_rigidity : float
+        Cutoff rigidity of CRNS site given in Gigavolts (Gv)
+    reference_monitor_cutoff_rigidity : float, optional
+        Cutoff rigidity of reference monitor given in Gigavolts (Gv)
 
     Returns
     -------
     rc_corr: float
         adjustment for differences in cutoff rigidity
-
     """
 
-    jung_cutoff_rigidity = 4.49
-    rc_corr = -0.075 * (cutoff_rigidity - jung_cutoff_rigidity) + 1
+    rc_corr = (
+        -0.075 * (site_cutoff_rigidity - reference_monitor_cutoff_rigidity) + 1
+    )
     return rc_corr
 
 
-def incoming_intensity_adjustment_rc_corrected(
-    incoming_intensity: float, incoming_ref: float, cutoff_rigidity: float
+def incoming_intensity_adjustment_hawdon_2014(
+    incoming_intensity: float,
+    incoming_ref: float,
+    site_cutoff_rigidity: float,
+    reference_monitor_cutoff_rigidity: float = 4.49,
 ):
     """
     Incoming intensity correction adjusting for differences in cutoff
-    rigidity.
+    rigidity. As described in Hawdon et al., (2014)
 
     Parameters
     ----------
@@ -81,8 +89,11 @@ def incoming_intensity_adjustment_rc_corrected(
         Incoming intensity in counts
     incoming_ref : float
         Reference intensity in counts
-    cutoff_rigidity : float
-        cutoff rigidity in Gigavolts (Gv)
+    site_cutoff_rigidity : float
+        Cutoff rigidity of CRNS site given in Gigavolts (Gv)
+    reference_monitor_cutoff_rigidity : float, optional
+        Cutoff rigidity of reference monitor given in Gigavolts (Gv), by
+        default 4.49 (Jungfraujoch)
 
     Returns
     -------
@@ -90,7 +101,9 @@ def incoming_intensity_adjustment_rc_corrected(
         The correction factor to multiply neutrons by
     """
     intensity_ratio = incoming_ref / incoming_intensity
-    rigidity_correction = cutoff_rigidity_adjustment_to_jung(cutoff_rigidity)
+    rigidity_correction = cutoff_rigidity_adjustment(
+        site_cutoff_rigidity, reference_monitor_cutoff_rigidity
+    )
     c_factor = (intensity_ratio - 1) * rigidity_correction + 1
     return c_factor
 

@@ -17,8 +17,7 @@ from .theory.calibration_functions import (
 
 from .theory.incoming_intensity_corrections import (
     incoming_intensity_zreda_2012,
-    cutoff_rigidity_adjustment_to_jung,
-    incoming_intensity_adjustment_rc_corrected,
+    incoming_intensity_adjustment_hawdon_2014,
     McjannetDesilets2023,
 )
 

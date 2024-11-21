@@ -10,11 +10,10 @@ class SiteInformation:
 
     IMPORTANT: If updating this with new values in the code base, ensure
     you also update ColumnInfo in
-    ..data_management.column_information.py to include a mapping to a
+    columns.column_information.py to include a mapping to a
     column name. This ensures when running the
     CRNSDataHub.prepare_static_values() method that the name for the
     column is consistent throughout processing.
-
 
     """
 
@@ -26,12 +25,13 @@ class SiteInformation:
     dry_soil_bulk_density: float
     lattice_water: float
     soil_organic_carbon: float
-    cutoff_rigidity: float
+    site_cutoff_rigidity: float
     mean_pressure: Optional[float] = None
     site_biomass: Optional[float] = None
     n0: Optional[float] = None
     beta_coefficient: Optional[float] = None
     l_coefficient: Optional[float] = None
+    reference_monitor_cutoff_rigidity: Optional[float] = None
 
     def add_custom_value(self, name: str, value):
         """
