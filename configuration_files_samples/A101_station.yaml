@@ -11,7 +11,7 @@ general_site_metadata:
   longitude: 12.557120
   elevation: 300
   time_zone: +1
-  cutoff_rigidity: 2.94
+  site_cutoff_rigidity: 2.94
   avg_lattice_water: 0.01
   avg_soil_organic_carbon: 0.05
   avg_dry_soil_bulk_density: 1.42
