@@ -47,7 +47,7 @@ def example_site_information():
         lattice_water=0.01,
         soil_organic_carbon=0,
         # mean_pressure=900,
-        cutoff_rigidity=2.94,
+        site_cutoff_rigidity=2.94,
         site_biomass=1,
         n0=200,
     )
