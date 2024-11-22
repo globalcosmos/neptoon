@@ -5,7 +5,7 @@ from streamlit.logger import get_logger
 
 import plotly.express as px
 
-import example_process
+import example_process.example_raw_from_yaml
 
 
 class StreamlitLogHandler(logging.Handler):
@@ -18,7 +18,7 @@ class StreamlitLogHandler(logging.Handler):
         self.widget_update_func(msg)
 
 
-logger = get_logger(example_process.__name__)
+logger = get_logger(example_process.example_raw_from_yaml.__name__)
 handler = StreamlitLogHandler(st.sidebar.empty().code)
 logger.addHandler(handler)
 

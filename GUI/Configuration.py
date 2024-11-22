@@ -1,4 +1,7 @@
 import streamlit as st
+import logging
+from streamlit.logger import get_logger
+import example_process.example_raw_from_yaml
 
 
 def config_changed():
@@ -7,6 +10,20 @@ def config_changed():
 
 st.title("Sensor configuration file")
 
+
+class StreamlitLogHandler(logging.Handler):
+    def __init__(self, widget_update_func):
+        super().__init__()
+        self.widget_update_func = widget_update_func
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.widget_update_func(msg)
+
+
+logger = get_logger(example_process.example_raw_from_yaml.__name__)
+handler = StreamlitLogHandler(st.sidebar.empty().code)
+logger.addHandler(handler)
 
 # config_name = st.text_input(
 #     "Current configuration file:",

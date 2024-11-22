@@ -45,6 +45,11 @@ pages = [
         title="Single click run",
         icon=":material/web_traffic:",
     ),
+    st.Page(
+        "GUI/Map.py",
+        title="Map",
+        icon=":material/map:",
+    ),
 ]
 
 pg = st.navigation(pages)

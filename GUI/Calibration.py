@@ -1,10 +1,28 @@
 import streamlit as st
 import logging
 from streamlit.logger import get_logger
+import pandas as pd
 
 # import example_calibration_gui
 
 import plotly.express as px
+
+import example_process.example_calibration
+
+
+class StreamlitLogHandler(logging.Handler):
+    def __init__(self, widget_update_func):
+        super().__init__()
+        self.widget_update_func = widget_update_func
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.widget_update_func(msg)
+
+
+logger = get_logger(example_process.example_calibration.__name__)
+handler = StreamlitLogHandler(st.sidebar.empty().code)
+logger.addHandler(handler)
 
 
 def config_changed():
@@ -17,6 +35,9 @@ st.markdown(
 In order to find the $N_0$ value, a CRNS probe needs to be calibrated on ground truth data, e.g., soil samples or TDR time serieses.
 """
 )
+
+df = pd.read_csv("example_process/example_data/Sheepdrove2-calibration.csv")
+st.write(df)
 
 # st.markdown(
 #     """

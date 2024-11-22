@@ -6,6 +6,11 @@ from neptoon.calibration.station_calibration import (
     CalibrationStation,
 )
 
+import logging
+
+logger = logging.getLogger(__name__)
+import streamlit as st
+
 
 # %%
 def calibrate(
@@ -14,6 +19,8 @@ def calibrate(
     *args,
     **kwargs,
 ):
+
+    logger.info("🏃 Loading data ")
     calibration_data = pandas.read_csv(
         (Path.cwd() / Path(sampling_csv)),
         skipinitialspace=True,
@@ -42,8 +49,14 @@ def calibrate(
         time_series_data=crns_data,
         config=calib_config,
     )
+
+    logger.info("🏃 Optimizing N0 ")
+
     estimate_n0 = calibration_station.find_n0_value()
     # print(f"N0 number is {estimate_n0}")
+
+    logger.info("✅ Done")
+
     return (
         estimate_n0,
         crns_data,
