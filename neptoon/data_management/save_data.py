@@ -103,7 +103,7 @@ class SaveAndArchiveOutputs:
         """
         # Make save folder if not already there
         try:
-            self.save_folder_location.mkdir()
+            self.save_folder_location.mkdir(exist_ok=True)
         except FileExistsError as e:
             message = f"Error: {e} \nFolder already exists."
             core_logger.info(message)
@@ -114,8 +114,9 @@ class SaveAndArchiveOutputs:
 
         # Prevent overwriting station data
         try:
-            self.full_folder_location.mkdir(parents=True)
+            self.full_folder_location.mkdir(parents=True, exist_ok=True)
         except FileExistsError as e:
+            # pass
             message = f"Error: {e} \nFolder already exists."
             core_logger.error(message)
             print(message + " Please change the folder name and try again.")
