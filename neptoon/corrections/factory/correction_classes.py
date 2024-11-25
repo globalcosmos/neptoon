@@ -6,8 +6,9 @@ from neptoon.columns import ColumnInfo
 
 # read in the specific functions here
 from neptoon.corrections import (
-    incoming_intensity_zreda_2012,
-    incoming_intensity_adjustment_hawdon_2014,
+    incoming_intensity_correction,
+    rc_correction_hawdon,
+    McjannetDesilets2023,
     calc_absolute_humidity,
     calc_saturation_vapour_pressure,
     calc_actual_vapour_pressure,
@@ -145,14 +146,14 @@ class IncomingIntensityCorrectionZreda2012(Correction):
 
         Parameters
         ----------
-        reference_incoming_neutron_value : float
-            reference count of incoming neutron intensity at a point in
-            time.
-        correction_type : str, optional
-            correction type, by default "intensity"
+        reference_incoming_neutron_value : str
+            name of the column holding the reference count of incoming
+            neutron intensity at a point in time.
+        correction_type : str
+            correction type, by default CorrectionType.INCOMING_INTENSITY
         correction_factor_column_name : str, optional
             name of column corrections will be written to, by default
-            "correction_for_intensity"
+            ColumnInfo.Name.INTENSITY_CORRECTION
         incoming_neutron_column_name : str, optional
             name of column where incoming neutron intensity values are
             stored in the dataframe, by default
@@ -183,9 +184,10 @@ class IncomingIntensityCorrectionZreda2012(Correction):
         """
 
         data_frame[self.correction_factor_column_name] = data_frame.apply(
-            lambda row: incoming_intensity_zreda_2012(
-                row[self.incoming_neutron_column_name],
-                row[self.reference_incoming_neutron_value],
+            lambda row: incoming_intensity_correction(
+                incoming_intensity=row[self.incoming_neutron_column_name],
+                incoming_ref=row[self.reference_incoming_neutron_value],
+                rc_scaling=1,
             ),
             axis=1,
         )
@@ -196,10 +198,7 @@ class IncomingIntensityCorrectionZreda2012(Correction):
 class IncomingIntensityCorrectionHawdon2014(Correction):
     """
     Corrects for incoming neutron intensity according to the method
-    outlined in Hawdon et al., (2014). This follows the same method as
-    the Zreda2012 method, but with an additional correction to account
-    for the difference between the CRNS station and the chosen neutron
-    reference monitor.
+    outlined in Hawdon et al., (2014).
     """
 
     def __init__(
@@ -208,35 +207,46 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
             ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE
         ),
         site_cutoff_rigidity: str = str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY),
-        correction_type: CorrectionType = CorrectionType.INCOMING_INTENSITY,
         correction_factor_column_name: str = str(
             ColumnInfo.Name.INTENSITY_CORRECTION
         ),
         incoming_neutron_column_name: str = str(
             ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY
         ),
-        reference_monitor_cutoff_rigidity: str = str(
+        ref_monitor_cutoff_rigidity: str = str(
             ColumnInfo.Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY
         ),
+        rc_correction_factor: str = str(ColumnInfo.Name.RC_CORRECTION_FACTOR),
+        correction_type: CorrectionType = CorrectionType.INCOMING_INTENSITY,
     ):
         """
-
 
         Parameters
         ----------
         reference_incoming_neutron_value : str, optional
-            _description_, by default str( ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE )
-        cutoff_rigidity_site : str, optional
-            _description_, by default
-            str(ColumnInfo.Name.CUTOFF_RIGIDITY)
-        correction_type : CorrectionType, optional
-            _description_, by default CorrectionType.INCOMING_INTENSITY
+            column name containing the reference incoming neutron value,
+            by default str(
+            ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE )
+        site_cutoff_rigidity : str, optional
+            column name containing the site cutoff rigidity, by default
+            str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY)
         correction_factor_column_name : str, optional
-            _description_, by default str( ColumnInfo.Name.INTENSITY_CORRECTION )
+            column name where correction factor will be written, by
+            default str( ColumnInfo.Name.INTENSITY_CORRECTION )
         incoming_neutron_column_name : str, optional
-            _description_, by default str( ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY )
-        cutoff_rigidity_reference_monitor : float, optional
-            _description_, by default None
+            column name where incoming neutron intensity values are
+            stored , by default str(
+            ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY )
+        ref_monitor_cutoff_rigidity : str, optional
+            Name of the column the reference monitor cutoff rigidity is
+            stored, by default str(
+            ColumnInfo.Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY )
+        rc_correction_factor : str, optional
+            name of the column the rc_correction will be written to, by
+            default str( ColumnInfo.Name.RC_CORRECTION_FACTOR )
+        correction_type : CorrectionType, optional
+            The correction type as an Enum, by default
+            CorrectionType.INCOMING_INTENSITY
         """
         super().__init__(
             correction_type=correction_type,
@@ -246,10 +256,9 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
             reference_incoming_neutron_value
         )
         self.site_cutoff_rigidity = site_cutoff_rigidity
+        self.ref_monitor_cutoff_rigidity = ref_monitor_cutoff_rigidity
+        self.rc_correction_factor = rc_correction_factor
         self.incoming_neutron_column_name = incoming_neutron_column_name
-        self.reference_monitor_cutoff_rigidity = (
-            reference_monitor_cutoff_rigidity
-        )
 
     def _check_required_columns(self, data_frame):
         """
@@ -257,13 +266,13 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
 
         Parameters
         ----------
-        data_frame : _type_
-            _description_
+        data_frame : pd.DataFrame
+            DataFrame with the data
 
         Raises
         ------
         ValueError
-            _description_
+            Raises when required columns are missing
         """
         required_columns = [
             self.incoming_neutron_column_name,
@@ -288,42 +297,227 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
 
         Parameters
         ----------
-        data_frame : _type_
-            _description_
+        data_frame : pd.DataFrame
+            DataFrame with Data
         """
         self.ref_monitor_missing = is_column_missing_or_empty(
             data_frame=data_frame,
-            column_name=str(ColumnInfo.Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY),
+            column_name=self.ref_monitor_cutoff_rigidity,
         )
+
+    def _assign_default_ref_monitor(
+        self,
+        data_frame,
+        default_ref_monitor_gv=4.49,
+    ):
+        """
+        If the ref_monitor_missing assignment is true, it will fill in a
+        default value to be used.
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame with data
+        default_ref_monitor_gv : float, optional
+            Set as JUNG by default, by default 4.49
+
+        Returns
+        -------
+
+        pd.DataFrame
+            Returns dataframe with filled in values if ref monitor is
+            missing
+        """
+        if self.ref_monitor_missing:
+            data_frame[self.ref_monitor_cutoff_rigidity] = (
+                default_ref_monitor_gv
+            )
+            return data_frame
+        else:
+            return data_frame
+
+    def _calc_rc_scale_param(self, data_frame):
+        """
+        Calculates the correction to account for difference in site and
+        reference monitor cutoff rigidity.
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            The DataFrame with the data
+        """
+        data_frame[self.rc_correction_factor] = data_frame.apply(
+            lambda row: rc_correction_hawdon(
+                site_cutoff_rigidity=row[self.site_cutoff_rigidity],
+                reference_monitor_cutoff_rigidity=row[
+                    self.ref_monitor_cutoff_rigidity
+                ],
+            ),
+            axis=1,
+        )
+        return data_frame
+
+    def apply(self, data_frame):
+        """
+        Applies the correction factor returning a dataframe with the
+        calculated values in it.
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with the correction values attached
+        """
+        self._check_required_columns(data_frame=data_frame)
+        self._check_if_ref_monitor_supplied(data_frame=data_frame)
+        data_frame = self._assign_default_ref_monitor(data_frame=data_frame)
+        data_frame = self._calc_rc_scale_param(data_frame=data_frame)
+
+        data_frame[self.correction_factor_column_name] = data_frame.apply(
+            lambda row: incoming_intensity_correction(
+                incoming_intensity=row[self.incoming_neutron_column_name],
+                incoming_ref=row[self.reference_incoming_neutron_value],
+                rc_scaling=row[self.rc_correction_factor],
+            ),
+            axis=1,
+        )
+        return data_frame
+
+
+class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
+    """
+    Corrects for incoming neutron intensity according to the method
+    outlined in McJannet and Desilets., (2023).
+    """
+
+    def __init__(
+        self,
+        reference_incoming_neutron_value: str = str(
+            ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE
+        ),
+        site_cutoff_rigidity: str = str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY),
+        correction_factor_column_name: str = str(
+            ColumnInfo.Name.INTENSITY_CORRECTION
+        ),
+        incoming_neutron_column_name: str = str(
+            ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY
+        ),
+        latitude: str = str(ColumnInfo.Name.LATITUDE),
+        elevation: str = str(ColumnInfo.Name.ELEVATION),
+        rc_correction_factor: str = str(ColumnInfo.Name.RC_CORRECTION_FACTOR),
+        correction_type: CorrectionType = CorrectionType.INCOMING_INTENSITY,
+    ):
+        """
+
+        Parameters
+        ----------
+        reference_incoming_neutron_value : str, optional
+            column name containing the reference incoming neutron value,
+            by default str(
+            ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE )
+        site_cutoff_rigidity : str, optional
+            column name containing the site cutoff rigidity, by default
+            str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY)
+        correction_factor_column_name : str, optional
+            column name where correction factor will be written, by
+            default str( ColumnInfo.Name.INTENSITY_CORRECTION )
+        incoming_neutron_column_name : str, optional
+            column name where incoming neutron intensity values are
+            stored, by default str(
+            ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY )
+        latitude : str, optional
+            column name where latitude values are stored, by default
+            str(ColumnInfo.Name.LATITUDE)
+        elevation : str, optional
+            column name where elevation values are stored, by default
+            str(ColumnInfo.Name.ELEVATION)
+        rc_correction_factor : str, optional
+            name of the column the rc_correction will be written to, by
+            default str(ColumnInfo.Name.RC_CORRECTION_FACTOR)
+        correction_type : CorrectionType, optional
+            the correction type as an Enum, by default
+            CorrectionType.INCOMING_INTENSITY
+        """
+        super().__init__(
+            correction_type=correction_type,
+            correction_factor_column_name=correction_factor_column_name,
+        )
+        self.reference_incoming_neutron_value = (
+            reference_incoming_neutron_value
+        )
+        self.site_cutoff_rigidity = site_cutoff_rigidity
+        self.latitude = latitude
+        self.elevation = elevation
+        self.rc_correction_factor = rc_correction_factor
+        self.incoming_neutron_column_name = incoming_neutron_column_name
+
+    def _check_required_columns(self, data_frame):
+        """
+        Checks that the required columns are available.
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame to check
+
+        Raises
+        ------
+        ValueError
+            Error when needed columns are missing.
+        """
+        required_columns = [
+            self.incoming_neutron_column_name,
+            self.reference_incoming_neutron_value,
+            self.site_cutoff_rigidity,
+            self.latitude,
+            self.elevation,
+        ]
+
+        missing_columns = [
+            col
+            for col in required_columns
+            if is_column_missing_or_empty(data_frame, col)
+        ]
+        if missing_columns:
+            raise ValueError(
+                f"Required columns are missing or empty: {', '.join(missing_columns)}"
+            )
+
+    def _calc_rc_scale_param(self, data_frame):
+        """
+        Calculates the correction to account for difference in site and
+        reference monitor cutoff rigidity.
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            The DataFrame with the data
+        """
+        data_frame[self.rc_correction_factor] = data_frame.apply(
+            lambda row: McjannetDesilets2023.tau(
+                latitude=row[self.latitude],
+                elevation=row[self.elevation],
+                cut_off_rigidity=row[self.site_cutoff_rigidity],
+            )
+        )
+        return data_frame
 
     def apply(self, data_frame):
         self._check_required_columns(data_frame=data_frame)
-        self._check_if_ref_monitor_supplied(data_frame=data_frame)
+        data_frame = self._calc_rc_scale_param(data_frame=data_frame)
 
-        if self.ref_monitor_missing:
-            data_frame[self.correction_factor_column_name] = data_frame.apply(
-                lambda row: incoming_intensity_adjustment_hawdon_2014(
-                    incoming_intensity=row[self.incoming_neutron_column_name],
-                    incoming_ref=row[self.reference_incoming_neutron_value],
-                    site_cutoff_rigidity=row[self.site_cutoff_rigidity],
-                    # No ref monitor given, will default to Jung
-                ),
-                axis=1,
-            )
-
-        else:
-            data_frame[self.correction_factor_column_name] = data_frame.apply(
-                lambda row: incoming_intensity_adjustment_hawdon_2014(
-                    incoming_intensity=row[self.incoming_neutron_column_name],
-                    incoming_ref=row[self.reference_incoming_neutron_value],
-                    site_cutoff_rigidity=row[self.site_cutoff_rigidity],
-                    reference_monitor_cutoff_rigidity=row[
-                        self.reference_monitor_cutoff_rigidity
-                    ],
-                ),
-                axis=1,
-            )
-
+        data_frame[self.correction_factor_column_name] = data_frame.apply(
+            lambda row: incoming_intensity_correction(
+                incoming_intensity=row[self.incoming_neutron_column_name],
+                incoming_ref=row[self.reference_incoming_neutron_value],
+                rc_scaling=row[self.rc_correction_factor],
+            ),
+            axis=1,
+        )
         return data_frame
 
 

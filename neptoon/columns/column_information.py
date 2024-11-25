@@ -5,7 +5,7 @@ from neptoon.logging import get_logger
 core_logger = get_logger()
 
 
-class ColumnInfo:  # TODO Change to Columns
+class ColumnInfo:
     """
     Used for storing information related to the cols in CRNS time series
     data. The names of columns are stored here providing a clean area to
@@ -69,6 +69,7 @@ class ColumnInfo:  # TODO Change to Columns
         REFERENCE_INCOMING_NEUTRON_VALUE = auto()
         SITE_CUTOFF_RIGIDITY = auto()
         REFERENCE_MONITOR_CUTOFF_RIGIDITY = auto()
+        RC_CORRECTION_FACTOR = auto()
         DRY_SOIL_BULK_DENSITY = auto()
         LATTICE_WATER = auto()
         SOIL_ORGANIC_CARBON = auto()
@@ -123,6 +124,7 @@ class ColumnInfo:  # TODO Change to Columns
         Name.REFERENCE_INCOMING_NEUTRON_VALUE: "reference_incoming_neutron_value",
         Name.SITE_CUTOFF_RIGIDITY: "site_cutoff_rigidity",
         Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY: "reference_monitor_cutoff_rigidity",
+        Name.RC_CORRECTION_FACTOR: "rc_correction_factor",
         Name.DRY_SOIL_BULK_DENSITY: "dry_soil_bulk_density",
         Name.LATTICE_WATER: "lattice_water",
         Name.SOIL_ORGANIC_CARBON: "soil_organic_carbon",

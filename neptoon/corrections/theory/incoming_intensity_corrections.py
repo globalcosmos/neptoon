@@ -20,7 +20,11 @@ from neptoon.logging import get_logger
 core_logger = get_logger()
 
 
-def incoming_intensity_zreda_2012(incoming_intensity, incoming_ref):
+def incoming_intensity_correction(
+    incoming_intensity,
+    incoming_ref,
+    rc_scaling,
+):
     """
     Calculate the correction factor for neutron counts based on the
     difference in incoming neutron intensity between current conditions
@@ -35,17 +39,21 @@ def incoming_intensity_zreda_2012(incoming_intensity, incoming_ref):
         Current incoming neutron intensity, in counts per time unit.
     incoming_ref : float
         Reference incoming neutron intensity, in counts per time unit.
+    rc_scaling : float
+        A scaling factor to account for difference in cut off rigidity
+        between sensor and reference monitor
 
     Returns
     -------
     c_factor: float
         Correction factor to be multiplied with neutron counts.
     """
-    c_factor = incoming_ref / incoming_intensity
+    intensity_ratio = incoming_ref / incoming_intensity
+    c_factor = rc_scaling * (intensity_ratio - 1) + 1
     return c_factor
 
 
-def cutoff_rigidity_adjustment(
+def rc_correction_hawdon(
     site_cutoff_rigidity,
     reference_monitor_cutoff_rigidity,
 ):
@@ -63,49 +71,49 @@ def cutoff_rigidity_adjustment(
 
     Returns
     -------
-    rc_corr: float
+    rc_correction: float
         adjustment for differences in cutoff rigidity
     """
 
-    rc_corr = (
+    rc_correction = (
         -0.075 * (site_cutoff_rigidity - reference_monitor_cutoff_rigidity) + 1
     )
-    return rc_corr
+    return rc_correction
 
 
-def incoming_intensity_adjustment_hawdon_2014(
-    incoming_intensity: float,
-    incoming_ref: float,
-    site_cutoff_rigidity: float,
-    reference_monitor_cutoff_rigidity: float = 4.49,
-):
-    """
-    Incoming intensity correction adjusting for differences in cutoff
-    rigidity. As described in Hawdon et al., (2014)
+# def incoming_intensity_adjustment_hawdon_2014(
+#     incoming_intensity: float,
+#     incoming_ref: float,
+#     site_cutoff_rigidity: float,
+#     reference_monitor_cutoff_rigidity: float = 4.49,
+# ):
+#     """
+#     Incoming intensity correction adjusting for differences in cutoff
+#     rigidity. As described in Hawdon et al., (2014)
 
-    Parameters
-    ----------
-    incoming_intensity : float
-        Incoming intensity in counts
-    incoming_ref : float
-        Reference intensity in counts
-    site_cutoff_rigidity : float
-        Cutoff rigidity of CRNS site given in Gigavolts (Gv)
-    reference_monitor_cutoff_rigidity : float, optional
-        Cutoff rigidity of reference monitor given in Gigavolts (Gv), by
-        default 4.49 (Jungfraujoch)
+#     Parameters
+#     ----------
+#     incoming_intensity : float
+#         Incoming intensity in counts
+#     incoming_ref : float
+#         Reference intensity in counts
+#     site_cutoff_rigidity : float
+#         Cutoff rigidity of CRNS site given in Gigavolts (Gv)
+#     reference_monitor_cutoff_rigidity : float, optional
+#         Cutoff rigidity of reference monitor given in Gigavolts (Gv), by
+#         default 4.49 (Jungfraujoch)
 
-    Returns
-    -------
-    c_factor
-        The correction factor to multiply neutrons by
-    """
-    intensity_ratio = incoming_ref / incoming_intensity
-    rigidity_correction = cutoff_rigidity_adjustment(
-        site_cutoff_rigidity, reference_monitor_cutoff_rigidity
-    )
-    c_factor = (intensity_ratio - 1) * rigidity_correction + 1
-    return c_factor
+#     Returns
+#     -------
+#     c_factor
+#         The correction factor to multiply neutrons by
+#     """
+#     intensity_ratio = incoming_ref / incoming_intensity
+#     rigidity_correction = cutoff_rigidity_adjustment(
+#         site_cutoff_rigidity, reference_monitor_cutoff_rigidity
+#     )
+#     c_factor = (intensity_ratio - 1) * rigidity_correction + 1
+#     return c_factor
 
 
 class McjannetDesilets2023:
@@ -179,8 +187,8 @@ class McjannetDesilets2023:
     @staticmethod
     def tau(latitude, elevation, cut_off_rigidity):
         """
-        Calculate the correction factor tau for neutron correction based on latitude,
-        altitude, and cutoff rigidity.
+        Calculate the correction factor tau for neutron correction based
+        on latitude, altitude, and cutoff rigidity.
 
         latitude : float
             Latitude in degrees
@@ -192,7 +200,8 @@ class McjannetDesilets2023:
         Returns
         -------
         tau: float
-            Tau correction factor
+            Tau correction factor to adjust difference between site and
+            reference monitor cut off rigidity
         """
         c0 = -0.0009
         c1 = 1.7699
@@ -237,8 +246,3 @@ class McjannetDesilets2023:
             )
         )
         return tau
-
-    @staticmethod
-    def do_correction():
-        # TODO
-        pass

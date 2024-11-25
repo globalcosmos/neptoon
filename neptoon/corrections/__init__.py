@@ -16,8 +16,8 @@ from .theory.calibration_functions import (
 )
 
 from .theory.incoming_intensity_corrections import (
-    incoming_intensity_zreda_2012,
-    incoming_intensity_adjustment_hawdon_2014,
+    incoming_intensity_correction,
+    rc_correction_hawdon,
     McjannetDesilets2023,
 )
 
