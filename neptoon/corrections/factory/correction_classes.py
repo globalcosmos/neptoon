@@ -384,7 +384,7 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_correction(
                 incoming_intensity=row[self.incoming_neutron_column_name],
-                incoming_ref=row[self.ref_incoming_neutron_value],
+                ref_incoming_intensity=row[self.ref_incoming_neutron_value],
                 rc_scaling=row[self.rc_correction_factor],
             ),
             axis=1,
@@ -516,7 +516,7 @@ class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_correction(
                 incoming_intensity=row[self.incoming_neutron_column_name],
-                incoming_ref=row[self.reference_incoming_neutron_value],
+                ref_incoming_intensity=row[self.ref_incoming_neutron_value],
                 rc_scaling=row[self.rc_correction_factor],
             ),
             axis=1,
