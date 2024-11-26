@@ -445,7 +445,7 @@ def test_correction_factory_intensity_mcjannet_desilets(
     )
 
 
-def test_correction_factory_intensity_mcjannet_desilets(
+def test_correction_factory_intensity_mcjannet_desilets_error(
     site_information,
     df_with_ref_monitor,
 ):
@@ -462,6 +462,7 @@ def test_correction_factory_intensity_mcjannet_desilets(
     )
     with pytest.raises(ValueError):
         df = tmp_corr.apply(df_with_ref_monitor)
+        return df
 
 
 def test_check_if_ref_monitor_supplied(
