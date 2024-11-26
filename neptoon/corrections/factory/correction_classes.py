@@ -209,7 +209,7 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
 
     def __init__(
         self,
-        reference_incoming_neutron_value: str = str(
+        ref_incoming_neutron_value: str = str(
             ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE
         ),
         site_cutoff_rigidity: str = str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY),
@@ -229,7 +229,7 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
 
         Parameters
         ----------
-        reference_incoming_neutron_value : str, optional
+        ref_incoming_neutron_value : str, optional
             column name containing the reference incoming neutron value,
             by default str(
             ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE )
@@ -258,9 +258,7 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
             correction_type=correction_type,
             correction_factor_column_name=correction_factor_column_name,
         )
-        self.reference_incoming_neutron_value = (
-            reference_incoming_neutron_value
-        )
+        self.ref_incoming_neutron_value = ref_incoming_neutron_value
         self.site_cutoff_rigidity = site_cutoff_rigidity
         self.ref_monitor_cutoff_rigidity = ref_monitor_cutoff_rigidity
         self.rc_correction_factor = rc_correction_factor
@@ -282,7 +280,7 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
         """
         required_columns = [
             self.incoming_neutron_column_name,
-            self.reference_incoming_neutron_value,
+            self.ref_incoming_neutron_value,
             self.site_cutoff_rigidity,
         ]
         missing_columns = [
@@ -355,7 +353,7 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
         data_frame[self.rc_correction_factor] = data_frame.apply(
             lambda row: rc_correction_hawdon(
                 site_cutoff_rigidity=row[self.site_cutoff_rigidity],
-                reference_monitor_cutoff_rigidity=row[
+                ref_monitor_cutoff_rigidity=row[
                     self.ref_monitor_cutoff_rigidity
                 ],
             ),
@@ -386,7 +384,7 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_correction(
                 incoming_intensity=row[self.incoming_neutron_column_name],
-                incoming_ref=row[self.reference_incoming_neutron_value],
+                incoming_ref=row[self.ref_incoming_neutron_value],
                 rc_scaling=row[self.rc_correction_factor],
             ),
             axis=1,
@@ -402,7 +400,7 @@ class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
 
     def __init__(
         self,
-        reference_incoming_neutron_value: str = str(
+        ref_incoming_neutron_value: str = str(
             ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE
         ),
         site_cutoff_rigidity: str = str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY),
@@ -421,7 +419,7 @@ class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
 
         Parameters
         ----------
-        reference_incoming_neutron_value : str, optional
+        ref_incoming_neutron_value : str, optional
             column name containing the reference incoming neutron value,
             by default str(
             ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE )
@@ -452,9 +450,7 @@ class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
             correction_type=correction_type,
             correction_factor_column_name=correction_factor_column_name,
         )
-        self.reference_incoming_neutron_value = (
-            reference_incoming_neutron_value
-        )
+        self.ref_incoming_neutron_value = ref_incoming_neutron_value
         self.site_cutoff_rigidity = site_cutoff_rigidity
         self.latitude = latitude
         self.elevation = elevation
@@ -477,7 +473,7 @@ class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
         """
         required_columns = [
             self.incoming_neutron_column_name,
-            self.reference_incoming_neutron_value,
+            self.ref_incoming_neutron_value,
             self.site_cutoff_rigidity,
             self.latitude,
             self.elevation,
