@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from neptoon.corrections.factory.neutron_correction import (
+from neptoon.corrections.factory.build_corrections import (
     CorrectionBuilder,
     CorrectNeutrons,
     CorrectionFactory,
@@ -14,7 +14,7 @@ from neptoon.corrections import (
 )
 from neptoon.config.site_information import SiteInformation
 from neptoon.columns.column_information import ColumnInfo
-from neptoon.corrections.factory.neutron_correction import Correction
+from neptoon.corrections.factory.build_corrections import Correction
 
 
 ### Test Correction class
@@ -373,6 +373,95 @@ def test_correction_factory_intensity_hawdon(
             df_with_ref_monitor_output, df_without_ref_monitor_output
         )
     tmp_corr._check_if_ref_monitor_supplied
+
+
+@pytest.fixture
+def df_lat_and_elevation():
+    df_lat_and_elevation = pd.DataFrame(
+        {
+            str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE): [
+                500,
+                500,
+                500,
+                500,
+                500,
+            ],
+            str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY): [
+                4.2,
+                4.2,
+                4.2,
+                4.2,
+                4.2,
+            ],
+            str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY): [
+                555,
+                546,
+                515,
+                496,
+                500,
+            ],
+            str(ColumnInfo.Name.LATITUDE): [
+                21,
+                21,
+                21,
+                21,
+                21,
+            ],
+            str(ColumnInfo.Name.ELEVATION): [
+                600,
+                600,
+                600,
+                600,
+                600,
+            ],
+        }
+    )
+    return df_lat_and_elevation
+
+
+def test_correction_factory_intensity_mcjannet_desilets(
+    site_information,
+    df_lat_and_elevation,
+):
+    """Test McJannetDesilets method"""
+
+    factory = CorrectionFactory(site_information=site_information)
+    tmp_corr = factory.create_correction(
+        correction_type=CorrectionType.INCOMING_INTENSITY,
+        correction_theory=CorrectionTheory.MCJANNET_DESILETS_2023,
+    )
+    assert tmp_corr.correction_type is CorrectionType.INCOMING_INTENSITY
+    assert tmp_corr.correction_factor_column_name is str(
+        ColumnInfo.Name.INTENSITY_CORRECTION
+    )
+    df_lat_and_elevation_output = tmp_corr.apply(df_lat_and_elevation)
+    assert (
+        str(ColumnInfo.Name.INTENSITY_CORRECTION)
+        in df_lat_and_elevation_output.columns
+    )
+    assert (
+        str(ColumnInfo.Name.RC_CORRECTION_FACTOR)
+        in df_lat_and_elevation_output.columns
+    )
+
+
+def test_correction_factory_intensity_mcjannet_desilets(
+    site_information,
+    df_with_ref_monitor,
+):
+    """Test McJannetDesilets method error (wrong inputs)"""
+
+    factory = CorrectionFactory(site_information=site_information)
+    tmp_corr = factory.create_correction(
+        correction_type=CorrectionType.INCOMING_INTENSITY,
+        correction_theory=CorrectionTheory.MCJANNET_DESILETS_2023,
+    )
+    assert tmp_corr.correction_type is CorrectionType.INCOMING_INTENSITY
+    assert tmp_corr.correction_factor_column_name is str(
+        ColumnInfo.Name.INTENSITY_CORRECTION
+    )
+    with pytest.raises(ValueError):
+        df = tmp_corr.apply(df_with_ref_monitor)
 
 
 def test_check_if_ref_monitor_supplied(

@@ -35,7 +35,7 @@ from .theory.pressure_corrections import (
     dunai_2020,
 )
 
-from .factory.neutron_correction import (
+from .factory.build_corrections import (
     CorrectionTheory,
     CorrectionType,
     Correction,

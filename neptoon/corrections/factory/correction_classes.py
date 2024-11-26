@@ -43,7 +43,7 @@ class CorrectionTheory(Enum):
     ZREDA_2012 = "zreda_2012"
     ROSOLEM_2013 = "rosolem_2013"
     HAWDON_2014 = "hawdon_2014"
-    # TODO the rest
+    MCJANNET_DESILETS_2023 = "mcjannet_desilets_2023"
 
 
 def is_column_missing_or_empty(data_frame, column_name):
@@ -71,16 +71,18 @@ def is_column_missing_or_empty(data_frame, column_name):
 
 class Correction(ABC):
     """
-    Abstract class for the Correction classes. Ensures that all
-    corrections have an apply method which takes a DataFrame as an
-    argument. The return of the apply function should be a DataFrame
-    with the correction factor calculated and ad    ded as a column. The
-    correction_factor_column_name should be set which is the name of the
-    column the correction factor will be recorded into.
+    Abstract class for the Correction classes.
 
-    The CorrectionBuilder class will then store the name of columns
-    where correction factors are stored. This enables the creation of
-    the overall corrected neutron count column.
+    All corrections have an apply method which takes a DataFrame as an
+    argument. The return of the apply function should always be a
+    DataFrame with the correction factor calculated and added as a
+    column. The correction_factor_column_name should be set to the
+    desired column name for the calculated correction factor.
+
+    The CorrectionBuilder class will store the name of columns where
+    correction factors are stored (when multiple corrections are
+    undertaken). This enables the creation of the overall corrected
+    neutron count column.
     """
 
     def __init__(
@@ -502,7 +504,8 @@ class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
                 latitude=row[self.latitude],
                 elevation=row[self.elevation],
                 cut_off_rigidity=row[self.site_cutoff_rigidity],
-            )
+            ),
+            axis=1,
         )
         return data_frame
 
