@@ -40,10 +40,14 @@ class CorrectionTheory(Enum):
     beyond soil moisture
     """
 
+    # Intensity
     ZREDA_2012 = "zreda_2012"
-    ROSOLEM_2013 = "rosolem_2013"
     HAWDON_2014 = "hawdon_2014"
     MCJANNET_DESILETS_2023 = "mcjannet_desilets_2023"
+    # Atmospheric Water Vapour
+    ROSOLEM_2013 = "rosolem_2013"
+    # Pressure
+    # Aboveground Biomass
 
 
 def is_column_missing_or_empty(data_frame, column_name):
