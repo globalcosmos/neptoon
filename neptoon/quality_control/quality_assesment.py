@@ -83,7 +83,7 @@ class FlagRangeCheck(QualityCheck):
     @log_key_step("column", "min_val", "max_val")
     def __init__(
         self,
-        column: str,
+        column_name: str,
         min_val: Union[int | float],
         max_val: Union[int | float],
     ):
@@ -99,13 +99,13 @@ class FlagRangeCheck(QualityCheck):
         max_val : float
             Maximum value allowed
         """
-        self.column = column
+        self.column_name = column_name
         self.min_val = min_val
         self.max_val = max_val
 
     def apply(self, qc: SaQC):
         return qc.flagRange(
-            field=self.column, min=self.min_val, max=self.max_val
+            field=self.column_name, min=self.min_val, max=self.max_val
         )
 
 
@@ -123,7 +123,7 @@ class FlagNeutronGreaterThanN0(QualityCheck):
     def __init__(
         self,
         N0: Union[int | float],
-        neutron_col_name: str = str(
+        column_name: str = str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ),
         above_N0_factor: float = 1,
@@ -138,14 +138,14 @@ class FlagNeutronGreaterThanN0(QualityCheck):
         neutron_col_name : str
             Column name to flag
         """
-        self.column = neutron_col_name
+        self.column_name = column_name
         self.N0 = N0
         self.above_N0_factor = above_N0_factor
 
     def apply(self, qc: SaQC):
         no_greater_than = self.N0 * self.above_N0_factor
         return qc.flagGeneric(
-            field=self.column, func=lambda x: x > no_greater_than
+            field=self.column_name, func=lambda x: x > no_greater_than
         )
 
 
@@ -167,7 +167,7 @@ class FlagBelowMinimumPercentN0(QualityCheck):
         self,
         N0: Union[int | float],
         percent_minimum: Union[int | float] = 0.3,
-        neutron_col_name: str = str(
+        column_name: str = str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ),
     ):
@@ -186,13 +186,13 @@ class FlagBelowMinimumPercentN0(QualityCheck):
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
                             )
         """
-        self.column = neutron_col_name
+        self.column_name = column_name
         self.N0 = N0
         self.percent_minimum = percent_minimum
 
     def apply(self, qc: SaQC):
         return qc.flagGeneric(
-            field=self.column,
+            field=self.column_name,
             func=lambda x: x < (self.N0 * self.percent_minimum),
         )
 
@@ -226,15 +226,37 @@ class FlagSpikeDetectionUniLOF(QualityCheck):
         threshold : float
             Threshold value (default 1.5 based on SaQC recommendation)
         """
-        self.column = column_name
+        self.column_name = column_name
         self.periods_in_calculation = periods_in_calculation
         self.threshold = threshold
 
     def apply(self, qc=SaQC):
         return qc.flagUniLOF(
-            self.column,
+            self.column_name,
             n=self.periods_in_calculation,
             thresh=self.threshold,
+        )
+
+
+class FlagPersistance(QualityCheck):
+    def __init__(
+        self,
+        column_name: str,
+        threshold: float,
+        window: int | str,
+        min_periods: int = 2,
+    ):
+        self.column_name = column_name
+        self.threshold = threshold
+        self.window = window
+        self.min_periods = min_periods
+
+    def apply(self, qc=SaQC):
+        return qc.flagConstants(
+            field=self.column_name,
+            thresh=self.threshold,
+            window=self.window,
+            min_periods=self.min_periods,
         )
 
 

@@ -414,7 +414,10 @@ class ProcessWithYaml:
             ),
         )
         # QA meteo
-        self._apply_quality_assessment(name_of_section="")
+        self._apply_quality_assessment(
+            name_of_section="input_data_qa",
+            partial_config=self.station_info.input_data_qa,
+        )
 
         self._select_corrections()
         self._correct_neutrons()
@@ -443,7 +446,23 @@ class ProcessWithYaml:
 
 class QualityAssessmentWithYaml:
     """
-    Handles bulding out QualityChecks from config files.
+    Handles bulding out QualityChecks from config files. When an SaQC
+    system is bridged (see quality_assessment.py), for it to be
+    accessible for YAML processing it a method must be in here to.
+
+    Available methods:
+
+    - range check
+    - spike detection
+    - persistance check (stuck sensor)
+    - rate of change check
+
+    Future planned methods:
+
+    - cross validation (flag var x based on var y conditions)
+    - physical constraint checks
+    - diurnal pattern checks
+    - time step consistency checks (and adjustment)
     """
 
     def __init__(
@@ -474,7 +493,7 @@ class QualityAssessmentWithYaml:
             config.process_info.neutron_quality_assessment.flag_raw_neutrons
             )
 
-        Means:
+        Therefore:
 
         name_of_section = 'flag_raw_neutrons'
         """
@@ -491,6 +510,12 @@ class QualityAssessmentWithYaml:
         for key, value in obj_as_dict.items():
             if key == "spikes":
                 self._process_spikes(value)
+            if key == "persistance_check":
+                self._persistance_check(value)
+
+    def _persistance_check(self, config):
+        # TODO check for persistance (same vals)
+        pass
 
     def _process_spikes(self, config) -> None:
         """
