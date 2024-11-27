@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from neptoon.corrections.factory.neutron_correction import (
+from neptoon.corrections.factory.build_corrections import (
     CorrectionBuilder,
     CorrectNeutrons,
     CorrectionFactory,
@@ -14,7 +14,7 @@ from neptoon.corrections import (
 )
 from neptoon.config.site_information import SiteInformation
 from neptoon.columns.column_information import ColumnInfo
-from neptoon.corrections.factory.neutron_correction import Correction
+from neptoon.corrections.factory.build_corrections import Correction
 
 
 ### Test Correction class
@@ -250,7 +250,7 @@ def site_information():
         dry_soil_bulk_density=1.4,
         lattice_water=0.01,
         soil_organic_carbon=0,
-        cutoff_rigidity=2.94,
+        site_cutoff_rigidity=2.94,
     )
     return site_information
 
@@ -283,17 +283,222 @@ def test_correction_factory_intensity(site_information):
     )
 
 
+@pytest.fixture
+def df_with_ref_monitor():
+    df_with_ref_monitor = pd.DataFrame(
+        {
+            str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE): [
+                500,
+                500,
+                500,
+                500,
+                500,
+            ],
+            str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY): [
+                4.2,
+                4.2,
+                4.2,
+                4.2,
+                4.2,
+            ],
+            str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY): [
+                555,
+                546,
+                515,
+                496,
+                500,
+            ],
+            str(ColumnInfo.Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY): [
+                2.4,
+                2.4,
+                2.4,
+                2.4,
+                2.4,
+            ],
+        }
+    )
+    return df_with_ref_monitor
+
+
+@pytest.fixture
+def df_without_ref_monitor():
+    df_without_ref_monitor = pd.DataFrame(
+        {
+            str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE): [
+                500,
+                500,
+                500,
+                500,
+                500,
+            ],
+            str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY): [
+                4.2,
+                4.2,
+                4.2,
+                4.2,
+                4.2,
+            ],
+            str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY): [
+                555,
+                546,
+                515,
+                496,
+                500,
+            ],
+        }
+    )
+    return df_without_ref_monitor
+
+
+def test_correction_factory_intensity_hawdon(
+    site_information,
+    df_with_ref_monitor,
+    df_without_ref_monitor,
+):
+    """Test hawdon method when ref given and not given"""
+
+    factory = CorrectionFactory(site_information=site_information)
+    tmp_corr = factory.create_correction(
+        correction_type=CorrectionType.INCOMING_INTENSITY,
+        correction_theory=CorrectionTheory.HAWDON_2014,
+    )
+    assert tmp_corr.correction_type is CorrectionType.INCOMING_INTENSITY
+    assert tmp_corr.correction_factor_column_name is str(
+        ColumnInfo.Name.INTENSITY_CORRECTION
+    )
+    df_with_ref_monitor_output = tmp_corr.apply(df_with_ref_monitor)
+    df_without_ref_monitor_output = tmp_corr.apply(df_without_ref_monitor)
+    with pytest.raises(AssertionError):
+        pd.testing.assert_frame_equal(
+            df_with_ref_monitor_output, df_without_ref_monitor_output
+        )
+    tmp_corr._check_if_ref_monitor_supplied
+
+
+@pytest.fixture
+def df_lat_and_elevation():
+    df_lat_and_elevation = pd.DataFrame(
+        {
+            str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE): [
+                500,
+                500,
+                500,
+                500,
+                500,
+            ],
+            str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY): [
+                4.2,
+                4.2,
+                4.2,
+                4.2,
+                4.2,
+            ],
+            str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY): [
+                555,
+                546,
+                515,
+                496,
+                500,
+            ],
+            str(ColumnInfo.Name.LATITUDE): [
+                21,
+                21,
+                21,
+                21,
+                21,
+            ],
+            str(ColumnInfo.Name.ELEVATION): [
+                600,
+                600,
+                600,
+                600,
+                600,
+            ],
+        }
+    )
+    return df_lat_and_elevation
+
+
+def test_correction_factory_intensity_mcjannet_desilets(
+    site_information,
+    df_lat_and_elevation,
+):
+    """Test McJannetDesilets method"""
+
+    factory = CorrectionFactory(site_information=site_information)
+    tmp_corr = factory.create_correction(
+        correction_type=CorrectionType.INCOMING_INTENSITY,
+        correction_theory=CorrectionTheory.MCJANNET_DESILETS_2023,
+    )
+    assert tmp_corr.correction_type is CorrectionType.INCOMING_INTENSITY
+    assert tmp_corr.correction_factor_column_name is str(
+        ColumnInfo.Name.INTENSITY_CORRECTION
+    )
+    df_lat_and_elevation_output = tmp_corr.apply(df_lat_and_elevation)
+    assert (
+        str(ColumnInfo.Name.INTENSITY_CORRECTION)
+        in df_lat_and_elevation_output.columns
+    )
+    assert (
+        str(ColumnInfo.Name.RC_CORRECTION_FACTOR)
+        in df_lat_and_elevation_output.columns
+    )
+
+
+def test_correction_factory_intensity_mcjannet_desilets_error(
+    site_information,
+    df_with_ref_monitor,
+):
+    """Test McJannetDesilets method error (wrong inputs)"""
+
+    factory = CorrectionFactory(site_information=site_information)
+    tmp_corr = factory.create_correction(
+        correction_type=CorrectionType.INCOMING_INTENSITY,
+        correction_theory=CorrectionTheory.MCJANNET_DESILETS_2023,
+    )
+    assert tmp_corr.correction_type is CorrectionType.INCOMING_INTENSITY
+    assert tmp_corr.correction_factor_column_name is str(
+        ColumnInfo.Name.INTENSITY_CORRECTION
+    )
+    with pytest.raises(ValueError):
+        df = tmp_corr.apply(df_with_ref_monitor)
+        return df
+
+
+def test_check_if_ref_monitor_supplied(
+    site_information,
+    df_with_ref_monitor,
+    df_without_ref_monitor,
+):
+    factory = CorrectionFactory(site_information=site_information)
+    tmp_corr = factory.create_correction(
+        correction_type=CorrectionType.INCOMING_INTENSITY,
+        correction_theory=CorrectionTheory.HAWDON_2014,
+    )
+    tmp_corr._check_if_ref_monitor_supplied(df_without_ref_monitor)
+    assert tmp_corr.ref_monitor_missing
+    tmp_corr._check_if_ref_monitor_supplied(df_with_ref_monitor)
+    with pytest.raises(AssertionError):
+        assert tmp_corr.ref_monitor_missing
+
+
 def test_correction_factory_pressure(site_information):
     """
     Test correction factory selects the right correction humidity.
     """
     df = pd.DataFrame(
         {
-            "air_pressure": [1000, 990, 1010, 1001, 999],
+            str(ColumnInfo.Name.AIR_PRESSURE): [1000, 990, 1010, 1001, 999],
             str(ColumnInfo.Name.MEAN_PRESSURE): [1000, 1000, 1000, 1000, 1000],
-            "latitude": [34, 34, 34, 34, 34],
-            "elevation": [100, 100, 100, 100, 100],
-            "cutoff_rigidity": [2.3, 2.3, 2.3, 2.3, 2.3],
+            str(ColumnInfo.Name.LATITUDE): [34, 34, 34, 34, 34],
+            str(ColumnInfo.Name.ELEVATION): [100, 100, 100, 100, 100],
+            str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY): [
+                2.3,
+                2.3,
+                2.3,
+                2.3,
+                2.3,
+            ],
         }
     )
 
@@ -321,8 +526,8 @@ def test_correction_factory_humidity(site_information):
     """
     df = pd.DataFrame(
         {
-            "air_relative_humidity": [67, 70, 78, 76, 55],
-            "air_temperature": [
+            str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY): [67, 70, 78, 76, 55],
+            str(ColumnInfo.Name.AIR_TEMPERATURE): [
                 21,
                 24,
                 22,

@@ -10,6 +10,7 @@ from .correction_classes import (
     CorrectionTheory,
     IncomingIntensityCorrectionZreda2012,
     IncomingIntensityCorrectionHawdon2014,
+    IncomingIntensityCorrectionMcJannetDesilets2023,
     HumidityCorrectionRosolem2013,
     PressureCorrectionZreda2012,
 )
@@ -411,6 +412,8 @@ class CorrectionFactory:
             return IncomingIntensityCorrectionZreda2012()
         elif correction_theory == CorrectionTheory.HAWDON_2014:
             return IncomingIntensityCorrectionHawdon2014()
+        elif correction_theory == CorrectionTheory.MCJANNET_DESILETS_2023:
+            return IncomingIntensityCorrectionMcJannetDesilets2023()
 
     def create_biomass_correction(self, correction_theory: CorrectionTheory):
         pass

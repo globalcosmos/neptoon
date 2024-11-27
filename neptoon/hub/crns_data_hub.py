@@ -12,7 +12,7 @@ from neptoon.calibration import (
     CalibrationConfiguration,
     CalibrationStation,
 )
-from neptoon.corrections.factory.neutron_correction import (
+from neptoon.corrections.factory.build_corrections import (
     CorrectionBuilder,
     CorrectionFactory,
     CorrectionType,

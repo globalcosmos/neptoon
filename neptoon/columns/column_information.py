@@ -5,7 +5,7 @@ from neptoon.logging import get_logger
 core_logger = get_logger()
 
 
-class ColumnInfo:  # TODO Change to Columns
+class ColumnInfo:
     """
     Used for storing information related to the cols in CRNS time series
     data. The names of columns are stored here providing a clean area to
@@ -67,10 +67,12 @@ class ColumnInfo:  # TODO Change to Columns
         LONGITUDE = auto()
         ELEVATION = auto()
         REFERENCE_INCOMING_NEUTRON_VALUE = auto()
+        SITE_CUTOFF_RIGIDITY = auto()
+        REFERENCE_MONITOR_CUTOFF_RIGIDITY = auto()
+        RC_CORRECTION_FACTOR = auto()
         DRY_SOIL_BULK_DENSITY = auto()
         LATTICE_WATER = auto()
         SOIL_ORGANIC_CARBON = auto()
-        CUTOFF_RIGIDITY = auto()
         MEAN_PRESSURE = auto()
         SITE_BIOMASS = auto()
         N0 = auto()
@@ -120,10 +122,12 @@ class ColumnInfo:  # TODO Change to Columns
         Name.LONGITUDE: "longitude",
         Name.ELEVATION: "elevation",
         Name.REFERENCE_INCOMING_NEUTRON_VALUE: "reference_incoming_neutron_value",
+        Name.SITE_CUTOFF_RIGIDITY: "site_cutoff_rigidity",
+        Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY: "reference_monitor_cutoff_rigidity",
+        Name.RC_CORRECTION_FACTOR: "rc_correction_factor",
         Name.DRY_SOIL_BULK_DENSITY: "dry_soil_bulk_density",
         Name.LATTICE_WATER: "lattice_water",
         Name.SOIL_ORGANIC_CARBON: "soil_organic_carbon",
-        Name.CUTOFF_RIGIDITY: "cutoff_rigidity",
         Name.MEAN_PRESSURE: "mean_pressure",
         Name.SITE_BIOMASS: "site_biomass",
         Name.N0: "n0",
@@ -154,12 +158,13 @@ class ColumnInfo:  # TODO Change to Columns
         "dry_soil_bulk_density": Name.DRY_SOIL_BULK_DENSITY,
         "lattice_water": Name.LATTICE_WATER,
         "soil_organic_carbon": Name.SOIL_ORGANIC_CARBON,
-        "cutoff_rigidity": Name.CUTOFF_RIGIDITY,
+        "site_cutoff_rigidity": Name.SITE_CUTOFF_RIGIDITY,
         "mean_pressure": Name.MEAN_PRESSURE,
         "site_biomass": Name.SITE_BIOMASS,
         "n0": Name.N0,
         "beta_coefficient": Name.BETA_COEFFICIENT,
         "l_coefficient": Name.L_COEFFICIENT,
+        "reference_monitor_cutoff_rigidity": Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY,
     }
 
     @classmethod
@@ -188,26 +193,6 @@ class ColumnInfo:  # TODO Change to Columns
         cls._current_representation = copy.deepcopy(
             cls._default_representation
         )
-
-    # @classmethod
-    # def add_custom_name(cls, name: str):
-    #     if not hasattr(cls.Name, name.upper()):
-    #         cls.Name = Enum(
-    #             "",
-    #             {
-    #                 **{
-    #                     enum_member.name: enum_member.value
-    #                     for enum_member in cls.Name
-    #                 },
-    #                 name.upper(): auto(),
-    #             },
-    #         )
-    #     cls._current_representation[getattr(cls.Name, name.upper())] = (
-    #         name.lower()
-    #     )
-    #     cls.SITE_INFO_TO_COLUMN_INFO[name.lower()] = getattr(
-    #         cls.Name, name.upper()
-    #     )
 
     @classmethod
     def get_col_name(cls, column_name: str):

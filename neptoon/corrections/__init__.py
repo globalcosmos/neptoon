@@ -16,9 +16,8 @@ from .theory.calibration_functions import (
 )
 
 from .theory.incoming_intensity_corrections import (
-    incoming_intensity_zreda_2012,
-    cutoff_rigidity_adjustment_to_jung,
-    incoming_intensity_adjustment_rc_corrected,
+    incoming_intensity_correction,
+    rc_correction_hawdon,
     McjannetDesilets2023,
 )
 
@@ -36,7 +35,7 @@ from .theory.pressure_corrections import (
     dunai_2020,
 )
 
-from .factory.neutron_correction import (
+from .factory.build_corrections import (
     CorrectionTheory,
     CorrectionType,
     Correction,

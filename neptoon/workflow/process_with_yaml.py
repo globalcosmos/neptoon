@@ -273,8 +273,8 @@ class ProcessWithYaml:
             soil_organic_carbon=(
                 self.station_info.general_site_metadata.avg_soil_organic_carbon
             ),
-            cutoff_rigidity=(
-                self.station_info.general_site_metadata.cutoff_rigidity
+            site_cutoff_rigidity=(
+                self.station_info.general_site_metadata.site_cutoff_rigidity
             ),
             mean_pressure=(
                 self.station_info.general_site_metadata.mean_pressure
