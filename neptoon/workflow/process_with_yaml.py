@@ -63,92 +63,6 @@ class ProcessWithYaml:
         """
         return self.configuration_object.get_configuration(name=wanted_object)
 
-    def create_data_hub(
-        self,
-        return_data_hub: bool = True,
-    ):
-        """
-        Creates a CRNSDataHub using the supplied information from the
-        YAML config file.
-
-        By default this method will return a configured CRNSDataHub.
-
-        When running the whole process with the run() method, it will
-        save the data hub to an attribute so that it can access it for
-        further steps.
-
-        Parameters
-        ----------
-        return_data_frame : bool, optional
-            Whether to return the CRNSDataHub directly, by default True
-
-        Returns
-        -------
-        CRNSDataHub
-            The CRNSDataHub
-        """
-        # import here to avoid circular dependency
-        from neptoon.hub import CRNSDataHub
-
-        if return_data_hub:
-            return CRNSDataHub(
-                crns_data_frame=self._import_data(),
-                site_information=self._create_site_information(),
-            )
-        else:
-            self.data_hub = CRNSDataHub(
-                crns_data_frame=self._import_data(),
-                site_information=self._create_site_information(),
-            )
-
-    def run_full_process(
-        self,
-    ):
-        """
-        Full process run with YAML file
-
-        Raises
-        ------
-        ValueError
-            When no N0 supplied and no calibration completed.
-        """
-        self.create_data_hub(return_data_hub=False)
-        self._attach_nmdb_data()
-        self._prepare_static_values()
-        # QA raw N spikes
-        self._apply_quality_assessment(
-            name_of_section="flag_raw_neutrons",
-            partial_config=(
-                self.process_info.neutron_quality_assessment.flag_raw_neutrons
-            ),
-        )
-        # QA meteo
-        # TODO
-
-        self._select_corrections()
-        self._correct_neutrons()
-
-        # OPTIONAL: Calibration
-        # TODO
-
-        if self.station_info.general_site_metadata.N0 is None:
-            message = (
-                "Cannot proceed with quality assessment or processing "
-                "without an N0 number. Supply an N0 number in the YAML "
-                "file or complete site calibration"
-            )
-            core_logger.error(message)
-            raise ValueError(message)
-
-        self._apply_quality_assessment(
-            name_of_section="flag_corrected_neutrons",
-            partial_config=(
-                self.process_info.neutron_quality_assessment.flag_raw_neutrons
-            ),
-        )
-        self._produce_soil_moisture_estimates()
-        self._save_data()
-
     def _parse_raw_data(
         self,
     ):
@@ -440,6 +354,92 @@ class ProcessWithYaml:
             append_yaml_hash_to_folder_name=append_yaml_bool,
         )
 
+    def create_data_hub(
+        self,
+        return_data_hub: bool = True,
+    ):
+        """
+        Creates a CRNSDataHub using the supplied information from the
+        YAML config file.
+
+        By default this method will return a configured CRNSDataHub.
+
+        When running the whole process with the run() method, it will
+        save the data hub to an attribute so that it can access it for
+        further steps.
+
+        Parameters
+        ----------
+        return_data_frame : bool, optional
+            Whether to return the CRNSDataHub directly, by default True
+
+        Returns
+        -------
+        CRNSDataHub
+            The CRNSDataHub
+        """
+        # import here to avoid circular dependency
+        from neptoon.hub import CRNSDataHub
+
+        if return_data_hub:
+            return CRNSDataHub(
+                crns_data_frame=self._import_data(),
+                site_information=self._create_site_information(),
+            )
+        else:
+            self.data_hub = CRNSDataHub(
+                crns_data_frame=self._import_data(),
+                site_information=self._create_site_information(),
+            )
+
+    def run_full_process(
+        self,
+    ):
+        """
+        Full process run with YAML file
+
+        Raises
+        ------
+        ValueError
+            When no N0 supplied and no calibration completed.
+        """
+        self.create_data_hub(return_data_hub=False)
+        self._attach_nmdb_data()
+        self._prepare_static_values()
+        # QA raw N spikes
+        self._apply_quality_assessment(
+            name_of_section="flag_raw_neutrons",
+            partial_config=(
+                self.process_info.neutron_quality_assessment.flag_raw_neutrons
+            ),
+        )
+        # QA meteo
+        self._apply_quality_assessment(name_of_section="")
+
+        self._select_corrections()
+        self._correct_neutrons()
+
+        # OPTIONAL: Calibration
+        # TODO
+
+        if self.station_info.general_site_metadata.N0 is None:
+            message = (
+                "Cannot proceed with quality assessment or processing "
+                "without an N0 number. Supply an N0 number in the YAML "
+                "file or complete site calibration"
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+        self._apply_quality_assessment(
+            name_of_section="flag_corrected_neutrons",
+            partial_config=(
+                self.process_info.neutron_quality_assessment.flag_raw_neutrons
+            ),
+        )
+        self._produce_soil_moisture_estimates()
+        self._save_data()
+
 
 class QualityAssessmentWithYaml:
     """
@@ -453,7 +453,7 @@ class QualityAssessmentWithYaml:
         station_info,
     ):
         """
-        Attributes.
+        Attributes
 
         Parameters
         ----------
@@ -482,27 +482,6 @@ class QualityAssessmentWithYaml:
         self.partial_config = partial_config
         self.station_info = station_info
         self.checks = []
-
-    def collect_and_return_checks(
-        self,
-    ):
-        """
-        Base function which chooses correct internal method to use
-        depending on the supplied config section.
-
-        Returns
-        -------
-        List[QualityCheck]
-            A list of QualityChecks
-        """
-        if self.name_of_section == "flag_raw_neutrons":
-            self._flag_raw_neutrons()
-        elif self.name_of_section == "extra_quality_assessment":
-            pass  # TODO
-        elif self.name_of_section == "flag_corrected_neutrons":
-            self._flag_corrected_neutrons()
-
-        return self.checks
 
     def _flag_raw_neutrons(self):
         """
@@ -582,6 +561,29 @@ class QualityAssessmentWithYaml:
                 percent_minimum=config.not_below,
             )
         )
+
+    def collect_and_return_checks(
+        self,
+    ):
+        """
+        Base function which chooses correct internal method to use
+        depending on the supplied config section.
+
+        Returns
+        -------
+        List[QualityCheck]
+            A list of QualityChecks
+        """
+        if self.name_of_section == "raw_neutrons_qa":
+            self._flag_raw_neutrons()
+        elif self.name_of_section == "input_variables_qa":
+            pass  # TODO
+        elif self.name_of_section == "corrected_neutrons_qa":
+            self._flag_corrected_neutrons()
+        elif self.name_of_section == "derived_products_qa":
+            pass  # TODO
+
+        return self.checks
 
 
 class CorrectionSelectorWithYaml:

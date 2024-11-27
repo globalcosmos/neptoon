@@ -168,7 +168,10 @@ class CRNSDataHub:
     def correction_builder(self, builder: CorrectionBuilder):
         self._correction_builder = builder
 
-    def validate_dataframe(self, schema: str):
+    def validate_dataframe(
+        self,
+        schema: str,
+    ):
         """
         Validates the dataframe against a pandera schema See
         data_validation_table.py for schemas.
@@ -196,7 +199,10 @@ class CRNSDataHub:
             core_logger.error(validation_error_message)
             print(validation_error_message)
 
-    def update_site_information(self, new_site_information: SiteInformation):
+    def update_site_information(
+        self,
+        new_site_information: SiteInformation,
+    ):
         """
         When a user wants to update the hub with a SiteInformation
         object it must be done with this method.
@@ -250,6 +256,19 @@ class CRNSDataHub:
         custom_flags: QualityAssessmentFlagBuilder = None,
         add_check=None,
     ):
+        """
+        Add QualityChecks to undertake on the dataframe
+
+        Parameters
+        ----------
+        custom_flags : QualityAssessmentFlagBuilder, optional
+            user can build a QualityAssessmentFlagBuilder with checks
+            and attach this as a whole, by default None
+        add_check : Check, optional
+            user can add individual Checks, or a list of Checks. These
+            will be then added to the QualityAssessmentFlagBuilder, by
+            default None
+        """
         if self.quality_assessor is None:
             self.quality_assessor = DataQualityAssessor(
                 data_frame=self.crns_data_frame

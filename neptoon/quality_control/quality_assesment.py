@@ -11,7 +11,20 @@ core_logger = get_logger()
 
 
 class DateTimeIndexValidator:
+    """
+    Validator class which checks that the supplied data frame has a
+    datetime index
+    """
+
     def __init__(self, data_frame: pd.DataFrame):
+        """
+        Init
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame to be checked
+        """
         self._validate_timestamp_index(data_frame)
 
     def _validate_timestamp_index(self, data_frame):
@@ -37,8 +50,6 @@ class DateTimeIndexValidator:
 class QualityCheck(ABC):
     """
     Base method for quality check wrappers.
-
-    Ensures they all have an apply function.
     """
 
     @abstractmethod
@@ -336,6 +347,10 @@ class DataQualityAssessor:
         core_logger.info(f"Changed SaQC scheme to {scheme}")
 
     def apply_quality_assessment(self):
+        """
+        Cycles through the quality checks in the builder applying each
+        of them to the data frame
+        """
         self.qc = self.builder.apply_checks(self.qc)
 
     def add_custom_flag_builder(self, builder: QualityAssessmentFlagBuilder):
@@ -351,7 +366,8 @@ class DataQualityAssessor:
 
     def add_quality_check(self, check):
         """
-        Can be a check or a list of checks
+        Can be a check or a list of checks to the internal
+        QualitCheckBuilder
 
         Parameters
         ----------
@@ -373,11 +389,6 @@ class DataQualityAssessor:
     def return_data_frame(self):
         """
         Returns the timeseries DataFrame.
-
-        TODO:
-            - Placeholder as currently don't change the DF in
-              CRNSDataHub
-            - Should decide if to remove?
 
         Returns
         -------
