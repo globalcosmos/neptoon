@@ -64,7 +64,8 @@ class QualityCheck:
 
     Examples
     --------
-    Create a quality check that flags neutron intensity values outside the range 500-550:
+    Create a quality check that flags neutron intensity values outside
+    the range 500-550:
 
     >>> from neptoon.column_info import ColumnInfo
     >>> from neptoon.quality_control import QualityCheck, QAMethod
@@ -77,6 +78,9 @@ class QualityCheck:
     ...         "upper_bound": 550,
     ...     },
     ... )
+
+    See neptoon.quality_control.WhatParamsDoINeed if you need help on
+    allowable params.
     """
 
     @log_key_step("target", "method", "raw_params")
@@ -84,7 +88,7 @@ class QualityCheck:
         self,
         target: QATarget,
         method: QAMethod,
-        parameters: Union[dict, "ConfigurationObject"],
+        parameters: dict,
     ):
         self.target = target
         self.method = method
@@ -151,7 +155,7 @@ class QualityCheck:
             )
 
     def _set_column_name(self):
-        # if QATarget == Custom require target_column in raw_params
+        # TODO if QATarget == Custom require target_column in raw_params
 
         if (
             "column_name" not in self.parameters.keys()
@@ -160,11 +164,11 @@ class QualityCheck:
         ):
             self.parameters["column_name"] = self.target.value
 
-    def _neutron_checks(self):
-
-        pass
-
-    def _create_n0_lambda(self, method: QAMethod, params: dict):
+    def _create_n0_lambda(
+        self,
+        method: QAMethod,
+        params: dict,
+    ):
         """
         Creates appropriate lambda function for N0-based checks using
         supplied parameters.
@@ -205,14 +209,25 @@ class QualityCheck:
                 f"Method {method} does not use N0 lambda functions"
             )
 
+    def _return_lambda_func(self):
+        """
+        Lambda funcs used for QA of corrected neutrons.
+
+        Returns
+        -------
+        func
+            returns the complete lambda func
+        """
+        if self.method in [QAMethod.ABOVE_N0, QAMethod.BELOW_N0_FACTOR]:
+            func = self._create_n0_lambda(self.method, self.param_dict)
+            return SaQC.flagGeneric(
+                field=self.param_dict["column_name"], func=func
+            )
+
     def apply(self):
         saqc_method = getattr(SaQC, self.method.value[0])
-        if self.method.value == "flagGeneric":  # special case
-            if self.method in [QAMethod.ABOVE_N0, QAMethod.BELOW_N0_FACTOR]:
-                func = self._create_n0_lambda(self.method, self.param_dict)
-                return SaQC.flagGeneric(
-                    field=self.param_dict["column_name"], func=func
-                )
+        if self.method.value == "flagGeneric":
+            return self._return_lambda_func()
         return saqc_method(**self.param_set)
 
 
