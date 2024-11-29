@@ -92,14 +92,14 @@ class QualityCheck:
         self.possible_parameters = self._get_possible_parameters()
         self._validate_essential_params_present()
         self._validate_if_unknown_params_supplied()
-        self.param_dict = self._create_param_dict(raw_params=raw_params)
+        self.param_dict = self._check_param_dict(parameters=parameters)
         self._set_column_name()
         # self._validate_supplied_params()
 
     def _get_possible_parameters(self):
         return ParameterRegistry.get_parameter_class(self.method)
 
-    def _create_param_dict(self, raw_params):
+    def _check_param_dict(self, parameters):
         # check if obj or dict
         # get optional info
         # if obj convert to dict
@@ -107,7 +107,7 @@ class QualityCheck:
         # check method and pull mapping class
         # map keys from dict to match SaQC method
         # save
-        self.param_set = raw_params
+        return parameters  # TEMP
 
     def _validate_essential_params_present(self):
         """
@@ -211,196 +211,6 @@ class QualityCheck:
                     field=self.param_dict["column_name"], func=func
                 )
         return saqc_method(**self.param_set)
-
-
-class FlagRangeCheck(QualityCheck):
-    """
-    Creates a check using the flagRange check from SaQC.
-
-    Returns
-    -------
-    qc
-        SaQC object after flagging
-    """
-
-    @log_key_step("column", "min_val", "max_val")
-    def __init__(
-        self,
-        column_name: str,
-        min_val: Union[int | float],
-        max_val: Union[int | float],
-    ):
-        """
-        Variables
-
-        Parameters
-        ----------
-        column : str
-            Column to flag
-        min_val : float
-            Minimum value allowed
-        max_val : float
-            Maximum value allowed
-        """
-        self.column_name = column_name
-        self.min_val = min_val
-        self.max_val = max_val
-
-    def apply(self, qc: SaQC):
-        return qc.flagRange(
-            field=self.column_name, min=self.min_val, max=self.max_val
-        )
-
-
-class FlagNeutronGreaterThanN0(QualityCheck):
-    """
-    Flag neutron count rates that are greater than N0.
-
-    Returns
-    -------
-    qc
-        Returns the SaQC file after applying flags.
-    """
-
-    @log_key_step("neutron_col_name")
-    def __init__(
-        self,
-        N0: Union[int | float],
-        column_name: str = str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
-        ),
-        above_N0_factor: float = 1,
-    ):
-        """
-        Init Values
-
-        Parameters
-        ----------
-        N0 : int | float
-            The N0 number neutrons cannot exceed.
-        neutron_col_name : str
-            Column name to flag
-        """
-        self.column_name = column_name
-        self.N0 = N0
-        self.above_N0_factor = above_N0_factor
-
-    def apply(self, qc: SaQC):
-        no_greater_than = self.N0 * self.above_N0_factor
-        return qc.flagGeneric(
-            field=self.column_name, func=lambda x: x > no_greater_than
-        )
-
-
-class FlagBelowMinimumPercentN0(QualityCheck):
-    """
-    Flag neutron count rates that are below a threshold percentage of
-    N0.
-
-    Neutron
-
-    Returns
-    -------
-    qc
-        Returns the SaQC file after applying flags.
-    """
-
-    @log_key_step("neutron_col_name", "percent_minimum")
-    def __init__(
-        self,
-        N0: Union[int | float],
-        percent_minimum: Union[int | float] = 0.3,
-        column_name: str = str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
-        ),
-    ):
-        """
-        Init Values
-
-        Parameters
-        ----------
-        N0 : Union[int  |  float]
-            The NO calibration term of the site
-        percent_minimum : Union[int  |  float], optional
-            The decimal percent value which, by default 0.3
-        neutron_col_name : str, optional
-            name of column where corrected neutrons are stored, by
-            default str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
-                            )
-        """
-        self.column_name = column_name
-        self.N0 = N0
-        self.percent_minimum = percent_minimum
-
-    def apply(self, qc: SaQC):
-        return qc.flagGeneric(
-            field=self.column_name,
-            func=lambda x: x < (self.N0 * self.percent_minimum),
-        )
-
-
-class FlagSpikeDetectionUniLOF(QualityCheck):
-    """
-    Build the flag routine to detect outliers
-
-    Returns
-    -------
-    SaQC
-        SaQC object with flags
-    """
-
-    @log_key_step("column_name", "periods_in_calculation", "threshold")
-    def __init__(
-        self,
-        column_name: str,
-        periods_in_calculation: Union[int | float] = 24,
-        threshold: Union[int | float] = 1.2,
-    ):
-        """
-        Initialisation parameters
-
-        Parameters
-        ----------
-        column_name : str
-            Name of the column to flag
-        periods_in_calculation : int
-            Number of nearest neightbours to calculate flagging
-        threshold : float
-            Threshold value (default 1.5 based on SaQC recommendation)
-        """
-        self.column_name = column_name
-        self.periods_in_calculation = periods_in_calculation
-        self.threshold = threshold
-
-    def apply(self, qc=SaQC):
-        return qc.flagUniLOF(
-            self.column_name,
-            n=self.periods_in_calculation,
-            thresh=self.threshold,
-        )
-
-
-class FlagPersistance(QualityCheck):
-    def __init__(
-        self,
-        column_name: str,
-        threshold: float,
-        window: int | str,
-        min_periods: int = 2,
-    ):
-        self.column_name = column_name
-        self.threshold = threshold
-        self.window = window
-        self.min_periods = min_periods
-
-    def apply(self, qc=SaQC):
-        return qc.flagConstants(
-            field=self.column_name,
-            thresh=self.threshold,
-            window=self.window,
-            min_periods=self.min_periods,
-        )
 
 
 class QualityAssessmentFlagBuilder:
