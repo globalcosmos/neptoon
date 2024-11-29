@@ -191,6 +191,12 @@ class WhatParamsDoINeed:
     method : SaQCMethodMap
         The quality assessment method to investigate
 
+    Example
+    -------
+    >>> from neptoon.quality_control import WhatParamsDoINeed, QAMethod
+    >>>
+    >>> WhatParamsDoINeed(QAMethod.RANGE_CHECK)
+
     """
 
     def __init__(self, method: QAMethod):
@@ -199,7 +205,9 @@ class WhatParamsDoINeed:
         self.show_all_params()
 
     def show_required_params(self):
-        """Display essential parameters for the method."""
+        """
+        Display essential parameters for the method.
+        """
         print(f"\nRequired parameters for {self.method}:")
         print("-" * 50)
         for param in self._param_class.essential_params:
@@ -208,7 +216,9 @@ class WhatParamsDoINeed:
             print(f"    {param.description}")
 
     def show_optional_params(self):
-        """Display optional parameters for the method."""
+        """
+        Display optional parameters for the method.
+        """
         print(f"\nOptional parameters for {self.method}:")
         print("-" * 50)
         for param in self._param_class.optional_params:
@@ -218,13 +228,17 @@ class WhatParamsDoINeed:
             print(f"    {param.description}")
 
     def show_link_to_site(self):
-        """Adds a link to the SaQC documentation"""
+        """
+        Adds a link to the SaQC documentation
+        """
         print(f"\nFurther information about {self.method}:")
         print("-" * 50)
         print(self._param_class.saqc_web)
 
     def show_all_params(self):
-        """Display the params for the method."""
+        """
+        Display the params for the method.
+        """
         self.show_required_params()
         self.show_optional_params()
         self.show_link_to_site()

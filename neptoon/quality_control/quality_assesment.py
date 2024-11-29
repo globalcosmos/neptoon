@@ -105,14 +105,50 @@ class QualityCheck:
         return ParameterRegistry.get_parameter_class(self.method)
 
     def _convert_to_saqc_names(self, parameters):
-        # check if obj or dict
-        # get optional info
-        # if obj convert to dict
+        """
+        Converts parameter names from neptoon style to saqc, ready for
+        use.
 
-        # check method and pull mapping class
-        # map keys from dict to match SaQC method
-        # save
-        return parameters  # TEMP
+        Parameters
+        ----------
+        parameters : dict
+            Dictionary containing parameters
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+        # Get essential parameter conversions
+        essential_params = getattr(
+            self.possible_parameters, "essential_params", []
+        )
+        name_mapping_essential = {
+            param.name: param.saqc_name for param in essential_params
+        }
+        converted_essential = {
+            name_mapping_essential[param_name]: param_value
+            for param_name, param_value in parameters.items()
+            if param_name in name_mapping_essential
+        }
+
+        # Get optional parameter conversions
+        optional_params = getattr(
+            self.possible_parameters, "optional_params", []
+        )
+        name_mapping_optional = {
+            param.name: param.saqc_name for param in optional_params
+        }
+        converted_optional = {
+            name_mapping_optional[param_name]: param_value
+            for param_name, param_value in parameters.items()
+            if param_name in name_mapping_optional
+        }
+
+        # Combine both parameter sets
+        converted_essential.update(converted_optional)
+        converted_essential["field"] = parameters["column_name"]
+        return converted_essential
 
     def _validate_essential_params_present(self):
         """
@@ -224,11 +260,11 @@ class QualityCheck:
                 field=self.param_dict["column_name"], func=func
             )
 
-    def apply(self):
-        saqc_method = getattr(SaQC, self.method.value[0])
+    def apply(self, qc: SaQC):
+        saqc_method = getattr(qc, self.method.value[0])
         if self.method.value == "flagGeneric":
             return self._return_lambda_func()
-        return saqc_method(**self.param_set)
+        return saqc_method(**self.saqc_param_dict)
 
 
 class QualityAssessmentFlagBuilder:
