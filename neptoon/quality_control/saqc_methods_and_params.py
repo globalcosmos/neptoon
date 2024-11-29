@@ -1,6 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 from typing import Union, Dict, Optional, Any, Set, Type
+from neptoon.columns import ColumnInfo
 
 
 class QAMethod(Enum):
@@ -35,11 +36,11 @@ class QATarget(Enum):
     The target data for the quality assessment selection.
     """
 
-    RAW_NEUTRONS = "raw_neutrons"
-    CORRECTED_NEUTRONS = "corrected_neutrons"
-    RELATIVE_HUMIDITY = "relative_humidity"
-    AIR_PRESSURE = "air_pressure"
-    TEMPERATURE = "temperature"
+    RAW_NEUTRONS = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL)
+    CORRECTED_NEUTRONS = str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+    RELATIVE_HUMIDITY = str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
+    AIR_PRESSURE = str(ColumnInfo.Name.AIR_PRESSURE)
+    TEMPERATURE = str(ColumnInfo.Name.AIR_TEMPERATURE)
     CUSTOM = "custom"
 
 

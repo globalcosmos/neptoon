@@ -92,14 +92,15 @@ class QualityCheck:
         self.possible_parameters = self._get_possible_parameters()
         self._validate_essential_params_present()
         self._validate_if_unknown_params_supplied()
-        self.param_dict = self._check_param_dict(parameters=parameters)
         self._set_column_name()
-        # self._validate_supplied_params()
+        self.saqc_param_dict = self._convert_to_saqc_names(
+            parameters=parameters
+        )
 
     def _get_possible_parameters(self):
         return ParameterRegistry.get_parameter_class(self.method)
 
-    def _check_param_dict(self, parameters):
+    def _convert_to_saqc_names(self, parameters):
         # check if obj or dict
         # get optional info
         # if obj convert to dict
@@ -152,10 +153,12 @@ class QualityCheck:
     def _set_column_name(self):
         # if QATarget == Custom require target_column in raw_params
 
-        # check name in param_dict
-        # if default check target
-        # assign default name in param_dict
-        pass
+        if (
+            "column_name" not in self.parameters.keys()
+            or self.parameters["column_name"] == "standard"
+            or self.parameters["column_name"] == "default"
+        ):
+            self.parameters["column_name"] = self.target.value
 
     def _neutron_checks(self):
 

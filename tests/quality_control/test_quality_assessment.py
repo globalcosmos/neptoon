@@ -43,16 +43,16 @@ def test_quality_check_validation():
         raw_params={"lower_bound": 500, "upper_bound": 550},
     )
     with pytest.raises(ValidationError):
-        check = QualityCheck(
+        QualityCheck(
             target=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
             method=QAMethod.RANGE_CHECK,
             raw_params={"lower_bound": 500},
         )
 
 
-def test_wrong_param_supplied(df):
+def test_wrong_param_supplied():
     with pytest.raises(ValidationError):
-        check = QualityCheck(
+        QualityCheck(
             target=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
             method=QAMethod.RANGE_CHECK,
             raw_params={
@@ -61,6 +61,58 @@ def test_wrong_param_supplied(df):
                 "crazy_param": 550,
             },
         )
+
+
+def test_column_assignment_quality_check():
+    check = QualityCheck(
+        target=QATarget.AIR_PRESSURE,
+        method=QAMethod.RANGE_CHECK,
+        raw_params={
+            "lower_bound": 500,
+            "upper_bound": 550,
+        },
+    )
+    assert "column_name" in check.parameters.keys()
+
+
+def test_column_assignment_quality_check():
+    check1 = QualityCheck(
+        target=QATarget.AIR_PRESSURE,
+        method=QAMethod.RANGE_CHECK,
+        raw_params={
+            "column_info": "default",
+            "lower_bound": 500,
+            "upper_bound": 550,
+        },
+    )
+    check2 = QualityCheck(
+        target=QATarget.AIR_PRESSURE,
+        method=QAMethod.RANGE_CHECK,
+        raw_params={
+            "column_info": "standard",
+            "lower_bound": 500,
+            "upper_bound": 550,
+        },
+    )
+    assert check1.parameters["column_name"] == str(
+        ColumnInfo.Name.AIR_PRESSURE
+    )
+    assert check2.parameters["column_name"] == str(
+        ColumnInfo.Name.AIR_PRESSURE
+    )
+
+
+def test_column_assignment_quality_check():
+    check = QualityCheck(
+        target=QATarget.AIR_PRESSURE,
+        method=QAMethod.RANGE_CHECK,
+        raw_params={
+            "column_name": "something_else",
+            "lower_bound": 500,
+            "upper_bound": 550,
+        },
+    )
+    assert check.parameters["column_name"] == "something_else"
 
 
 def test_date_time_index_validator():
