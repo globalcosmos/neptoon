@@ -1,11 +1,16 @@
 from saqc import SaQC
 import pandas as pd
+from dataclasses import dataclass
 from abc import abstractmethod, ABC
-from typing import Union
-
+from typing import Union, Dict, Type, TYPE_CHECKING, Optional, Any, Set
+from enum import Enum
 from neptoon.logging import get_logger
 from neptoon.data_audit import log_key_step
 from neptoon.columns import ColumnInfo
+from neptoon.quality_control.saqc_methods_and_params import *
+
+if TYPE_CHECKING:
+    from neptoon.config.configuration_input import ConfigurationObject
 
 core_logger = get_logger()
 
@@ -47,27 +52,165 @@ class DateTimeIndexValidator:
             raise ValueError("The DataFrame index must be of datetime type")
 
 
-class QualityCheck(ABC):
+class ValidationError(Exception):
+    """Custom exception for validation errors."""
+
+    pass
+
+
+class QualityCheck:
     """
-    Base method for quality check wrappers.
+    Creates quality check.
+
+    Examples
+    --------
+    Create a quality check that flags neutron intensity values outside the range 500-550:
+
+    >>> from neptoon.column_info import ColumnInfo
+    >>> from neptoon.quality_control import QualityCheck, QAMethod
+    >>>
+    >>> check = QualityCheck(
+    ...     target=QATarget.RAW_NEUTRONS,
+    ...     method=QAMethod.RANGE_CHECK,
+    ...     params={
+    ...         "lower_bound": 500,
+    ...         "upper_bound": 550,
+    ...     },
+    ... )
     """
 
-    @abstractmethod
-    def apply(self, qc):
+    @log_key_step("target", "method", "raw_params")
+    def __init__(
+        self,
+        target: QATarget,
+        method: QAMethod,
+        parameters: Union[dict, "ConfigurationObject"],
+    ):
+        self.target = target
+        self.method = method
+        self.parameters = parameters
+        self.possible_parameters = self._get_possible_parameters()
+        self._validate_essential_params_present()
+        self._validate_if_unknown_params_supplied()
+        self.param_dict = self._create_param_dict(raw_params=raw_params)
+        self._set_column_name()
+        # self._validate_supplied_params()
+
+    def _get_possible_parameters(self):
+        return ParameterRegistry.get_parameter_class(self.method)
+
+    def _create_param_dict(self, raw_params):
+        # check if obj or dict
+        # get optional info
+        # if obj convert to dict
+
+        # check method and pull mapping class
+        # map keys from dict to match SaQC method
+        # save
+        self.param_set = raw_params
+
+    def _validate_essential_params_present(self):
         """
-        Apply the flagging
+        Checks if essential parameter are supplied.
+
+        Raises
+        ------
+        ValidationError
+            When essential parameter is missing.
+        """
+        for param in self.possible_parameters.essential_params:
+            param_name = param.name
+            if param_name not in self.parameters:
+                raise ValidationError(
+                    f"Essential parameter missing from raw_params: {param}"
+                )
+
+    def _validate_if_unknown_params_supplied(self):
+        """
+        Checks if unknown parameter is supplied.
+
+        Raises
+        ------
+        ValidationError
+            When unknown parameter is supplied.
+        """
+        possible_params = [
+            param.name
+            for params in (
+                self.possible_parameters.essential_params,
+                self.possible_parameters.optional_params,
+            )
+            for param in params
+        ]
+
+        invalid_params = set(self.parameters.keys()) - set(possible_params)
+        if invalid_params:
+            raise ValidationError(
+                f"Invalid parameters provided: {', '.join(invalid_params)}"
+            )
+
+    def _set_column_name(self):
+        # if QATarget == Custom require target_column in raw_params
+
+        # check name in param_dict
+        # if default check target
+        # assign default name in param_dict
+        pass
+
+    def _neutron_checks(self):
+
+        pass
+
+    def _create_n0_lambda(self, method: QAMethod, params: dict):
+        """
+        Creates appropriate lambda function for N0-based checks using
+        supplied parameters.
 
         Parameters
         ----------
-        qc : SaQC
-            SaQC to flag with
+        method : QAMethod
+            The quality assessment method being used
+        params : dict
+            Dictionary containing the required parameters for lambda
+            creation
 
         Returns
         -------
-        qc : SaQC
-            SaQC after flagging
+        Callable
+            A lambda function configured with the supplied parameters
         """
-        pass
+        if method == QAMethod.ABOVE_N0:
+            if "N0" not in params or "percent_maximum" not in params:
+                raise ValueError(
+                    "N0 and percent_maximum required for ABOVE_N0 check"
+                )
+            N0 = params["N0"]
+            percent_maximum = params["percent_maximum"]
+            return lambda x: x > (N0 * percent_maximum)
+
+        elif method == QAMethod.BELOW_N0_FACTOR:
+            if "N0" not in params or "percent_minimum" not in params:
+                raise ValueError(
+                    "N0 and percent_minimum required for BELOW_N0_FACTOR check"
+                )
+            N0 = params["N0"]
+            percent_minimum = params["percent_minimum"]
+            return lambda x: x < (N0 * percent_minimum)
+
+        else:
+            raise ValueError(
+                f"Method {method} does not use N0 lambda functions"
+            )
+
+    def apply(self):
+        saqc_method = getattr(SaQC, self.method.value[0])
+        if self.method.value == "flagGeneric":  # special case
+            if self.method in [QAMethod.ABOVE_N0, QAMethod.BELOW_N0_FACTOR]:
+                func = self._create_n0_lambda(self.method, self.param_dict)
+                return SaQC.flagGeneric(
+                    field=self.param_dict["column_name"], func=func
+                )
+        return saqc_method(**self.param_set)
 
 
 class FlagRangeCheck(QualityCheck):

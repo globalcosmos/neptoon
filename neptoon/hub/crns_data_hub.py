@@ -24,7 +24,7 @@ from neptoon.quality_control.data_validation_tables import (
     FormatCheck,
 )
 
-from neptoon.quality_control.quality_assesment import (
+from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )

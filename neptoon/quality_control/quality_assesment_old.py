@@ -1,9 +1,8 @@
 from saqc import SaQC
 import pandas as pd
-from dataclasses import dataclass
 from abc import abstractmethod, ABC
-from typing import Union, Dict, Any, Set
-from enum import Enum
+from typing import Union
+
 from neptoon.logging import get_logger
 from neptoon.data_audit import log_key_step
 from neptoon.columns import ColumnInfo
@@ -46,105 +45,6 @@ class DateTimeIndexValidator:
         if not pd.api.types.is_datetime64_any_dtype(data_frame.index):
             core_logger.error("DataFrame index not datetime type")
             raise ValueError("The DataFrame index must be of datetime type")
-
-
-class ValidationError(Exception):
-    """Simple validation error"""
-
-    pass
-
-
-class SaQCMethodMap(Enum):
-    RANGE_CHECK = "flagRange"
-    SPIKE_UNIOLOF = "flagUniLOF"
-
-
-class QAStage(Enum):
-    RAW_NEUTRON = "raw_neutrons"
-    INPUT_VARIABLES = "input_variables"
-    CORRECTED_NEUTRONS = "corrected_neutrons"
-    DERIVED_PRODUCTS = "derived_products"
-
-
-class Params(ABC):
-
-    def __init__(
-        self,
-        params_dict: Dict[str, Any],
-    ):
-        self.params_dict = params_dict
-        self._validate_params()
-
-    # Child classes must define these
-    ESSENTIAL_PARAMS: list[str] = []
-    OPTIONAL_PARAMS: list[str] = []
-
-    def _validate_params(self) -> None:
-        """
-        Check params against essential and optional lists
-        """
-        missing = set(self.ESSENTIAL_PARAMS) - set(self.params_dict.keys())
-        if missing:
-            raise ValidationError(f"Missing essential parameters: {missing}")
-
-        allowed = set(self.ESSENTIAL_PARAMS + self.OPTIONAL_PARAMS)
-        unknown = set(self.params_dict.keys()) - allowed
-        if unknown:
-            raise ValidationError(f"Unknown parameters provided: {unknown}")
-
-
-@dataclass
-class RangeCheckParams(Params):
-
-    min: float
-    max: float
-    column_name: str
-
-
-@dataclass
-class UniLofParams(Params):
-    min: float
-    max: float
-    column_name: str
-
-
-class QualityCheck:
-    """
-    Creates quality check.
-
-    A class above this would create the check by mapping the
-    yaml/supplied info to the created enums:
-
-    flag_raw_neutrons: <-- QAStage
-        spikes: <-- this is SaQCMethodMap
-            col_name: default               |
-            method: UniLOF                  |
-            periods_in_calculation: 24      | <-- params
-            threshold: 1.2                  |
-    """
-
-    PARAM_MAPPING = {
-        SaQCMethodMap.RANGE_CHECK: RangeCheckParams,
-        SaQCMethodMap.SPIKE_UNIOLOF: UniLofParams,
-    }
-
-    def __init__(
-        self,
-        stage,
-        method: SaQCMethodMap,
-        raw_params: str,  # obj
-    ):
-        self.method = method
-        self.raw_params = raw_params
-        self.param_dict = self._create_param_dict(raw_params=raw_params)
-
-    def _create_param_dict(self, raw_params):
-        # based on method, know how to set params
-        pass
-
-    def apply(self):
-        method = getattr(SaQC, method.value)
-        return method(**self.param_set)
 
 
 class QualityCheck(ABC):

@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 import pandas as pd
 from saqc import SaQC
-from neptoon.quality_control.quality_assesment import (
+from neptoon.quality_control.quality_assesment_old import (
     DateTimeIndexValidator,
     QualityCheck,
     FlagRangeCheck,
@@ -10,6 +10,57 @@ from neptoon.quality_control.quality_assesment import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
+from neptoon.quality_control.quality_assesment import *
+
+
+@pytest.fixture
+def df():
+    df = pd.DataFrame(
+        {
+            "range": [
+                400,
+                500,
+                400,
+                300,
+                500,
+            ],
+            "spike": [
+                1010,
+                2000,
+                2300,
+                2300,
+                8000,
+            ],
+        }
+    )
+    return df
+
+
+def test_quality_check_validation():
+    assert QualityCheck(
+        target=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
+        method=QAMethod.RANGE_CHECK,
+        raw_params={"lower_bound": 500, "upper_bound": 550},
+    )
+    with pytest.raises(ValidationError):
+        check = QualityCheck(
+            target=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
+            method=QAMethod.RANGE_CHECK,
+            raw_params={"lower_bound": 500},
+        )
+
+
+def test_wrong_param_supplied(df):
+    with pytest.raises(ValidationError):
+        check = QualityCheck(
+            target=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
+            method=QAMethod.RANGE_CHECK,
+            raw_params={
+                "lower_bound": 500,
+                "upper_bound": 550,
+                "crazy_param": 550,
+            },
+        )
 
 
 def test_date_time_index_validator():
