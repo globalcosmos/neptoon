@@ -182,23 +182,6 @@ class UniLOFParameters(MethodParameters):
     }
 
 
-class ParameterDiscovery:
-    """
-    Central registry for method parameter specifications and discovery.
-
-    This class maintains the mapping between quality assessment methods
-    and their parameter requirements, providing a clean interface for
-    parameter discovery and validation.
-    """
-
-    _method_params: Dict[QAMethod, type] = {
-        QAMethod.RANGE_CHECK: RangeCheckParameters,
-        QAMethod.SPIKE_UNILOF: UniLOFParameters,
-        QAMethod.BELOW_N0_FACTOR: BelowFactorofN0Parameters,
-        QAMethod.ABOVE_N0: AboveN0Parameters,
-    }
-
-
 class WhatParamsDoINeed:
     """
     Helper class for discovering parameter requirements for QA methods.
@@ -218,7 +201,7 @@ class WhatParamsDoINeed:
 
     def __init__(self, method: QAMethod):
         self.method = method
-        self._param_class = ParameterDiscovery._method_params[method]
+        self._param_class = ParameterRegistry.get_parameter_class(method)
         self.show_all_params()
 
     def show_required_params(self):
