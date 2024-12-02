@@ -200,52 +200,7 @@ class QualityCheck:
         ):
             self.parameters["column_name"] = self.target.value
 
-    def _create_n0_lambda(
-        self,
-        method: QAMethod,
-        params: dict,
-    ):
-        """
-        Creates appropriate lambda function for N0-based checks using
-        supplied parameters.
-
-        Parameters
-        ----------
-        method : QAMethod
-            The quality assessment method being used
-        params : dict
-            Dictionary containing the required parameters for lambda
-            creation
-
-        Returns
-        -------
-        Callable
-            A lambda function configured with the supplied parameters
-        """
-        if method == QAMethod.ABOVE_N0:
-            if "N0" not in params or "percent_maximum" not in params:
-                raise ValueError(
-                    "N0 and percent_maximum required for ABOVE_N0 check"
-                )
-            N0 = params["N0"]
-            percent_maximum = params["percent_maximum"]
-            return lambda x: x > (N0 * percent_maximum)
-
-        elif method == QAMethod.BELOW_N0_FACTOR:
-            if "N0" not in params or "percent_minimum" not in params:
-                raise ValueError(
-                    "N0 and percent_minimum required for BELOW_N0_FACTOR check"
-                )
-            N0 = params["N0"]
-            percent_minimum = params["percent_minimum"]
-            return lambda x: x < (N0 * percent_minimum)
-
-        else:
-            raise ValueError(
-                f"Method {method} does not use N0 lambda functions"
-            )
-
-    def _return_lambda_func(self):
+    def _set_new_saqc_dict_for_n0(self):
         """
         Lambda funcs used for QA of corrected neutrons.
 
@@ -254,16 +209,28 @@ class QualityCheck:
         func
             returns the complete lambda func
         """
-        if self.method in [QAMethod.ABOVE_N0, QAMethod.BELOW_N0_FACTOR]:
-            func = self._create_n0_lambda(self.method, self.param_dict)
-            return SaQC.flagGeneric(
-                field=self.param_dict["column_name"], func=func
+        if self.method == QAMethod.ABOVE_N0:
+            field = self.saqc_param_dict["field"]
+            max = (
+                self.saqc_param_dict["N0"]
+                * self.saqc_param_dict["percent_maximum"]
             )
+
+            new_dict = {"field": field, "max": max}
+        elif self.method == QAMethod.BELOW_N0_FACTOR:
+            field = self.saqc_param_dict["field"]
+            min = (
+                self.saqc_param_dict["N0"]
+                * self.saqc_param_dict["percent_minimum"]
+            )
+            new_dict = {"field": field, "min": min}
+
+        self.saqc_param_dict = new_dict
 
     def apply(self, qc: SaQC):
         saqc_method = getattr(qc, self.method.value[0])
-        if self.method.value == "flagGeneric":
-            return self._return_lambda_func()
+        if self.method in [QAMethod.ABOVE_N0, QAMethod.BELOW_N0_FACTOR]:
+            self._set_new_saqc_dict_for_n0()
         return saqc_method(**self.saqc_param_dict)
 
 

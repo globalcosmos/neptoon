@@ -17,8 +17,8 @@ class QAMethod(Enum):
     RANGE_CHECK = ("flagRange", None)
     SPIKE_UNILOF = ("flagUniLOF", None)
     CONSTANT = ("flagConstants", None)
-    ABOVE_N0 = ("flagGeneric", "above_n0")
-    BELOW_N0_FACTOR = ("flagGeneric", "below_n0")
+    ABOVE_N0 = ("flagRange", "above_n0")
+    BELOW_N0_FACTOR = ("flagRange", "below_n0")
 
     @property
     def saqc_method(self) -> str:
@@ -36,8 +36,10 @@ class QATarget(Enum):
     The target data for the quality assessment selection.
     """
 
-    RAW_NEUTRONS = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL)
-    CORRECTED_NEUTRONS = str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+    RAW_EPI_NEUTRONS = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL)
+    CORRECTED_EPI_NEUTRONS = str(
+        ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+    )
     RELATIVE_HUMIDITY = str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
     AIR_PRESSURE = str(ColumnInfo.Name.AIR_PRESSURE)
     TEMPERATURE = str(ColumnInfo.Name.AIR_TEMPERATURE)
@@ -84,6 +86,21 @@ class AboveN0Parameters(MethodParameters):
 
     saqc_web = "https://rdm-software.pages.ufz.de/saqc/_api/saqc.SaQC.html#saqc.SaQC.flagGeneric"
 
+    essential_params: Set[ParameterSpec] = {
+        ParameterSpec(
+            name="N0",
+            description="The N0 calibration number",
+            units="neutron counts per hour",
+            saqc_name="N0",
+        ),
+        ParameterSpec(
+            name="percent_maximum",
+            description="Fraction above N0 to flag. Commonly set to 1.075",
+            units="decimal",
+            saqc_name="percent_maximum",
+        ),
+    }
+
 
 class BelowFactorofN0Parameters(MethodParameters):
     """Parameter specifications for below N0 factor check method."""
@@ -93,15 +110,15 @@ class BelowFactorofN0Parameters(MethodParameters):
     essential_params: Set[ParameterSpec] = {
         ParameterSpec(
             name="N0",
-            description="The derived N0 calibration number",
+            description="The N0 calibration number",
             units="neutron counts per hour",
-            saqc_name=None,
+            saqc_name="N0",
         ),
         ParameterSpec(
             name="percent_minimum",
-            description="fraction of N0 below which to flag",
+            description="The fraction of N0 below which to flag",
             units="decimal",
-            saqc_name=None,
+            saqc_name="percent_minimum",
         ),
     }
 
@@ -255,7 +272,9 @@ class ParameterRegistry:
 
     _registry: Dict[QAMethod, Type[MethodParameters]] = {
         QAMethod.RANGE_CHECK: RangeCheckParameters,
-        # SaQCMethodMap.SPIKE_UNILOF: UniLofParams,
+        QAMethod.ABOVE_N0: AboveN0Parameters,
+        QAMethod.BELOW_N0_FACTOR: BelowFactorofN0Parameters,
+        QAMethod.SPIKE_UNILOF: UniLOFParameters,
     }
 
     @classmethod
