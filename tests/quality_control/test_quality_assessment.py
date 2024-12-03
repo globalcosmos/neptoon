@@ -2,15 +2,17 @@ import pytest
 from unittest.mock import MagicMock
 import pandas as pd
 from saqc import SaQC
-from neptoon.quality_control.quality_assesment_old import (
-    DateTimeIndexValidator,
+
+from neptoon.quality_control.quality_assesment import (
+    QAMethod,
+    QATarget,
+    ValidationError,
     QualityCheck,
-    FlagRangeCheck,
-    FlagSpikeDetectionUniLOF,
-    QualityAssessmentFlagBuilder,
+    DateTimeIndexValidator,
     DataQualityAssessor,
 )
-from neptoon.quality_control.quality_assesment import *
+from datetime import datetime
+from neptoon.columns import ColumnInfo
 
 
 @pytest.fixture
@@ -37,16 +39,12 @@ def df():
 
 
 def test_quality_check_validation():
-    assert QualityCheck(
-        target=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
-        method=QAMethod.RANGE_CHECK,
-        raw_params={"lower_bound": 500, "upper_bound": 550},
-    )
+
     with pytest.raises(ValidationError):
         QualityCheck(
             target=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
             method=QAMethod.RANGE_CHECK,
-            raw_params={"lower_bound": 500},
+            parameters={"min": 500},
         )
 
 
@@ -55,64 +53,38 @@ def test_wrong_param_supplied():
         QualityCheck(
             target=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
             method=QAMethod.RANGE_CHECK,
-            raw_params={
-                "lower_bound": 500,
-                "upper_bound": 550,
+            parameters={
+                "min": 500,
+                "max": 550,
                 "crazy_param": 550,
             },
         )
 
 
-def test_column_assignment_quality_check():
+def test_column_assignment_quality_check_1():
     check = QualityCheck(
         target=QATarget.AIR_PRESSURE,
         method=QAMethod.RANGE_CHECK,
-        raw_params={
-            "lower_bound": 500,
-            "upper_bound": 550,
+        parameters={
+            "min": 500,
+            "max": 550,
         },
     )
     assert "column_name" in check.parameters.keys()
 
 
-def test_column_assignment_quality_check():
+def test_column_assignment_quality_check_2():
     check1 = QualityCheck(
         target=QATarget.AIR_PRESSURE,
         method=QAMethod.RANGE_CHECK,
-        raw_params={
-            "column_info": "default",
-            "lower_bound": 500,
-            "upper_bound": 550,
-        },
-    )
-    check2 = QualityCheck(
-        target=QATarget.AIR_PRESSURE,
-        method=QAMethod.RANGE_CHECK,
-        raw_params={
-            "column_info": "standard",
-            "lower_bound": 500,
-            "upper_bound": 550,
+        parameters={
+            "min": 500,
+            "max": 550,
         },
     )
     assert check1.parameters["column_name"] == str(
         ColumnInfo.Name.AIR_PRESSURE
     )
-    assert check2.parameters["column_name"] == str(
-        ColumnInfo.Name.AIR_PRESSURE
-    )
-
-
-def test_column_assignment_quality_check():
-    check = QualityCheck(
-        target=QATarget.AIR_PRESSURE,
-        method=QAMethod.RANGE_CHECK,
-        raw_params={
-            "column_name": "something_else",
-            "lower_bound": 500,
-            "upper_bound": 550,
-        },
-    )
-    assert check.parameters["column_name"] == "something_else"
 
 
 def test_date_time_index_validator():
@@ -144,70 +116,131 @@ def test_date_time_index_validator_with_date():
     DateTimeIndexValidator(df)
 
 
-def test_quality_check_cannot_be_instantiated():
-    with pytest.raises(TypeError):
-        QualityCheck()
+@pytest.fixture
+def test_df():
 
-
-def test_flag_range_check():
-    qc = MagicMock(spec=SaQC)
-    flag_range_check = FlagRangeCheck(column="A", min_val=0, max_val=10)
-    flag_range_check.apply(qc)
-    qc.flagRange.assert_called_with(field="A", min=0, max=10)
-
-
-def test_flag_spike_detection_uni_lof():
-    qc = MagicMock(spec=SaQC)
-    flag_spike_detection = FlagSpikeDetectionUniLOF(
-        column_name="A", periods_in_calculation=24, threshold=1.5
+    start_date = datetime.now().replace(
+        hour=0, minute=0, second=0, microsecond=0
     )
-    flag_spike_detection.apply(qc)
-    qc.flagUniLOF.assert_called_with("A", n=24, thresh=1.5)
+    date_range = pd.date_range(start=start_date, periods=5, freq="h")
+
+    test_df = pd.DataFrame(
+        {
+            str(ColumnInfo.Name.AIR_PRESSURE): [555, 546, 515, 496, 500],
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): [
+                56,
+                60,
+                70,
+                60,
+                45,
+            ],
+        },
+        index=date_range,
+    )
+    return test_df
 
 
-def test_quality_assessment_flag_builder():
-    qc = MagicMock(spec=SaQC)
-    builder = QualityAssessmentFlagBuilder()
+def test_quality_assessment(test_df):
 
-    # Add a FlagRangeCheck
-    flag_range_check = FlagRangeCheck(column="A", min_val=0, max_val=10)
-    builder.add_check(flag_range_check)
+    check1 = QualityCheck(
+        target=QATarget.AIR_PRESSURE,
+        method=QAMethod.RANGE_CHECK,
+        parameters={
+            "min": 500,
+            "max": 550,
+        },
+    )
 
-    # Apply checks
-    builder.apply_checks(qc)
-    qc.flagRange.assert_called_with(field="A", min=0, max=10)
+    qa = DataQualityAssessor(data_frame=test_df)
+    qa.add_quality_check(check1)
 
+    qa.apply_quality_assessment()
 
-def test_quality_assessment_flag_builder_multiple():
-    qc = MagicMock(spec=SaQC)
-    builder = QualityAssessmentFlagBuilder()
-
-    # Add a FlagRangeCheck
-    flag_range_check = [
-        FlagRangeCheck(column="A", min_val=0, max_val=10),
-        FlagSpikeDetectionUniLOF("A"),
+    result_df = qa.return_flags_data_frame()
+    expected_flags = [
+        "BAD",
+        "UNFLAGGED",
+        "UNFLAGGED",
+        "BAD",
+        "UNFLAGGED",
     ]
-    builder.add_check(flag_range_check)
+    actual_flags = result_df[str(ColumnInfo.Name.AIR_PRESSURE)].tolist()
 
-    # Apply checks
-    builder.apply_checks(qc)
-    # Should run with no errors
+    assert (
+        actual_flags == expected_flags
+    ), f"Expected {expected_flags}, but got {actual_flags}"
 
 
-def test_data_quality_assessor_scheme_change():
-    df = pd.DataFrame(
-        {"A": [1, 2, 3]}, index=pd.date_range("2023-01-01", periods=3)
+def test_quality_assessment_multi(test_df):
+
+    check1 = QualityCheck(
+        target=QATarget.AIR_PRESSURE,
+        method=QAMethod.RANGE_CHECK,
+        parameters={
+            "min": 500,
+            "max": 550,
+        },
     )
-    dqa = DataQualityAssessor(data_frame=df)
 
-    # Test default SaQC scheme
-    assert dqa.saqc_scheme == "simple"
+    check2 = QualityCheck(
+        target=QATarget.CORRECTED_EPI_NEUTRONS,
+        method=QAMethod.RANGE_CHECK,
+        parameters={
+            "min": 50,
+            "max": 65,
+        },
+    )
 
-    dqa.change_saqc_scheme("float")
+    qa = DataQualityAssessor(data_frame=test_df)
+    qa.add_quality_check(check1)
+    qa.add_quality_check(check2)
 
-    # Test changing scheme
-    assert dqa.saqc_scheme == "float"
+    qa.apply_quality_assessment()
 
-    # Test wrong scheme given
-    with pytest.raises(TypeError):
-        dqa.change_saqc_scheme("wrong_scheme")
+    result_df = qa.return_flags_data_frame()
+    print(result_df)
+    expected_flags1 = [
+        "BAD",
+        "UNFLAGGED",
+        "UNFLAGGED",
+        "BAD",
+        "UNFLAGGED",
+    ]
+    expected_flags2 = [
+        "UNFLAGGED",
+        "UNFLAGGED",
+        "BAD",
+        "UNFLAGGED",
+        "BAD",
+    ]
+    actual_flag1 = result_df[str(ColumnInfo.Name.AIR_PRESSURE)].tolist()
+    actual_flag2 = result_df[
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+    ].tolist()
+
+    assert (
+        actual_flag1 == expected_flags1
+    ), f"Expected {expected_flags1}, but got {actual_flag1}"
+
+    assert (
+        actual_flag2 == expected_flags2
+    ), f"Expected {expected_flags2}, but got {actual_flag2}"
+
+
+# def test_data_quality_assessor_scheme_change():
+#     df = pd.DataFrame(
+#         {"A": [1, 2, 3]}, index=pd.date_range("2023-01-01", periods=3)
+#     )
+#     dqa = DataQualityAssessor(data_frame=df)
+
+#     # Test default SaQC scheme
+#     assert dqa.saqc_scheme == "simple"
+
+#     dqa.change_saqc_scheme("float")
+
+#     # Test changing scheme
+#     assert dqa.saqc_scheme == "float"
+
+#     # Test wrong scheme given
+#     with pytest.raises(TypeError):
+#         dqa.change_saqc_scheme("wrong_scheme")

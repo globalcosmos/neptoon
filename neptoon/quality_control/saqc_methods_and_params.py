@@ -1,6 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass
-from typing import Union, Dict, Optional, Any, Set, Type
+from typing import Dict, Optional, Any, Set, Type
 from neptoon.columns import ColumnInfo
 
 
@@ -130,13 +130,13 @@ class RangeCheckParameters(MethodParameters):
 
     essential_params = {
         ParameterSpec(
-            name="lower_bound",
+            name="min",
             description="Minimum acceptable value",
             units="data units",
             saqc_name="min",
         ),
         ParameterSpec(
-            name="upper_bound",
+            name="max",
             description="Maximum acceptable value",
             units="data units",
             saqc_name="max",

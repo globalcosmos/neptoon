@@ -1,16 +1,14 @@
 from saqc import SaQC
 import pandas as pd
-from dataclasses import dataclass
-from abc import abstractmethod, ABC
-from typing import Union, Dict, Type, TYPE_CHECKING, Optional, Any, Set
-from enum import Enum
 from neptoon.logging import get_logger
 from neptoon.data_audit import log_key_step
-from neptoon.columns import ColumnInfo
-from neptoon.quality_control.saqc_methods_and_params import *
+from neptoon.quality_control.saqc_methods_and_params import (
+    QAMethod,
+    QATarget,
+    ParameterRegistry,
+)
+from neptoon.quality_control.saqc_methods_and_params import WhatParamsDoINeed
 
-if TYPE_CHECKING:
-    from neptoon.config.configuration_input import ConfigurationObject
 
 core_logger = get_logger()
 
