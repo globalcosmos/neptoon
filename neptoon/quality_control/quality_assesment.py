@@ -86,7 +86,7 @@ class QualityCheck:
         self,
         target: QATarget,
         method: QAMethod,
-        parameters: dict,
+        parameters: dict = {},
     ):
         self.target = target
         self.method = method

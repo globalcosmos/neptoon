@@ -3,4 +3,7 @@ from .quality_assesment import (
     QualityCheck,
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
+    QAMethod,
+    QATarget,
+    WhatParamsDoINeed,
 )
