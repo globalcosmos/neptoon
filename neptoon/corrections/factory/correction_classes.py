@@ -192,7 +192,9 @@ class IncomingIntensityCorrectionZreda2012(Correction):
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: incoming_intensity_correction(
                 incoming_intensity=row[self.incoming_neutron_column_name],
-                incoming_ref=row[self.reference_incoming_neutron_value],
+                ref_incoming_intensity=row[
+                    self.reference_incoming_neutron_value
+                ],
                 rc_scaling=1,
             ),
             axis=1,
