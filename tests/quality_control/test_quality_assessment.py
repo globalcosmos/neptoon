@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from neptoon.quality_control.quality_assesment import (
+from neptoon.quality_control.quality_assessment import (
     QAMethod,
     QATarget,
     ValidationError,

@@ -1,4 +1,4 @@
-from .quality_assesment import (
+from .quality_assessment import (
     DateTimeIndexValidator,
     QualityCheck,
     QualityAssessmentFlagBuilder,
