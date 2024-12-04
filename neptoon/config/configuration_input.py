@@ -194,7 +194,7 @@ class ValidateConfigurationFile(ABC):
         self.check_sections()
 
 
-class SensorConfigurationValidation(ValidateConfigurationFile):
+class StationConfigurationValidation(ValidateConfigurationFile):
     """
     Validates sensor configuration YAML. Implements the abstract methods
     defined in ValidateConfigurationFile to provide validation logic for
@@ -300,10 +300,6 @@ class ProcessConfigurationValidation(ValidateConfigurationFile):
         # TemporalAggregation(**self.temporal_aggregation)
 
 
-class InputDataFrameConfigurationValidation:
-    pass
-
-
 class ConfigurationManager:
     """
     Configuration Management class. The purpose of this class is to
@@ -343,13 +339,11 @@ class ConfigurationManager:
         name: Literal[
             "station",
             "processing",
-            "global",
-            "input_data",
         ],
         file_path: str,
     ):
         """
-        This class handles loading and validating of YAML configuration
+        Handles loading and validating of YAML configuration
         files. The output is a ConfigurationObject that has been type
         checked
 
@@ -359,10 +353,8 @@ class ConfigurationManager:
             configuration type name
 
             Can be only either:
-            - sensor
+            - station
             - processing
-            - global
-            - input_data
 
         file_path : str
             File path of the configuration YAML file
@@ -377,22 +369,11 @@ class ConfigurationManager:
 
         name_lower = name.lower()
         if name_lower == "station":
-            validation_object = SensorConfigurationValidation(pre_load)
+            validation_object = StationConfigurationValidation(pre_load)
             validation_object.validate_configuration()
         elif name_lower == "processing":
             validation_object = ProcessConfigurationValidation(pre_load)
             validation_object.validate_configuration()
-        elif name_lower == "global":
-            pass
-            # validation_object = GlobalSettingsConfigurationValidataion(
-            #     pre_load
-            # )
-            # validation_object.validate_configuration()
-        elif name_lower == "input_data":
-            pass
-            # validation_object = InputDataFrameConfigurationValidation(pre_load)
-            # validation_object.validate_configuration()
-
         else:
             core_logger.error(
                 "Incompatible name given when configuration file loaded."
@@ -411,8 +392,6 @@ class ConfigurationManager:
         name: Literal[
             "station",
             "processing",
-            "global",
-            "input_data",
         ],
     ):
         """
