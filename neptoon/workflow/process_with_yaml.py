@@ -513,29 +513,6 @@ class QualityAssessmentWithYaml:
         # TODO check for persistance (same vals)
         pass
 
-    def _process_spikes(self, config) -> None:
-        """
-        Helper method to process spike configuration.
-        """
-
-        col_name = (
-            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)
-            if config.col_name == "default"
-            else config.col_name
-        )
-
-        if config.method.lower() == "unilof":
-            self.checks.append(
-                FlagSpikeDetectionUniLOF(
-                    column_name=col_name,
-                    periods_in_calculation=config.periods_in_calculation,
-                    threshold=config.threshold,
-                )
-            )
-        else:
-            message = f"Unsupported spike detection method: {config.method}"
-            core_logger.error(message)
-
     def _flag_corrected_neutrons(self):
         """
         Process to prepare flags for corrected neutron values.
@@ -546,42 +523,6 @@ class QualityAssessmentWithYaml:
                 self._process_greater_than_N0(value)
             elif key == "below_N0_factor":
                 self._process_below_N0_factor(value)
-
-    def _process_greater_than_N0(self, config):
-        """
-        Helper method to process greater_than_N0 configuration.
-        """
-        col_name = (
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
-            if config.col_name == "default"
-            else config.col_name
-        )
-
-        self.checks.append(
-            FlagNeutronGreaterThanN0(
-                N0=self.station_info.general_site_metadata.N0,
-                neutron_col_name=col_name,
-                above_N0_factor=config.above_N0_factor,
-            )
-        )
-
-    def _process_below_N0_factor(self, config):
-        """
-        Helper method to process below_N0_factor configuration.
-        """
-        col_name = (
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
-            if config.col_name == "default"
-            else config.col_name
-        )
-
-        self.checks.append(
-            FlagBelowMinimumPercentN0(
-                N0=self.station_info.general_site_metadata.N0,
-                neutron_col_name=col_name,
-                percent_minimum=config.not_below,
-            )
-        )
 
     def collect_and_return_checks(
         self,

@@ -5,5 +5,6 @@ from .quality_assessment import (
     DataQualityAssessor,
     QAMethod,
     QATarget,
-    WhatParamsDoINeed,
 )
+
+from .saqc_methods_and_params import WhatParamsDoINeed

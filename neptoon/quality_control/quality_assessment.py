@@ -7,7 +7,8 @@ from neptoon.quality_control.saqc_methods_and_params import (
     QATarget,
     ParameterRegistry,
 )
-from neptoon.quality_control.saqc_methods_and_params import WhatParamsDoINeed
+
+# from neptoon.quality_control.saqc_methods_and_params import WhatParamsDoINeed
 
 
 core_logger = get_logger()
