@@ -73,12 +73,24 @@ raw_data_parse_options:
   strip_names: True
   remove_prefix: "//"
 
-extra_quality_assessment:
+input_data_qa:
   air_humidity:
     column_name: standard
     flag_range:
       min: 0
       max: 100
+    persistance_check:
+      threshold:
+      window:
+      min_periods:
+
+  air_pressure:
+    column_name: standard
+
+  custom:
+    column_name: unique_name
+    flag_range:
+      min: 0
 
 calibration_data:
   format: standard #cosmoz, cosmos-usa, cosmos-uk

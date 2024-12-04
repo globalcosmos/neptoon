@@ -15,11 +15,7 @@ from neptoon.io.read.data_ingest import (
     FormatDataForCRNSDataHub,
     validate_and_convert_file_path,
 )
-from neptoon.quality_control import (
-    FlagSpikeDetectionUniLOF,
-    FlagNeutronGreaterThanN0,
-    FlagBelowMinimumPercentN0,
-)
+
 from neptoon.corrections import (
     CorrectionType,
     CorrectionTheory,
@@ -62,92 +58,6 @@ class ProcessWithYaml:
             The required configuration object.
         """
         return self.configuration_object.get_configuration(name=wanted_object)
-
-    def create_data_hub(
-        self,
-        return_data_hub: bool = True,
-    ):
-        """
-        Creates a CRNSDataHub using the supplied information from the
-        YAML config file.
-
-        By default this method will return a configured CRNSDataHub.
-
-        When running the whole process with the run() method, it will
-        save the data hub to an attribute so that it can access it for
-        further steps.
-
-        Parameters
-        ----------
-        return_data_frame : bool, optional
-            Whether to return the CRNSDataHub directly, by default True
-
-        Returns
-        -------
-        CRNSDataHub
-            The CRNSDataHub
-        """
-        # import here to avoid circular dependency
-        from neptoon.hub import CRNSDataHub
-
-        if return_data_hub:
-            return CRNSDataHub(
-                crns_data_frame=self._import_data(),
-                site_information=self._create_site_information(),
-            )
-        else:
-            self.data_hub = CRNSDataHub(
-                crns_data_frame=self._import_data(),
-                site_information=self._create_site_information(),
-            )
-
-    def run_full_process(
-        self,
-    ):
-        """
-        Full process run with YAML file
-
-        Raises
-        ------
-        ValueError
-            When no N0 supplied and no calibration completed.
-        """
-        self.create_data_hub(return_data_hub=False)
-        self._attach_nmdb_data()
-        self._prepare_static_values()
-        # QA raw N spikes
-        self._apply_quality_assessment(
-            name_of_section="flag_raw_neutrons",
-            partial_config=(
-                self.process_info.neutron_quality_assessment.flag_raw_neutrons
-            ),
-        )
-        # QA meteo
-        # TODO
-
-        self._select_corrections()
-        self._correct_neutrons()
-
-        # OPTIONAL: Calibration
-        # TODO
-
-        if self.station_info.general_site_metadata.N0 is None:
-            message = (
-                "Cannot proceed with quality assessment or processing "
-                "without an N0 number. Supply an N0 number in the YAML "
-                "file or complete site calibration"
-            )
-            core_logger.error(message)
-            raise ValueError(message)
-
-        self._apply_quality_assessment(
-            name_of_section="flag_corrected_neutrons",
-            partial_config=(
-                self.process_info.neutron_quality_assessment.flag_raw_neutrons
-            ),
-        )
-        self._produce_soil_moisture_estimates()
-        self._save_data()
 
     def _parse_raw_data(
         self,
@@ -440,10 +350,115 @@ class ProcessWithYaml:
             append_yaml_hash_to_folder_name=append_yaml_bool,
         )
 
+    def create_data_hub(
+        self,
+        return_data_hub: bool = True,
+    ):
+        """
+        Creates a CRNSDataHub using the supplied information from the
+        YAML config file.
+
+        By default this method will return a configured CRNSDataHub.
+
+        When running the whole process with the run() method, it will
+        save the data hub to an attribute so that it can access it for
+        further steps.
+
+        Parameters
+        ----------
+        return_data_frame : bool, optional
+            Whether to return the CRNSDataHub directly, by default True
+
+        Returns
+        -------
+        CRNSDataHub
+            The CRNSDataHub
+        """
+        # import here to avoid circular dependency
+        from neptoon.hub import CRNSDataHub
+
+        if return_data_hub:
+            return CRNSDataHub(
+                crns_data_frame=self._import_data(),
+                site_information=self._create_site_information(),
+            )
+        else:
+            self.data_hub = CRNSDataHub(
+                crns_data_frame=self._import_data(),
+                site_information=self._create_site_information(),
+            )
+
+    def run_full_process(
+        self,
+    ):
+        """
+        Full process run with YAML file
+
+        Raises
+        ------
+        ValueError
+            When no N0 supplied and no calibration completed.
+        """
+        self.create_data_hub(return_data_hub=False)
+        self._attach_nmdb_data()
+        self._prepare_static_values()
+        # QA raw N spikes
+        self._apply_quality_assessment(
+            name_of_section="flag_raw_neutrons",
+            partial_config=(
+                self.process_info.neutron_quality_assessment.flag_raw_neutrons
+            ),
+        )
+        # QA meteo
+        self._apply_quality_assessment(
+            name_of_section="input_data_qa",
+            partial_config=self.station_info.input_data_qa,
+        )
+
+        self._select_corrections()
+        self._correct_neutrons()
+
+        # OPTIONAL: Calibration
+        # TODO
+
+        if self.station_info.general_site_metadata.N0 is None:
+            message = (
+                "Cannot proceed with quality assessment or processing "
+                "without an N0 number. Supply an N0 number in the YAML "
+                "file or complete site calibration"
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+        self._apply_quality_assessment(
+            name_of_section="flag_corrected_neutrons",
+            partial_config=(
+                self.process_info.neutron_quality_assessment.flag_raw_neutrons
+            ),
+        )
+        self._produce_soil_moisture_estimates()
+        self._save_data()
+
 
 class QualityAssessmentWithYaml:
     """
-    Handles bulding out QualityChecks from config files.
+    Handles bulding out QualityChecks from config files. When an SaQC
+    system is bridged (see quality_assessment.py), for it to be
+    accessible for YAML processing it a method must be in here to.
+
+    Available methods:
+
+    - range check
+    - spike detection
+    - persistance check (stuck sensor)
+    - rate of change check
+
+    Future planned methods:
+
+    - cross validation (flag var x based on var y conditions)
+    - physical constraint checks
+    - diurnal pattern checks
+    - time step consistency checks (and adjustment)
     """
 
     def __init__(
@@ -453,7 +468,7 @@ class QualityAssessmentWithYaml:
         station_info,
     ):
         """
-        Attributes.
+        Attributes
 
         Parameters
         ----------
@@ -474,7 +489,7 @@ class QualityAssessmentWithYaml:
             config.process_info.neutron_quality_assessment.flag_raw_neutrons
             )
 
-        Means:
+        Therefore:
 
         name_of_section = 'flag_raw_neutrons'
         """
@@ -482,6 +497,32 @@ class QualityAssessmentWithYaml:
         self.partial_config = partial_config
         self.station_info = station_info
         self.checks = []
+
+    def _flag_raw_neutrons(self):
+        """
+        Process to prepare flags for raw neutron values.
+        """
+        obj_as_dict = vars(self.partial_config)
+        for key, value in obj_as_dict.items():
+            if key == "spikes":
+                self._process_spikes(value)
+            if key == "persistance_check":
+                self._persistance_check(value)
+
+    def _persistance_check(self, config):
+        # TODO check for persistance (same vals)
+        pass
+
+    def _flag_corrected_neutrons(self):
+        """
+        Process to prepare flags for corrected neutron values.
+        """
+        obj_as_dict = vars(self.partial_config)
+        for key, value in obj_as_dict.items():
+            if key == "greater_than_N0":
+                self._process_greater_than_N0(value)
+            elif key == "below_N0_factor":
+                self._process_below_N0_factor(value)
 
     def collect_and_return_checks(
         self,
@@ -495,93 +536,16 @@ class QualityAssessmentWithYaml:
         List[QualityCheck]
             A list of QualityChecks
         """
-        if self.name_of_section == "flag_raw_neutrons":
+        if self.name_of_section == "raw_neutrons_qa":
             self._flag_raw_neutrons()
-        elif self.name_of_section == "extra_quality_assessment":
+        elif self.name_of_section == "input_variables_qa":
             pass  # TODO
-        elif self.name_of_section == "flag_corrected_neutrons":
+        elif self.name_of_section == "corrected_neutrons_qa":
             self._flag_corrected_neutrons()
+        elif self.name_of_section == "derived_products_qa":
+            pass  # TODO
 
         return self.checks
-
-    def _flag_raw_neutrons(self):
-        """
-        Process to prepare flags for raw neutron values.
-        """
-        obj_as_dict = vars(self.partial_config)
-        for key, value in obj_as_dict.items():
-            if key == "spikes":
-                self._process_spikes(value)
-
-    def _process_spikes(self, config) -> None:
-        """
-        Helper method to process spike configuration.
-        """
-
-        col_name = (
-            str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)
-            if config.col_name == "default"
-            else config.col_name
-        )
-
-        if config.method.lower() == "unilof":
-            self.checks.append(
-                FlagSpikeDetectionUniLOF(
-                    column_name=col_name,
-                    periods_in_calculation=config.periods_in_calculation,
-                    threshold=config.threshold,
-                )
-            )
-        else:
-            message = f"Unsupported spike detection method: {config.method}"
-            core_logger.error(message)
-
-    def _flag_corrected_neutrons(self):
-        """
-        Process to prepare flags for corrected neutron values.
-        """
-        obj_as_dict = vars(self.partial_config)
-        for key, value in obj_as_dict.items():
-            if key == "greater_than_N0":
-                self._process_greater_than_N0(value)
-            elif key == "below_N0_factor":
-                self._process_below_N0_factor(value)
-
-    def _process_greater_than_N0(self, config):
-        """
-        Helper method to process greater_than_N0 configuration.
-        """
-        col_name = (
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
-            if config.col_name == "default"
-            else config.col_name
-        )
-
-        self.checks.append(
-            FlagNeutronGreaterThanN0(
-                N0=self.station_info.general_site_metadata.N0,
-                neutron_col_name=col_name,
-                above_N0_factor=config.above_N0_factor,
-            )
-        )
-
-    def _process_below_N0_factor(self, config):
-        """
-        Helper method to process below_N0_factor configuration.
-        """
-        col_name = (
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
-            if config.col_name == "default"
-            else config.col_name
-        )
-
-        self.checks.append(
-            FlagBelowMinimumPercentN0(
-                N0=self.station_info.general_site_metadata.N0,
-                neutron_col_name=col_name,
-                percent_minimum=config.not_below,
-            )
-        )
 
 
 class CorrectionSelectorWithYaml:

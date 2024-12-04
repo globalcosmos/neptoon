@@ -1,10 +1,10 @@
-from .quality_assesment import (
+from .quality_assessment import (
     DateTimeIndexValidator,
     QualityCheck,
-    FlagRangeCheck,
-    FlagNeutronGreaterThanN0,
-    FlagBelowMinimumPercentN0,
-    FlagSpikeDetectionUniLOF,
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
+    QAMethod,
+    QATarget,
 )
+
+from .saqc_methods_and_params import WhatParamsDoINeed
