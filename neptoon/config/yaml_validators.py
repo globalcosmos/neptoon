@@ -88,8 +88,8 @@ class DataStorage(BaseModel):
 
 
 class SoilGridsMetadata(BaseModel):
-    desired_depth: int
-    desired_radius: int
+    desired_depth: Optional[int]
+    desired_radius: Optional[int]
     bulk_density: Optional[float]
     bulk_density_uncertainty: Optional[float]
     soil_organic_carbon: Optional[float]

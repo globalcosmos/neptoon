@@ -1,6 +1,4 @@
-# This is essential information that will be unique to each sensor
-# Please refer to documentation for descriptions of each data point and its units.
-output_folder:
+station_config: # Leave this blank and don't delete
 
 general_site_metadata:
   site_name: my_test_site
@@ -73,7 +71,7 @@ raw_data_parse_options:
   strip_names: True
   remove_prefix: "//"
 
-extra_quality_assessment:
+input_data_qa:
   air_humidity:
     column_name: standard
     flag_range:
@@ -81,7 +79,7 @@ extra_quality_assessment:
       max: 100
 
 calibration_data:
-  format: standard #cosmoz, cosmos-usa, cosmos-uk
+  format: neptoon
   location: /path/to/location
   key_column_names:
     profile: PROF

@@ -11,11 +11,13 @@ processing_config_path = (
     Path.cwd() / "configuration_files" / "v1_processing_method.yaml"
 )
 
-config.load_and_validate_configuration(
-    name="station",
+config.load_configuration(
+    # name="station",
     file_path=station_config_path,
 )
-config.load_and_validate_configuration(
+
+
+config.load_configuration(
     name="processing",
     file_path=processing_config_path,
 )
