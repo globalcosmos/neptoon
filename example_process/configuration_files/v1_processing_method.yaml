@@ -1,18 +1,14 @@
-method_name: v1_method
+process_config:
 
 neutron_quality_assessment:
-  flag_raw_neutrons:
-    spikes:
-      col_name: default
-      method: UniLOF
+  raw_neutrons:
+    spike_uni_lof:
       periods_in_calculation: 24
       threshold: 1.2
-  flag_corrected_neutrons:
+  corrected_neutrons:
     greater_than_N0:
-      col_name: default
       above_N0_factor: 1.075 # Köhli 2021
     below_N0_factor:
-      col_name: default
       not_below: 0.3
 
 correction_steps:

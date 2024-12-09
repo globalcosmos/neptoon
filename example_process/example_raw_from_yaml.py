@@ -6,19 +6,15 @@ from neptoon.data_audit import DataAuditLog
 
 config = ConfigurationManager()
 
-station_config_path = Path.cwd() / "configuration_files" / "A101_station.yaml"
+sensor_config_path = Path.cwd() / "configuration_files" / "A101_station.yaml"
 processing_config_path = (
     Path.cwd() / "configuration_files" / "v1_processing_method.yaml"
 )
 
 config.load_configuration(
-    # name="station",
-    file_path=station_config_path,
+    file_path=sensor_config_path,
 )
-
-
 config.load_configuration(
-    name="processing",
     file_path=processing_config_path,
 )
 

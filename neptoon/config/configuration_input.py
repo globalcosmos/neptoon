@@ -1,8 +1,11 @@
-from typing import List, Optional, Literal, Any
+from typing import List, Optional, Literal, Any, Dict
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pathlib import Path
 from datetime import datetime
+
+
 from neptoon.logging import get_logger
+from enum import Enum
 
 
 core_logger = get_logger()
@@ -26,6 +29,9 @@ class BaseConfig(BaseModel):
         extra="allow",
         frozen=False,
     )
+
+
+# Site Metadata Validation
 
 
 class GeneralSiteMetaData(BaseConfig):
@@ -62,6 +68,9 @@ class GeneralSiteMetaData(BaseConfig):
     avg_biomass: Optional[float]
 
 
+# Time Series Validation
+
+
 class TimeSeriesColumns(BaseConfig):
     """
     Defines the structure for column configurations while allowing
@@ -96,6 +105,9 @@ class TimeSeriesData(BaseConfig):
     initial_time_zone: Optional[str] = None
     convert_time_zone_to: Optional[str] = None
     key_column_info: TimeSeriesColumns
+
+
+# Parser Validation
 
 
 class ParserKeywords(BaseModel):
@@ -184,14 +196,8 @@ class RawDataParseConfig(BaseModel):
         description="Prefix to remove from column names",
     )
 
-    def model_post_init(
-        self,
-    ) -> None:
-        """Validate path exists if parse_raw_data is True."""
-        if self.parse_raw_data and not self.data_location.exists():
-            raise ValueError(
-                f"Data location does not exist: {self.data_location}"
-            )
+
+# QA Validation
 
 
 class FlagRange(BaseConfig):
@@ -232,7 +238,27 @@ class SpikeUniLOF(BaseConfig):
 
     periods_in_calculation: Optional[int] = 20
     threshold: Optional[float] = 1.5
-    algorithm: Optional[Literal["ball_tree", "kd_tree", "brute", "auto"]]
+    algorithm: Optional[Literal["ball_tree", "kd_tree", "brute", "auto"]] = (
+        Field(default="ball_tree")
+    )
+
+
+class GreaterThanN0(BaseConfig):
+
+    above_N0_factor: float = Field(
+        default=1.075,
+        description="The factor above N0 to flag values",
+    )
+
+
+class BelowN0Factor(BaseConfig):
+
+    below_N0_factor: float = Field(
+        default=0.3,
+        description=(
+            "The proportion of N0 value below " "which neutrons are flagged"
+        ),
+    )
 
 
 class QAColumnConfig(BaseConfig):
@@ -245,6 +271,8 @@ class QAColumnConfig(BaseConfig):
     flag_range: Optional[FlagRange] = None
     persistance_check: Optional[PersistenceCheck] = None
     spike_uni_lof: Optional[SpikeUniLOF] = None
+    greater_than_N0: Optional[GreaterThanN0] = None
+    below_N0_factor: Optional[BelowN0Factor] = None
 
 
 class QAConfig(BaseConfig):
@@ -253,6 +281,9 @@ class QAConfig(BaseConfig):
     air_humidity: Optional[QAColumnConfig] = None
     air_pressure: Optional[QAColumnConfig] = None
     temperature: Optional[QAColumnConfig] = None
+
+
+# Calibration Validation
 
 
 class CalibrationColumnNames(BaseConfig):
@@ -271,23 +302,191 @@ class CalibrationConfig(BaseConfig):
     key_column_names: CalibrationColumnNames
 
 
-class StationConfig(BaseConfig):
+class SensorConfig(BaseConfig):
     """Top-level configuration."""
 
     general_site_metadata: GeneralSiteMetaData
+    time_series_metadata: Optional[TimeSeriesData] = None
     input_data_qa: Optional[QAConfig] = None
-    calibration_data: CalibrationConfig
+    raw_data_parse_options: Optional[RawDataParseConfig] = None
+    calibration_data: Optional[CalibrationConfig]
+
+
+## Process Config
+
+
+class NeutronQualityAssessment(BaseConfig):
+    """Quality assessment configuration for Neutrons"""
+
+    raw_neutrons: QAColumnConfig
+    corrected_neutrons: QAColumnConfig
+
+
+class ReferenceNeutronMonitor(BaseModel):
+    """Configuration for reference neutron monitor settings."""
+
+    station: str = Field(
+        default="JUNG", description="Station identifier for neutron monitoring"
+    )
+    resolution: int = Field(
+        default=60, description="Time resolution in minutes", ge=1
+    )
+    nmdb_table: str = Field(
+        default="revori", description="NMDB table name to query"
+    )
+
+
+class AirHumidityCorrection(BaseModel):
+    """Configuration for air humidity correction parameters."""
+
+    method: Literal["rosolem_2013"] = Field(
+        description="Air humidity correction method"
+    )
+    omega: float = Field(
+        default=0.0054,
+        description="Omega coefficient for humidity correction",
+        gt=0,
+    )
+    humidity_ref: float = Field(
+        default=0, description="Reference humidity value"
+    )
+
+
+class AirPressureCorrection(BaseModel):
+    """Configuration for air pressure correction parameters."""
+
+    method: Literal["zreda_2012"] = Field(
+        description="Air pressure correction method"
+    )
+    Dunai_inclination: Optional[float] = Field(
+        default=None, description="Dunai inclination parameter"
+    )
+
+
+class IncomingRadiationCorrection(BaseModel):
+    """Configuration for incoming radiation correction parameters."""
+
+    method: Literal[
+        "zreda_2012",
+        "hawdon_2014",
+        "mcjannet_desilets_2024",
+    ] = Field(description="Incoming radiation correction method")
+
+    reference_value: float = Field(
+        description="Reference value for radiation correction", gt=0
+    )
+    reference_neutron_monitor: ReferenceNeutronMonitor = Field(
+        default_factory=ReferenceNeutronMonitor,
+        description="Reference neutron monitor configuration",
+    )
+
+
+class BiomassCorrection(BaseModel):
+    """Configuration for above ground biomass correction parameters."""
+
+    method: Optional[str] = Field(
+        default=None, description="Above ground biomass correction method"
+    )
+
+
+class CorrectionSteps(BaseModel):
+    """Main configuration for all correction steps."""
+
+    air_humidity: Optional[AirHumidityCorrection] = Field(
+        default=None, description="Air humidity correction configuration"
+    )
+    air_pressure: Optional[AirPressureCorrection] = Field(
+        default=None, description="Air pressure correction configuration"
+    )
+    incoming_radiation: Optional[IncomingRadiationCorrection] = Field(
+        default=None, description="Incoming radiation correction configuration"
+    )
+    above_ground_biomass: Optional[BiomassCorrection] = Field(
+        default=None,
+        description="Above ground biomass correction configuration",
+    )
+
+
+class SmoothingAlgorithmSettings(BaseModel):
+    """
+    Configuration settings for data smoothing algorithms.
+
+    Validates and enforces constraints specific to different smoothing methods:
+    - Window size must be positive
+    - For Savitzky-Golay:
+        - Window size should be odd
+        - Polynomial order must be less than window size
+    """
+
+    algorithm: Literal["savitsky-golay", "rolling-mean"] = Field(
+        default="savitsky-golay", description="Smoothing algorithm to apply"
+    )
+    window: int = Field(
+        default=12, description="Window size for smoothing", gt=0
+    )
+    poly_order: Optional[int] = Field(
+        default=4,
+        description="Polynomial order for Savitzky-Golay filter",
+        ge=0,
+    )
+
+    @model_validator(mode="after")
+    def validate_poly_order(self) -> "SmoothingAlgorithmSettings":
+        """Validate polynomial order relative to window size."""
+        if self.algorithm == "savitsky-golay":
+            if self.poly_order >= self.window:
+                raise ValueError(
+                    "Polynomial order must be less than window size "
+                    f"(got order={self.poly_order}, window={self.window})"
+                )
+        return self
+
+
+class DataSmoothingConfig(BaseModel):
+    """
+    Main configuration for data smoothing operations.
+
+    Controls which data series should be smoothed and defines the
+    smoothing parameters to be applied.
+    """
+
+    smooth_raw_neutrons: bool = Field(
+        default=False, description="Apply smoothing to raw neutron counts"
+    )
+    smooth_corrected_neutrons: bool = Field(
+        default=True, description="Apply smoothing to corrected neutron counts"
+    )
+    smooth_soil_moisture: bool = Field(
+        default=False,
+        description="Apply smoothing to calculated soil moisture values",
+    )
+    settings: SmoothingAlgorithmSettings = Field(
+        default_factory=SmoothingAlgorithmSettings,
+        description="Smoothing algorithm configuration",
+    )
+
+
+class ProcessConfig(BaseConfig):
+
+    neutron_quality_assessment: NeutronQualityAssessment
+    correction_steps: CorrectionSteps
+    data_smoothing: DataSmoothingConfig
+
+
+class ConfigType(Enum):
+    SENSOR = "sensor"
+    PROCESS = "process"
 
 
 class ConfigurationManager:
     """Manages loading and access of nested configurations."""
 
     def __init__(self):
-        self._config: Optional[StationConfig] = None
+        self._configs: Dict[str, BaseConfig] = {}
 
     def load_configuration(self, file_path: str) -> None:
         """
-        Load and validate deeply nested configuration.
+        Load and validate nested configuration.
 
         Parameters
         ----------
@@ -299,23 +498,26 @@ class ConfigurationManager:
         with open(file_path) as f:
             config_dict = yaml.safe_load(f)
 
-        self._config = StationConfig(**config_dict)
+        if "sensor_config" in config_dict:
+            config_type = ConfigType.SENSOR.value
+            self._configs[config_type] = SensorConfig(**config_dict)
+        elif "process_config" in config_dict:
+            config_type = ConfigType.PROCESS.value
+            self._configs[config_type] = ProcessConfig(**config_dict)
 
-    @property
-    def config(self) -> StationConfig | str:
+    def get_config(self, name: Literal["sensor", "process"]):
         """
-        Access the validated configuration.
+        Return the specific config
+
+        Parameters
+        ----------
+        name : str
+            Either sensor or process
 
         Returns
         -------
-        MainConfig
-            The complete configuration object
-
-        Raises
-        ------
-        ValueError
-            If configuration hasn't been loaded
+        BaseConfig
+            The requested config
         """
-        if self._config is None:
-            raise ValueError("Configuration not loaded")
-        return self._config
+
+        return self._configs[name]
