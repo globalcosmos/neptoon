@@ -23,6 +23,7 @@ general_site_metadata:
   avg_biomass:
 
 time_series_data:
+  path_to_data: # blank if parsing raw data
   time_step_resolution: 15mins
   key_column_info:
     epithermal_neutron_counts_columns:
@@ -49,7 +50,7 @@ time_series_data:
     date_time_format: "%Y/%m/%d %H:%M:%S"
     initial_time_zone: utc
     convert_time_zone_to: utc
-    path_to_data:
+
     cosmos_network:
 
 raw_data_parse_options:
@@ -72,8 +73,7 @@ raw_data_parse_options:
   remove_prefix: "//"
 
 input_data_qa:
-  air_humidity:
-    column_name: standard
+  air_relative_humidity:
     flag_range:
       min: 0
       max: 100

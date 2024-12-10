@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Literal, TYPE_CHECKING
 from pathlib import Path
+from enum import Enum
 
 if TYPE_CHECKING:
     from neptoon.hub import CRNSDataHub
@@ -15,12 +16,12 @@ from neptoon.io.read.data_ingest import (
     FormatDataForCRNSDataHub,
     validate_and_convert_file_path,
 )
-
+from neptoon.quality_control.saqc_methods_and_params import YamlRegistry
+from neptoon.quality_control import QualityCheck
 from neptoon.corrections import (
     CorrectionType,
     CorrectionTheory,
 )
-
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import ConfigurationManager
 
@@ -32,11 +33,10 @@ class ProcessWithYaml:
     def __init__(
         self,
         configuration_object: ConfigurationManager,
-        pre_configure_corrections=False,
     ):
         self.configuration_object = configuration_object
-        self.process_info = self._get_config_object(wanted_object="processing")
-        self.station_info = self._get_config_object(wanted_object="station")
+        self.process_info = self._get_config_object(wanted_object="process")
+        self.station_info = self._get_config_object(wanted_object="sensor")
         self.data_hub = None
 
     def _get_config_object(
@@ -57,7 +57,7 @@ class ProcessWithYaml:
         ConfigurationObject
             The required configuration object.
         """
-        return self.configuration_object.get_configuration(name=wanted_object)
+        return self.configuration_object.get_config(name=wanted_object)
 
     def _parse_raw_data(
         self,
@@ -83,7 +83,8 @@ class ProcessWithYaml:
             separator=tmp.separator,
             decimal=tmp.decimal,
             skip_initial_space=tmp.skip_initial_space,
-            parser_kw=tmp.parser_kw.to_dict(),
+            parser_kw_strip_left=tmp.parser_kw.strip_left,
+            parser_kw_digit_first=tmp.parser_kw.digit_first,
             starts_with=tmp.starts_with,
             multi_header=tmp.multi_header,
             strip_names=tmp.strip_names,
@@ -145,12 +146,6 @@ class ProcessWithYaml:
                     file_path=self.station_info.time_series_data.path_to_data,
                 )
             )
-            # self.raw_data_parsed.set_index(
-            #     self.raw_data_parsed[
-            #         self.station_info.time_series_data.date_time_column
-            #     ],
-            #     drop=True,
-            # )
         df = self._prepare_time_series()
         return df
 
@@ -229,36 +224,22 @@ class ProcessWithYaml:
 
     def _apply_quality_assessment(
         self,
-        name_of_section: str,
         partial_config,
+        name_of_target: str = None,
     ):
         """
         Method to create quality flags
 
         Parameters
         ----------
-        name_of_section : str
-            Name of the section of the partial_config
         partial_config : ConfigurationObject
             A ConfigurationObject section
-
-        Notes
-        -----
-
-        The name_of_section should match the final part of the supplied
-        partial_config. For example:
-
-        partial_config = (
-            config.process_info.neutron_quality_assessment.flag_raw_neutrons
-            )
-
-        Therefore:
-
-        name_of_section = 'flag_raw_neutrons'
-
+        name_of_target : str
+            Name of the target for QA - if None it will loop through
+            available targets in the partial_config
         """
         list_of_checks = self._prepare_quality_assessment(
-            name_of_section=name_of_section,
+            name_of_target=name_of_target,
             partial_config=partial_config,
         )
         self.data_hub.add_quality_flags(add_check=list_of_checks)
@@ -266,18 +247,20 @@ class ProcessWithYaml:
 
     def _prepare_quality_assessment(
         self,
-        name_of_section: str,
         partial_config,
+        name_of_target: str = None,
     ):
         """
 
 
         Parameters
         ----------
-        name_of_section : str
-            Name of the section of the partial_config
+
         partial_config : ConfigurationObject
             A ConfigurationObject section
+        name_of_target : str
+            Name of the target for QA - if None it will loop through
+            available targets in the partial_config
 
         Notes
         -----
@@ -291,11 +274,11 @@ class ProcessWithYaml:
         """
 
         qa_builder = QualityAssessmentWithYaml(
-            name_of_section=name_of_section,
             partial_config=partial_config,
             station_info=self.station_info,
+            name_of_target=name_of_target,
         )
-        list_of_checks = qa_builder.collect_and_return_checks()
+        list_of_checks = qa_builder.create_checks()
         return list_of_checks
 
     def _select_corrections(
@@ -404,15 +387,13 @@ class ProcessWithYaml:
         self._prepare_static_values()
         # QA raw N spikes
         self._apply_quality_assessment(
-            name_of_section="flag_raw_neutrons",
-            partial_config=(
-                self.process_info.neutron_quality_assessment.flag_raw_neutrons
-            ),
+            partial_config=self.process_info.neutron_quality_assessment,
+            name_of_target="raw_neutrons",
         )
         # QA meteo
         self._apply_quality_assessment(
-            name_of_section="input_data_qa",
             partial_config=self.station_info.input_data_qa,
+            name_of_target=None,
         )
 
         self._select_corrections()
@@ -446,38 +427,28 @@ class QualityAssessmentWithYaml:
     system is bridged (see quality_assessment.py), for it to be
     accessible for YAML processing it a method must be in here to.
 
-    Available methods:
-
-    - range check
-    - spike detection
-    - persistance check (stuck sensor)
-    - rate of change check
-
-    Future planned methods:
-
-    - cross validation (flag var x based on var y conditions)
-    - physical constraint checks
-    - diurnal pattern checks
-    - time step consistency checks (and adjustment)
     """
 
     def __init__(
         self,
-        name_of_section: str,
         partial_config,
         station_info,
+        name_of_target: Literal["raw_neutrons", "corrected_neutrons"] = None,
     ):
         """
         Attributes
 
         Parameters
         ----------
-        name_of_section : str
-            The name of the section that has been supplied. See Notes.
+
         partial_config : ConfigurationObject
-            A selection from the ConfigurationObject.
+            A selection from the ConfigurationObject which stores QA
+            selections
         station_info : ConfigurationObject
             The config object describing station variables
+        name_of_target : str
+            The name of the target for QA. If None it will loop through
+            any provided in partial config.
 
         Notes
         -----
@@ -493,59 +464,70 @@ class QualityAssessmentWithYaml:
 
         name_of_section = 'flag_raw_neutrons'
         """
-        self.name_of_section = name_of_section
+
         self.partial_config = partial_config
         self.station_info = station_info
+        self.name_of_target = name_of_target
         self.checks = []
 
-    def _flag_raw_neutrons(self):
-        """
-        Process to prepare flags for raw neutron values.
-        """
-        obj_as_dict = vars(self.partial_config)
-        for key, value in obj_as_dict.items():
-            if key == "spikes":
-                self._process_spikes(value)
-            if key == "persistance_check":
-                self._persistance_check(value)
+    def create_checks(self):
+        qa_dict = self.partial_config.model_dump()
 
-    def _persistance_check(self, config):
-        # TODO check for persistance (same vals)
-        pass
-
-    def _flag_corrected_neutrons(self):
-        """
-        Process to prepare flags for corrected neutron values.
-        """
-        obj_as_dict = vars(self.partial_config)
-        for key, value in obj_as_dict.items():
-            if key == "greater_than_N0":
-                self._process_greater_than_N0(value)
-            elif key == "below_N0_factor":
-                self._process_below_N0_factor(value)
-
-    def collect_and_return_checks(
-        self,
-    ):
-        """
-        Base function which chooses correct internal method to use
-        depending on the supplied config section.
-
-        Returns
-        -------
-        List[QualityCheck]
-            A list of QualityChecks
-        """
-        if self.name_of_section == "raw_neutrons_qa":
-            self._flag_raw_neutrons()
-        elif self.name_of_section == "input_variables_qa":
-            pass  # TODO
-        elif self.name_of_section == "corrected_neutrons_qa":
-            self._flag_corrected_neutrons()
-        elif self.name_of_section == "derived_products_qa":
-            pass  # TODO
+        # Case 1: Specific target (raw/corrected neutrons)
+        if self.name_of_target in ["raw_neutrons", "corrected_neutrons"]:
+            if self.name_of_target in qa_dict:
+                target_dict = qa_dict[self.name_of_target]
+                self.return_a_check(
+                    name_of_target=self.name_of_target,
+                    target_dict=target_dict,
+                )
+        # Case 2: Process all targets from config
+        else:
+            for target in qa_dict:
+                target_dict = qa_dict.get(target)
+                if target_dict:  # Skip if None
+                    self.return_a_check(
+                        name_of_target=target,
+                        target_dict=target_dict,
+                    )
 
         return self.checks
+
+    def return_a_check(self, name_of_target: str, target_dict: dict):
+        """Process checks for a specific target."""
+        if not target_dict:  # Guard against None or empty dict
+            return
+
+        for check_method, check_params in target_dict.items():
+            if isinstance(check_params, dict):
+                target = YamlRegistry.get_target(name_of_target)
+                method = YamlRegistry.get_method(check_method)
+                check = QualityCheck(
+                    target=target, method=method, parameters=check_params
+                )
+                self.checks.append(check)
+
+    # def return_a_check(self, name_of_target: str, target_dict: dict):
+    #     """
+    #     Returns all the checks assigned to a target
+
+    #     Parameters
+    #     ----------
+
+    #     target_dict : dict
+    #         A dictionary containing all the desired checks (from the
+    #         YAML file)
+    #     """
+
+    #     for check_method, check_params in target_dict.items():
+    #         if isinstance(check_params, dict):
+    #             target = YamlRegistry.get_target(name_of_target)
+    #             method = YamlRegistry.get_method(check_method)
+    #             params = check_params
+    #             check = QualityCheck(
+    #                 target=target, method=method, parameters=params
+    #             )
+    #             self.checks.append(check)
 
 
 class CorrectionSelectorWithYaml:

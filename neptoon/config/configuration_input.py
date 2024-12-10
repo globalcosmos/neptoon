@@ -92,7 +92,7 @@ class TimeSeriesColumns(BaseConfig):
         "priority"
     )
     relative_humidity_columns: List[str]
-    relative_humidity_units: Optional[str]
+    relative_humidity_units: Optional[str] = None
     relative_humidity_merge_method: Optional[
         Literal["priority", "average"]
     ] = "priority"
@@ -101,12 +101,12 @@ class TimeSeriesColumns(BaseConfig):
 
 
 class TimeSeriesData(BaseConfig):
-    path_to_data: Optional[str]
+    path_to_data: Optional[str] = Field(default=None)
     time_step_resolution: str
     # date_time_format: str
     initial_time_zone: Optional[str] = None
     convert_time_zone_to: Optional[str] = None
-    key_column_info: TimeSeriesColumns
+    key_column_info: Optional[TimeSeriesColumns] = None
 
 
 # Parser Validation
