@@ -97,11 +97,13 @@ class TimeSeriesColumns(BaseConfig):
         Literal["priority", "average"]
     ] = "priority"
     date_time_columns: List[str]
+    date_time_format: str
 
 
 class TimeSeriesData(BaseConfig):
+    path_to_data: Optional[str]
     time_step_resolution: str
-    date_time_format: str
+    # date_time_format: str
     initial_time_zone: Optional[str] = None
     convert_time_zone_to: Optional[str] = None
     key_column_info: TimeSeriesColumns
@@ -127,7 +129,7 @@ class RawDataParseConfig(BaseModel):
         default=True, description="Whether to parse raw data files"
     )
 
-    data_location: Path = Field(
+    data_location: Optional[Path] = Field(
         description="Path to the raw data files or directory"
     )
 
@@ -136,62 +138,62 @@ class RawDataParseConfig(BaseModel):
         description="A list of the raw column names in the order they appear",
     )
 
-    prefix: str = Field(
+    prefix: Optional[str] = Field(
         default="",
         description="Prefix of file name for file filtering",
     )
 
-    suffix: str = Field(
+    suffix: Optional[str] = Field(
         default="",
         description="Suffix of file name used for file filtering",
     )
 
-    encoding: str = Field(
+    encoding: Optional[str] = Field(
         default="cp850",
         description="File encoding format",
     )
 
-    skip_lines: int = Field(
+    skip_lines: Optional[int] = Field(
         default=0,
         description="Number of lines to skip at start of file",
     )
 
-    separator: str = Field(
+    separator: Optional[str] = Field(
         default=",",
         description="Column separator character",
     )
 
-    decimal: str = Field(
+    decimal: Optional[str] = Field(
         default=".",
         description="Decimal point character",
     )
 
-    skip_initial_space: bool = Field(
+    skip_initial_space: Optional[bool] = Field(
         default=True,
         description="Whether to skip initial whitespace when making dataframe",
     )
 
-    parser_kw: ParserKeywords = Field(
+    parser_kw: Optional[ParserKeywords] = Field(
         default_factory=ParserKeywords,
         description="Additional parser-specific keywords",
     )
 
-    starts_with: str = Field(
+    starts_with: Optional[str] = Field(
         default="",
         description="String that headers must start with when parsing",
     )
 
-    multi_header: bool = Field(
+    multi_header: Optional[bool] = Field(
         default=False,
         description="Whether to expect multi-line headers",
     )
 
-    strip_names: bool = Field(
+    strip_names: Optional[bool] = Field(
         default=True,
         description="Whether to strip whitespace from column names",
     )
 
-    remove_prefix: str = Field(
+    remove_prefix: Optional[str] = Field(
         default="//",
         description="Prefix to remove from column names",
     )
@@ -306,7 +308,7 @@ class SensorConfig(BaseConfig):
     """Top-level configuration."""
 
     general_site_metadata: GeneralSiteMetaData
-    time_series_metadata: Optional[TimeSeriesData] = None
+    time_series_data: Optional[TimeSeriesData] = None
     input_data_qa: Optional[QAConfig] = None
     raw_data_parse_options: Optional[RawDataParseConfig] = None
     calibration_data: Optional[CalibrationConfig]
@@ -499,10 +501,10 @@ class ConfigurationManager:
             config_dict = yaml.safe_load(f)
 
         if "sensor_config" in config_dict:
-            config_type = ConfigType.SENSOR.value
+            config_type = str(ConfigType.SENSOR.value)
             self._configs[config_type] = SensorConfig(**config_dict)
         elif "process_config" in config_dict:
-            config_type = ConfigType.PROCESS.value
+            config_type = str(ConfigType.PROCESS.value)
             self._configs[config_type] = ProcessConfig(**config_dict)
 
     def get_config(self, name: Literal["sensor", "process"]):
@@ -519,5 +521,4 @@ class ConfigurationManager:
         BaseConfig
             The requested config
         """
-
         return self._configs[name]

@@ -1,6 +1,6 @@
 # This is essential information that will be unique to each sensor
 # Please refer to documentation for descriptions of each data point and its units.
-output_folder:
+sensor_config:
 
 general_site_metadata:
   site_name: Fuerstensee
@@ -67,7 +67,7 @@ raw_data_parse_options:
     strip_left: True
     digit_first: True
   starts_with: ""
-  multi_header: ""
+  multi_header: False
   strip_names: True
   remove_prefix: "//"
 
@@ -80,7 +80,7 @@ extra_quality_assessment:
 
 calibration_data:
   calibrate: True
-  format: standard #cosmoz, cosmos-usa, cosmos-uk
+  format: neptoon #cosmoz, cosmos-usa, cosmos-uk
   location: /example_data/FSC001_calibration.csv
   key_column_names:
     profile: Profile_ID
