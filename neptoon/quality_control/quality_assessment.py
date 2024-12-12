@@ -397,7 +397,10 @@ class DataQualityAssessor:
         """
         return self.qc.data.to_pandas()
 
-    def return_flags_data_frame(self):
+    def return_flags_data_frame(
+        self,
+        current_flag_data_frame: pd.DataFrame | None,
+    ):
         """
         Returns the flag dataframe
 
@@ -406,4 +409,13 @@ class DataQualityAssessor:
         pd.DataFrame
             The DataFrame with assigned flags
         """
-        return self.qc.flags.to_pandas()
+        if current_flag_data_frame is None:
+            return self.qc.flags.to_pandas()
+        else:
+            new_flags = self.qc.flags.to_pandas()
+            new_targets = self.builder.return_targets()
+
+            for target in new_targets:
+                col_name = target.value
+                current_flag_data_frame[col_name] = new_flags[col_name]
+            return current_flag_data_frame

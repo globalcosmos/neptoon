@@ -76,7 +76,7 @@ input_data_qa:
   air_relative_humidity:
     flag_range:
       min: 0
-      max: 10
+      max: 100
   air_pressure:
     flag_range:
       min: 600

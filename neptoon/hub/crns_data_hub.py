@@ -313,15 +313,11 @@ class CRNSDataHub:
 
         self.quality_assessor.apply_quality_assessment()
 
-        self.flags_data_frame = self.quality_assessor.return_flags_data_frame()
+        self.flags_data_frame = self.quality_assessor.return_flags_data_frame(
+            current_flag_data_frame=self.flags_data_frame,
+        )
         message = "Flagging of data complete using Custom Flags"
         core_logger.info(message)
-
-    def _update_flag_data_frame(self):
-        if self.flags_data_frame is None:
-            self.flags_data_frame = (
-                self.quality_assessor.return_flags_data_frame()
-            )
 
     def select_correction(
         self,
