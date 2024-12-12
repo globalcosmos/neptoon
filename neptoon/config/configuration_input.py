@@ -247,7 +247,7 @@ class SpikeUniLOF(BaseConfig):
 
 class GreaterThanN0(BaseConfig):
 
-    above_N0_factor: float = Field(
+    percent_maximum: float = Field(
         default=1.075,
         description="The factor above N0 to flag values",
     )
@@ -255,7 +255,7 @@ class GreaterThanN0(BaseConfig):
 
 class BelowN0Factor(BaseConfig):
 
-    below_N0_factor: float = Field(
+    percent_minimum: float = Field(
         default=0.3,
         description=(
             "The proportion of N0 value below " "which neutrons are flagged"

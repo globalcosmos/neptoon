@@ -76,7 +76,11 @@ input_data_qa:
   air_relative_humidity:
     flag_range:
       min: 0
-      max: 100
+      max: 10
+  air_pressure:
+    flag_range:
+      min: 600
+      max: 1300
 
 calibration_data:
   format: neptoon

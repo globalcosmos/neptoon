@@ -7,9 +7,9 @@ neutron_quality_assessment:
       threshold: 1.2
   corrected_neutrons:
     greater_than_N0:
-      above_N0_factor: 1.075 # Köhli 2021
+      percent_maximum: 1.075 # Köhli 2021
     below_N0_factor:
-      not_below: 0.3
+      percent_minimum: 0.3
 
 correction_steps:
   air_humidity:

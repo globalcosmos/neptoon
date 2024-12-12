@@ -22,6 +22,7 @@ from neptoon.corrections import (
     CorrectionType,
     CorrectionTheory,
 )
+from neptoon.quality_control.saqc_methods_and_params import QAMethod
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import ConfigurationManager
 
@@ -412,10 +413,8 @@ class ProcessWithYaml:
             raise ValueError(message)
 
         self._apply_quality_assessment(
-            name_of_section="flag_corrected_neutrons",
-            partial_config=(
-                self.process_info.neutron_quality_assessment.flag_raw_neutrons
-            ),
+            partial_config=self.process_info.neutron_quality_assessment,
+            name_of_target="corrected_neutrons",
         )
         self._produce_soil_moisture_estimates()
         self._save_data()
@@ -473,7 +472,7 @@ class QualityAssessmentWithYaml:
     def create_checks(self):
         qa_dict = self.partial_config.model_dump()
 
-        # Case 1: Specific target (raw/corrected neutrons)
+        # Case 1: Specific target (raw neutrons)
         if self.name_of_target in ["raw_neutrons", "corrected_neutrons"]:
             if self.name_of_target in qa_dict:
                 target_dict = qa_dict[self.name_of_target]
@@ -481,6 +480,7 @@ class QualityAssessmentWithYaml:
                     name_of_target=self.name_of_target,
                     target_dict=target_dict,
                 )
+
         # Case 2: Process all targets from config
         else:
             for target in qa_dict:
@@ -502,32 +502,14 @@ class QualityAssessmentWithYaml:
             if isinstance(check_params, dict):
                 target = YamlRegistry.get_target(name_of_target)
                 method = YamlRegistry.get_method(check_method)
+                if method in [QAMethod.ABOVE_N0, QAMethod.BELOW_N0_FACTOR]:
+                    check_params["N0"] = (
+                        self.station_info.general_site_metadata.N0
+                    )
                 check = QualityCheck(
                     target=target, method=method, parameters=check_params
                 )
                 self.checks.append(check)
-
-    # def return_a_check(self, name_of_target: str, target_dict: dict):
-    #     """
-    #     Returns all the checks assigned to a target
-
-    #     Parameters
-    #     ----------
-
-    #     target_dict : dict
-    #         A dictionary containing all the desired checks (from the
-    #         YAML file)
-    #     """
-
-    #     for check_method, check_params in target_dict.items():
-    #         if isinstance(check_params, dict):
-    #             target = YamlRegistry.get_target(name_of_target)
-    #             method = YamlRegistry.get_method(check_method)
-    #             params = check_params
-    #             check = QualityCheck(
-    #                 target=target, method=method, parameters=params
-    #             )
-    #             self.checks.append(check)
 
 
 class CorrectionSelectorWithYaml:

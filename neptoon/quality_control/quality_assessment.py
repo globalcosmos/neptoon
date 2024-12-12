@@ -241,6 +241,7 @@ class QualityAssessmentFlagBuilder:
 
     def __init__(self):
         self.checks = []
+        self._targets = []
 
     def add_check(self, *checks):
         for check in checks:
@@ -251,7 +252,11 @@ class QualityAssessmentFlagBuilder:
     def apply_checks(self, qc):
         for check in self.checks:
             qc = check.apply(qc)
+            self._targets.append(check.target)
         return qc
+
+    def return_targets(self):
+        return self._targets
 
 
 class DataQualityAssessor:

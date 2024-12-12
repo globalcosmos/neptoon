@@ -24,52 +24,31 @@ config.load_configuration(
 yaml_processor = ProcessWithYaml(configuration_object=config)
 
 
-#### START TEMPORARY
-from neptoon.workflow.process_with_yaml import QualityAssessmentWithYaml
-from neptoon.quality_control.saqc_methods_and_params import YamlRegistry
-from neptoon.quality_control import QualityCheck
+# #### START TEMPORARY
+# from neptoon.workflow.process_with_yaml import QualityAssessmentWithYaml
+# from neptoon.quality_control.saqc_methods_and_params import YamlRegistry
+# from neptoon.quality_control import QualityCheck
 
-yaml_processor.create_data_hub(return_data_hub=False)
-yaml_processor._attach_nmdb_data()
-yaml_processor._prepare_static_values()
-yaml_processor._apply_quality_assessment(
-    name_of_target="raw_neutrons",
-    partial_config=yaml_processor.process_info.neutron_quality_assessment,
-)
-
-
-yaml_processor._apply_quality_assessment(
-    partial_config=yaml_processor.station_info.input_data_qa,
-    name_of_target=None,
-)
-
-
-# qa_builder = QualityAssessmentWithYaml(
-#     partial_config=yaml_processor.process_info.neutron_quality_assessment,
-#     station_info=yaml_processor.station_info,
+# yaml_processor.create_data_hub(return_data_hub=False)
+# yaml_processor._attach_nmdb_data()
+# yaml_processor._prepare_static_values()
+# yaml_processor._apply_quality_assessment(
 #     name_of_target="raw_neutrons",
+#     partial_config=yaml_processor.process_info.neutron_quality_assessment,
 # )
 
-# qa_dict = qa_builder.partial_config.model_dump()
 
-# # If name of target use that, else loop through targets.
-# name_of_target = "raw_neutrons"
-# target_dict = qa_dict["raw_neutrons"]
-
-
-# for check_method, check_params in target_dict.items():
-#     if isinstance(check_params, dict):
-#         target = YamlRegistry.get_target(name_of_target)
-#         method = YamlRegistry.get_method(check_method)
-#         params = check_params
-#         check = QualityCheck(target=target, method=method, parameters=params)
+# yaml_processor._apply_quality_assessment(
+#     partial_config=yaml_processor.station_info.input_data_qa,
+#     name_of_target=None,
+# )
 
 
 ### END
 
 
 ## OPTION 1:
-data_hub = yaml_processor.create_data_hub()
+# data_hub = yaml_processor.create_data_hub()
 
 ## OPTION 2:
 yaml_processor.run_full_process()
