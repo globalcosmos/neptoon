@@ -6,13 +6,12 @@ from neptoon.workflow.process_with_yaml import (
 from neptoon.config import ConfigurationManager
 from neptoon.data_audit import DataAuditLog
 
+# Load your config files in the ConfigurationManager
 config = ConfigurationManager()
-
 sensor_config_path = Path.cwd() / "configuration_files" / "A101_station.yaml"
 processing_config_path = (
     Path.cwd() / "configuration_files" / "v1_processing_method.yaml"
 )
-
 config.load_configuration(
     file_path=sensor_config_path,
 )
@@ -20,32 +19,7 @@ config.load_configuration(
     file_path=processing_config_path,
 )
 
-# DataAuditLog.create()
 yaml_processor = ProcessWithYaml(configuration_object=config)
-
-
-# #### START TEMPORARY
-# from neptoon.workflow.process_with_yaml import QualityAssessmentWithYaml
-# from neptoon.quality_control.saqc_methods_and_params import YamlRegistry
-# from neptoon.quality_control import QualityCheck
-
-# yaml_processor.create_data_hub(return_data_hub=False)
-# yaml_processor._attach_nmdb_data()
-# yaml_processor._prepare_static_values()
-# yaml_processor._apply_quality_assessment(
-#     name_of_target="raw_neutrons",
-#     partial_config=yaml_processor.process_info.neutron_quality_assessment,
-# )
-
-
-# yaml_processor._apply_quality_assessment(
-#     partial_config=yaml_processor.station_info.input_data_qa,
-#     name_of_target=None,
-# )
-
-
-### END
-
 
 ## OPTION 1:
 # data_hub = yaml_processor.create_data_hub()

@@ -304,6 +304,11 @@ class CalibrationConfig(BaseConfig):
     key_column_names: CalibrationColumnNames
 
 
+class DataStorageConfig(BaseConfig):
+    save_folder: Optional[str] = Field(default=None)
+    append_yaml_hash_to_folder_name: Optional[bool] = Field(default=False)
+
+
 class SensorConfig(BaseConfig):
     """Top-level configuration."""
 
@@ -311,7 +316,8 @@ class SensorConfig(BaseConfig):
     time_series_data: Optional[TimeSeriesData] = None
     input_data_qa: Optional[QAConfig] = None
     raw_data_parse_options: Optional[RawDataParseConfig] = None
-    calibration_data: Optional[CalibrationConfig]
+    calibration_data: Optional[CalibrationConfig] = None
+    data_storage: Optional[DataStorageConfig] = None
 
 
 ## Process Config

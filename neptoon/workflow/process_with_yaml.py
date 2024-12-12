@@ -34,8 +34,10 @@ class ProcessWithYaml:
     def __init__(
         self,
         configuration_object: ConfigurationManager,
+        # run_with_data_audit_log: bool = True,
     ):
         self.configuration_object = configuration_object
+        # self.run_with_data_audit_log = run_with_data_audit_log
         self.process_info = self._get_config_object(wanted_object="process")
         self.station_info = self._get_config_object(wanted_object="sensor")
         self.data_hub = None
@@ -315,7 +317,16 @@ class ProcessWithYaml:
         """
 
         file_name = self.station_info.general_site_metadata.site_name
-        initial_folder_str = self.station_info.data_storage.save_folder
+
+        try:
+            initial_folder_str = self.station_info.data_storage.save_folder
+        except:
+            initial_folder_str = None
+            message = (
+                "No data storage location available in config. Using cwd()"
+            )
+            core_logger.info(message)
+
         folder = (
             Path.cwd()
             if initial_folder_str is None
@@ -323,7 +334,7 @@ class ProcessWithYaml:
         )
 
         append_yaml_bool = bool(
-            self.station_info.data_storage.append_yaml_to_folder_name
+            self.station_info.data_storage.append_yaml_hash_to_folder_name
         )
         print(file_name)
         print(folder)
