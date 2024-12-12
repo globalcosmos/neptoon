@@ -291,17 +291,30 @@ class QAConfig(BaseConfig):
 class CalibrationColumnNames(BaseConfig):
     """Column naming configuration for calibration data."""
 
-    profile: str = Field(default="PROF")
-    sample_depth: str = Field(default="DEPTH_AVG")
-    radial_distance_from_sensor: str = Field(default="LOC_rad")
+    date_time: str = Field(default="date_time")
+    profile_id: str = Field(default="profile_id")
+    sample_depth: str = Field(default="sample_depth")
+    radial_distance_from_sensor: str = Field(
+        default="radial_distance_from_sensor"
+    )
+    bulk_density_of_sample: str = Field(default="bulk_density_of_sample")
+    gravimetric_soil_moisture: str = Field(
+        default="soil_moisture_gravimetric_column"
+    )
+    soil_organic_carbon: str = Field(default="soil_organic_carbon")
+    lattice_water: str = Field(default="lattice_water")
 
 
 class CalibrationConfig(BaseConfig):
     """Configuration for calibration data."""
 
-    format: Literal["neptoon", "cosmoz", "cosmos-usa", "cosmos-uk"]
-    location: Optional[Path] = None
-    key_column_names: CalibrationColumnNames
+    calibrate_site: bool = Field(default=False)
+
+    data_format: Optional[
+        Literal["custom", "cosmoz", "cosmos-usa", "cosmos-uk"]
+    ] = Field(default="custom")
+    location: Optional[Path] = Field(default="")
+    key_column_names: Optional[CalibrationColumnNames] = None
 
 
 class DataStorageConfig(BaseConfig):
@@ -316,7 +329,7 @@ class SensorConfig(BaseConfig):
     time_series_data: Optional[TimeSeriesData] = None
     input_data_qa: Optional[QAConfig] = None
     raw_data_parse_options: Optional[RawDataParseConfig] = None
-    calibration_data: Optional[CalibrationConfig] = None
+    calibration: Optional[CalibrationConfig] = None
     data_storage: Optional[DataStorageConfig] = None
 
 

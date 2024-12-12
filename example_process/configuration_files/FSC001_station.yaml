@@ -16,7 +16,7 @@ general_site_metadata:
   avg_soil_organic_carbon:
   avg_dry_soil_bulk_density:
   reference_incoming_neutron_value: 152
-  N0: 1111
+  N0:
   beta_coefficient:
   l_coefficient:
   mean_pressure:
@@ -75,17 +75,18 @@ input_data_qa:
   air_relative_humidity:
     flag_range:
       min: 0
-      max: 10
+      max: 100
 
-calibration_data:
+calibration:
   calibrate: True
-  format: neptoon #cosmoz, cosmos-usa, cosmos-uk
-  location: /example_data/FSC001_calibration.csv
+  data_format: custom
+  location: ./example_data/FSCD001_calibration.csv
   key_column_names:
-    profile: Profile_ID
+    date_time: DateTime_utc
+    profile_id: Profile_ID
     sample_depth: Profile_Depth_cm
     radial_distance_from_sensor: Distance_to_CRNS_m
-    dry_soil_bulk_density: DryBulkDensity_g_cm3
+    bulk_density_of_sample: DryBulkDensity_g_cm3
     gravimetric_soil_moisture: SoilMoisture_g_g
     soil_organic_carbon: SoilOrganicCarbon_g_g
     lattice_water: LatticeWater_g_g

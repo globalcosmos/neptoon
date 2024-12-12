@@ -51,8 +51,6 @@ time_series_data:
     initial_time_zone: utc
     convert_time_zone_to: utc
 
-    cosmos_network:
-
 raw_data_parse_options:
   parse_raw_data: True
   data_location: ./example_data/CRNS-station_data-Hydroinnova-A.zip
@@ -83,10 +81,11 @@ input_data_qa:
       max: 1300
 
 calibration_data:
-  format: neptoon
+  calibrate: False
+  data_format: custom
   location: /path/to/location
   key_column_names:
-    profile: PROF
+    profile_id_column: PROF
     sample_depth: DETPH_AVG
     radial_distance_from_sensor: LOC_rad
 

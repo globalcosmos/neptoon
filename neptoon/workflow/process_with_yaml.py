@@ -22,6 +22,7 @@ from neptoon.corrections import (
     CorrectionType,
     CorrectionTheory,
 )
+from neptoon.calibration import CalibrationConfiguration
 from neptoon.quality_control.saqc_methods_and_params import QAMethod
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import ConfigurationManager
@@ -411,14 +412,36 @@ class ProcessWithYaml:
         self._select_corrections()
         self._correct_neutrons()
 
-        # OPTIONAL: Calibration
-        # TODO
+        if self.station_info.calibration.calibrate:
+            calib_df_path = validate_and_convert_file_path(
+                file_path=self.station_info.calibration.location
+            )
+            calib_df = pd.read_csv(calib_df_path)
+            self.data_hub.calibration_samples_data = calib_df
+            calibration_config = CalibrationConfiguration(
+                date_time_column_name=self.station_info.calibration.key_column_names.date_time,
+                profile_id_column=self.station_info.calibration.key_column_names.profile_id,
+                distance_column=self.station_info.calibration.key_column_names.radial_distance_from_sensor,
+                sample_depth_column=self.station_info.calibration.key_column_names.sample_depth,
+                soil_moisture_gravimetric_column=self.station_info.calibration.key_column_names.gravimetric_soil_moisture,
+                bulk_density_of_sample_column=self.station_info.calibration.key_column_names.bulk_density_of_sample,
+                soil_organic_carbon_column=self.station_info.calibration.key_column_names.soil_organic_carbon,
+                lattice_water_column=self.station_info.calibration.key_column_names.lattice_water,
+            )
+            self.data_hub.calibrate_station(config=calibration_config)
+            self.station_info.general_site_metadata.N0 = (
+                self.data_hub.site_information.n0
+            )
+            self.data_hub.crns_data_frame["N0"] = (
+                self.station_info.general_site_metadata.N0
+            )
+            # self.data_hub.calibrator.return_calibration_results_data_frame()
 
         if self.station_info.general_site_metadata.N0 is None:
             message = (
                 "Cannot proceed with quality assessment or processing "
                 "without an N0 number. Supply an N0 number in the YAML "
-                "file or complete site calibration"
+                "file or use site calibration"
             )
             core_logger.error(message)
             raise ValueError(message)
