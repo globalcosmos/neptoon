@@ -324,6 +324,7 @@ class PrepareCalibrationData:
             pd.to_datetime(
                 self.calibration_data_frame[self.config.date_time_column_name],
                 utc=True,
+                dayfirst=True,
             )
         )
 

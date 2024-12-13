@@ -55,7 +55,8 @@ class CorrectionBuilder:
             correction_type = correction.correction_type
             self.corrections[correction_type] = correction
         else:
-            print(f"{correction}No")  # TODO this properly...
+            message = f"{correction} is not a correction"
+            core_logger.error(message)
 
     def remove_correction_by_type(self, correction_type: str):
         """

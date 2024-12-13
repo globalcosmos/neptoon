@@ -447,7 +447,7 @@ class CRNSDataHub:
         )
         n0 = self.calibrator.find_n0_value()
         self.site_information.n0 = n0
-        print(f"N0 number is {n0}")
+        print(f"N0 number was calculated as {int(n0)}")
 
     def produce_soil_moisture_estimates(
         self,

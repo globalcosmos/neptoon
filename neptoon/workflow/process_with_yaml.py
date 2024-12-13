@@ -337,8 +337,6 @@ class ProcessWithYaml:
         append_yaml_bool = bool(
             self.station_info.data_storage.append_yaml_hash_to_folder_name
         )
-        print(file_name)
-        print(folder)
 
         self.data_hub.save_data(
             folder_name=file_name,
