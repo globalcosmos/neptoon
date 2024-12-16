@@ -26,4 +26,5 @@ yaml_processor = ProcessWithYaml(configuration_object=config)
 # data_hub = yaml_processor.create_data_hub()
 
 ## OPTION 2:
+# DataAuditLog.create()
 yaml_processor.run_full_process()

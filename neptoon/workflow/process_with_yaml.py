@@ -344,6 +344,33 @@ class ProcessWithYaml:
             append_yaml_hash_to_folder_name=append_yaml_bool,
         )
 
+    def _calibrate_data(
+        self,
+    ):
+        """Calibrates the sensor when this is selected."""
+        calib_df_path = validate_and_convert_file_path(
+            file_path=self.station_info.calibration.location
+        )
+        calib_df = pd.read_csv(calib_df_path)
+        self.data_hub.calibration_samples_data = calib_df
+        calibration_config = CalibrationConfiguration(
+            date_time_column_name=self.station_info.calibration.key_column_names.date_time,
+            profile_id_column=self.station_info.calibration.key_column_names.profile_id,
+            distance_column=self.station_info.calibration.key_column_names.radial_distance_from_sensor,
+            sample_depth_column=self.station_info.calibration.key_column_names.sample_depth,
+            soil_moisture_gravimetric_column=self.station_info.calibration.key_column_names.gravimetric_soil_moisture,
+            bulk_density_of_sample_column=self.station_info.calibration.key_column_names.bulk_density_of_sample,
+            soil_organic_carbon_column=self.station_info.calibration.key_column_names.soil_organic_carbon,
+            lattice_water_column=self.station_info.calibration.key_column_names.lattice_water,
+        )
+        self.data_hub.calibrate_station(config=calibration_config)
+        self.station_info.general_site_metadata.N0 = (
+            self.data_hub.site_information.n0
+        )
+        self.data_hub.crns_data_frame["N0"] = (
+            self.station_info.general_site_metadata.N0
+        )
+
     def create_data_hub(
         self,
         return_data_hub: bool = True,
@@ -411,29 +438,7 @@ class ProcessWithYaml:
         self._correct_neutrons()
 
         if self.station_info.calibration.calibrate:
-            calib_df_path = validate_and_convert_file_path(
-                file_path=self.station_info.calibration.location
-            )
-            calib_df = pd.read_csv(calib_df_path)
-            self.data_hub.calibration_samples_data = calib_df
-            calibration_config = CalibrationConfiguration(
-                date_time_column_name=self.station_info.calibration.key_column_names.date_time,
-                profile_id_column=self.station_info.calibration.key_column_names.profile_id,
-                distance_column=self.station_info.calibration.key_column_names.radial_distance_from_sensor,
-                sample_depth_column=self.station_info.calibration.key_column_names.sample_depth,
-                soil_moisture_gravimetric_column=self.station_info.calibration.key_column_names.gravimetric_soil_moisture,
-                bulk_density_of_sample_column=self.station_info.calibration.key_column_names.bulk_density_of_sample,
-                soil_organic_carbon_column=self.station_info.calibration.key_column_names.soil_organic_carbon,
-                lattice_water_column=self.station_info.calibration.key_column_names.lattice_water,
-            )
-            self.data_hub.calibrate_station(config=calibration_config)
-            self.station_info.general_site_metadata.N0 = (
-                self.data_hub.site_information.n0
-            )
-            self.data_hub.crns_data_frame["N0"] = (
-                self.station_info.general_site_metadata.N0
-            )
-            # self.data_hub.calibrator.return_calibration_results_data_frame()
+            self._calibrate_data()
 
         if self.station_info.general_site_metadata.N0 is None:
             message = (
@@ -449,6 +454,7 @@ class ProcessWithYaml:
             name_of_target="corrected_neutrons",
         )
         self._produce_soil_moisture_estimates()
+        self._make_figures()
         self._save_data()
 
 
@@ -502,6 +508,14 @@ class QualityAssessmentWithYaml:
         self.checks = []
 
     def create_checks(self):
+        """
+        Creates the checks based on what is provided in the YAML file.
+
+        Returns
+        -------
+        List
+            A list of Checks is saved in self.checks
+        """
         qa_dict = self.partial_config.model_dump()
 
         # Case 1: Specific target (raw neutrons)
