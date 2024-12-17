@@ -250,6 +250,7 @@ class CRNSDataHub:
         )
         attacher.fetch_data()
         attacher.attach_data()
+        self.crns_data_frame = attacher.return_data_frame()
 
     def add_quality_flags(
         self,

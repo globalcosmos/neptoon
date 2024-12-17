@@ -454,7 +454,7 @@ class ProcessWithYaml:
             name_of_target="corrected_neutrons",
         )
         self._produce_soil_moisture_estimates()
-        self._make_figures()
+        # self._make_figures()
         self._save_data()
 
 
@@ -540,7 +540,9 @@ class QualityAssessmentWithYaml:
         return self.checks
 
     def return_a_check(self, name_of_target: str, target_dict: dict):
-        """Process checks for a specific target."""
+        """
+        Process checks for a specific target.
+        """
         if not target_dict:  # Guard against None or empty dict
             return
 
@@ -573,7 +575,7 @@ class CorrectionSelectorWithYaml:
 
     def __init__(
         self,
-        data_hub: "CRNSDataHub",  # Need string here
+        data_hub: "CRNSDataHub",
         process_info,
         station_info,
     ):
