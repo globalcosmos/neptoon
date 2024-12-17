@@ -10,14 +10,6 @@ from enum import Enum
 
 core_logger = get_logger()
 
-## Changes tracker TODO
-"""
-def TrackChanges:
-    # when change of value occurs, store old and new value + timestamp
-
-Add to ConfigManager
-"""
-
 
 class BaseConfig(BaseModel):
     """
@@ -34,18 +26,18 @@ class BaseConfig(BaseModel):
 # Site Metadata Validation
 
 
-class GeneralSiteMetaData(BaseConfig):
+class SensorInfo(BaseConfig):
     """General site metadata section."""
 
-    site_name: str = Field(
+    name: str = Field(
         description="The name of the site.",
         examples=["Sheepdrove", "Gatton"],
     )
-    site_country: str = Field(
+    country: str = Field(
         description="The country the site is located in.",
         examples=["DEU", "UK", "USA", "KOR"],
     )
-    site_identifier: str = Field(
+    identifier: str = Field(
         description="A unique identier",
         examples=["101", "456"],
     )
@@ -55,17 +47,19 @@ class GeneralSiteMetaData(BaseConfig):
     elevation: float
     time_zone: int
     site_cutoff_rigidity: float
-    reference_incoming_neutron_value: float
-    avg_lattice_water: Optional[float]
-    avg_soil_organic_carbon: Optional[float]
-    avg_dry_soil_bulk_density: Optional[float]
-    N0: Optional[int] = Field(gt=0, description="The N0 calibration term.")
-    beta_coefficient: Optional[float]
-    l_coefficient: Optional[float]
-    mean_pressure: Optional[float]
-    avg_precipitation: Optional[float]
-    avg_soil_moisture: Optional[float]
-    avg_biomass: Optional[float]
+    reference_incoming_neutron_value: float = Field(default=156)
+    avg_lattice_water: Optional[float] = Field(default=None)
+    avg_soil_organic_carbon: Optional[float] = Field(default=None)
+    avg_dry_soil_bulk_density: Optional[float] = Field(default=None)
+    N0: Optional[int] = Field(
+        gt=0, description="The N0 calibration term.", default=None
+    )
+    beta_coefficient: Optional[float] = Field(default=None)
+    l_coefficient: Optional[float] = Field(default=None)
+    mean_pressure: Optional[float] = Field(default=None)
+    avg_precipitation: Optional[float] = Field(default=None)
+    avg_soil_moisture: Optional[float] = Field(default=None)
+    avg_biomass: Optional[float] = Field(default=None)
 
 
 # Time Series Validation
@@ -308,7 +302,7 @@ class CalibrationColumnNames(BaseConfig):
 class CalibrationConfig(BaseConfig):
     """Configuration for calibration data."""
 
-    calibrate_site: bool = Field(default=False)
+    calibrate: bool = Field(default=False)
 
     data_format: Optional[
         Literal["custom", "cosmoz", "cosmos-usa", "cosmos-uk"]
@@ -325,7 +319,7 @@ class DataStorageConfig(BaseConfig):
 class SensorConfig(BaseConfig):
     """Top-level configuration."""
 
-    general_site_metadata: GeneralSiteMetaData
+    sensor_info: SensorInfo
     time_series_data: Optional[TimeSeriesData] = None
     input_data_qa: Optional[QAConfig] = None
     raw_data_parse_options: Optional[RawDataParseConfig] = None
@@ -541,3 +535,6 @@ class ConfigurationManager:
             The requested config
         """
         return self._configs[name]
+
+    def create_sensor_config(self):
+        pass
