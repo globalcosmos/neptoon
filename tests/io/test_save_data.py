@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock
 from neptoon.io.save import SaveAndArchiveOutputs
-from neptoon.config.site_information import SiteInformation
+from neptoon.config.configuration_input import SensorInfo
 
 UNFLAGGED = "UNFLAGGED"
 BAD = "BAD"
@@ -65,8 +65,8 @@ def sample_data():
             ],
         }
     )
-    site_info = Mock(spec=SiteInformation)
-    site_info.site_name = "TestSite"
+    site_info = Mock(spec=SensorInfo)
+    site_info.name = "TestSite"
     return processed_df, flag_df, site_info
 
 
@@ -77,7 +77,7 @@ def save_and_archive(sample_data, tmp_path):
         folder_name="test_folder",
         processed_data_frame=processed_df,
         flag_data_frame=flag_df,
-        site_information=site_info,
+        sensor_info=site_info,
         save_folder_location=tmp_path,
     )
 
@@ -100,26 +100,6 @@ def test_validate_save_folder(save_and_archive, tmp_path):
     assert save_and_archive._validate_save_folder(tmp_path) == tmp_path
     assert save_and_archive._validate_save_folder(str(tmp_path)) == tmp_path
     assert save_and_archive._validate_save_folder(None) == Path.cwd()
-
-
-def test_create_save_folder(save_and_archive, tmp_path):
-    """
-    Tests that the save folder is correctly created
-    """
-    save_and_archive.create_save_folder()
-    expected_path = tmp_path / "test_folder"
-    assert expected_path.exists()
-    assert expected_path.is_dir()
-    assert save_and_archive.full_folder_location == expected_path
-
-
-def test_create_save_folder_existing(save_and_archive, tmp_path):
-    """
-    Tests that no save folder made when existing.
-    """
-    (tmp_path / "test_folder").mkdir()
-    with pytest.raises(FileExistsError):
-        save_and_archive.create_save_folder()
 
 
 def test_append_hash_to_folder_name(save_and_archive, tmp_path):

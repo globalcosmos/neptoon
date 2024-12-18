@@ -399,7 +399,7 @@ class DataQualityAssessor:
 
     def return_flags_data_frame(
         self,
-        current_flag_data_frame: pd.DataFrame | None,
+        current_flag_data_frame: pd.DataFrame | None = None,
     ):
         """
         Returns the flag dataframe

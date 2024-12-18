@@ -4,7 +4,8 @@ from neptoon.workflow.process_with_yaml import (
     ProcessWithYaml,
 )
 from neptoon.config import ConfigurationManager
-from neptoon.data_audit import DataAuditLog
+
+# from neptoon.data_audit import DataAuditLog
 
 # Load your config files in the ConfigurationManager
 config = ConfigurationManager()

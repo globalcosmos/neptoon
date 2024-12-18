@@ -1,10 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import Literal, Union, Optional
-import dataclasses
 from pathlib import Path
-from neptoon.config.site_information import SiteInformation
-from neptoon.config.configuration_input import ConfigurationManager
 from neptoon.external.nmdb_data_collection import (
     NMDBDataAttacher,
 )
@@ -19,6 +16,7 @@ from neptoon.corrections.factory.build_corrections import (
     CorrectionTheory,
     CorrectNeutrons,
 )
+from neptoon.config.configuration_input import SensorInfo
 from neptoon.products.estimate_sm import NeutronsToSM
 from neptoon.quality_control.data_validation_tables import (
     FormatCheck,
@@ -55,11 +53,10 @@ class CRNSDataHub:
         self,
         crns_data_frame: pd.DataFrame,
         flags_data_frame: pd.DataFrame = None,
-        configuration_manager: ConfigurationManager = None,
+        sensor_info: SensorInfo = None,
+        # configuration_manager: ConfigurationManager = None,
         quality_assessor: DataQualityAssessor = None,
         validation: bool = True,
-        site_information: SiteInformation = None,
-        process_with_config: bool = False,
         calibration_samples_data: pd.DataFrame = None,
     ):
         """
@@ -82,23 +79,19 @@ class CRNSDataHub:
             data_management>data_validation_tables.py for examples of
             tables being validated). These checks ensure data is
             correctly formatted for internal processing.
-        site_information : SiteInformation
-            Object which contains information about a site necessary for
-            processing crns data. e.g., bulk density data
         calibration_samples_data : pd.DataFrame
             The sample data taken during the calibration campaign.
         """
 
         self._crns_data_frame = crns_data_frame
         self._flags_data_frame = flags_data_frame
-        if configuration_manager is not None:
-            self._configuration_manager = configuration_manager
+        self._sensor_info = sensor_info
+        # if configuration_manager is not None:
+        #     self._configuration_manager = configuration_manager
         self._validation = validation
         self._quality_assessor = quality_assessor
-        self._process_with_config = process_with_config
-        self._site_information = site_information
         self._calibration_samples_data = calibration_samples_data
-        self._correction_factory = CorrectionFactory(self._site_information)
+        self._correction_factory = CorrectionFactory()
         self._correction_builder = CorrectionBuilder()
         self.calibrator = None
 
@@ -120,6 +113,14 @@ class CRNSDataHub:
         self._flags_data_frame = df
 
     @property
+    def sensor_info(self):
+        return self._sensor_info
+
+    @sensor_info.setter
+    def sensor_info(self, new_config: SensorInfo):
+        self._sensor_info = new_config
+
+    @property
     def validation(self):
         return self._validation
 
@@ -138,14 +139,6 @@ class CRNSDataHub:
             )
             core_logger.error(message)
             raise TypeError(message)
-
-    @property
-    def process_with_config(self):
-        return self._process_with_config
-
-    @property
-    def site_information(self):
-        return self._site_information
 
     @property
     def correction_factory(self):
@@ -198,23 +191,6 @@ class CRNSDataHub:
             )
             core_logger.error(validation_error_message)
             print(validation_error_message)
-
-    def update_site_information(
-        self,
-        new_site_information: SiteInformation,
-    ):
-        """
-        When a user wants to update the hub with a SiteInformation
-        object it must be done with this method.
-
-        Parameters
-        ----------
-        site_information : SiteInformation
-            SiteInformation object
-        """
-        self._site_information = new_site_information
-        self._correction_factory = CorrectionFactory(self._site_information)
-        core_logger.info("Site information updated sucessfully")
 
     def attach_nmdb_data(
         self,
@@ -333,7 +309,7 @@ class CRNSDataHub:
         to the most current and agreed best methods.
 
         Individual corrections can be applied using a CorrectionType and
-        CorrectionTheory. If a user assignes a CorrectionType without a
+        CorrectionTheory. If a user assigns a CorrectionType without a
         CorrectionTheory, then the default correction for that
         CorrectionType is applied.
 
@@ -447,7 +423,7 @@ class CRNSDataHub:
             config=config,
         )
         n0 = self.calibrator.find_n0_value()
-        self.site_information.n0 = n0
+        self.sensor_info.N0 = n0
         print(f"N0 number was calculated as {int(n0)}")
 
     def produce_soil_moisture_estimates(
@@ -461,7 +437,7 @@ class CRNSDataHub:
         Produces SM estimates with the NeutronsToSM class. If values for
         n0, dry_soil_bulk_density, lattice_water, or soil_organic_carbon
         are not supplied, the values are taken from the internal
-        site_information class.
+        sensor_info class.
 
         Parameters
         ----------
@@ -476,10 +452,10 @@ class CRNSDataHub:
         """
         # Create attributes for NeutronsToSM
         default_params = {
-            "n0": self.site_information.n0,
-            "dry_soil_bulk_density": self.site_information.dry_soil_bulk_density,
-            "lattice_water": self.site_information.lattice_water,
-            "soil_organic_carbon": self.site_information.soil_organic_carbon,
+            "n0": self.sensor_info.N0,
+            "dry_soil_bulk_density": self.sensor_info.avg_dry_soil_bulk_density,
+            "lattice_water": self.sensor_info.avg_lattice_water,
+            "soil_organic_carbon": self.sensor_info.avg_soil_organic_carbon,
         }
         provided_params = {
             "n0": n0,
@@ -508,34 +484,35 @@ class CRNSDataHub:
 
     def prepare_static_values(self):
         """
-        Attaches the static values from the SiteInformation object as
+        Attaches the static values from the SensorInfo Pydantic model as
         columns of values in the crns_data_frame.
 
-        TODO
-         - Add a way to use str(ColumnInfo.Name.VARIABLE) for assigning
-           names.
-         - This must consider if people already have the variables and
-           don't want them changed.
-         - Must be a way to compare the SiteInformation key and the
-           appropriate ColumnInfo.Name
+        This method:
+        1. Converts the Pydantic model to a dictionary
+        2. Checks if each key already exists in the DataFrame
+        3. Skips None values
+        4. Adds the remaining values as new columns
+
+        The method preserves existing column values if they are already
+        present in the DataFrame to avoid accidental overwrites.
         """
 
-        site_information_dict = dataclasses.asdict(self.site_information)
-        for key in site_information_dict:
+        sensor_info_dict = self.sensor_info.model_dump()
+        for key, value in sensor_info_dict.items():
             if key in self.crns_data_frame.columns:
                 message = (
                     f"{key} already found in columns of crns_data_frame"
-                    " when trying to add static values from site_information."
-                    "Values from SiteInformation were not writtent to the"
+                    " when trying to add static values from sensor_info."
+                    "This value from SensorInfo was not written to the"
                     " crns_data_frame."
                 )
                 core_logger.info(message)
                 continue
-            elif site_information_dict[key] is None:
+            elif value is None:
                 # TODO add skip here
-                pass
+                continue
             else:
-                self.crns_data_frame[key] = site_information_dict[key]
+                self.crns_data_frame[key] = value
 
     def save_data(
         self,
@@ -564,7 +541,7 @@ class CRNSDataHub:
             Name of the file
         """
         if folder_name is None:
-            folder_name = self.site_information.site_name
+            folder_name = self.sensor_info.name
         if save_folder_location is None:
             save_folder_location = Path.cwd()
 
@@ -572,7 +549,7 @@ class CRNSDataHub:
             folder_name=folder_name,
             processed_data_frame=self.crns_data_frame,
             flag_data_frame=self.flags_data_frame,
-            site_information=self.site_information,
+            sensor_info=self.sensor_info,
             save_folder_location=save_folder_location,
             append_yaml_hash_to_folder_name=append_yaml_hash_to_folder_name,
             use_custom_column_names=use_custom_column_names,

@@ -1,7 +1,7 @@
 import pandas as pd
 from neptoon.hub import CRNSDataHub
 from neptoon.columns import ColumnInfo
-from neptoon.config.site_information import SiteInformation
+from neptoon.config.configuration_input import SensorInfo
 import pytest
 
 
@@ -36,33 +36,26 @@ def test_crns_data_hub_initialization(sample_crns_data):
 
 
 @pytest.fixture
-def example_site_information():
-    site_information = SiteInformation(
-        site_name="test",
+def example_sensor_information():
+    site_information = SensorInfo(
+        name="test",
+        country="DEU",
+        identifier="101",
         latitude=51.37,
         longitude=12.55,
         elevation=140,
+        time_zone=1,
+        install_date=pd.to_datetime("14/03/2015", dayfirst=True),
         reference_incoming_neutron_value=150,
-        dry_soil_bulk_density=1.4,
-        lattice_water=0.01,
-        soil_organic_carbon=0,
+        avg_dry_soil_bulk_density=1.4,
+        avg_lattice_water=0.01,
+        avg_soil_organic_carbon=0,
         # mean_pressure=900,
         site_cutoff_rigidity=2.94,
         site_biomass=1,
         n0=200,
     )
     return site_information
-
-
-def test_prepare_site_information(example_site_information, example_data_hub):
-    data_hub = example_data_hub
-    data_hub.update_site_information(
-        new_site_information=example_site_information
-    )
-    data_hub.prepare_static_values()
-
-    assert "dry_soil_bulk_density" in data_hub.crns_data_frame.columns
-    assert data_hub.crns_data_frame["dry_soil_bulk_density"].median() == 1.4
 
 
 @pytest.fixture
@@ -115,10 +108,12 @@ def sample_crns_data_corrected():
 
 
 @pytest.fixture
-def sample_hub_corrected(sample_crns_data_corrected, example_site_information):
+def sample_hub_corrected(
+    sample_crns_data_corrected, example_sensor_information
+):
     return CRNSDataHub(
         crns_data_frame=sample_crns_data_corrected,
-        site_information=example_site_information,
+        sensor_info=example_sensor_information,
     )
 
 
@@ -126,29 +121,15 @@ def test_produce_soil_moisture_estimates_default(sample_hub_corrected):
     """
     Check if soil moisture column is added
     """
-    sample_hub_corrected.produce_soil_moisture_estimates()
+    sample_hub_corrected.produce_soil_moisture_estimates(
+        n0=2000,
+        dry_soil_bulk_density=1.4,
+        lattice_water=0.01,
+        soil_organic_carbon=0.01,
+    )
 
     assert (
         str(ColumnInfo.Name.SOIL_MOISTURE)
         in sample_hub_corrected.crns_data_frame.columns
     )
     print(sample_hub_corrected.crns_data_frame)
-
-
-def test_produce_soil_moisture_estimates(sample_hub_corrected):
-    """
-    Test if changes occur when custom values are submitted.
-    """
-    data_hub = sample_hub_corrected
-    data_hub.prepare_static_values()
-    data_hub.produce_soil_moisture_estimates()
-    first_df_out = data_hub.crns_data_frame[str(ColumnInfo.Name.SOIL_MOISTURE)]
-
-    data_hub2 = sample_hub_corrected
-    data_hub2.prepare_static_values()
-    data_hub2.produce_soil_moisture_estimates(n0=10, dry_soil_bulk_density=1)
-    second_df_out = data_hub2.crns_data_frame[
-        str(ColumnInfo.Name.SOIL_MOISTURE)
-    ]
-    with pytest.raises(AssertionError):
-        pd.testing.assert_series_equal(first_df_out, second_df_out)

@@ -5,7 +5,7 @@ from typing import Union
 
 from neptoon.logging import get_logger
 from neptoon.data_audit import DataAuditLog
-from neptoon.config.site_information import SiteInformation
+from neptoon.config.configuration_input import SensorInfo
 from neptoon.utils.general_utils import validate_and_convert_file_path
 
 core_logger = get_logger()
@@ -27,7 +27,7 @@ class SaveAndArchiveOutputs:
         folder_name: str,
         processed_data_frame: pd.DataFrame,
         flag_data_frame: pd.DataFrame,
-        site_information: SiteInformation,
+        sensor_info: SensorInfo,
         save_folder_location: Union[str, Path] = None,
         append_yaml_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
@@ -45,8 +45,8 @@ class SaveAndArchiveOutputs:
             The processed time series data
         flag_data_frame : pd.DataFrame
             The flag dataframe
-        site_information : SiteInformation
-            The SiteInformation object.
+        sensor_info : SensorInfo
+            The SensorInfo object.
         save_folder_location : Union[str, Path], optional
             The folder where the data should be saved. If left as None
         append_yaml_hash_to_folder_name : bool, optional
@@ -66,7 +66,7 @@ class SaveAndArchiveOutputs:
         self.folder_name = folder_name
         self.processed_data_frame = processed_data_frame
         self.flag_data_frame = flag_data_frame
-        self.site_information = site_information
+        self.sensor_info = sensor_info
         self.save_folder_location = self._validate_save_folder(
             save_folder_location
         )
@@ -164,7 +164,7 @@ class SaveAndArchiveOutputs:
         """
         try:
             DataAuditLog.archive_and_delete_log(
-                site_name=self.site_information.site_name,
+                site_name=self.sensor_info.name,
                 custom_log_location=self.full_folder_location,
             )
             if append_hash:
@@ -174,7 +174,7 @@ class SaveAndArchiveOutputs:
                 # update internal attribute
                 self.full_folder_location = new_folder_path
         except AttributeError as e:
-            message = "DataAuditLog not present - skipping archive step"
+            message = f"{e}: DataAuditLog not present - skipping archive step"
             core_logger.info(message)
         except Exception as e:
             message = f"Unexpected error in DataAuditLog archiving: {e}"
@@ -289,7 +289,7 @@ class SaveAndArchiveOutputs:
                 core_logger.error(message)
                 print(message)
                 raise ValueError
-        file_name = self.site_information.site_name
+        file_name = self.sensor_info.name
         self.create_save_folder()
         if nan_bad_data:
             self.processed_data_frame = self.mask_bad_data()

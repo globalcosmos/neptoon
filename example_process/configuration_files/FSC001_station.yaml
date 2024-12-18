@@ -2,10 +2,10 @@
 # Please refer to documentation for descriptions of each data point and its units.
 sensor_config:
 
-general_site_metadata:
-  site_name: Fuerstensee
-  site_country: Germany
-  site_identifier: FSC001
+sensor_info:
+  name: Fuerstensee
+  country: Germany
+  identifier: FSC001
   install_date: 2014-01-01
   latitude: 53.319
   longitude: 13.122

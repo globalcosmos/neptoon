@@ -1,9 +1,9 @@
 sensor_config: # Leave this blank and don't delete!
 
-general_site_metadata:
-  site_name: my_test_site
-  site_country: Germany
-  site_identifier: A101
+sensor_info:
+  name: my_test_site
+  country: Germany
+  identifier: A101
   install_date: 2016-10-21
   latitude: 51.369597
   longitude: 12.557120
@@ -80,7 +80,7 @@ input_data_qa:
       min: 600
       max: 1300
 
-calibration_data:
+calibration:
   calibrate: False
   data_format: custom
   location: /path/to/location
