@@ -28,7 +28,7 @@ from neptoon.quality_control import (
 )
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
-
+from neptoon.columns import ColumnInfo
 from neptoon.logging import get_logger
 
 core_logger = get_logger()
@@ -54,7 +54,6 @@ class CRNSDataHub:
         crns_data_frame: pd.DataFrame,
         flags_data_frame: pd.DataFrame = None,
         sensor_info: SensorInfo = None,
-        # configuration_manager: ConfigurationManager = None,
         quality_assessor: DataQualityAssessor = None,
         validation: bool = True,
         calibration_samples_data: pd.DataFrame = None,
@@ -86,8 +85,6 @@ class CRNSDataHub:
         self._crns_data_frame = crns_data_frame
         self._flags_data_frame = flags_data_frame
         self._sensor_info = sensor_info
-        # if configuration_manager is not None:
-        #     self._configuration_manager = configuration_manager
         self._validation = validation
         self._quality_assessor = quality_assessor
         self._calibration_samples_data = calibration_samples_data
@@ -195,7 +192,7 @@ class CRNSDataHub:
     def attach_nmdb_data(
         self,
         station="JUNG",
-        new_column_name="incoming_neutron_intensity",
+        new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
         resolution="60",
         nmdb_table="revori",
     ):
@@ -246,12 +243,6 @@ class CRNSDataHub:
             will be then added to the QualityAssessmentFlagBuilder, by
             default None
         """
-        # if self.quality_assessor is None:
-        #     self.quality_assessor = DataQualityAssessor(
-        #         data_frame=self.crns_data_frame
-        #     )
-        # else:
-        #     self.quality_assessor.data_frame = self.crns_data_frame
         self.quality_assessor = DataQualityAssessor(
             data_frame=self.crns_data_frame
         )

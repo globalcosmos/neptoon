@@ -2,7 +2,7 @@ from typing import List, Optional, Literal, Dict
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pathlib import Path
 from datetime import datetime
-
+import yaml
 
 from neptoon.logging import get_logger
 from enum import Enum
@@ -499,6 +499,47 @@ class ConfigurationManager:
     def __init__(self):
         self._configs: Dict[str, BaseConfig] = {}
 
+    def _resolve_paths(
+        self,
+        config_dict: dict,
+        config_path: Path,
+    ):
+        """
+        Resolves the paths in the YAML file so that any relative paths
+        are relative to the config file itself. The given paths are
+        resolved to Path objects.
+
+        Parameters
+        ----------
+        config_dict : dict
+            The loaded YAML file as a dict
+        config_path : Path
+            The Path of the config YAML
+
+        Returns
+        -------
+        dict
+            Dictionary with paths as Path objects.
+        """
+        resolved_dict = {}
+        for key, value in config_dict.items():
+            if isinstance(value, dict):
+                resolved_dict[key] = self._resolve_paths(
+                    value, config_path=config_path
+                )
+            elif isinstance(value, str) and (
+                "path" in key.lower()
+                or "file" in key.lower()
+                or "location" in key.lower()
+            ):
+                path = Path(value)
+                if not path.is_absolute():
+                    path = (config_path.parent / path).resolve()
+                resolved_dict[key] = str(path)
+            else:
+                resolved_dict[key] = value
+        return resolved_dict
+
     def load_configuration(self, file_path: str) -> None:
         """
         Load and validate nested configuration.
@@ -508,10 +549,13 @@ class ConfigurationManager:
         file_path : str
             Path to YAML configuration file
         """
-        import yaml
+
+        config_path = Path(file_path).resolve()
 
         with open(file_path) as f:
             config_dict = yaml.safe_load(f)
+
+        config_dict = self._resolve_paths(config_dict, config_path)
 
         if "sensor_config" in config_dict:
             config_type = str(ConfigType.SENSOR.value)
