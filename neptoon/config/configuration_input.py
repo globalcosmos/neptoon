@@ -528,9 +528,7 @@ class ConfigurationManager:
                     value, config_path=config_path
                 )
             elif isinstance(value, str) and (
-                "path" in key.lower()
-                or "file" in key.lower()
-                or "location" in key.lower()
+                "path_" in key.lower() or "location" in key.lower()
             ):
                 path = Path(value)
                 if not path.is_absolute():
