@@ -2,7 +2,8 @@
 from pathlib import Path
 from neptoon.workflow import ProcessWithYaml
 from neptoon.config import ConfigurationManager
-from neptoon.data_audit import DataAuditLog
+
+# from neptoon.data_audit import DataAuditLog
 
 
 config = ConfigurationManager()

@@ -174,7 +174,7 @@ class SaveAndArchiveOutputs:
                 # update internal attribute
                 self.full_folder_location = new_folder_path
         except AttributeError as e:
-            message = "DataAuditLog not present - skipping archive step"
+            message = f"{e}: DataAuditLog not present - skipping archive step"
             core_logger.info(message)
         except Exception as e:
             message = f"Unexpected error in DataAuditLog archiving: {e}"

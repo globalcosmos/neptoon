@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from typing import Literal, Union, Optional
-import dataclasses
 from pathlib import Path
 from neptoon.external.nmdb_data_collection import (
     NMDBDataAttacher,

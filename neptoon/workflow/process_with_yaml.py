@@ -1,7 +1,6 @@
 import pandas as pd
 from typing import Literal, TYPE_CHECKING
 from pathlib import Path
-from enum import Enum
 
 if TYPE_CHECKING:
     from neptoon.hub import CRNSDataHub
@@ -274,7 +273,7 @@ class ProcessWithYaml:
         file_name = self.sensor_config.sensor_info.name
         try:
             initial_folder_str = self.sensor_config.data_storage.save_folder
-        except:
+        except AttributeError:
             initial_folder_str = None
             message = (
                 "No data storage location available in config. Using cwd()"

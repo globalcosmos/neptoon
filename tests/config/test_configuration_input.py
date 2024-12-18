@@ -1,7 +1,8 @@
 from neptoon.config.configuration_input import ConfigurationManager, BaseConfig
 
 from pathlib import Path
-import pytest
+
+# import pytest
 
 
 def test_returned_config_config_type():
