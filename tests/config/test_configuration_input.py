@@ -27,12 +27,12 @@ def test_configuration_management_integration_test():
     config_manager.load_configuration(mock_file_path)
     station_object = config_manager.get_config("sensor")
 
-    assert station_object.general_site_metadata.site_country == "Germany"
+    assert station_object.sensor_info.country == "Germany"
     assert (
         station_object.time_series_data.key_column_info.thermal_neutrons
         is None
     )
-    assert station_object.calibration_data.key_column_names.profile == "PROF"
+    assert station_object.calibration.key_column_names.profile == "PROF"
 
 
 # def test_loading_yaml_file():
