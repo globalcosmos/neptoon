@@ -1,6 +1,6 @@
 # This is essential information that will be unique to each sensor
 # Please refer to documentation for descriptions of each data point and its units.
-sensor_config: # leave this blank
+config: sensor
 
 sensor_info:
   name: Fuerstensee

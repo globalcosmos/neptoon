@@ -555,10 +555,10 @@ class ConfigurationManager:
 
         config_dict = self._resolve_paths(config_dict, config_path)
 
-        if "sensor_config" in config_dict:
+        if config_dict["config"] == "sensor":
             config_type = str(ConfigType.SENSOR.value)
             self._configs[config_type] = SensorConfig(**config_dict)
-        elif "process_config" in config_dict:
+        elif config_dict["config"] == "process":
             config_type = str(ConfigType.PROCESS.value)
             self._configs[config_type] = ProcessConfig(**config_dict)
 

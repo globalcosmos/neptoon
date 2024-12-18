@@ -1,4 +1,4 @@
-sensor_config: # Leave this blank and don't delete!
+config: sensor
 
 sensor_info:
   name: my_test_site

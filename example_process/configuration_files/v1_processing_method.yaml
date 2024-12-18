@@ -1,4 +1,4 @@
-process_config:
+config: process
 
 neutron_quality_assessment:
   raw_neutrons:
