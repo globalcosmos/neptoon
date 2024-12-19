@@ -89,57 +89,7 @@ calibration:
     soil_organic_carbon: SoilOrganicCarbon_g_g
     lattice_water: LatticeWater_g_g
 
-crns_sensor_information:
-  sensor_tube_type: HydroInnova C1000
-  sensor_height_cm: 200
-  multiple_tubes: False
-
-pdf_formatting:
-  title: CRNS station
-  subtitle: operated by Helmholtz Centre for Environmental Research -- UFZ, Leipzig
-  contact: Martin Schrön
-  contact_email: martin.schroen@ufz.de
-  cover_image: input/station.png
-
 data_storage:
   save_folder:
   data_source: None
   append_yaml_to_folder_name: True
-  local_storage_path: input/station-data.zip
-  local_storage_prefix: CRS03_Data
-  local_storage_suffix: .txt
-  FTP_server_host: host
-  FTP_server_username: username
-  FTP_server_password: password # need to think of a better way to store passwords!
-  FTP_server_data_prefix: CRS_Data
-  FTP_server_data_suffix: .txt
-  remote_folder_SD_path:
-  remote_folder_SD_prefix:
-  remote_folder_SD_suffix:
-# # The collected metadata will be filled out by neptoon!
-# externally_collected_metadata:
-#   soil_grids:
-#     # Change these to change resolution around the sensor
-#     desired_depth: 100 # cm
-#     desired_radius: 250 # m
-#     # Collected average values based on the above range
-#     bulk_density: # g/cm3
-#     bulk_density_uncertainty:
-#     soil_organic_carbon: #g/dm#
-#     soil_organic_carbon_uncertainty:
-#     ph_of_water: #pH
-#     ph_of_water_uncertainty:
-#     cation_exchange_capacity: #mmol(c)/kg
-#     cation_exchange_capacity_uncertainty:
-#     coarse_fragments_cfvo: #cm3/dm3
-#     coarse_fragments_cfvo_uncertainty:
-#     nitrogen: #cg/kg
-#     nitrogen_uncertainty:
-#     sand: #g/kg
-#     sand_uncertainty:
-#     silt: #g/kg
-#     silt_uncertainty:
-#     clay: #g/kg
-#     clay_uncertainty:
-
-#### DERIVED METADATA 06 May 2024

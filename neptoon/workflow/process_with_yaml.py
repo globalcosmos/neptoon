@@ -157,14 +157,13 @@ class ProcessWithYaml:
         """
         Attaches incoming neutron data with NMDB database.
         """
-        tmp = (
-            self.process_config.correction_steps.incoming_radiation.reference_neutron_monitor
-        )
+        tmp = self.process_config.correction_steps.incoming_radiation
         self.data_hub.attach_nmdb_data(
-            station=tmp.station,
+            station=tmp.reference_neutron_monitor.station,
+            reference_value=tmp.reference_value,
             new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
-            resolution=tmp.resolution,
-            nmdb_table=tmp.nmdb_table,
+            resolution=tmp.reference_neutron_monitor.resolution,
+            nmdb_table=tmp.reference_neutron_monitor.nmdb_table,
         )
 
     def _prepare_static_values(

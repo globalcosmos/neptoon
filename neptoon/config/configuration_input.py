@@ -47,7 +47,6 @@ class SensorInfo(BaseConfig):
     elevation: float
     time_zone: int
     site_cutoff_rigidity: float
-    reference_incoming_neutron_value: float = Field(default=156)
     avg_lattice_water: Optional[float] = Field(default=None)
     avg_soil_organic_carbon: Optional[float] = Field(default=None)
     avg_dry_soil_bulk_density: Optional[float] = Field(default=None)
