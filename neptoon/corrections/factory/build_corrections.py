@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from neptoon.logging import get_logger
-from neptoon.config.site_information import SiteInformation
 from neptoon.columns import ColumnInfo
 
 from .correction_classes import (
@@ -55,7 +54,8 @@ class CorrectionBuilder:
             correction_type = correction.correction_type
             self.corrections[correction_type] = correction
         else:
-            print(f"{correction}No")  # TODO this properly...
+            message = f"{correction} is not a correction"
+            core_logger.error(message)
 
     def remove_correction_by_type(self, correction_type: str):
         """
@@ -327,13 +327,8 @@ class CorrectionFactory:
     register a custom correction for use in processing.
     """
 
-    def __init__(self, site_information: SiteInformation):
-        self._site_information = site_information
+    def __init__(self):
         self.custom_corrections = {}
-
-    @property
-    def site_information(self):
-        return self._site_information
 
     def create_correction(
         self,
@@ -341,10 +336,10 @@ class CorrectionFactory:
         correction_theory: CorrectionTheory = None,
     ):
         """
-        Creates a particular Correction object using site_information.
-        CorrectionType and CorrectionTheory enums are used for
-        selection. If CorrectionTheory is left empty the default
-        correction is selected.
+        Creates a particular Correction. CorrectionType and
+        CorrectionTheory enums are used for selection. If
+        CorrectionTheory is left empty the default correction is
+        selected.
 
         Parameters
         ----------
@@ -363,20 +358,18 @@ class CorrectionFactory:
         -------
         Correction
             Returns a correction object with the site specific values
-            read in from the SiteInformation class
+            read in from the SiteInfo class
         """
         if (correction_type, correction_theory) in self.custom_corrections:
             return self.custom_corrections[
                 (correction_type, correction_theory)
             ](
-                site_information=self.site_information,
                 correction_type=correction_type,
             )
         if correction_type == CorrectionType.ABOVE_GROUND_BIOMASS:
             return self.create_biomass_correction(
                 correction_theory=correction_theory
             )
-
         if correction_type == CorrectionType.INCOMING_INTENSITY:
             return self.create_intensity_correction(
                 correction_theory=correction_theory
@@ -421,7 +414,7 @@ class CorrectionFactory:
     def create_pressure_correction(self, correction_theory: CorrectionTheory):
         """
         Internal method for selecting the correct pressure correction to
-        use
+        use.
 
         Parameters
         ----------

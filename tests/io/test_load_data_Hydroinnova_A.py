@@ -15,8 +15,8 @@ from neptoon.io.read.data_ingest import (
 test_dir_path = Path(__file__).parent.parent / "test_data" / "io" / "test_dir"
 
 test_filename = (
-    Path(__file__).parent.parent
-    / "test_data"
+    Path(__file__).parent
+    / "test_data"  # COME BACK TO THIS <-- remove i think #####!!!##
     / "io"
     / "CRNS-station_data-Hydroinnova-A.zip"
 )
@@ -55,7 +55,7 @@ def test_canary(
     ), "epithermal_neutrons_cph column is not float64"
 
 
-test_canary()
+# test_canary()
 
 # # %%
 # def test_collect_files_from_folder(

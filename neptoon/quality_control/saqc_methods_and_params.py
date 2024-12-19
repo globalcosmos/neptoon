@@ -285,3 +285,33 @@ class ParameterRegistry:
                 f"No parameter specification found for method {method}"
             )
         return cls._registry[method]
+
+
+class YamlRegistry:
+    """
+    Registry system for mapping YAML configuration keys to QA enums.
+    """
+
+    _target_mapping = {
+        "raw_neutrons": QATarget.RAW_EPI_NEUTRONS,
+        "corrected_neutrons": QATarget.CORRECTED_EPI_NEUTRONS,
+        "air_relative_humidity": QATarget.RELATIVE_HUMIDITY,
+        "air_pressure": QATarget.AIR_PRESSURE,
+        "temperature": QATarget.TEMPERATURE,
+    }
+
+    _method_mapping = {
+        "flag_range": QAMethod.RANGE_CHECK,
+        "spike_uni_lof": QAMethod.SPIKE_UNILOF,
+        "constant": QAMethod.CONSTANT,
+        "greater_than_N0": QAMethod.ABOVE_N0,
+        "below_N0_factor": QAMethod.BELOW_N0_FACTOR,
+    }
+
+    @classmethod
+    def get_target(cls, target: str) -> QATarget:
+        return cls._target_mapping[target]
+
+    @classmethod
+    def get_method(cls, method: str) -> QAMethod:
+        return cls._method_mapping[method]

@@ -5,7 +5,7 @@ from typing import Union
 
 from neptoon.logging import get_logger
 from neptoon.data_audit import DataAuditLog
-from neptoon.config.site_information import SiteInformation
+from neptoon.config.configuration_input import SensorInfo
 from neptoon.utils.general_utils import validate_and_convert_file_path
 
 core_logger = get_logger()
@@ -27,11 +27,12 @@ class SaveAndArchiveOutputs:
         folder_name: str,
         processed_data_frame: pd.DataFrame,
         flag_data_frame: pd.DataFrame,
-        site_information: SiteInformation,
+        sensor_info: SensorInfo,
         save_folder_location: Union[str, Path] = None,
         append_yaml_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: dict = None,
+        append_time_stamp: bool = True,
     ):
         """
         Attributes
@@ -44,8 +45,8 @@ class SaveAndArchiveOutputs:
             The processed time series data
         flag_data_frame : pd.DataFrame
             The flag dataframe
-        site_information : SiteInformation
-            The SiteInformation object.
+        sensor_info : SensorInfo
+            The SensorInfo object.
         save_folder_location : Union[str, Path], optional
             The folder where the data should be saved. If left as None
         append_yaml_hash_to_folder_name : bool, optional
@@ -58,17 +59,21 @@ class SaveAndArchiveOutputs:
         custom_column_names_dict : dict, optional
             A dictionary to convert standard neptoon names into custom a
             custom naming convention, by default None
+        append_time_stamp: bool, optional, by default True
+            Whether to append a timestamp to the folder name when
+            saving.
         """
         self.folder_name = folder_name
         self.processed_data_frame = processed_data_frame
         self.flag_data_frame = flag_data_frame
-        self.site_information = site_information
+        self.sensor_info = sensor_info
         self.save_folder_location = self._validate_save_folder(
             save_folder_location
         )
         self.append_yaml_hash_to_folder_name = append_yaml_hash_to_folder_name
         self.use_custom_column_names = use_custom_column_names
         self.custom_column_names_dict = custom_column_names_dict
+        self.append_time_stamp = append_time_stamp
         self.full_folder_location = None
 
     def _validate_save_folder(
@@ -102,6 +107,7 @@ class SaveAndArchiveOutputs:
         """
         Creates the folder location where the data will be saved.
         """
+
         # Make save folder if not already there
         try:
             self.save_folder_location.mkdir()
@@ -109,9 +115,17 @@ class SaveAndArchiveOutputs:
             message = f"Error: {e} \nFolder already exists."
             core_logger.info(message)
 
-        self.full_folder_location = (
-            self.save_folder_location / self.folder_name
-        )
+        if self.append_time_stamp:
+            from datetime import datetime
+
+            # timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        else:
+            timestamp = ""
+
+        new_folder_name = self.folder_name + "_" + timestamp
+
+        self.full_folder_location = self.save_folder_location / new_folder_name
 
         # Prevent overwriting station data
         try:
@@ -150,7 +164,7 @@ class SaveAndArchiveOutputs:
         """
         try:
             DataAuditLog.archive_and_delete_log(
-                site_name=self.site_information.site_name,
+                site_name=self.sensor_info.name,
                 custom_log_location=self.full_folder_location,
             )
             if append_hash:
@@ -159,8 +173,11 @@ class SaveAndArchiveOutputs:
                 )
                 # update internal attribute
                 self.full_folder_location = new_folder_path
+        except AttributeError as e:
+            message = f"{e}: DataAuditLog not present - skipping archive step"
+            core_logger.info(message)
         except Exception as e:
-            message = f"Error: {e} \nCould not close DataAuditLog, presumed not created"
+            message = f"Unexpected error in DataAuditLog archiving: {e}"
             core_logger.error(message)
 
     def append_hash_to_folder_name(
@@ -272,7 +289,7 @@ class SaveAndArchiveOutputs:
                 core_logger.error(message)
                 print(message)
                 raise ValueError
-        file_name = self.site_information.site_name
+        file_name = self.sensor_info.name
         self.create_save_folder()
         if nan_bad_data:
             self.processed_data_frame = self.mask_bad_data()

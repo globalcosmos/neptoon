@@ -6,7 +6,6 @@ if TYPE_CHECKING:
     from neptoon.hub import CRNSDataHub
 
 from neptoon.logging import get_logger
-from neptoon.config.site_information import SiteInformation
 from neptoon.io.read.data_ingest import (
     FileCollectionConfig,
     ManageFileCollection,
@@ -15,12 +14,14 @@ from neptoon.io.read.data_ingest import (
     FormatDataForCRNSDataHub,
     validate_and_convert_file_path,
 )
-
+from neptoon.quality_control.saqc_methods_and_params import YamlRegistry
+from neptoon.quality_control import QualityCheck
 from neptoon.corrections import (
     CorrectionType,
     CorrectionTheory,
 )
-
+from neptoon.calibration import CalibrationConfiguration
+from neptoon.quality_control.saqc_methods_and_params import QAMethod
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import ConfigurationManager
 
@@ -32,16 +33,17 @@ class ProcessWithYaml:
     def __init__(
         self,
         configuration_object: ConfigurationManager,
-        pre_configure_corrections=False,
+        # run_with_data_audit_log: bool = True,
     ):
         self.configuration_object = configuration_object
-        self.process_info = self._get_config_object(wanted_object="processing")
-        self.station_info = self._get_config_object(wanted_object="station")
+        # self.run_with_data_audit_log = run_with_data_audit_log
+        self.process_config = self._get_config_object(wanted_object="process")
+        self.sensor_config = self._get_config_object(wanted_object="sensor")
         self.data_hub = None
 
     def _get_config_object(
         self,
-        wanted_object: Literal["station", "processing"],
+        wanted_object: Literal["sensor", "processing"],
     ):
         """
         Collects the specific config object from the larger
@@ -49,7 +51,7 @@ class ProcessWithYaml:
 
         Parameters
         ----------
-        wanted_object : Literal["station", "processing"]
+        wanted_object : Literal["sensor", "processing"]
             The object to collect
 
         Returns
@@ -57,7 +59,7 @@ class ProcessWithYaml:
         ConfigurationObject
             The required configuration object.
         """
-        return self.configuration_object.get_configuration(name=wanted_object)
+        return self.configuration_object.get_config(name=wanted_object)
 
     def _parse_raw_data(
         self,
@@ -71,7 +73,7 @@ class ProcessWithYaml:
             DataFrame from raw files.
         """
         # create tmp object for more readable code
-        tmp = self.station_info.raw_data_parse_options
+        tmp = self.sensor_config.raw_data_parse_options
 
         file_collection_config = FileCollectionConfig(
             data_location=tmp.data_location,
@@ -83,7 +85,8 @@ class ProcessWithYaml:
             separator=tmp.separator,
             decimal=tmp.decimal,
             skip_initial_space=tmp.skip_initial_space,
-            parser_kw=tmp.parser_kw.to_dict(),
+            parser_kw_strip_left=tmp.parser_kw.strip_left,
+            parser_kw_digit_first=tmp.parser_kw.digit_first,
             starts_with=tmp.starts_with,
             multi_header=tmp.multi_header,
             strip_names=tmp.strip_names,
@@ -111,7 +114,7 @@ class ProcessWithYaml:
             Returns a formatted dataframe
         """
         self.input_formatter_config = InputDataFrameFormattingConfig()
-        self.input_formatter_config.yaml_information = self.station_info
+        self.input_formatter_config.yaml_information = self.sensor_config
         self.input_formatter_config.build_from_yaml()
         # date_time_column = self.input_formatter_config.
 
@@ -137,68 +140,16 @@ class ProcessWithYaml:
         pd.DataFrame
             Prepared DataFrame
         """
-        if self.station_info.raw_data_parse_options.parse_raw_data:
+        if self.sensor_config.raw_data_parse_options.parse_raw_data:
             self._parse_raw_data()
         else:
             self.raw_data_parsed = pd.read_csv(
                 validate_and_convert_file_path(
-                    file_path=self.station_info.time_series_data.path_to_data,
+                    file_path=self.sensor_config.time_series_data.path_to_data,
                 )
             )
-            # self.raw_data_parsed.set_index(
-            #     self.raw_data_parsed[
-            #         self.station_info.time_series_data.date_time_column
-            #     ],
-            #     drop=True,
-            # )
         df = self._prepare_time_series()
         return df
-
-    def _create_site_information(
-        self,
-    ):
-        """
-        Creates a SiteInformation object using the station_info
-        configuration object.
-
-        Returns
-        -------
-        SiteInformation
-            The complete SiteInformation object.
-        """
-        tmp = self.station_info.general_site_metadata
-
-        site_info = SiteInformation(
-            site_name=tmp.site_name,
-            latitude=tmp.latitude,
-            longitude=tmp.longitude,
-            elevation=tmp.elevation,
-            reference_incoming_neutron_value=tmp.reference_incoming_neutron_value,
-            dry_soil_bulk_density=(
-                self.station_info.general_site_metadata.avg_dry_soil_bulk_density
-            ),
-            lattice_water=(
-                self.station_info.general_site_metadata.avg_lattice_water
-            ),
-            soil_organic_carbon=(
-                self.station_info.general_site_metadata.avg_soil_organic_carbon
-            ),
-            site_cutoff_rigidity=(
-                self.station_info.general_site_metadata.site_cutoff_rigidity
-            ),
-            mean_pressure=(
-                self.station_info.general_site_metadata.mean_pressure
-            ),
-            site_biomass=(self.station_info.general_site_metadata.avg_biomass),
-            n0=(self.station_info.general_site_metadata.N0),
-            beta_coefficient=(
-                self.station_info.general_site_metadata.beta_coefficient
-            ),
-            l_coefficient=(
-                self.station_info.general_site_metadata.l_coefficient
-            ),
-        )
-        return site_info
 
     def _attach_nmdb_data(
         self,
@@ -206,14 +157,13 @@ class ProcessWithYaml:
         """
         Attaches incoming neutron data with NMDB database.
         """
-        tmp = (
-            self.process_info.correction_steps.incoming_radiation.reference_neutron_monitor
-        )
+        tmp = self.process_config.correction_steps.incoming_radiation
         self.data_hub.attach_nmdb_data(
-            station=tmp.station,
+            station=tmp.reference_neutron_monitor.station,
+            reference_value=tmp.reference_value,
             new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
-            resolution=tmp.resolution,
-            nmdb_table=tmp.nmdb_table,
+            resolution=tmp.reference_neutron_monitor.resolution,
+            nmdb_table=tmp.reference_neutron_monitor.nmdb_table,
         )
 
     def _prepare_static_values(
@@ -229,36 +179,22 @@ class ProcessWithYaml:
 
     def _apply_quality_assessment(
         self,
-        name_of_section: str,
         partial_config,
+        name_of_target: str = None,
     ):
         """
         Method to create quality flags
 
         Parameters
         ----------
-        name_of_section : str
-            Name of the section of the partial_config
         partial_config : ConfigurationObject
             A ConfigurationObject section
-
-        Notes
-        -----
-
-        The name_of_section should match the final part of the supplied
-        partial_config. For example:
-
-        partial_config = (
-            config.process_info.neutron_quality_assessment.flag_raw_neutrons
-            )
-
-        Therefore:
-
-        name_of_section = 'flag_raw_neutrons'
-
+        name_of_target : str
+            Name of the target for QA - if None it will loop through
+            available targets in the partial_config
         """
         list_of_checks = self._prepare_quality_assessment(
-            name_of_section=name_of_section,
+            name_of_target=name_of_target,
             partial_config=partial_config,
         )
         self.data_hub.add_quality_flags(add_check=list_of_checks)
@@ -266,18 +202,20 @@ class ProcessWithYaml:
 
     def _prepare_quality_assessment(
         self,
-        name_of_section: str,
         partial_config,
+        name_of_target: str = None,
     ):
         """
 
 
         Parameters
         ----------
-        name_of_section : str
-            Name of the section of the partial_config
+
         partial_config : ConfigurationObject
             A ConfigurationObject section
+        name_of_target : str
+            Name of the target for QA - if None it will loop through
+            available targets in the partial_config
 
         Notes
         -----
@@ -291,23 +229,25 @@ class ProcessWithYaml:
         """
 
         qa_builder = QualityAssessmentWithYaml(
-            name_of_section=name_of_section,
             partial_config=partial_config,
-            station_info=self.station_info,
+            sensor_config=self.sensor_config,
+            name_of_target=name_of_target,
         )
-        list_of_checks = qa_builder.collect_and_return_checks()
+        list_of_checks = qa_builder.create_checks()
         return list_of_checks
 
     def _select_corrections(
         self,
     ):
         """
-        See CorrectionSelectorWithYaml!!!!
+        Selects corrections.
+
+        See CorrectionSelectorWithYaml
         """
         selector = CorrectionSelectorWithYaml(
             data_hub=self.data_hub,
-            process_info=self.process_info,
-            station_info=self.station_info,
+            process_config=self.process_config,
+            sensor_config=self.sensor_config,
         )
         self.data_hub = selector.select_corrections()
 
@@ -329,26 +269,51 @@ class ProcessWithYaml:
         """
         Arranges saving the data in the folder.
         """
-
-        file_name = self.station_info.general_site_metadata.site_name
-        initial_folder_str = self.station_info.data_storage.save_folder
+        file_name = self.sensor_config.sensor_info.name
+        try:
+            initial_folder_str = self.sensor_config.data_storage.save_folder
+        except AttributeError:
+            initial_folder_str = None
+            message = (
+                "No data storage location available in config. Using cwd()"
+            )
+            core_logger.info(message)
         folder = (
             Path.cwd()
             if initial_folder_str is None
             else Path(initial_folder_str)
         )
-
         append_yaml_bool = bool(
-            self.station_info.data_storage.append_yaml_to_folder_name
+            self.sensor_config.data_storage.append_yaml_hash_to_folder_name
         )
-        print(file_name)
-        print(folder)
-
         self.data_hub.save_data(
             folder_name=file_name,
             save_folder_location=folder,
             append_yaml_hash_to_folder_name=append_yaml_bool,
         )
+
+    def _calibrate_data(
+        self,
+    ):
+        """Calibrates the sensor when this is selected."""
+        calib_df_path = validate_and_convert_file_path(
+            file_path=self.sensor_config.calibration.location
+        )
+        calib_df = pd.read_csv(calib_df_path)
+        self.data_hub.calibration_samples_data = calib_df
+        calibration_config = CalibrationConfiguration(
+            date_time_column_name=self.sensor_config.calibration.key_column_names.date_time,
+            profile_id_column=self.sensor_config.calibration.key_column_names.profile_id,
+            distance_column=self.sensor_config.calibration.key_column_names.radial_distance_from_sensor,
+            sample_depth_column=self.sensor_config.calibration.key_column_names.sample_depth,
+            soil_moisture_gravimetric_column=self.sensor_config.calibration.key_column_names.gravimetric_soil_moisture,
+            bulk_density_of_sample_column=self.sensor_config.calibration.key_column_names.bulk_density_of_sample,
+            soil_organic_carbon_column=self.sensor_config.calibration.key_column_names.soil_organic_carbon,
+            lattice_water_column=self.sensor_config.calibration.key_column_names.lattice_water,
+        )
+        self.data_hub.calibrate_station(config=calibration_config)
+        self.sensor_config.sensor_info.N0 = self.data_hub.sensor_info.N0
+        self.data_hub.crns_data_frame["N0"] = self.sensor_config.sensor_info.N0
 
     def create_data_hub(
         self,
@@ -380,12 +345,12 @@ class ProcessWithYaml:
         if return_data_hub:
             return CRNSDataHub(
                 crns_data_frame=self._import_data(),
-                site_information=self._create_site_information(),
+                sensor_info=self.sensor_config.sensor_info,
             )
         else:
             self.data_hub = CRNSDataHub(
                 crns_data_frame=self._import_data(),
-                site_information=self._create_site_information(),
+                sensor_info=self.sensor_config.sensor_info,
             )
 
     def run_full_process(
@@ -404,39 +369,36 @@ class ProcessWithYaml:
         self._prepare_static_values()
         # QA raw N spikes
         self._apply_quality_assessment(
-            name_of_section="flag_raw_neutrons",
-            partial_config=(
-                self.process_info.neutron_quality_assessment.flag_raw_neutrons
-            ),
+            partial_config=self.process_config.neutron_quality_assessment,
+            name_of_target="raw_neutrons",
         )
         # QA meteo
         self._apply_quality_assessment(
-            name_of_section="input_data_qa",
-            partial_config=self.station_info.input_data_qa,
+            partial_config=self.sensor_config.input_data_qa,
+            name_of_target=None,
         )
 
         self._select_corrections()
         self._correct_neutrons()
 
-        # OPTIONAL: Calibration
-        # TODO
+        if self.sensor_config.calibration.calibrate:
+            self._calibrate_data()
 
-        if self.station_info.general_site_metadata.N0 is None:
+        if self.sensor_config.sensor_info.N0 is None:
             message = (
                 "Cannot proceed with quality assessment or processing "
                 "without an N0 number. Supply an N0 number in the YAML "
-                "file or complete site calibration"
+                "file or use site calibration"
             )
             core_logger.error(message)
             raise ValueError(message)
 
         self._apply_quality_assessment(
-            name_of_section="flag_corrected_neutrons",
-            partial_config=(
-                self.process_info.neutron_quality_assessment.flag_raw_neutrons
-            ),
+            partial_config=self.process_config.neutron_quality_assessment,
+            name_of_target="corrected_neutrons",
         )
         self._produce_soil_moisture_estimates()
+        # self._make_figures()
         self._save_data()
 
 
@@ -446,38 +408,28 @@ class QualityAssessmentWithYaml:
     system is bridged (see quality_assessment.py), for it to be
     accessible for YAML processing it a method must be in here to.
 
-    Available methods:
-
-    - range check
-    - spike detection
-    - persistance check (stuck sensor)
-    - rate of change check
-
-    Future planned methods:
-
-    - cross validation (flag var x based on var y conditions)
-    - physical constraint checks
-    - diurnal pattern checks
-    - time step consistency checks (and adjustment)
     """
 
     def __init__(
         self,
-        name_of_section: str,
         partial_config,
-        station_info,
+        sensor_config,
+        name_of_target: Literal["raw_neutrons", "corrected_neutrons"] = None,
     ):
         """
         Attributes
 
         Parameters
         ----------
-        name_of_section : str
-            The name of the section that has been supplied. See Notes.
+
         partial_config : ConfigurationObject
-            A selection from the ConfigurationObject.
-        station_info : ConfigurationObject
+            A selection from the ConfigurationObject which stores QA
+            selections
+        sensor_config : ConfigurationObject
             The config object describing station variables
+        name_of_target : str
+            The name of the target for QA. If None it will loop through
+            any provided in partial config.
 
         Notes
         -----
@@ -486,66 +438,68 @@ class QualityAssessmentWithYaml:
         partial_config. For example:
 
         partial_config = (
-            config.process_info.neutron_quality_assessment.flag_raw_neutrons
+            config.process_config.neutron_quality_assessment.flag_raw_neutrons
             )
 
         Therefore:
 
         name_of_section = 'flag_raw_neutrons'
         """
-        self.name_of_section = name_of_section
+
         self.partial_config = partial_config
-        self.station_info = station_info
+        self.sensor_config = sensor_config
+        self.name_of_target = name_of_target
         self.checks = []
 
-    def _flag_raw_neutrons(self):
+    def create_checks(self):
         """
-        Process to prepare flags for raw neutron values.
-        """
-        obj_as_dict = vars(self.partial_config)
-        for key, value in obj_as_dict.items():
-            if key == "spikes":
-                self._process_spikes(value)
-            if key == "persistance_check":
-                self._persistance_check(value)
-
-    def _persistance_check(self, config):
-        # TODO check for persistance (same vals)
-        pass
-
-    def _flag_corrected_neutrons(self):
-        """
-        Process to prepare flags for corrected neutron values.
-        """
-        obj_as_dict = vars(self.partial_config)
-        for key, value in obj_as_dict.items():
-            if key == "greater_than_N0":
-                self._process_greater_than_N0(value)
-            elif key == "below_N0_factor":
-                self._process_below_N0_factor(value)
-
-    def collect_and_return_checks(
-        self,
-    ):
-        """
-        Base function which chooses correct internal method to use
-        depending on the supplied config section.
+        Creates the checks based on what is provided in the YAML file.
 
         Returns
         -------
-        List[QualityCheck]
-            A list of QualityChecks
+        List
+            A list of Checks is saved in self.checks
         """
-        if self.name_of_section == "raw_neutrons_qa":
-            self._flag_raw_neutrons()
-        elif self.name_of_section == "input_variables_qa":
-            pass  # TODO
-        elif self.name_of_section == "corrected_neutrons_qa":
-            self._flag_corrected_neutrons()
-        elif self.name_of_section == "derived_products_qa":
-            pass  # TODO
+        qa_dict = self.partial_config.model_dump()
+
+        # Case 1: Specific target (raw neutrons)
+        if self.name_of_target in ["raw_neutrons", "corrected_neutrons"]:
+            if self.name_of_target in qa_dict:
+                target_dict = qa_dict[self.name_of_target]
+                self.return_a_check(
+                    name_of_target=self.name_of_target,
+                    target_dict=target_dict,
+                )
+
+        # Case 2: Process all targets from config
+        else:
+            for target in qa_dict:
+                target_dict = qa_dict.get(target)
+                if target_dict:  # Skip if None
+                    self.return_a_check(
+                        name_of_target=target,
+                        target_dict=target_dict,
+                    )
 
         return self.checks
+
+    def return_a_check(self, name_of_target: str, target_dict: dict):
+        """
+        Process checks for a specific target.
+        """
+        if not target_dict:  # Guard against None or empty dict
+            return
+
+        for check_method, check_params in target_dict.items():
+            if isinstance(check_params, dict):
+                target = YamlRegistry.get_target(name_of_target)
+                method = YamlRegistry.get_method(check_method)
+                if method in [QAMethod.ABOVE_N0, QAMethod.BELOW_N0_FACTOR]:
+                    check_params["N0"] = self.sensor_config.sensor_info.N0
+                check = QualityCheck(
+                    target=target, method=method, parameters=check_params
+                )
+                self.checks.append(check)
 
 
 class CorrectionSelectorWithYaml:
@@ -563,9 +517,9 @@ class CorrectionSelectorWithYaml:
 
     def __init__(
         self,
-        data_hub: "CRNSDataHub",  # Need string here
-        process_info,
-        station_info,
+        data_hub: "CRNSDataHub",
+        process_config,
+        sensor_config,
     ):
         """
         Attributes
@@ -574,14 +528,14 @@ class CorrectionSelectorWithYaml:
         ----------
         data_hub : CRNSDataHub
             A CRNSDataHub hub instance
-        process_info :
+        process_config :
             The process YAML as an object.
-        station_info :
+        sensor_config :
             The station information YAML as an object
         """
         self.data_hub = data_hub
-        self.process_info = process_info
-        self.station_info = station_info
+        self.process_config = process_config
+        self.sensor_config = sensor_config
 
     def _pressure_correction(self):
         """
@@ -592,7 +546,7 @@ class CorrectionSelectorWithYaml:
         ValueError
             Unknown correction method
         """
-        tmp = self.process_info.correction_steps.air_pressure
+        tmp = self.process_config.correction_steps.air_pressure
 
         if tmp.method.lower() == "zreda_2012":
             self.data_hub.select_correction(
@@ -616,7 +570,7 @@ class CorrectionSelectorWithYaml:
         ValueError
             Unknown correction method
         """
-        tmp = self.process_info.correction_steps.air_humidity
+        tmp = self.process_config.correction_steps.air_humidity
 
         if tmp.method.lower() == "rosolem_2013":
             self.data_hub.select_correction(
@@ -640,7 +594,7 @@ class CorrectionSelectorWithYaml:
         ValueError
             Unknown correction method
         """
-        tmp = self.process_info.correction_steps.incoming_radiation
+        tmp = self.process_config.correction_steps.incoming_radiation
 
         if tmp.method.lower() == "hawdon_2014":
             self.data_hub.select_correction(

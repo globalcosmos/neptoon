@@ -91,10 +91,8 @@ class FileCollectionConfig:
         separator: str = ",",
         decimal: str = ".",
         skip_initial_space: bool = True,
-        parser_kw: dict = dict(
-            strip_left=True,
-            digit_first=True,
-        ),
+        parser_kw_strip_left: bool = True,
+        parser_kw_digit_first=True,
         starts_with: any = "",
         multi_header: bool = False,
         strip_names: bool = True,
@@ -161,7 +159,8 @@ class FileCollectionConfig:
         self.suffix = suffix
         self.encoding = encoding
         self.skip_lines = skip_lines
-        self.parser_kw = parser_kw
+        self.parser_kw_strip_left = parser_kw_strip_left
+        self.parser_kw_digit_first = parser_kw_digit_first
         self._separator = separator
         self._decimal = decimal
         self.skip_initial_space = skip_initial_space
@@ -316,11 +315,10 @@ class FileCollectionConfig:
             path = validate_and_convert_file_path(path)
 
         internal_config = ConfigurationManager()
-        internal_config.load_and_validate_configuration(
-            name="input_data",
+        internal_config.load_configuration(
             file_path=path,
         )
-        yaml_information = internal_config.get_configuration("input_data")
+        yaml_information = internal_config.get_config("sensor")
 
         self.data_location = (
             yaml_information.raw_data_parse_options.data_location
@@ -332,8 +330,11 @@ class FileCollectionConfig:
         self.suffix = yaml_information.raw_data_parse_options.suffix
         self.encoding = yaml_information.raw_data_parse_options.encoding
         self.skip_lines = yaml_information.raw_data_parse_options.skip_lines
-        self.parser_kw = (
-            yaml_information.raw_data_parse_options.parser_kw.to_dict()
+        self.parser_kw_strip_left = (
+            yaml_information.raw_data_parse_options.parser_kw.strip_left
+        )
+        self.parser_kw_digit_first = (
+            yaml_information.raw_data_parse_options.parser_kw.digit_first
         )
         self.separator = yaml_information.raw_data_parse_options.separator
         self.decimal = yaml_information.raw_data_parse_options.decimal
@@ -724,11 +725,11 @@ class ParseFilesIntoDataFrame:
         if isinstance(line, bytes) and self.config.encoding != "":
             line = line.decode(self.config.encoding, errors="ignore")
 
-        if self.config.parser_kw["strip_left"]:
+        if self.config.parser_kw_strip_left:
             line = line.lstrip()
 
         # If the line starts with a number, it likely is actual data
-        if self.config.parser_kw["digit_first"] and not line[:1].isdigit():
+        if self.config.parser_kw_digit_first and not line[:1].isdigit():
             return ""
 
         return line
@@ -1101,12 +1102,11 @@ class InputDataFrameFormattingConfig:
             )
 
         internal_config = ConfigurationManager()
-        internal_config.load_and_validate_configuration(
-            name="station",
+        internal_config.load_configuration(
             file_path=path,
         )
 
-        self.yaml_information = internal_config.get_configuration("station")
+        self.yaml_information = internal_config.get_config("sensor")
 
     def build_from_yaml(self):
         """
