@@ -48,13 +48,20 @@ class NMDBDataAttacher:
     def new_column_name(self):
         return self._new_column_name
 
-    def configure(self, station="JUNG", resolution="60", nmdb_table="revori"):
+    def configure(
+        self,
+        station: str,
+        reference_value: int = None,
+        resolution="60",
+        nmdb_table="revori",
+    ):
         start_date_from_data = self.data_frame.index[0]
         end_date_from_data = self.data_frame.index[-1]
         self.config = NMDBConfig(
             start_date_wanted=start_date_from_data,
             end_date_wanted=end_date_from_data,
             station=station,
+            reference_value=reference_value,
             resolution=resolution,
             nmdb_table=nmdb_table,
         )
@@ -79,10 +86,17 @@ class NMDBDataAttacher:
         """
         if not isinstance(self.tmp_data.index, pd.DatetimeIndex):
             raise ValueError("DataFrame source must have a DatetimeIndex.")
+
+        if self.config.reference_value is None:
+            self.config.reference_value = self.tmp_data["count"][0]
+
         mapped_data = self.tmp_data["count"].reindex(
             self.data_frame.index, method="nearest"
         )
         self.data_frame[self.new_column_name] = mapped_data
+        self.data_frame[
+            str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE)
+        ] = self.config.reference_value
 
     def return_data_frame(self):
         """
@@ -245,6 +259,7 @@ class NMDBConfig:
         start_date_wanted,
         end_date_wanted,
         station="JUNG",
+        reference_value=None,
         cache_dir=None,
         nmdb_table="revori",
         resolution="60",
@@ -258,6 +273,7 @@ class NMDBConfig:
         self._end_date_wanted = end_date_wanted
         self._cache_dir = cache_dir
         self._station = station if station is not None else "JUNG"
+        self._reference_value = reference_value
         self._nmdb_table = nmdb_table if nmdb_table is not None else "revori"
         self._resolution = resolution if resolution is not None else "60"
         self._cache_exists = cache_exists
@@ -293,6 +309,10 @@ class NMDBConfig:
     @property
     def station(self):
         return self._station
+
+    @property
+    def reference_value(self):
+        return self._reference_value
 
     @property
     def nmdb_table(self):

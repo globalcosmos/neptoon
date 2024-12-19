@@ -192,6 +192,7 @@ class CRNSDataHub:
     def attach_nmdb_data(
         self,
         station="JUNG",
+        reference_value=None,
         new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
         resolution="60",
         nmdb_table="revori",
@@ -207,6 +208,10 @@ class CRNSDataHub:
         ----------
         station : str, optional
             The station to collect data from, by default "JUNG"
+        reference_value : int, optional
+            The reference value of the neutron monitor, if left as None
+            it will use the value from the first data point in the time
+            series.
         new_column_name : str, optional
             The name of the column were data will be written to, by
             default "incoming_neutron_intensity"
@@ -219,7 +224,10 @@ class CRNSDataHub:
             data_frame=self.crns_data_frame, new_column_name=new_column_name
         )
         attacher.configure(
-            station=station, resolution=resolution, nmdb_table=nmdb_table
+            station=station,
+            reference_value=reference_value,
+            resolution=resolution,
+            nmdb_table=nmdb_table,
         )
         attacher.fetch_data()
         attacher.attach_data()
