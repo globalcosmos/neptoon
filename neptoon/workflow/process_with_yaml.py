@@ -627,7 +627,7 @@ class CorrectionSelectorWithYaml:
 
     def _above_ground_biomass_correction(self):
         """
-        TODO
+        Assigns the chosen above ground biomass correction.
         """
         tmp = self.process_config.correction_steps.above_ground_biomass
 
