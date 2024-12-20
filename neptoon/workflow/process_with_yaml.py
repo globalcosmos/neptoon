@@ -547,6 +547,8 @@ class CorrectionSelectorWithYaml:
             Unknown correction method
         """
         tmp = self.process_config.correction_steps.air_pressure
+        if tmp.method is None or str(tmp.method).lower() == "none":
+            return
 
         if tmp.method.lower() == "zreda_2012":
             self.data_hub.select_correction(
@@ -571,7 +573,8 @@ class CorrectionSelectorWithYaml:
             Unknown correction method
         """
         tmp = self.process_config.correction_steps.air_humidity
-
+        if tmp.method is None or str(tmp.method).lower() == "none":
+            return
         if tmp.method.lower() == "rosolem_2013":
             self.data_hub.select_correction(
                 correction_type=CorrectionType.HUMIDITY,
@@ -596,10 +599,23 @@ class CorrectionSelectorWithYaml:
         """
         tmp = self.process_config.correction_steps.incoming_radiation
 
+        if tmp.method is None or str(tmp.method).lower() == "none":
+            return
+
         if tmp.method.lower() == "hawdon_2014":
             self.data_hub.select_correction(
                 correction_type=CorrectionType.INCOMING_INTENSITY,
                 correction_theory=CorrectionTheory.HAWDON_2014,
+            )
+        elif tmp.method.lower() == "zreda_2012:":
+            self.data_hub.select_correction(
+                correction_type=CorrectionType.INCOMING_INTENSITY,
+                correction_theory=CorrectionTheory.ZREDA_2012,
+            )
+        elif tmp.method.lower() == "mcjannet_desilets_2023:":
+            self.data_hub.select_correction(
+                correction_type=CorrectionType.INCOMING_INTENSITY,
+                correction_theory=CorrectionTheory.MCJANNET_DESILETS_2023,
             )
         else:
             message = (
@@ -613,7 +629,28 @@ class CorrectionSelectorWithYaml:
         """
         TODO
         """
-        pass
+        tmp = self.process_config.correction_steps.above_ground_biomass
+
+        if tmp.method is None or str(tmp.method).lower() == "none":
+            return
+
+        elif tmp.method.lower() == "baatz_2015":
+            self.data_hub.select_correction(
+                correction_type=CorrectionType.ABOVE_GROUND_BIOMASS,
+                correction_theory=CorrectionTheory.BAATZ_2015,
+            )
+        elif tmp.method.lower() == "morris_2024:":
+            self.data_hub.select_correction(
+                correction_type=CorrectionType.ABOVE_GROUND_BIOMASS,
+                correction_theory=CorrectionTheory.MORRIS_2024,
+            )
+        else:
+            message = (
+                f"{tmp.method} is not a known above ground biomass correction theory. \n"
+                "Please choose another."
+            )
+            core_logger.error(message)
+            raise ValueError(message)
 
     def select_corrections(self):
         """

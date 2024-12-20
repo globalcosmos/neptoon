@@ -1,5 +1,6 @@
 from .theory.above_ground_biomass_corrections import (
     above_ground_biomass_correction_baatz2015,
+    above_ground_biomass_correction_morris2024,
 )
 
 from .theory.air_humidity_corrections import (

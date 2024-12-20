@@ -27,7 +27,8 @@ correction_steps:
       resolution: 60 # minutes
       nmdb_table: revori # recommend revori
   above_ground_biomass:
-    method: None
+    method:
+    biomass_units: agb
 
 data_smoothing:
   smooth_raw_neutrons: False

@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from neptoon.logging import get_logger
 from neptoon.columns import ColumnInfo
-
 from .correction_classes import (
     Correction,
     CorrectionType,
@@ -12,8 +11,9 @@ from .correction_classes import (
     IncomingIntensityCorrectionMcJannetDesilets2023,
     HumidityCorrectionRosolem2013,
     PressureCorrectionZreda2012,
+    AboveGroundBiomassCorrectionBaatz2015,
+    AboveGroundBiomassCorrectionMorris2024,
 )
-
 
 core_logger = get_logger()
 
@@ -409,7 +409,29 @@ class CorrectionFactory:
             return IncomingIntensityCorrectionMcJannetDesilets2023()
 
     def create_biomass_correction(self, correction_theory: CorrectionTheory):
-        pass
+        """
+        Internal method for selecting the above ground biomass
+        correction to use. If no CorrectionTheory supplied it will use
+        the default.
+
+        NOTE:
+
+        Parameters
+        ----------
+        correction_theory : CorrectionTheory
+            The CorrectionTheory to use
+
+        Returns
+        -------
+        Correction
+            Above Ground Biomass correction with values filled in.
+        """
+        if correction_theory is None:
+            return AboveGroundBiomassCorrectionMorris2024
+        elif correction_theory == CorrectionTheory.BAATZ_2015:
+            return AboveGroundBiomassCorrectionBaatz2015
+        elif correction_theory == CorrectionTheory.MORRIS_2024:
+            return AboveGroundBiomassCorrectionMorris2024
 
     def create_pressure_correction(self, correction_theory: CorrectionTheory):
         """
