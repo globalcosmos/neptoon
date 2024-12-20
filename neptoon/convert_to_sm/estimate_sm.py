@@ -4,7 +4,7 @@ from neptoon.corrections_and_functions.neutrons_to_soil_moisture import (
     convert_neutrons_to_soil_moisture,
 )
 from neptoon.corrections_and_functions.calibration_functions import (
-    Schroen2017CalibrationFunctions,
+    Schroen2017,
 )
 from neptoon.logging import get_logger
 from neptoon.data_management.data_audit import log_key_step
@@ -25,7 +25,7 @@ class NeutronsToSM:
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
         ),
         smoothed_neutrons_col_name: str = str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ),
         soil_moisture_col_name: str = str(ColumnInfo.Name.SOIL_MOISTURE),
         depth_column_name: str = str(

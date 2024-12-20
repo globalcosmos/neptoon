@@ -21,7 +21,7 @@ def sample_crns_data():
             500, 1500, 100
         ),
         str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ): np.random.randint(500, 1500, 100),
     }
     return pd.DataFrame(data)
@@ -72,7 +72,7 @@ def test_property_getters(neutrons_to_sm_instance):
         ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH
     )
     assert neutrons_to_sm_instance.smoothed_neutrons_col_name == str(
-        ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH
+        ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
     )
 
 
@@ -89,7 +89,7 @@ def test_smooth_neutron_count(neutrons_to_sm_instance):
     ].copy()
     neutrons_to_sm_instance.smooth_neutron_count(smooth_window=3)
     smoothed_data = neutrons_to_sm_instance.crns_data_frame[
-        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH)
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
     ]
 
     assert not smoothed_data.equals(original_data)
@@ -113,7 +113,7 @@ def test_process_data(neutrons_to_sm_instance):
     """Test the process_data method."""
     neutrons_to_sm_instance.process_data()
     assert (
-        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_SMOOTH)
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
         in neutrons_to_sm_instance.crns_data_frame.columns
     )
     assert (
