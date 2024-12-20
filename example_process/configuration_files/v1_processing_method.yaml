@@ -1,19 +1,15 @@
-method_name: v1_method
+config: process
 
 neutron_quality_assessment:
-  flag_raw_neutrons:
-    spikes:
-      col_name: default
-      method: UniLOF
+  raw_neutrons:
+    spike_uni_lof:
       periods_in_calculation: 24
       threshold: 1.2
-  flag_corrected_neutrons:
+  corrected_neutrons:
     greater_than_N0:
-      col_name: default
-      above_N0_factor: 1.075 # Köhli 2021
+      percent_maximum: 1.075 # Köhli 2021
     below_N0_factor:
-      col_name: default
-      not_below: 0.3
+      percent_minimum: 0.3
 
 correction_steps:
   air_humidity:
@@ -31,7 +27,8 @@ correction_steps:
       resolution: 60 # minutes
       nmdb_table: revori # recommend revori
   above_ground_biomass:
-    method: None
+    method:
+    biomass_units: agb
 
 data_smoothing:
   smooth_raw_neutrons: False
@@ -41,23 +38,3 @@ data_smoothing:
     algorithm: savitsky-golay
     window: 12
     poly_order: 4
-# invalid_data:
-#   invalid_data: replace by nan
-#   interpolate_neutrons: no
-#   interpolate_neutrons_gapsize: 6
-#   interpolate_coords: no
-
-# interpolation:
-#   interpolate_neutrons: no
-#   interpolate_neutrons_gapsize: 6 # data points
-
-# temporal_aggregation:
-#   aggregate: 1day
-#   aggregate_func: mean
-#   aggregate_minor_vis: 1hour
-#   smoothing:
-#     smooth: 3
-#     smooth_radius:
-#     smooth_radius_method: W_r_approx
-#     number_locations:
-

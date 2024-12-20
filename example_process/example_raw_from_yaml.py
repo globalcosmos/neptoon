@@ -1,26 +1,25 @@
 # import pandas as pd
 from pathlib import Path
-from neptoon.workflow.process_with_yaml import ProcessWithYaml
+from neptoon.workflow.process_with_yaml import (
+    ProcessWithYaml,
+)
 from neptoon.config import ConfigurationManager
-from neptoon.data_audit import DataAuditLog
 
+# from neptoon.data_audit import DataAuditLog
+
+# Load your config files in the ConfigurationManager
 config = ConfigurationManager()
-
-station_config_path = Path.cwd() / "configuration_files" / "A101_station.yaml"
+sensor_config_path = Path.cwd() / "configuration_files" / "A101_station.yaml"
 processing_config_path = (
     Path.cwd() / "configuration_files" / "v1_processing_method.yaml"
 )
-
-config.load_and_validate_configuration(
-    name="station",
-    file_path=station_config_path,
+config.load_configuration(
+    file_path=sensor_config_path,
 )
-config.load_and_validate_configuration(
-    name="processing",
+config.load_configuration(
     file_path=processing_config_path,
 )
 
-DataAuditLog.create()
 yaml_processor = ProcessWithYaml(configuration_object=config)
 
 ## OPTION 1:

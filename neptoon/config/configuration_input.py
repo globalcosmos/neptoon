@@ -1,432 +1,581 @@
+from typing import List, Optional, Literal, Dict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pathlib import Path
+from datetime import datetime
 import yaml
-from typing import Literal
-from abc import ABC, abstractmethod
 
 from neptoon.logging import get_logger
+from enum import Enum
 
-# from neptoon.configuration.yaml_classes import (
-#     GeneralSiteMetadata,
-#     CRNSSensorInformation,
-#     TimeseriesDataFormat,
-#     CalibrationDataFormat,
-#     CalibrationDataFormat_ColumnNames,
-#     PDFConfiguration,
-#     DataStorage,
-#     MethodSignifier,
-#     IncomingRadiation,
-#     AirPressure,
-#     AirHumidity,
-#     InvalidData,
-#     Interpolation,
-#     TemporalAggregation,
-# )
 
 core_logger = get_logger()
 
 
-class ConfigurationObject:
+class BaseConfig(BaseModel):
     """
-    Base object for storing YAML configuration values. The object is
-    initialised with dictionary which could be nested. It will
-    recursively add attributes in a nested fasion.
+    Base configuration class with flexible field allowance.
+    All configuration models inherit from this to maintain consistency.
     """
 
-    def __init__(self, dictionary: dict):
-        """
-        Initialises the object.
+    model_config = ConfigDict(
+        extra="allow",
+        frozen=False,
+    )
 
-        Parameters
-        ----------
-        dictionary : dict
-            Takes a nested dictionary and sets the values into a
-            nested object.
-        """
-        for key, value in dictionary.items():
-            if isinstance(value, dict):
-                setattr(self, key, ConfigurationObject(value))
-            elif isinstance(value, list):
-                setattr(
-                    self,
-                    key,
-                    [
-                        (
-                            ConfigurationObject(item)
-                            if isinstance(item, dict)
-                            else item
-                        )
-                        for item in value
-                    ],
+
+# Site Metadata Validation
+
+
+class SensorInfo(BaseConfig):
+    """General site metadata section."""
+
+    name: str = Field(
+        description="The name of the site.",
+        examples=["Sheepdrove", "Gatton"],
+    )
+    country: str = Field(
+        description="The country the site is located in.",
+        examples=["DEU", "UK", "USA", "KOR"],
+    )
+    identifier: str = Field(
+        description="A unique identier",
+        examples=["101", "456"],
+    )
+    install_date: datetime
+    latitude: float
+    longitude: float
+    elevation: float
+    time_zone: int
+    site_cutoff_rigidity: float
+    avg_lattice_water: Optional[float] = Field(default=None)
+    avg_soil_organic_carbon: Optional[float] = Field(default=None)
+    avg_dry_soil_bulk_density: Optional[float] = Field(default=None)
+    N0: Optional[int] = Field(
+        gt=0, description="The N0 calibration term.", default=None
+    )
+    beta_coefficient: Optional[float] = Field(default=None)
+    l_coefficient: Optional[float] = Field(default=None)
+    mean_pressure: Optional[float] = Field(default=None)
+    avg_precipitation: Optional[float] = Field(default=None)
+    avg_soil_moisture: Optional[float] = Field(default=None)
+    avg_biomass: Optional[float] = Field(default=None)
+
+
+# Time Series Validation
+
+
+class TimeSeriesColumns(BaseConfig):
+    """
+    Defines the structure for column configurations while allowing
+    extensions.
+    """
+
+    epithermal_neutron_counts_columns: List[str]
+    thermal_neutrons: Optional[List[str]] = None
+    neutron_count_units: Literal[
+        "absolute_count", "counts_per_hour", "counts_per_second"
+    ]
+    pressure_columns: List[str]
+    pressure_units: Optional[str] = None
+    pressure_merge_method: Optional[Literal["priority", "average"]] = (
+        "priority"
+    )
+    temperature_columns: List[str]
+    temperature_merge_method: Optional[Literal["priority", "average"]] = (
+        "priority"
+    )
+    relative_humidity_columns: List[str]
+    relative_humidity_units: Optional[str] = None
+    relative_humidity_merge_method: Optional[
+        Literal["priority", "average"]
+    ] = "priority"
+    date_time_columns: List[str]
+    date_time_format: str
+
+
+class TimeSeriesData(BaseConfig):
+    path_to_data: Optional[str] = Field(default=None)
+    time_step_resolution: str
+    # date_time_format: str
+    initial_time_zone: Optional[str] = None
+    convert_time_zone_to: Optional[str] = None
+    key_column_info: Optional[TimeSeriesColumns] = None
+
+
+# Parser Validation
+
+
+class ParserKeywords(BaseModel):
+    """Configuration for specific parser keywords."""
+
+    strip_left: bool = Field(default=True, description="TODO")
+    digit_first: bool = Field(
+        default=True,
+        description="TODO",
+    )
+
+
+class RawDataParseConfig(BaseModel):
+    """Configuration for parsing raw data files."""
+
+    parse_raw_data: bool = Field(
+        default=True, description="Whether to parse raw data files"
+    )
+
+    data_location: Optional[Path] = Field(
+        description="Path to the raw data files or directory"
+    )
+
+    column_names: Optional[List[str]] = Field(
+        default=None,
+        description="A list of the raw column names in the order they appear",
+    )
+
+    prefix: Optional[str] = Field(
+        default="",
+        description="Prefix of file name for file filtering",
+    )
+
+    suffix: Optional[str] = Field(
+        default="",
+        description="Suffix of file name used for file filtering",
+    )
+
+    encoding: Optional[str] = Field(
+        default="cp850",
+        description="File encoding format",
+    )
+
+    skip_lines: Optional[int] = Field(
+        default=0,
+        description="Number of lines to skip at start of file",
+    )
+
+    separator: Optional[str] = Field(
+        default=",",
+        description="Column separator character",
+    )
+
+    decimal: Optional[str] = Field(
+        default=".",
+        description="Decimal point character",
+    )
+
+    skip_initial_space: Optional[bool] = Field(
+        default=True,
+        description="Whether to skip initial whitespace when making dataframe",
+    )
+
+    parser_kw: Optional[ParserKeywords] = Field(
+        default_factory=ParserKeywords,
+        description="Additional parser-specific keywords",
+    )
+
+    starts_with: Optional[str] = Field(
+        default="",
+        description="String that headers must start with when parsing",
+    )
+
+    multi_header: Optional[bool] = Field(
+        default=False,
+        description="Whether to expect multi-line headers",
+    )
+
+    strip_names: Optional[bool] = Field(
+        default=True,
+        description="Whether to strip whitespace from column names",
+    )
+
+    remove_prefix: Optional[str] = Field(
+        default="//",
+        description="Prefix to remove from column names",
+    )
+
+
+# QA Validation
+
+
+class FlagRange(BaseConfig):
+    """Common pattern for min/max range checks."""
+
+    min: Optional[float] = Field(
+        default=float("-inf"),
+        description="minimum value below which data is removed",
+    )
+    max: Optional[float] = Field(
+        default=float("inf"),
+        description="maximum value below which data is removed",
+    )
+
+    @model_validator(mode="after")
+    def validate_range(cls, values):
+        """Validate min is less than max after both fields are set."""
+        min_val = values.min if values.min is not None else float("-inf")
+        max_val = values.max if values.max is not None else float("inf")
+
+        if min_val > max_val:
+            raise ValueError(
+                f"min value ({min_val}) must be less than max value ({max_val})"
+            )
+
+        return values
+
+
+class PersistenceCheck(BaseConfig):
+    """Configuration for persistence checking."""
+
+    threshold: Optional[float] = None
+    window: Optional[int] = None
+    min_periods: Optional[int] = None
+
+
+class SpikeUniLOF(BaseConfig):
+
+    periods_in_calculation: Optional[int] = 20
+    threshold: Optional[float] = 1.5
+    algorithm: Optional[Literal["ball_tree", "kd_tree", "brute", "auto"]] = (
+        Field(default="ball_tree")
+    )
+
+
+class GreaterThanN0(BaseConfig):
+
+    percent_maximum: float = Field(
+        default=1.075,
+        description="The factor above N0 to flag values",
+    )
+
+
+class BelowN0Factor(BaseConfig):
+
+    percent_minimum: float = Field(
+        default=0.3,
+        description=(
+            "The proportion of N0 value below " "which neutrons are flagged"
+        ),
+    )
+
+
+class QAColumnConfig(BaseConfig):
+    """
+    Base configuration for QA columns.
+
+    Includes all possible QA systems as optional.
+    """
+
+    flag_range: Optional[FlagRange] = None
+    persistance_check: Optional[PersistenceCheck] = None
+    spike_uni_lof: Optional[SpikeUniLOF] = None
+    greater_than_N0: Optional[GreaterThanN0] = None
+    below_N0_factor: Optional[BelowN0Factor] = None
+
+
+class QAConfig(BaseConfig):
+    """Quality assessment configuration section."""
+
+    air_humidity: Optional[QAColumnConfig] = None
+    air_pressure: Optional[QAColumnConfig] = None
+    temperature: Optional[QAColumnConfig] = None
+
+
+# Calibration Validation
+
+
+class CalibrationColumnNames(BaseConfig):
+    """Column naming configuration for calibration data."""
+
+    date_time: str = Field(default="date_time")
+    profile_id: str = Field(default="profile_id")
+    sample_depth: str = Field(default="sample_depth")
+    radial_distance_from_sensor: str = Field(
+        default="radial_distance_from_sensor"
+    )
+    bulk_density_of_sample: str = Field(default="bulk_density_of_sample")
+    gravimetric_soil_moisture: str = Field(
+        default="soil_moisture_gravimetric_column"
+    )
+    soil_organic_carbon: str = Field(default="soil_organic_carbon")
+    lattice_water: str = Field(default="lattice_water")
+
+
+class CalibrationConfig(BaseConfig):
+    """Configuration for calibration data."""
+
+    calibrate: bool = Field(default=False)
+
+    data_format: Optional[
+        Literal["custom", "cosmoz", "cosmos-usa", "cosmos-uk"]
+    ] = Field(default="custom")
+    location: Optional[Path] = Field(default="")
+    key_column_names: Optional[CalibrationColumnNames] = None
+
+
+class DataStorageConfig(BaseConfig):
+    save_folder: Optional[str] = Field(default=None)
+    append_yaml_hash_to_folder_name: Optional[bool] = Field(default=False)
+
+
+class SensorConfig(BaseConfig):
+    """Top-level configuration."""
+
+    sensor_info: SensorInfo
+    time_series_data: Optional[TimeSeriesData] = None
+    input_data_qa: Optional[QAConfig] = None
+    raw_data_parse_options: Optional[RawDataParseConfig] = None
+    calibration: Optional[CalibrationConfig] = None
+    data_storage: Optional[DataStorageConfig] = None
+
+
+## Process Config
+
+
+class NeutronQualityAssessment(BaseConfig):
+    """Quality assessment configuration for Neutrons"""
+
+    raw_neutrons: QAColumnConfig
+    corrected_neutrons: QAColumnConfig
+
+
+class ReferenceNeutronMonitor(BaseModel):
+    """Configuration for reference neutron monitor settings."""
+
+    station: str = Field(
+        default="JUNG", description="Station identifier for neutron monitoring"
+    )
+    resolution: int = Field(
+        default=60, description="Time resolution in minutes", ge=1
+    )
+    nmdb_table: str = Field(
+        default="revori", description="NMDB table name to query"
+    )
+
+
+class AirHumidityCorrection(BaseModel):
+    """Configuration for air humidity correction parameters."""
+
+    method: Literal["rosolem_2013"] = Field(
+        description="Air humidity correction method"
+    )
+    omega: float = Field(
+        default=0.0054,
+        description="Omega coefficient for humidity correction",
+        gt=0,
+    )
+    humidity_ref: float = Field(
+        default=0, description="Reference humidity value"
+    )
+
+
+class AirPressureCorrection(BaseModel):
+    """Configuration for air pressure correction parameters."""
+
+    method: Literal["zreda_2012"] = Field(
+        description="Air pressure correction method"
+    )
+    Dunai_inclination: Optional[float] = Field(
+        default=None, description="Dunai inclination parameter"
+    )
+
+
+class IncomingRadiationCorrection(BaseModel):
+    """Configuration for incoming radiation correction parameters."""
+
+    method: Literal[
+        "zreda_2012",
+        "hawdon_2014",
+        "mcjannet_desilets_2024",
+    ] = Field(description="Incoming radiation correction method")
+
+    reference_value: float = Field(
+        description="Reference value for radiation correction", gt=0
+    )
+    reference_neutron_monitor: ReferenceNeutronMonitor = Field(
+        default_factory=ReferenceNeutronMonitor,
+        description="Reference neutron monitor configuration",
+    )
+
+
+class BiomassCorrection(BaseModel):
+    """Configuration for above ground biomass correction parameters."""
+
+    method: Optional[str] = Field(
+        default=None, description="Above ground biomass correction method"
+    )
+
+
+class CorrectionSteps(BaseModel):
+    """Main configuration for all correction steps."""
+
+    air_humidity: Optional[AirHumidityCorrection] = Field(
+        default=None, description="Air humidity correction configuration"
+    )
+    air_pressure: Optional[AirPressureCorrection] = Field(
+        default=None, description="Air pressure correction configuration"
+    )
+    incoming_radiation: Optional[IncomingRadiationCorrection] = Field(
+        default=None, description="Incoming radiation correction configuration"
+    )
+    above_ground_biomass: Optional[BiomassCorrection] = Field(
+        default=None,
+        description="Above ground biomass correction configuration",
+    )
+
+
+class SmoothingAlgorithmSettings(BaseModel):
+    """
+    Configuration settings for data smoothing algorithms.
+
+    Validates and enforces constraints specific to different smoothing methods:
+    - Window size must be positive
+    - For Savitzky-Golay:
+        - Window size should be odd
+        - Polynomial order must be less than window size
+    """
+
+    algorithm: Literal["savitsky-golay", "rolling-mean"] = Field(
+        default="savitsky-golay", description="Smoothing algorithm to apply"
+    )
+    window: int = Field(
+        default=12, description="Window size for smoothing", gt=0
+    )
+    poly_order: Optional[int] = Field(
+        default=4,
+        description="Polynomial order for Savitzky-Golay filter",
+        ge=0,
+    )
+
+    @model_validator(mode="after")
+    def validate_poly_order(self) -> "SmoothingAlgorithmSettings":
+        """Validate polynomial order relative to window size."""
+        if self.algorithm == "savitsky-golay":
+            if self.poly_order >= self.window:
+                raise ValueError(
+                    "Polynomial order must be less than window size "
+                    f"(got order={self.poly_order}, window={self.window})"
                 )
-            else:
-                setattr(self, key, value)
-
-    def to_dict(self):
-        """
-        Converts the ConfigurationObject and its nested attributes
-        back into a dictionary.
-
-        This is mainly used for testing.
-
-        Returns
-        -------
-        dict
-            Dictionary representation of the object
-        """
-        output_dict = {}
-        for key, value in self.__dict__.items():
-            if isinstance(value, ConfigurationObject):
-                output_dict[key] = value.to_dict()
-            elif isinstance(value, list):
-                output_list = []
-                for item in value:
-                    if isinstance(item, ConfigurationObject):
-                        output_list.append(item.to_dict())
-                    else:
-                        output_list.append(item)
-                output_dict[key] = output_list
-            else:
-                output_dict[key] = value
-        return output_dict
+        return self
 
 
-class PreLoadConfigurationYaml:
+class DataSmoothingConfig(BaseModel):
     """
-    This class handles loading of the yaml file and stores it as an
-    attribute.
+    Main configuration for data smoothing operations.
+
+    Controls which data series should be smoothed and defines the
+    smoothing parameters to be applied.
     """
 
-    def __init__(self):
-        self._whole_yaml_file = {}
-
-    @property
-    def whole_yaml_file(self):
-        return self._whole_yaml_file
-
-    @whole_yaml_file.setter
-    def whole_yaml_file(self, value):
-        self._whole_yaml_file = value
-
-    def import_whole_yaml_file(self, file_path: str):
-        """
-        Load the yaml file
-
-        Returns
-        -------
-        dict
-            Dictionary containing the yaml file contents
-        """
-        with open(file_path, "r") as file:
-            yaml_file = yaml.safe_load(file)
-        self.whole_yaml_file = yaml_file
+    smooth_raw_neutrons: bool = Field(
+        default=False, description="Apply smoothing to raw neutron counts"
+    )
+    smooth_corrected_neutrons: bool = Field(
+        default=True, description="Apply smoothing to corrected neutron counts"
+    )
+    smooth_soil_moisture: bool = Field(
+        default=False,
+        description="Apply smoothing to calculated soil moisture values",
+    )
+    settings: SmoothingAlgorithmSettings = Field(
+        default_factory=SmoothingAlgorithmSettings,
+        description="Smoothing algorithm configuration",
+    )
 
 
-class ValidateConfigurationFile(ABC):
-    """
-    Base class for configuration file validation. Defines the structure
-    and required methods for validating different sections of a
-    configuration file.
+class ProcessConfig(BaseConfig):
 
-    This class should not be instantiated directly but extended by
-    specific configuration validation classes.
-
-    """
-
-    def __init__(self, config_yaml: PreLoadConfigurationYaml):
-        """Initialise the validation class.
-
-        Parameters
-        ----------
-        config_yaml : PreLoadConfigurationYaml
-            An instance of the preloadconfigurationyaml class.
-        """
-        self._config_yaml = config_yaml
-
-    @property
-    def config_yaml(self):
-        return self._config_yaml
-
-    @config_yaml.setter
-    def config_yaml(self, value):
-        self._config_yaml = value
-
-    @staticmethod
-    def remove_nested_dicts(some_dict: dict):
-        """Return a new dictionary with nested dictionaries removed.
-
-        Parameters
-        ----------
-        some_dict : dict
-            A dictionary
-
-        Returns
-        -------
-        dict
-            A dictionary but without any nested dictionaries in it
-        """
-        return {k: v for k, v in some_dict.items() if not isinstance(v, dict)}
-
-    @abstractmethod
-    def get_sections(self):
-        """
-        Collects the sections of the YAML.
-
-        Implemented individually for each configuration type
-
-        """
-        pass
-
-    @abstractmethod
-    def check_sections(self):
-        """
-        Validates the collected sections of the YAML.
-
-        Implemented individually for each configuration type.
-
-        """
-        pass
-
-    def validate_configuration(self):
-        """
-        Enacts both the section extraction as well as the validation of
-        the sections against the pydantic tables.
-        """
-        self.get_sections()
-        self.check_sections()
+    neutron_quality_assessment: NeutronQualityAssessment
+    correction_steps: CorrectionSteps
+    data_smoothing: DataSmoothingConfig
 
 
-class SensorConfigurationValidation(ValidateConfigurationFile):
-    """
-    Validates sensor configuration YAML. Implements the abstract methods
-    defined in ValidateConfigurationFile to provide validation logic for
-    sensor configurations.
-
-    See ValidateConfigurationFile for more details on the methods.
-    """
-
-    def get_sections(self):
-        """
-        Extracts the individual sections from the YAML file and stores
-        them as attributes in the object instance.
-
-        TODO: return to this when built!!!
-        """
-        pass
-        # full_yaml = self.config_yaml.whole_yaml_file
-
-        # self.general_site_metadata = full_yaml.get("general_site_metadata", {})
-        # self.timeseries_data_format = full_yaml.get("time_series_data", {})
-
-        # self.timeseries_data_format_columns = self.timeseries_data_format[
-        #     "key_column_info"
-        # ]
-        # self.timeseries_data_format = self.remove_nested_dicts(
-        #     self.timeseries_data_format
-        # )
-
-        # self.calibration_data_format = full_yaml.get(
-        #     "calibration_data_format", {}
-        # )
-        # self.calibration_data_format_key_columns = (
-        #     self.calibration_data_format["key_column_names"]
-        # )
-        # self.calibration_data_format = self.remove_nested_dicts(
-        #     self.calibration_data_format
-        # )
-        # self.crns_sensor_information = full_yaml.get(
-        #     "crns_sensor_information", {}
-        # )
-
-        # self.pdf_formatting = full_yaml.get("pdf_formatting", {})
-        # self.data_storage = full_yaml.get("data_storage", {})
-
-    def check_sections(self):
-        """
-        Validates the stored sections against pydantic data tables to
-        ensure data types are as expected. The models are not saved and
-        are only used for validation.
-
-        TODO: return to this when built!!
-        """
-        pass
-        # GeneralSiteMetadata(**self.general_site_metadata)
-        # CRNSSensorInformation(**self.crns_sensor_information)
-        # TimeseriesDataFormat(**self.timeseries_data_format)
-        # CalibrationDataFormat(**self.calibration_data_format)
-        # CalibrationDataFormat_ColumnNames(
-        #     **self.calibration_data_format_key_columns
-        # )
-        # PDFConfiguration(**self.pdf_formatting)
-        # DataStorage(**self.data_storage)
-        # SoilGridsMetadata(**self.)
-
-
-class ProcessConfigurationValidation(ValidateConfigurationFile):
-    def get_sections(self):
-        """
-        Extracts the individual sections from the YAML file and stores
-        them as attributes in the object instance.
-        """
-        pass
-        # full_yaml = self.config_yaml.whole_yaml_file
-        # correction_steps = full_yaml.get("correction_steps", {})
-
-        # self.method_signifier = full_yaml.get("method_signifier", {})
-        # self.air_humidity = correction_steps.get("air_humidity", {})
-        # self.air_pressure = correction_steps.get("air_pressure", {})
-        # self.incoming_radiation = correction_steps.get(
-        #     "incoming_radiation", {}
-        # )
-        # self.reference_neutron_monitor = self.incoming_radiation.get(
-        #     "reference_neutron_monitor", {}
-        # )
-        # self.invalid_data = full_yaml.get("invalid_data", {})
-        # self.interpolation = full_yaml.get("interpolation", {})
-        # self.temporal_aggregation = full_yaml.get("temporal_aggregation", {})
-
-    def check_sections(self):
-        """
-        Validates the stored sections against pydantic data tables to
-        ensure data types are as expected. The models are not saved and
-        are only used for validation.
-
-        """
-        pass
-        # MethodSignifier(**self.method_signifier)
-        # AirHumidity(**self.air_humidity)
-        # AirPressure(**self.air_pressure)
-        # IncomingRadiation(**self.incoming_radiation)
-        # InvalidData(**self.invalid_data)
-        # Interpolation(**self.interpolation)
-        # TemporalAggregation(**self.temporal_aggregation)
-
-
-class InputDataFrameConfigurationValidation:
-    pass
+class ConfigType(Enum):
+    SENSOR = "sensor"
+    PROCESS = "process"
 
 
 class ConfigurationManager:
-    """
-    Configuration Management class. The purpose of this class is to
-    store multiple configuration objects in one location.
-
-    The configuration objects are read in from YAML files and validated
-    against pydantic tables to ensure types are as expected. If no type
-    errors are presented it will then recursively import the YAML file
-    using the ConfigurationObject class. This means that values can be
-    read in that are not validated at all, for example if some
-    additional data is included but is not necessarily important for the
-    code to run.
-
-    Possible configuration input types are: [station, processing,
-    global].
-
-    """
+    """Manages loading and access of nested configurations."""
 
     def __init__(self):
-        self._configs = {}
+        self._configs: Dict[str, BaseConfig] = {}
 
-    def convert_configuration_dictionary(self, dictionary: dict):
-        """Convert the YAML dict into a ConfigurationObject
-
-        Returns
-        -------
-        Class
-            Configuration object with attributes
-        """
-
-        configuration_object = ConfigurationObject(dictionary)
-
-        return configuration_object
-
-    def load_and_validate_configuration(
+    def _resolve_paths(
         self,
-        name: Literal[
-            "station",
-            "processing",
-            "global",
-            "input_data",
-        ],
-        file_path: str,
+        config_dict: dict,
+        config_path: Path,
     ):
         """
-        This class handles loading and validating of YAML configuration
-        files. The output is a ConfigurationObject that has been type
-        checked
+        Resolves the paths in the YAML file so that any relative paths
+        are relative to the config file itself. The given paths are
+        resolved to Path objects.
 
         Parameters
         ----------
-        name : str
-            configuration type name
+        config_dict : dict
+            The loaded YAML file as a dict
+        config_path : Path
+            The Path of the config YAML
 
-            Can be only either:
-            - sensor
-            - processing
-            - global
-            - input_data
+        Returns
+        -------
+        dict
+            Dictionary with paths as Path objects.
+        """
+        resolved_dict = {}
+        for key, value in config_dict.items():
+            if isinstance(value, dict):
+                resolved_dict[key] = self._resolve_paths(
+                    value, config_path=config_path
+                )
+            elif isinstance(value, str) and (
+                "path_" in key.lower() or "location" in key.lower()
+            ):
+                path = Path(value)
+                if not path.is_absolute():
+                    path = (config_path.parent / path).resolve()
+                resolved_dict[key] = str(path)
+            else:
+                resolved_dict[key] = value
+        return resolved_dict
 
+    def load_configuration(self, file_path: str) -> None:
+        """
+        Load and validate nested configuration.
+
+        Parameters
+        ----------
         file_path : str
-            File path of the configuration YAML file
-
-        Raises
-        ------
-        NameError
-            Error when incompatable name is given
+            Path to YAML configuration file
         """
-        pre_load = PreLoadConfigurationYaml()
-        pre_load.import_whole_yaml_file(file_path)
 
-        name_lower = name.lower()
-        if name_lower == "station":
-            validation_object = SensorConfigurationValidation(pre_load)
-            validation_object.validate_configuration()
-        elif name_lower == "processing":
-            validation_object = ProcessConfigurationValidation(pre_load)
-            validation_object.validate_configuration()
-        elif name_lower == "global":
-            pass
-            # validation_object = GlobalSettingsConfigurationValidataion(
-            #     pre_load
-            # )
-            # validation_object.validate_configuration()
-        elif name_lower == "input_data":
-            pass
-            # validation_object = InputDataFrameConfigurationValidation(pre_load)
-            # validation_object.validate_configuration()
+        config_path = Path(file_path).resolve()
 
-        else:
-            core_logger.error(
-                "Incompatible name given when configuration file loaded."
-            )
-            raise NameError(
-                f"{name} is not an accepted name for configuration file "
-                f"type. Accepted names are [station, processing]"
-            )
+        with open(file_path) as f:
+            config_dict = yaml.safe_load(f)
 
-        self._configs[name] = self.convert_configuration_dictionary(
-            pre_load.whole_yaml_file
-        )
+        config_dict = self._resolve_paths(config_dict, config_path)
 
-    def get_configuration(
-        self,
-        name: Literal[
-            "station",
-            "processing",
-            "global",
-            "input_data",
-        ],
-    ):
+        if config_dict["config"] == "sensor":
+            config_type = str(ConfigType.SENSOR.value)
+            self._configs[config_type] = SensorConfig(**config_dict)
+        elif config_dict["config"] == "process":
+            config_type = str(ConfigType.PROCESS.value)
+            self._configs[config_type] = ProcessConfig(**config_dict)
+
+    def get_config(self, name: Literal["sensor", "process"]):
         """
-        Get the configuration file
+        Return the specific config
 
         Parameters
         ----------
         name : str
-            Name of the configuration object. Can be either [sensor,
-            processing, global]
+            Either sensor or process
 
         Returns
         -------
-        ConfigurationObject
-            ConfigurationObject of the specified name
+        BaseConfig
+            The requested config
         """
-        return self._configs.get(name)
+        return self._configs[name]
+
+    def create_sensor_config(self):
+        pass

@@ -17,6 +17,8 @@ from neptoon.corrections import (
     calc_pressure_correction_l_coeff,
     calc_mean_pressure,
     calc_beta_coefficient,
+    above_ground_biomass_correction_baatz2015,
+    above_ground_biomass_correction_morris2024,
 )
 
 core_logger = get_logger()
@@ -48,6 +50,8 @@ class CorrectionTheory(Enum):
     ROSOLEM_2013 = "rosolem_2013"
     # Pressure
     # Aboveground Biomass
+    BAATZ_2015 = "baatz_2015"
+    MORRIS_2024 = "morris_2024"
 
 
 def is_column_missing_or_empty(data_frame, column_name):
@@ -207,6 +211,8 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
     """
     Corrects for incoming neutron intensity according to the method
     outlined in Hawdon et al., (2014).
+
+    https://doi.org/10.1002/2013WR015138
     """
 
     def __init__(
@@ -398,6 +404,8 @@ class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
     """
     Corrects for incoming neutron intensity according to the method
     outlined in McJannet and Desilets., (2023).
+
+    https://doi.org/10.1029/2022WR033889
     """
 
     def __init__(
@@ -828,3 +836,71 @@ class PressureCorrectionZreda2012(Correction):
                     )
                 )
             return data_frame
+
+
+class AboveGroundBiomassCorrectionBaatz2015(Correction):
+
+    def __init__(
+        self,
+        correction_type: CorrectionType,
+        correction_factor_column_name: str,
+        above_ground_biomass_column_name: str,
+    ):
+        super().__init__(
+            correction_type=correction_type,
+            correction_factor_column_name=correction_factor_column_name,
+        )
+        self.above_ground_biomass_column_name = (
+            above_ground_biomass_column_name
+        )
+
+    def apply(self, data_frame):
+        print(
+            f"{self.above_ground_biomass_column_name} needs to be in units of "
+            "kg m^2."
+        )
+        data_frame[self.correction_factor_column_name] = data_frame.apply(
+            lambda row: above_ground_biomass_correction_baatz2015(
+                above_ground_biomass=row[self.above_ground_biomass_column_name]
+            ),
+            axis=1,
+        )
+
+        return data_frame
+
+
+class AboveGroundBiomassCorrectionMorris2024(Correction):
+    """_summary_
+
+
+
+    https://doi.org/10.3390/s24134094
+    """
+
+    def __init__(
+        self,
+        correction_type: CorrectionType,
+        correction_factor_column_name: str,
+        above_ground_biomass_column_name: str,
+    ):
+        super().__init__(
+            correction_type=correction_type,
+            correction_factor_column_name=correction_factor_column_name,
+        )
+        self.above_ground_biomass_column_name = (
+            above_ground_biomass_column_name
+        )
+
+    def apply(self, data_frame):
+        print(
+            f"{self.above_ground_biomass_column_name} needs to be in units of "
+            "mm (i.e., Biomass Water Equivalant)."
+        )
+        data_frame[self.correction_factor_column_name] = data_frame.apply(
+            lambda row: above_ground_biomass_correction_morris2024(
+                above_ground_biomass=row[self.above_ground_biomass_column_name]
+            ),
+            axis=1,
+        )
+
+        return data_frame

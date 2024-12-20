@@ -181,7 +181,6 @@ class ColumnInfo:
             A string that represents the new column name to expect
             throughout processing.
         """
-        # print(f"Relabeling {column_name} to {new_label}")
         cls._current_representation[column_name] = new_label
 
     @classmethod

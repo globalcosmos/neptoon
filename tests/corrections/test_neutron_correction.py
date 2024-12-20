@@ -12,7 +12,7 @@ from neptoon.corrections import (
     IncomingIntensityCorrectionHawdon2014,
     HumidityCorrectionRosolem2013,
 )
-from neptoon.config.site_information import SiteInformation
+from neptoon.config.configuration_input import SensorInfo
 from neptoon.columns.column_information import ColumnInfo
 from neptoon.corrections.factory.build_corrections import Correction
 
@@ -241,25 +241,29 @@ def test_property_setters(sample_df, correction_builder):
 
 @pytest.fixture
 def site_information():
-    site_information = SiteInformation(
-        site_name="test",
+    site_information = SensorInfo(
+        name="test",
+        country="DEU",
+        identifier="101",
+        install_date=pd.to_datetime("14-01-2011", dayfirst=True),
         latitude=51.37,
         longitude=12.55,
         elevation=140,
+        time_zone=1,
         reference_incoming_neutron_value=150,
-        dry_soil_bulk_density=1.4,
-        lattice_water=0.01,
-        soil_organic_carbon=0,
+        avg_dry_soil_bulk_density=1.4,
+        avg_lattice_water=0.01,
+        avg_soil_organic_carbon=0,
         site_cutoff_rigidity=2.94,
     )
     return site_information
 
 
-def test_correction_factory_intensity(site_information):
+def test_correction_factory_intensity():
     """
     Test correction factory selects the right correction in intensity
     """
-    factory = CorrectionFactory(site_information=site_information)
+    factory = CorrectionFactory()
     tmp_corr = factory.create_correction(
         CorrectionType.INCOMING_INTENSITY, CorrectionTheory.ZREDA_2012
     )
@@ -273,7 +277,7 @@ def test_correction_factory_intensity(site_information):
     )
     assert tmp_corr.correction_type is CorrectionType.INCOMING_INTENSITY
 
-    factory = CorrectionFactory(site_information=site_information)
+    factory = CorrectionFactory()
     tmp_corr2 = factory.create_correction(
         CorrectionType.INCOMING_INTENSITY, CorrectionTheory.HAWDON_2014
     )
@@ -351,13 +355,12 @@ def df_without_ref_monitor():
 
 
 def test_correction_factory_intensity_hawdon(
-    site_information,
     df_with_ref_monitor,
     df_without_ref_monitor,
 ):
     """Test hawdon method when ref given and not given"""
 
-    factory = CorrectionFactory(site_information=site_information)
+    factory = CorrectionFactory()
     tmp_corr = factory.create_correction(
         correction_type=CorrectionType.INCOMING_INTENSITY,
         correction_theory=CorrectionTheory.HAWDON_2014,
@@ -420,12 +423,11 @@ def df_lat_and_elevation():
 
 
 def test_correction_factory_intensity_mcjannet_desilets(
-    site_information,
     df_lat_and_elevation,
 ):
     """Test McJannetDesilets method"""
 
-    factory = CorrectionFactory(site_information=site_information)
+    factory = CorrectionFactory()
     tmp_corr = factory.create_correction(
         correction_type=CorrectionType.INCOMING_INTENSITY,
         correction_theory=CorrectionTheory.MCJANNET_DESILETS_2023,
@@ -446,12 +448,11 @@ def test_correction_factory_intensity_mcjannet_desilets(
 
 
 def test_correction_factory_intensity_mcjannet_desilets_error(
-    site_information,
     df_with_ref_monitor,
 ):
     """Test McJannetDesilets method error (wrong inputs)"""
 
-    factory = CorrectionFactory(site_information=site_information)
+    factory = CorrectionFactory()
     tmp_corr = factory.create_correction(
         correction_type=CorrectionType.INCOMING_INTENSITY,
         correction_theory=CorrectionTheory.MCJANNET_DESILETS_2023,
@@ -466,11 +467,10 @@ def test_correction_factory_intensity_mcjannet_desilets_error(
 
 
 def test_check_if_ref_monitor_supplied(
-    site_information,
     df_with_ref_monitor,
     df_without_ref_monitor,
 ):
-    factory = CorrectionFactory(site_information=site_information)
+    factory = CorrectionFactory()
     tmp_corr = factory.create_correction(
         correction_type=CorrectionType.INCOMING_INTENSITY,
         correction_theory=CorrectionTheory.HAWDON_2014,
@@ -482,7 +482,7 @@ def test_check_if_ref_monitor_supplied(
         assert tmp_corr.ref_monitor_missing
 
 
-def test_correction_factory_pressure(site_information):
+def test_correction_factory_pressure():
     """
     Test correction factory selects the right correction humidity.
     """
@@ -502,7 +502,7 @@ def test_correction_factory_pressure(site_information):
         }
     )
 
-    factory = CorrectionFactory(site_information=site_information)
+    factory = CorrectionFactory()
     tmp_corr = factory.create_correction(
         correction_type=CorrectionType.PRESSURE
     )
@@ -515,7 +515,7 @@ def test_correction_factory_pressure(site_information):
     assert str(ColumnInfo.Name.PRESSURE_CORRECTION) in df.columns
 
 
-def test_correction_factory_humidity(site_information):
+def test_correction_factory_humidity():
     """
     Test correction factory selects the right correction for humidity
 
@@ -537,7 +537,7 @@ def test_correction_factory_humidity(site_information):
         }
     )
 
-    factory = CorrectionFactory(site_information=site_information)
+    factory = CorrectionFactory()
     tmp_corr = factory.create_correction(
         correction_type=CorrectionType.HUMIDITY
     )
