@@ -1,20 +1,20 @@
 import streamlit as st
-import example_process
+# import example_process
 import logging
 from streamlit.logger import get_logger
 
-class StreamlitLogHandler(logging.Handler):
-    def __init__(self, widget_update_func):
-        super().__init__()
-        self.widget_update_func = widget_update_func
+# class StreamlitLogHandler(logging.Handler):
+#     def __init__(self, widget_update_func):
+#         super().__init__()
+#         self.widget_update_func = widget_update_func
 
-    def emit(self, record):
-        msg = self.format(record)
-        self.widget_update_func(msg)
+#     def emit(self, record):
+#         msg = self.format(record)
+#         self.widget_update_func(msg)
 
-logger = get_logger(example_process.__name__)
-handler = StreamlitLogHandler(st.sidebar.empty().code)
-logger.addHandler(handler)
+# logger = get_logger(example_process.__name__)
+# handler = StreamlitLogHandler(st.sidebar.empty().code)
+# logger.addHandler(handler)
 
 st.markdown("""
 # :material/adjust: Calibration
