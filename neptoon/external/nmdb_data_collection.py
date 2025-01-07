@@ -88,7 +88,7 @@ class NMDBDataAttacher:
             raise ValueError("DataFrame source must have a DatetimeIndex.")
 
         if self.config.reference_value is None:
-            self.config.reference_value = self.tmp_data["count"][0]
+            self.config.reference_value = self.tmp_data["count"].iloc[0]
 
         mapped_data = self.tmp_data["count"].reindex(
             self.data_frame.index, method="nearest"
@@ -272,15 +272,15 @@ class NMDBConfig:
         self._start_date_wanted = start_date_wanted
         self._end_date_wanted = end_date_wanted
         self._cache_dir = cache_dir
-        self._station = station if station is not None else "JUNG"
-        self._reference_value = reference_value
-        self._nmdb_table = nmdb_table if nmdb_table is not None else "revori"
-        self._resolution = resolution if resolution is not None else "60"
-        self._cache_exists = cache_exists
-        self._cache_start_date = cache_start_date
-        self._cache_end_date = cache_end_date
-        self._start_date_needed = start_date_needed
-        self._end_date_needed = end_date_needed
+        self.station = station if station is not None else "JUNG"
+        self.reference_value = reference_value
+        self.nmdb_table = nmdb_table if nmdb_table is not None else "revori"
+        self.resolution = resolution if resolution is not None else "60"
+        self.cache_exists = cache_exists
+        self.cache_start_date = cache_start_date
+        self.cache_end_date = cache_end_date
+        self.start_date_needed = start_date_needed
+        self.end_date_needed = end_date_needed
 
     @property
     def start_date_wanted(self):
@@ -305,62 +305,6 @@ class NMDBConfig:
             return self._cache_dir
         else:
             return GlobalConfig.get_cache_dir()
-
-    @property
-    def station(self):
-        return self._station
-
-    @property
-    def reference_value(self):
-        return self._reference_value
-
-    @property
-    def nmdb_table(self):
-        return self._nmdb_table
-
-    @property
-    def resolution(self):
-        return self._resolution
-
-    @property
-    def cache_exists(self):
-        return self._cache_exists
-
-    @cache_exists.setter
-    def cache_exists(self, value):
-        self._cache_exists = value
-
-    @property
-    def cache_start_date(self):
-        return self._cache_start_date
-
-    @cache_start_date.setter
-    def cache_start_date(self, value):
-        self._cache_start_date = value
-
-    @property
-    def cache_end_date(self):
-        return self._cache_end_date
-
-    @cache_end_date.setter
-    def cache_end_date(self, value):
-        self._cache_end_date = value
-
-    @property
-    def start_date_needed(self):
-        return self._start_date_needed
-
-    @start_date_needed.setter
-    def start_date_needed(self, value):
-        self._start_date_needed = value
-
-    @property
-    def end_date_needed(self):
-        return self._end_date_needed
-
-    @end_date_needed.setter
-    def end_date_needed(self, value):
-        self._end_date_needed = value
 
 
 class CacheHandler:
