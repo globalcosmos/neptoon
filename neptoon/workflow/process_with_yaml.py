@@ -228,7 +228,7 @@ class ProcessWithYaml:
         """
         with Figure(
             "Incoming cosmic radiation",
-            size=(12, 3),
+            size=(10, 3),
             x_range=(data.index.min(), data.index.max()),
             show=show,
         ) as ax:
@@ -242,12 +242,12 @@ class ProcessWithYaml:
             )
             ax.axhline(
                 reference_value,
-                ls=":",
+                ls="--",
                 lw=1,
                 label="Reference value",
             )
             ax.set_ylabel("Neutron count rate (cps)")
-            ax.legend()
+            ax.legend(framealpha=1)
 
         return Figure.as_object()
 
