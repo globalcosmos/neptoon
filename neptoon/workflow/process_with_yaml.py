@@ -25,6 +25,9 @@ from neptoon.quality_control.saqc_methods_and_params import QAMethod
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import ConfigurationManager
 
+from magazine import Magazine
+from figurex import Figure
+
 core_logger = get_logger()
 
 
@@ -151,20 +154,102 @@ class ProcessWithYaml:
         df = self._prepare_time_series()
         return df
 
-    def _attach_nmdb_data(
-        self,
-    ):
+    @Magazine.reporting("Incoming cosmic radiation")
+    def _attach_nmdb_data(self, make_figure=True):
         """
         Attaches incoming neutron data with NMDB database.
+
+        Report
+        ------
+        Reference data from incoming cosmic radiation has been attached using the NMDB database.
+        The station {station} has been selected with a reference value of {reference_value} cps,
+        a time resolution of {resolution} seconds and the data quality level {nmdb_table}.
+
         """
         tmp = self.process_config.correction_steps.incoming_radiation
+        station = tmp.reference_neutron_monitor.station
+        reference_value = tmp.reference_value
+        resolution = tmp.reference_neutron_monitor.resolution
+        nmdb_table = tmp.reference_neutron_monitor.nmdb_table
+
         self.data_hub.attach_nmdb_data(
-            station=tmp.reference_neutron_monitor.station,
-            reference_value=tmp.reference_value,
+            station=station,
+            reference_value=reference_value,
             new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
-            resolution=tmp.reference_neutron_monitor.resolution,
-            nmdb_table=tmp.reference_neutron_monitor.nmdb_table,
+            resolution=resolution,
+            nmdb_table=nmdb_table,
         )
+
+        # Define parameters to be used in the docstring under "Report"
+        _report["station"] = station
+        _report["reference_value"] = reference_value
+        _report["resolution"] = resolution
+        _report["nmdb_table"] = nmdb_table
+
+        if make_figure:
+            figure = ProcessWithYaml.make_nmdb_data_figure(
+                data=self.data_hub.crns_data_frame[
+                    str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY)
+                ],
+                station=station,
+                reference_value=reference_value,
+                resolution=resolution,
+            )
+            Magazine.report("Incoming cosmic radiation", figure)
+
+    @staticmethod
+    def make_nmdb_data_figure(
+        data,
+        station: str,
+        reference_value: int,
+        resolution: int = 60,
+        show: bool = False,
+    ):
+        """
+        Makes the figure
+
+        Parameters
+        ----------
+        data : Pandas
+            Series
+        station : str
+            Station name
+        reference_value : int
+            reference value
+        resolution : int, optional
+            resolution in sec, by default 60
+        show : bool, optional
+            show interactively, by default False
+
+        Returns
+        -------
+        BytesIO
+            Figure object to be used for later display
+        """
+        with Figure(
+            "Incoming cosmic radiation",
+            size=(12, 3),
+            x_range=(data.index.min(), data.index.max()),
+            show=show,
+        ) as ax:
+            ax.plot(
+                data.index,
+                data,
+                label="Station {:}, resolution: {:} sec".format(
+                    station,
+                    resolution,
+                ),
+            )
+            ax.axhline(
+                reference_value,
+                ls=":",
+                lw=1,
+                label="Reference value",
+            )
+            ax.set_ylabel("Neutron count rate (cps)")
+            ax.legend()
+
+        return Figure.as_object()
 
     def _prepare_static_values(
         self,
