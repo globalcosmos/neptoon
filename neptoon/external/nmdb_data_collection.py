@@ -88,7 +88,7 @@ class NMDBDataAttacher:
             raise ValueError("DataFrame source must have a DatetimeIndex.")
 
         if self.config.reference_value is None:
-            self.config.reference_value = self.tmp_data["count"].iloc[0]
+            self.config._reference_value = self.tmp_data["count"][0]
 
         mapped_data = self.tmp_data["count"].reindex(
             self.data_frame.index, method="nearest"
