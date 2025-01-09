@@ -26,6 +26,8 @@ pydantic = "^2.6.1"
 flake8 = "^7.0.0"
 pandera = "^0.18.0"
 saqc = "^2.6.0"
+magazine = "^0.3.2"
+figurex = "^0.2.10"
 
 
 [tool.poetry.group.dev.dependencies]
