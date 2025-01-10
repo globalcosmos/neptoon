@@ -21,6 +21,10 @@ def validate_columns_present(
         raise ValueError(f"Required columns missing from dataframe: {missing}")
 
 
+def some_other_figure():
+    pass
+
+
 def make_nmdb_data_figure(
     data_frame: pd.DataFrame,
     station_name: str,
