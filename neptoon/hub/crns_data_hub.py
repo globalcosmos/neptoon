@@ -26,6 +26,7 @@ from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
+from neptoon.visulisation.figures_handler import CreateFigures
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
 from neptoon.columns import ColumnInfo
@@ -512,6 +513,24 @@ class CRNSDataHub:
                 continue
             else:
                 self.crns_data_frame[key] = value
+
+    def create_figures(
+        self,
+        create_all=True,
+        ignore_sections=[],
+        selected_figures=[],
+        show_figures: bool = True,
+    ):
+        masked_df = self.mask_flagged_data()
+        figure_creator = CreateFigures(
+            data_frame=masked_df,
+            sensor_info=self.sensor_info,
+            create_all=create_all,
+            ignore_sections=ignore_sections,
+            selected_figures=selected_figures,
+            show_figures=show_figures,
+        )
+        figure_creator.create_figures()
 
     def save_data(
         self,
