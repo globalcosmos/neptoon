@@ -3,7 +3,9 @@ from pathlib import Path
 from neptoon.workflow.process_with_yaml import ProcessWithYaml
 from neptoon.config import ConfigurationManager
 from neptoon.data_audit import DataAuditLog
+import os
 
+os.chdir("C:/Users/schroen/Projects/Neptoon/neptoon/example_process")
 
 config = ConfigurationManager()
 
@@ -12,12 +14,10 @@ processing_config_path = Path(
     "./configuration_files/v1_processing_method.yaml"
 )
 
-config.load_and_validate_configuration(
-    name="station",
+config.load_configuration(
     file_path=station_config_path,
 )
-config.load_and_validate_configuration(
-    name="processing",
+config.load_configuration(
     file_path=processing_config_path,
 )
 
