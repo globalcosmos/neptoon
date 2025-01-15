@@ -15,16 +15,6 @@ import atexit
 import shutil
 
 
-@dataclass
-class FigureMetadata:
-    """Description of the Figures and what they are for"""
-
-    topic: str
-    description: str
-    required_columns: List[str]
-    method: callable
-
-
 class FigureTopic(Enum):
     NMDB = "nmdb"
     NEUTRONS = "neutrons"
@@ -32,8 +22,36 @@ class FigureTopic(Enum):
 
 
 @dataclass
+class FigureMetadata:
+    """
+    Key information on each figure created.
+
+    topic : FigureTopic
+        The topic the figure is related to
+    description : str
+        A brief description about the figure
+    required_columns: List[str]
+        The columns required for this particular figure.
+    method : callable
+        The method (found in FigureHandler) which will be called to
+        produce this figure.
+    """
+
+    topic: FigureTopic
+    description: str
+    required_columns: List[str]
+    method: callable
+
+
+@dataclass
 class TempFigure:
-    """Tracks a temporary figure file"""
+    """
+    Tracks a temporary figure file
+
+    name : str
+        Name of the figure
+
+    """
 
     name: str
     path: Path
@@ -70,7 +88,7 @@ class TempFigureHandler:
         Path
             Path of the temp figure
         """
-        temp_path = self._temp_dir / name
+        temp_path = self._temp_dir / f"{name}.png"
         self.figures.append(
             TempFigure(
                 name=name,
@@ -131,7 +149,6 @@ class FigureHandler:
         self,
         data_frame: pd.DataFrame,
         sensor_info: SensorInfo,
-        temp_handler: TempFigureHandler,
         create_all: bool = False,
         ignore_sections: List = None,
         selected_figures: List[str] = None,
@@ -140,7 +157,7 @@ class FigureHandler:
 
         self.data_frame = data_frame
         self.sensor_info = sensor_info
-        self.temp_handler = temp_handler
+        self.temp_handler = TempFigureHandler()
         self.create_all = create_all
         self.ignore_sections = (
             ignore_sections if ignore_sections is not None else []
@@ -195,9 +212,8 @@ class FigureHandler:
         """
         temp_path = self.temp_handler.store_figure(
             name="nmdb_incoming_radiation",
-            topic=FigureTopic.NMDB.value,
+            topic=FigureTopic.NMDB,
         )
-
         reference_value = self.data_frame[
             str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE)
         ].iloc[0]

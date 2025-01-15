@@ -92,7 +92,7 @@ class CRNSDataHub:
         self._correction_factory = CorrectionFactory()
         self._correction_builder = CorrectionBuilder()
         self.calibrator = None
-        self.temporary_figure_handler = None
+        self.figure_creator = None
 
     @property
     def crns_data_frame(self):
@@ -522,17 +522,29 @@ class CRNSDataHub:
         selected_figures=[],
         show_figures: bool = True,
     ):
+        """_summary_
+
+        Parameters
+        ----------
+        create_all : bool, optional
+            _description_, by default True
+        ignore_sections : list, optional
+            _description_, by default []
+        selected_figures : list, optional
+            _description_, by default []
+        show_figures : bool, optional
+            _description_, by default True
+        """
         masked_df = self.mask_flagged_data()
-        figure_creator = FigureHandler(
+        self.figure_creator = FigureHandler(
             data_frame=masked_df,
             sensor_info=self.sensor_info,
-            temp_handler=self.temporary_figure_handler,
             create_all=create_all,
             ignore_sections=ignore_sections,
             selected_figures=selected_figures,
             show_figures=show_figures,
         )
-        figure_creator.create_figures()
+        self.figure_creator.create_figures()
 
     def save_data(
         self,
@@ -541,18 +553,11 @@ class CRNSDataHub:
         append_yaml_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: Union[dict, None] = None,
-        figures: bool = True,
+        append_time_stamp: bool = True,
     ):
         """
         Saves the file to a specified location. It must contain the
         correct folder_path and file_name.
-
-        Provide options on what is saved:
-
-        - everything (uncertaities, flags, etc)
-        - seperate
-        - key variables only
-
 
         Parameters
         ----------
@@ -575,6 +580,7 @@ class CRNSDataHub:
             append_yaml_hash_to_folder_name=append_yaml_hash_to_folder_name,
             use_custom_column_names=use_custom_column_names,
             custom_column_names_dict=custom_column_names_dict,
-            magazine_on=True,
+            append_time_stamp=append_time_stamp,
+            figure_handler=self.figure_creator,
         )
         saver.save_outputs()

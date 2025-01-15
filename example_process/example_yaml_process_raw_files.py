@@ -2,7 +2,6 @@
 from pathlib import Path
 from neptoon.workflow.process_with_yaml import ProcessWithYaml
 from neptoon.config import ConfigurationManager
-from neptoon.data_audit import DataAuditLog
 
 
 config = ConfigurationManager()
@@ -19,7 +18,6 @@ config.load_configuration(
     file_path=processing_config_path,
 )
 
-DataAuditLog.create()
 yaml_processor = ProcessWithYaml(configuration_object=config)
 
 ## OPTION 1:
