@@ -8,6 +8,10 @@ from figurex import Figure
 from neptoon.columns import ColumnInfo
 
 
+def return_obj():
+    pass
+
+
 def validate_columns_present(
     data_frame: pd.DataFrame,
     required_cols: List[str],
@@ -32,6 +36,7 @@ def make_nmdb_data_figure(
     incoming_neutron_col_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
     resolution: int = 60,
     show: bool = False,
+    return_as_obj=False,
 ):
     """
     Makes the figure
@@ -48,6 +53,8 @@ def make_nmdb_data_figure(
         resolution in minutes, by default 60
     show : bool, optional
         show interactively, by default False
+    save : None
+
 
     Returns
     -------
@@ -81,3 +88,6 @@ def make_nmdb_data_figure(
         )
         ax.set_ylabel("Neutron count rate (counts)")
         ax.legend()
+
+    if return_as_obj:
+        return_obj()

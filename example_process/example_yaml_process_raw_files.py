@@ -12,12 +12,10 @@ processing_config_path = Path(
     "./configuration_files/v1_processing_method.yaml"
 )
 
-config.load_and_validate_configuration(
-    name="station",
+config.load_configuration(
     file_path=station_config_path,
 )
-config.load_and_validate_configuration(
-    name="processing",
+config.load_configuration(
     file_path=processing_config_path,
 )
 
@@ -29,3 +27,5 @@ yaml_processor = ProcessWithYaml(configuration_object=config)
 
 ## OPTION 2:
 yaml_processor.run_full_process()
+
+yaml_processor.data_hub.create_figures()

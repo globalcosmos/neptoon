@@ -26,7 +26,7 @@ from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
-from neptoon.visulisation.figures_handler import CreateFigures
+from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
 from neptoon.columns import ColumnInfo
@@ -92,6 +92,7 @@ class CRNSDataHub:
         self._correction_factory = CorrectionFactory()
         self._correction_builder = CorrectionBuilder()
         self.calibrator = None
+        self.temporary_figure_handler = None
 
     @property
     def crns_data_frame(self):
@@ -522,9 +523,10 @@ class CRNSDataHub:
         show_figures: bool = True,
     ):
         masked_df = self.mask_flagged_data()
-        figure_creator = CreateFigures(
+        figure_creator = FigureHandler(
             data_frame=masked_df,
             sensor_info=self.sensor_info,
+            temp_handler=self.temporary_figure_handler,
             create_all=create_all,
             ignore_sections=ignore_sections,
             selected_figures=selected_figures,
@@ -539,6 +541,7 @@ class CRNSDataHub:
         append_yaml_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: Union[dict, None] = None,
+        figures: bool = True,
     ):
         """
         Saves the file to a specified location. It must contain the
@@ -572,5 +575,6 @@ class CRNSDataHub:
             append_yaml_hash_to_folder_name=append_yaml_hash_to_folder_name,
             use_custom_column_names=use_custom_column_names,
             custom_column_names_dict=custom_column_names_dict,
+            magazine_on=True,
         )
         saver.save_outputs()
