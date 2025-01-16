@@ -266,6 +266,22 @@ class SaveAndArchiveOutputs:
         masked_df[~mask] = math.nan
         return masked_df
 
+    def _save_figures(self):
+        """
+        Handles saving figures
+        """
+
+        figure_metadata = [
+            fig_md for fig_md in self.figure_handler.temp_handler.get_figures()
+        ]
+
+        figure_folder = self.full_folder_location / "figures"
+        figure_folder.mkdir(parents=True, exist_ok=True)
+        for figure in figure_metadata:
+
+            dest = figure_folder / f"{figure.name}.png"
+            shutil.copy2(figure.path, dest)
+
     def save_outputs(
         self,
         nan_bad_data: bool = True,
@@ -307,18 +323,7 @@ class SaveAndArchiveOutputs:
             (self.full_folder_location / f"{file_name}_flag_data_frame.csv")
         )
         if self.figure_handler:
-
-            figure_metadata = [
-                fig_md
-                for fig_md in self.figure_handler.temp_handler.get_figures()
-            ]
-
-            figure_folder = self.full_folder_location / "figures"
-            figure_folder.mkdir(parents=True, exist_ok=True)
-            for figure in figure_metadata:
-
-                dest = figure_folder / f"{figure.name}.png"
-                shutil.copy2(figure.path, dest)
+            self._save_figures()
 
         self.close_and_save_data_audit_log(
             append_hash=self.append_yaml_hash_to_folder_name
