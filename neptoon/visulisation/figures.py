@@ -25,10 +25,6 @@ def validate_columns_present(
         raise ValueError(f"Required columns missing from dataframe: {missing}")
 
 
-def some_other_figure():
-    pass
-
-
 def make_nmdb_data_figure(
     data_frame: pd.DataFrame,
     station_name: str,
@@ -100,6 +96,24 @@ def soil_moisture_coloured_figure(
     lower_bound: float = 0,
     save_location: str = None,
 ):
+    """
+    Soil moisture plot which fills below the line colours between blue
+    and brown to represent wet vs dry periods.
+
+    Parameters
+    ----------
+    data_frame : pd.DataFrame
+        time series data
+    station_name : str
+        name of the station
+    sm_column_name : str, optional
+        column name containing soil moisture data, by default
+        str(ColumnInfo.Name.SOIL_MOISTURE_FINAL)
+    lower_bound : float, optional
+        lower bound of y-axis, by default 0
+    save_location : str, optional
+        location to save data if desired, by default None
+    """
     validate_columns_present(
         data_frame=data_frame, required_cols=[sm_column_name]
     )
