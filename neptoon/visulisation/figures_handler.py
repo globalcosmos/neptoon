@@ -205,7 +205,7 @@ class FigureHandler:
             )
         return getattr(self, method_name)
 
-    @Magazine.reporting(topic="NMDB")
+    @Magazine.reporting_figure(topic="NMDB")
     def _nmdb_incoming_radiation(self):
         """
         Implements nmdb figure 1

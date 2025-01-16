@@ -24,6 +24,7 @@ from neptoon.calibration import CalibrationConfiguration
 from neptoon.quality_control.saqc_methods_and_params import QAMethod
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import ConfigurationManager
+from magazine import Magazine
 
 core_logger = get_logger()
 

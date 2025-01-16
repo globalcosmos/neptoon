@@ -177,6 +177,7 @@ class SampleProfile:
         "depth",  # depth values in cm
         "bulk_density",  # bulk density
         "bulk_density_mean",
+        "site_avg_bulk_density",
         "_distance",  # distance from the CRNS in m
         "lattice_water",  # lattice water in g/g
         "soil_organic_carbon",  # soil organic carbon in g/g
@@ -184,7 +185,7 @@ class SampleProfile:
         # Calculated
         "D86",  # penetration depth
         "horizontal_weight",  # radial weight of this profile
-        "sm_total_weghted_avg_vol",  # vertically weighted average sm
+        "sm_total_weighted_avg_vol",  # vertically weighted average sm
         "sm_total_weighted_avg_grv",  # vertically weighted average sm
         "vertical_weights",
         "rescaled_distance",
@@ -196,6 +197,7 @@ class SampleProfile:
         soil_moisture_gravimetric,
         depth,
         bulk_density,
+        site_avg_bulk_density,
         calibration_day,
         distance=1,
         lattice_water=None,
@@ -233,7 +235,8 @@ class SampleProfile:
         self.soil_moisture_gravimetric = np.array(soil_moisture_gravimetric)
         self.depth = np.array(depth)
         self.bulk_density = np.array(bulk_density)
-        self.bulk_density_mean = np.array(bulk_density).mean()
+        # self.bulk_density_mean = np.array(bulk_density).mean()
+        self.site_avg_bulk_density = site_avg_bulk_density
         self.calibration_day = calibration_day
         self.soil_organic_carbon = (
             np.array(soil_organic_carbon)
@@ -254,7 +257,7 @@ class SampleProfile:
         self.rescaled_distance = distance  # initialise as distance first
         self.D86 = np.nan
         self.sm_total_weighted_avg_grv = np.nan
-        self.sm_total_weghted_avg_vol = np.nan
+        self.sm_total_weighted_avg_vol = np.nan
         self.horizontal_weight = 1  # intialise as 1
 
     @property
@@ -269,7 +272,7 @@ class SampleProfile:
             self.soil_moisture_gravimetric
             + self.lattice_water
             + self.soil_organic_carbon * 0.555
-        ) * self.bulk_density
+        ) * self.site_avg_bulk_density
         self.sm_total_vol = sm_total_vol
 
     def _calculate_sm_total_grv(self):
@@ -345,6 +348,7 @@ class PrepareCalibrationData:
     def _create_calibration_day_profiles(
         self,
         single_day_data_frame,
+        site_avg_bulk_density,
     ):
         """
         Returns a list of SampleProfile objects which have been created
@@ -371,6 +375,7 @@ class PrepareCalibrationData:
             soil_profile = self._create_individual_profile(
                 pid=pid,
                 profile_data_frame=temp_df,
+                site_avg_bulk_density=site_avg_bulk_density,
             )
 
             calibration_day_profiles.append(soil_profile)
@@ -380,6 +385,7 @@ class PrepareCalibrationData:
         self,
         pid,
         profile_data_frame,
+        site_avg_bulk_density,
     ):
         """
         Creates a SampleProfile object from a individual profile
@@ -417,6 +423,7 @@ class PrepareCalibrationData:
             soil_moisture_gravimetric=soil_moisture_gravimetric,
             depth=depths,
             bulk_density=bulk_density,
+            site_avg_bulk_density=site_avg_bulk_density,
             distance=distances,
             lattice_water=lattice_water,
             soil_organic_carbon=soil_organic_carbon,
@@ -429,12 +436,16 @@ class PrepareCalibrationData:
         """
         Prepares the calibration data into a list of profiles.
         """
+        site_avg_bulk_density = self.calibration_data_frame[
+            self.config.bulk_density_of_sample_column
+        ].mean()
 
         self._create_list_of_df()
 
         for data_frame in self.list_of_data_frames:
             calibration_day_profiles = self._create_calibration_day_profiles(
-                data_frame
+                single_day_data_frame=data_frame,
+                site_avg_bulk_density=site_avg_bulk_density,
             )
             self.list_of_profiles.extend(calibration_day_profiles)
 
@@ -712,18 +723,18 @@ class CalibrationWeightsCalculator:
 
                 profile.D86 = Schroen2017.calculate_measurement_depth(
                     distance=profile.rescaled_distance,
-                    bulk_density=profile.bulk_density.mean(),
+                    bulk_density=profile.site_avg_bulk_density,
                     soil_moisture=sm_estimate,
                 )
 
                 profile.vertical_weights = Schroen2017.vertical_weighting(
                     profile.depth,
-                    bulk_density=profile.bulk_density.mean(),
+                    bulk_density=profile.site_avg_bulk_density,
                     soil_moisture=sm_estimate,
                 )
 
                 # Calculate weighted sm average
-                profile.sm_total_weghted_avg_vol = np.average(
+                profile.sm_total_weighted_avg_vol = np.average(
                     profile.sm_total_vol, weights=profile.vertical_weights
                 )
                 profile.sm_total_weighted_avg_grv = np.average(
@@ -732,13 +743,13 @@ class CalibrationWeightsCalculator:
 
                 profile.horizontal_weight = Schroen2017.horizontal_weighting(
                     distance=profile.rescaled_distance,
-                    soil_moisture=profile.sm_total_weghted_avg_vol,
+                    soil_moisture=profile.sm_total_weighted_avg_vol,
                     air_humidity=average_air_humidity,
                 )
 
                 # create a list of average sm and horizontal weights
                 profile_sm_averages_volumetric.append(
-                    profile.sm_total_weghted_avg_vol
+                    profile.sm_total_weighted_avg_vol
                 )
                 profile_sm_averages_gravimetric.append(
                     profile.sm_total_weighted_avg_grv
