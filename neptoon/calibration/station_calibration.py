@@ -180,7 +180,9 @@ class SampleProfile:
         "site_avg_bulk_density",
         "_distance",  # distance from the CRNS in m
         "lattice_water",  # lattice water in g/g
+        "site_avg_lattice_water",
         "soil_organic_carbon",  # soil organic carbon in g/g
+        "site_avg_organic_carbon",
         "calibration_day",  # the calibration day for the sample - datetime
         # Calculated
         "D86",  # penetration depth
@@ -198,6 +200,8 @@ class SampleProfile:
         depth,
         bulk_density,
         site_avg_bulk_density,
+        site_avg_organic_carbon,
+        site_avg_lattice_water,
         calibration_day,
         distance=1,
         lattice_water=None,
@@ -243,11 +247,13 @@ class SampleProfile:
             if soil_organic_carbon is None
             else np.zeros_like(soil_moisture_gravimetric)
         )
+        self.site_avg_organic_carbon = site_avg_organic_carbon
         self.lattice_water = self.lattice_water = (
             np.array(lattice_water)
             if lattice_water is not None
             else np.zeros_like(soil_moisture_gravimetric)
         )
+        self.site_avg_lattice_water = site_avg_lattice_water
         self.vertical_weights = np.ones_like(soil_moisture_gravimetric)
         self._calculate_sm_total_vol()
         self._calculate_sm_total_grv()
@@ -270,8 +276,8 @@ class SampleProfile:
         """
         sm_total_vol = (
             self.soil_moisture_gravimetric
-            + self.lattice_water
-            + self.soil_organic_carbon * 0.555
+            + self.site_avg_lattice_water
+            + self.site_avg_organic_carbon * 0.555
         ) * self.site_avg_bulk_density
         self.sm_total_vol = sm_total_vol
 
@@ -281,8 +287,8 @@ class SampleProfile:
         """
         sm_total_grv = (
             self.soil_moisture_gravimetric
-            + self.lattice_water
-            + self.soil_organic_carbon * 0.555
+            + self.site_avg_lattice_water
+            + self.site_avg_organic_carbon * 0.555
         )
         self.sm_total_grv = sm_total_grv
 
@@ -349,6 +355,8 @@ class PrepareCalibrationData:
         self,
         single_day_data_frame,
         site_avg_bulk_density,
+        site_avg_lattice_water,
+        site_avg_organic_carbon,
     ):
         """
         Returns a list of SampleProfile objects which have been created
@@ -376,6 +384,8 @@ class PrepareCalibrationData:
                 pid=pid,
                 profile_data_frame=temp_df,
                 site_avg_bulk_density=site_avg_bulk_density,
+                site_avg_lattice_water=site_avg_lattice_water,
+                site_avg_organic_carbon=site_avg_organic_carbon,
             )
 
             calibration_day_profiles.append(soil_profile)
@@ -386,6 +396,8 @@ class PrepareCalibrationData:
         pid,
         profile_data_frame,
         site_avg_bulk_density,
+        site_avg_lattice_water,
+        site_avg_organic_carbon,
     ):
         """
         Creates a SampleProfile object from a individual profile
@@ -429,6 +441,8 @@ class PrepareCalibrationData:
             soil_organic_carbon=soil_organic_carbon,
             pid=pid,
             calibration_day=calibration_datetime,
+            site_avg_lattice_water=site_avg_lattice_water,
+            site_avg_organic_carbon=site_avg_organic_carbon,
         )
         return soil_profile
 
@@ -440,12 +454,28 @@ class PrepareCalibrationData:
             self.config.bulk_density_of_sample_column
         ].mean()
 
+        site_avg_lattice_water = self.calibration_data_frame[
+            self.config.lattice_water_column
+        ].mean()
+
+        site_avg_organic_carbon = self.calibration_data_frame[
+            self.config.soil_organic_carbon_column
+        ].mean()
+
+        if np.isnan(site_avg_lattice_water):
+            site_avg_lattice_water = 0
+
+        if np.isnan(site_avg_organic_carbon):
+            site_avg_organic_carbon = 0
+
         self._create_list_of_df()
 
         for data_frame in self.list_of_data_frames:
             calibration_day_profiles = self._create_calibration_day_profiles(
                 single_day_data_frame=data_frame,
                 site_avg_bulk_density=site_avg_bulk_density,
+                site_avg_organic_carbon=site_avg_organic_carbon,
+                site_avg_lattice_water=site_avg_lattice_water,
             )
             self.list_of_profiles.extend(calibration_day_profiles)
 

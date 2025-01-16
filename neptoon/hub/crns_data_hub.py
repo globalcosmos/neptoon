@@ -419,9 +419,23 @@ class CRNSDataHub:
                 0
             ].site_avg_bulk_density
         )
+        site_avg_organic_carbon = (
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_organic_carbon
+        )
+        site_avg_lattice_water = (
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_lattice_water
+        )
         self.sensor_info.N0 = int(n0)
         self.sensor_info.avg_dry_soil_bulk_density = round(
-            site_avg_bulk_density, 2
+            site_avg_bulk_density, 4
+        )
+        self.sensor_info.avg_lattice_water = round(site_avg_lattice_water, 4)
+        self.sensor_info.avg_soil_organic_carbon = round(
+            site_avg_organic_carbon, 4
         )
         print(f"N0 number was calculated as {int(n0)}")
 
