@@ -3,7 +3,7 @@ from dataclasses import dataclass, asdict
 from neptoon.config.configuration_input import SensorInfo
 from neptoon.visulisation.figures import (
     make_nmdb_data_figure,
-    some_other_figure,
+    soil_moisture_coloured_figure,
 )
 from neptoon.columns import ColumnInfo
 from typing import List, Optional
@@ -137,10 +137,10 @@ class FigureHandler:
                 str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE),
             ],
         ),
-        "soil_moisture_figure_1": FigureMetadata(
+        "soil_moisture_coloured": FigureMetadata(
             topic=FigureTopic.SOIL_MOISTURE,
-            description="Soil moisture time series with uncertainty bounds",
-            method="_some_other_figure",
+            description="Soil moisture time series with colour filling",
+            method="_soil_moisture_colour",
             required_columns=[str(ColumnInfo.Name.SOIL_MOISTURE_FINAL)],
         ),
     }
@@ -226,7 +226,23 @@ class FigureHandler:
                 ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY
             ),
             show=self.show_figures,
-            save=temp_path,
+            save_location=temp_path,
+        )
+
+    def _soil_moisture_colour(self):
+        """
+        Implements colour soil moisture figure.
+        """
+        temp_path = self.temp_handler.store_figure(
+            name="soil_moisture_colour_fig",
+            topic=FigureTopic.SOIL_MOISTURE,
+        )
+
+        soil_moisture_coloured_figure(
+            data_frame=self.data_frame,
+            station_name=self.sensor_info.name,
+            sm_column_name=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            save_location=temp_path,
         )
 
     def _create_intended_figures_list(self):

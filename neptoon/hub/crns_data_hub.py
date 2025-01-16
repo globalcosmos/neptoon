@@ -301,13 +301,9 @@ class CRNSDataHub:
         self,
         correction_type: CorrectionType = "empty",
         correction_theory: CorrectionTheory = None,
-        use_all_default_corrections=False,
     ):
         """
-        Method to select corrections to be applied to data. If
-        use_all_default_corrections is True then it will apply the
-        default correction methods. These will periodically be updated
-        to the most current and agreed best methods.
+        Method to select corrections to be applied to data.
 
         Individual corrections can be applied using a CorrectionType and
         CorrectionTheory. If a user assigns a CorrectionType without a
@@ -316,23 +312,17 @@ class CRNSDataHub:
 
         Parameters
         ----------
-        use_all_default_corrections : bool, optional
-            decision to use defaults, by default False
         correction_type : CorrectionType, optional
             A CorrectionType, by default "empty"
         correction_theory : CorrectionTheory, optional
             A CorrectionTheory, by default None
         """
 
-        if use_all_default_corrections:
-            pass  # TODO build default corrections
-
-        else:
-            correction = self.correction_factory.create_correction(
-                correction_type=correction_type,
-                correction_theory=correction_theory,
-            )
-            self.correction_builder.add_correction(correction=correction)
+        correction = self.correction_factory.create_correction(
+            correction_type=correction_type,
+            correction_theory=correction_theory,
+        )
+        self.correction_builder.add_correction(correction=correction)
 
     def correct_neutrons(
         self,
@@ -522,18 +512,23 @@ class CRNSDataHub:
         selected_figures=[],
         show_figures: bool = True,
     ):
-        """_summary_
+        """
+        Handles creating the figures using the FigureHandler.
 
         Parameters
         ----------
         create_all : bool, optional
-            _description_, by default True
+            Default to create all figures in the
+            FigureHandler._register, by default True
         ignore_sections : list, optional
-            _description_, by default []
+            Ignore a whole topic section of figure names, by default []
         selected_figures : list, optional
-            _description_, by default []
+            A list of the figures to be created if not using create_all.
+            See FigureHandler._figure_registry for the names of possible
+            figures, by default []
         show_figures : bool, optional
-            _description_, by default True
+            Turn to False to not show Figures in the kernel, by default
+            True
         """
         masked_df = self.mask_flagged_data()
         self.figure_creator = FigureHandler(

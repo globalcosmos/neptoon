@@ -28,6 +28,7 @@ pandera = "^0.18.0"
 saqc = "^2.6.0"
 magazine = "^0.3.2"
 figurex = "^0.2.10"
+seaborn = "^0.13.2"
 
 
 [tool.poetry.group.dev.dependencies]
