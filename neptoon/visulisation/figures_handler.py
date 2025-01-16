@@ -1,5 +1,5 @@
 import pandas as pd
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from neptoon.config.configuration_input import SensorInfo
 from neptoon.visulisation.figures import (
     make_nmdb_data_figure,
