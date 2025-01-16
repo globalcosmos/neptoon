@@ -229,6 +229,7 @@ class FigureHandler:
             save_location=temp_path,
         )
 
+    @Magazine.reporting_figure(topic="Soil Moisture")
     def _soil_moisture_colour(self):
         """
         Implements colour soil moisture figure.

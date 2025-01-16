@@ -244,6 +244,7 @@ class ProcessWithYaml:
         Selects corrections.
 
         See CorrectionSelectorWithYaml
+
         """
         selector = CorrectionSelectorWithYaml(
             data_hub=self.data_hub,
@@ -555,9 +556,14 @@ class CorrectionSelectorWithYaml:
         self.process_config = process_config
         self.sensor_config = sensor_config
 
+    @Magazine.reporting(topic="Neutron Correction")
     def _pressure_correction(self):
         """
         Assigns the chosen pressure correction method.
+
+        Report
+        ------
+        The pressure correction method used was {tmp.method}.
 
         Raises
         ------
