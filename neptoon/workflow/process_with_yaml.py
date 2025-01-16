@@ -24,6 +24,7 @@ from neptoon.calibration import CalibrationConfiguration
 from neptoon.quality_control.saqc_methods_and_params import QAMethod
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import ConfigurationManager
+from magazine import Magazine
 
 core_logger = get_logger()
 
@@ -243,6 +244,7 @@ class ProcessWithYaml:
         Selects corrections.
 
         See CorrectionSelectorWithYaml
+
         """
         selector = CorrectionSelectorWithYaml(
             data_hub=self.data_hub,
@@ -554,9 +556,14 @@ class CorrectionSelectorWithYaml:
         self.process_config = process_config
         self.sensor_config = sensor_config
 
+    @Magazine.reporting(topic="Neutron Correction")
     def _pressure_correction(self):
         """
         Assigns the chosen pressure correction method.
+
+        Report
+        ------
+        The pressure correction method used was {tmp.method}.
 
         Raises
         ------

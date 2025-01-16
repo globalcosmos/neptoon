@@ -205,7 +205,7 @@ class FigureHandler:
             )
         return getattr(self, method_name)
 
-    @Magazine.reporting(topic="NMDB")
+    @Magazine.reporting_figure(topic="NMDB")
     def _nmdb_incoming_radiation(self):
         """
         Implements nmdb figure 1
@@ -229,6 +229,7 @@ class FigureHandler:
             save_location=temp_path,
         )
 
+    @Magazine.reporting_figure(topic="Soil Moisture")
     def _soil_moisture_colour(self):
         """
         Implements colour soil moisture figure.

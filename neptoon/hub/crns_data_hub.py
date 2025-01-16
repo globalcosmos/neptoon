@@ -21,7 +21,6 @@ from neptoon.products.estimate_sm import NeutronsToSM
 from neptoon.quality_control.data_validation_tables import (
     FormatCheck,
 )
-
 from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
@@ -31,6 +30,7 @@ from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
 from neptoon.columns import ColumnInfo
 from neptoon.logging import get_logger
+from magazine import Magazine
 
 core_logger = get_logger()
 
@@ -414,9 +414,32 @@ class CRNSDataHub:
             config=config,
         )
         n0 = self.calibrator.find_n0_value()
-        self.sensor_info.N0 = n0
+        site_avg_bulk_density = (
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_bulk_density
+        )
+        site_avg_organic_carbon = (
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_organic_carbon
+        )
+        site_avg_lattice_water = (
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_lattice_water
+        )
+        self.sensor_info.N0 = int(n0)
+        self.sensor_info.avg_dry_soil_bulk_density = round(
+            site_avg_bulk_density, 4
+        )
+        self.sensor_info.avg_lattice_water = round(site_avg_lattice_water, 4)
+        self.sensor_info.avg_soil_organic_carbon = round(
+            site_avg_organic_carbon, 4
+        )
         print(f"N0 number was calculated as {int(n0)}")
 
+    @Magazine.reporting(topic="Soil Moisture")
     def produce_soil_moisture_estimates(
         self,
         n0: float = None,
@@ -440,6 +463,12 @@ class CRNSDataHub:
             given as decimal percent e.g., 0.01, by default None
         soil_organic_carbon : float, optional
             Given as decimal percent, e.g., 0.001, by default None
+
+        Report
+        ------
+        When soil moisture was produced it was done using an n0 of
+        {default_params[n0]} and a bulk density of
+        {default_params[dry_soil_bulk_density]}.
         """
         # Create attributes for NeutronsToSM
         default_params = {
