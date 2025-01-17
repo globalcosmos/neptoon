@@ -225,7 +225,12 @@ class SmoothData:
         -------
         pd.Series
             smoothed series
+
+        #TODO
+        THIS DOESN'T WORK WHEN NAN VALUES ARE IN WINDOW.
+
         """
+
         smoothed = savgol_filter(
             x=data_to_smooth,
             window_length=self.window,

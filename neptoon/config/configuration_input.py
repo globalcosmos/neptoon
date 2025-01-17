@@ -444,22 +444,22 @@ class SmoothingAlgorithmSettings(BaseModel):
         - Polynomial order must be less than window size
     """
 
-    algorithm: Literal["savitsky-golay", "rolling-mean"] = Field(
-        default="savitsky-golay", description="Smoothing algorithm to apply"
+    algorithm: Literal["savitsky_golay", "rolling_mean"] = Field(
+        default="savitsky_golay", description="Smoothing algorithm to apply"
     )
     window: int = Field(
         default=12, description="Window size for smoothing", gt=0
     )
     poly_order: Optional[int] = Field(
         default=4,
-        description="Polynomial order for Savitzky-Golay filter",
+        description="Polynomial order for Savitzky_Golay filter",
         ge=0,
     )
 
     @model_validator(mode="after")
     def validate_poly_order(self) -> "SmoothingAlgorithmSettings":
         """Validate polynomial order relative to window size."""
-        if self.algorithm == "savitsky-golay":
+        if self.algorithm == "savitsky_golay":
             if self.poly_order >= self.window:
                 raise ValueError(
                     "Polynomial order must be less than window size "
