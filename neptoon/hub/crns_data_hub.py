@@ -21,15 +21,16 @@ from neptoon.products.estimate_sm import NeutronsToSM
 from neptoon.quality_control.data_validation_tables import (
     FormatCheck,
 )
-
 from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
+from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
 from neptoon.columns import ColumnInfo
 from neptoon.logging import get_logger
+from magazine import Magazine
 
 core_logger = get_logger()
 
@@ -91,6 +92,7 @@ class CRNSDataHub:
         self._correction_factory = CorrectionFactory()
         self._correction_builder = CorrectionBuilder()
         self.calibrator = None
+        self.figure_creator = None
 
     @property
     def crns_data_frame(self):
@@ -299,13 +301,9 @@ class CRNSDataHub:
         self,
         correction_type: CorrectionType = "empty",
         correction_theory: CorrectionTheory = None,
-        use_all_default_corrections=False,
     ):
         """
-        Method to select corrections to be applied to data. If
-        use_all_default_corrections is True then it will apply the
-        default correction methods. These will periodically be updated
-        to the most current and agreed best methods.
+        Method to select corrections to be applied to data.
 
         Individual corrections can be applied using a CorrectionType and
         CorrectionTheory. If a user assigns a CorrectionType without a
@@ -314,23 +312,17 @@ class CRNSDataHub:
 
         Parameters
         ----------
-        use_all_default_corrections : bool, optional
-            decision to use defaults, by default False
         correction_type : CorrectionType, optional
             A CorrectionType, by default "empty"
         correction_theory : CorrectionTheory, optional
             A CorrectionTheory, by default None
         """
 
-        if use_all_default_corrections:
-            pass  # TODO build default corrections
-
-        else:
-            correction = self.correction_factory.create_correction(
-                correction_type=correction_type,
-                correction_theory=correction_theory,
-            )
-            self.correction_builder.add_correction(correction=correction)
+        correction = self.correction_factory.create_correction(
+            correction_type=correction_type,
+            correction_theory=correction_theory,
+        )
+        self.correction_builder.add_correction(correction=correction)
 
     def correct_neutrons(
         self,
@@ -422,9 +414,32 @@ class CRNSDataHub:
             config=config,
         )
         n0 = self.calibrator.find_n0_value()
-        self.sensor_info.N0 = n0
+        site_avg_bulk_density = (
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_bulk_density
+        )
+        site_avg_organic_carbon = (
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_organic_carbon
+        )
+        site_avg_lattice_water = (
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_lattice_water
+        )
+        self.sensor_info.N0 = int(n0)
+        self.sensor_info.avg_dry_soil_bulk_density = round(
+            site_avg_bulk_density, 4
+        )
+        self.sensor_info.avg_lattice_water = round(site_avg_lattice_water, 4)
+        self.sensor_info.avg_soil_organic_carbon = round(
+            site_avg_organic_carbon, 4
+        )
         print(f"N0 number was calculated as {int(n0)}")
 
+    @Magazine.reporting(topic="Soil Moisture")
     def produce_soil_moisture_estimates(
         self,
         n0: float = None,
@@ -448,6 +463,12 @@ class CRNSDataHub:
             given as decimal percent e.g., 0.01, by default None
         soil_organic_carbon : float, optional
             Given as decimal percent, e.g., 0.001, by default None
+
+        Report
+        ------
+        When soil moisture was produced it was done using an n0 of
+        {default_params[n0]} and a bulk density of
+        {default_params[dry_soil_bulk_density]}.
         """
         # Create attributes for NeutronsToSM
         default_params = {
@@ -513,6 +534,42 @@ class CRNSDataHub:
             else:
                 self.crns_data_frame[key] = value
 
+    def create_figures(
+        self,
+        create_all=True,
+        ignore_sections=[],
+        selected_figures=[],
+        show_figures: bool = True,
+    ):
+        """
+        Handles creating the figures using the FigureHandler.
+
+        Parameters
+        ----------
+        create_all : bool, optional
+            Default to create all figures in the
+            FigureHandler._register, by default True
+        ignore_sections : list, optional
+            Ignore a whole topic section of figure names, by default []
+        selected_figures : list, optional
+            A list of the figures to be created if not using create_all.
+            See FigureHandler._figure_registry for the names of possible
+            figures, by default []
+        show_figures : bool, optional
+            Turn to False to not show Figures in the kernel, by default
+            True
+        """
+        masked_df = self.mask_flagged_data()
+        self.figure_creator = FigureHandler(
+            data_frame=masked_df,
+            sensor_info=self.sensor_info,
+            create_all=create_all,
+            ignore_sections=ignore_sections,
+            selected_figures=selected_figures,
+            show_figures=show_figures,
+        )
+        self.figure_creator.create_figures()
+
     def save_data(
         self,
         folder_name: Union[str, None] = None,
@@ -520,17 +577,11 @@ class CRNSDataHub:
         append_yaml_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: Union[dict, None] = None,
+        append_time_stamp: bool = True,
     ):
         """
         Saves the file to a specified location. It must contain the
         correct folder_path and file_name.
-
-        Provide options on what is saved:
-
-        - everything (uncertaities, flags, etc)
-        - seperate
-        - key variables only
-
 
         Parameters
         ----------
@@ -553,5 +604,7 @@ class CRNSDataHub:
             append_yaml_hash_to_folder_name=append_yaml_hash_to_folder_name,
             use_custom_column_names=use_custom_column_names,
             custom_column_names_dict=custom_column_names_dict,
+            append_time_stamp=append_time_stamp,
+            figure_handler=self.figure_creator,
         )
         saver.save_outputs()

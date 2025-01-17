@@ -2,11 +2,13 @@ import pandas as pd
 import math
 from pathlib import Path
 from typing import Union
+import shutil
 
 from neptoon.logging import get_logger
 from neptoon.data_audit import DataAuditLog
 from neptoon.config.configuration_input import SensorInfo
 from neptoon.utils.general_utils import validate_and_convert_file_path
+from neptoon.visulisation.figures_handler import FigureHandler
 
 core_logger = get_logger()
 
@@ -33,6 +35,7 @@ class SaveAndArchiveOutputs:
         use_custom_column_names: bool = False,
         custom_column_names_dict: dict = None,
         append_time_stamp: bool = True,
+        figure_handler: FigureHandler = None,
     ):
         """
         Attributes
@@ -75,6 +78,7 @@ class SaveAndArchiveOutputs:
         self.custom_column_names_dict = custom_column_names_dict
         self.append_time_stamp = append_time_stamp
         self.full_folder_location = None
+        self.figure_handler = figure_handler
 
     def _validate_save_folder(
         self,
@@ -262,6 +266,22 @@ class SaveAndArchiveOutputs:
         masked_df[~mask] = math.nan
         return masked_df
 
+    def _save_figures(self):
+        """
+        Handles saving figures
+        """
+
+        figure_metadata = [
+            fig_md for fig_md in self.figure_handler.temp_handler.get_figures()
+        ]
+
+        figure_folder = self.full_folder_location / "figures"
+        figure_folder.mkdir(parents=True, exist_ok=True)
+        for figure in figure_metadata:
+
+            dest = figure_folder / f"{figure.name}.png"
+            shutil.copy2(figure.path, dest)
+
     def save_outputs(
         self,
         nan_bad_data: bool = True,
@@ -302,6 +322,8 @@ class SaveAndArchiveOutputs:
         self.flag_data_frame.to_csv(
             (self.full_folder_location / f"{file_name}_flag_data_frame.csv")
         )
+        if self.figure_handler:
+            self._save_figures()
 
         self.close_and_save_data_audit_log(
             append_hash=self.append_yaml_hash_to_folder_name
@@ -338,22 +360,4 @@ class SaveAndArchiveOutputs:
         """
         WIP - save custom variable names using ColumnInfo.
         """
-        pass
-
-    def save_to_cloud(
-        self,
-    ):
-        """
-        WIP - future integration with cloud services.
-        """
-        # TODO
-        pass
-
-    def create_pdf_output(
-        self,
-    ):
-        """
-        WIP - produce the PDF output and save in the folder.
-        """
-        # TODO
         pass

@@ -92,4 +92,10 @@ calibration:
 data_storage:
   save_folder:
   data_source: None
-  append_yaml_to_folder_name: True
+  append_yaml_to_folder_name: False
+
+figures:
+  create_figures: True
+  make_all_figures: True
+  custom_list:
+    - nmdb_incoming_radiation

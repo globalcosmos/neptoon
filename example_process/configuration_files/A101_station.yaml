@@ -92,3 +92,10 @@ calibration:
 data_storage:
   save_folder:
   append_yaml_hash_to_folder_name: False
+
+figures:
+  create_figures: True
+  make_all_figures: True
+  custom_list:
+    - nmdb_incoming_radiation
+    - soil_moisture_coloured

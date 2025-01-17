@@ -24,6 +24,7 @@ from neptoon.calibration import CalibrationConfiguration
 from neptoon.quality_control.saqc_methods_and_params import QAMethod
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import ConfigurationManager
+from magazine import Magazine
 
 core_logger = get_logger()
 
@@ -243,6 +244,7 @@ class ProcessWithYaml:
         Selects corrections.
 
         See CorrectionSelectorWithYaml
+
         """
         selector = CorrectionSelectorWithYaml(
             data_hub=self.data_hub,
@@ -262,6 +264,23 @@ class ProcessWithYaml:
         Completes the soil moisture estimation step
         """
         self.data_hub.produce_soil_moisture_estimates()
+
+    def _create_figures(self):
+        """
+        Creates the figures selected in the YAML
+        """
+        if self.sensor_config.figures.create_figures is False:
+            return
+
+        if self.sensor_config.figures.make_all_figures:
+            self.data_hub.create_figures(create_all=True)
+        else:
+            to_create_list = [
+                name for name in self.sensor_config.figures.custom_list
+            ]
+            self.data_hub.create_figures(
+                create_all=False, selected_figures=to_create_list
+            )
 
     def _save_data(
         self,
@@ -398,7 +417,7 @@ class ProcessWithYaml:
             name_of_target="corrected_neutrons",
         )
         self._produce_soil_moisture_estimates()
-        # self._make_figures()
+        self._create_figures()
         self._save_data()
 
 
@@ -537,9 +556,14 @@ class CorrectionSelectorWithYaml:
         self.process_config = process_config
         self.sensor_config = sensor_config
 
+    @Magazine.reporting(topic="Neutron Correction")
     def _pressure_correction(self):
         """
         Assigns the chosen pressure correction method.
+
+        Report
+        ------
+        The pressure correction method used was {tmp.method}.
 
         Raises
         ------

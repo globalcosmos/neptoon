@@ -315,6 +315,15 @@ class DataStorageConfig(BaseConfig):
     append_yaml_hash_to_folder_name: Optional[bool] = Field(default=False)
 
 
+class FiguresConfig(BaseConfig):
+    create_figures: bool = Field(default=True)
+    make_all_figures: bool = Field(default=True)
+    custom_list: Optional[List[str]] = Field(
+        default=None,
+        description="A list of the figures to process",
+    )
+
+
 class SensorConfig(BaseConfig):
     """Top-level configuration."""
 
@@ -324,9 +333,12 @@ class SensorConfig(BaseConfig):
     raw_data_parse_options: Optional[RawDataParseConfig] = None
     calibration: Optional[CalibrationConfig] = None
     data_storage: Optional[DataStorageConfig] = None
+    figures: Optional[FiguresConfig] = None
 
 
-## Process Config
+####################
+## Process Config ##
+####################
 
 
 class NeutronQualityAssessment(BaseConfig):
