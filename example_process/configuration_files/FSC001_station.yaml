@@ -18,9 +18,6 @@ sensor_info:
   beta_coefficient:
   l_coefficient:
   mean_pressure:
-  avg_precipitation:
-  avg_soil_moisture:
-  avg_biomass:
 
 time_series_data:
   path_to_data: ../example_data/FSC001_time_series.csv
