@@ -399,6 +399,20 @@ class CRNSDataHub:
         self,
         config: CalibrationConfiguration = None,
     ):
+        """
+        Calibrate the sensor
+
+        Parameters
+        ----------
+        config : CalibrationConfiguration, optional
+            Config file which contains all the required info for
+            calibration, by default None
+
+        Raises
+        ------
+        ValueError
+            When no calibration data provided
+        """
         if self.calibration_samples_data is None:
             message = "No calibration_samples_data found. Cannot calibrate."
             core_logger.error(message)
@@ -595,7 +609,7 @@ class CRNSDataHub:
         if save_folder_location is None:
             save_folder_location = Path.cwd()
 
-        saver = SaveAndArchiveOutputs(
+        self.saver = SaveAndArchiveOutputs(
             folder_name=folder_name,
             processed_data_frame=self.crns_data_frame,
             flag_data_frame=self.flags_data_frame,
@@ -607,4 +621,4 @@ class CRNSDataHub:
             append_time_stamp=append_time_stamp,
             figure_handler=self.figure_creator,
         )
-        saver.save_outputs()
+        self.saver.save_outputs()
