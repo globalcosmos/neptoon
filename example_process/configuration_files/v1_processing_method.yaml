@@ -31,10 +31,9 @@ correction_steps:
     biomass_units: agb
 
 data_smoothing:
-  smooth_raw_neutrons: False
-  smooth_corrected_neutrons: True
+  smooth_raw_neutrons: True
   smooth_soil_moisture: False
   settings:
-    algorithm: savitsky-golay
-    window: 12
+    algorithm: rolling_mean
+    window: 24
     poly_order: 4
