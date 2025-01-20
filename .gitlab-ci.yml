@@ -2,11 +2,14 @@ image: python:3.10
 
 # Define the stages of pipeline
 stages:
-  - test
   - lint
+  - test
   - build
   - package_testpypi
   - package_pypi
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 # Include CI/CD configuration files
 include:
@@ -19,3 +22,4 @@ cache:
   paths:
     - .cache/pip
     - .venv/
+  key: ${CI_COMMIT_REF_SLUG}-${CI_JOB_NAME}
