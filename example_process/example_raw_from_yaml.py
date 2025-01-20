@@ -27,5 +27,3 @@ yaml_processor = ProcessWithYaml(configuration_object=config)
 
 ## OPTION 2:
 yaml_processor.run_full_process()
-# data_hub.site_information
-yaml_processor.data_hub.crns_data_frame

@@ -2,8 +2,7 @@
 from pathlib import Path
 from neptoon.workflow import ProcessWithYaml
 from neptoon.config import ConfigurationManager
-from magazine import Magazine, Publish
-from neptoon.columns import ColumnInfo
+from magazine import Magazine
 
 Magazine.active = True
 
@@ -14,6 +13,7 @@ config = ConfigurationManager()
 station_config_path = (
     Path.cwd() / "configuration_files" / "FSC001_station.yaml"
 )
+
 processing_config_path = (
     Path.cwd() / "configuration_files" / "v1_processing_method.yaml"
 )
@@ -35,6 +35,7 @@ yaml_processor.run_full_process()
 
 
 # Magazine.topics
+# from magazine import Publish
 # with Publish("Report-FSC001_station.pdf", "FSC001 data") as M:
 #     for topic in Magazine.topics:
 #         M.add_topic(topic)

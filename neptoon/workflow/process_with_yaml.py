@@ -14,6 +14,7 @@ from neptoon.io.read.data_ingest import (
     FormatDataForCRNSDataHub,
     validate_and_convert_file_path,
 )
+from neptoon.io.save.save_data import YamlSaver
 from neptoon.quality_control.saqc_methods_and_params import YamlRegistry
 from neptoon.quality_control import QualityCheck
 from neptoon.corrections import (
@@ -282,6 +283,13 @@ class ProcessWithYaml:
                 create_all=False, selected_figures=to_create_list
             )
 
+    def _yaml_saver(self):
+        yaml_saver = YamlSaver(
+            save_folder_location=self.data_hub.saver.full_folder_location,
+            sensor_config=self.sensor_config,
+        )
+        yaml_saver.save()
+
     def _save_data(
         self,
     ):
@@ -441,6 +449,7 @@ class ProcessWithYaml:
             )
         self._create_figures()
         self._save_data()
+        self._yaml_saver()
 
 
 class QualityAssessmentWithYaml:

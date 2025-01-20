@@ -3,12 +3,16 @@ import math
 from pathlib import Path
 from typing import Union
 import shutil
+import json
+import yaml
+from typing import List
 
 from neptoon.logging import get_logger
 from neptoon.data_audit import DataAuditLog
-from neptoon.config.configuration_input import SensorInfo
+from neptoon.config.configuration_input import SensorInfo, SensorConfig
 from neptoon.utils.general_utils import validate_and_convert_file_path
 from neptoon.visulisation.figures_handler import FigureHandler
+from neptoon.columns import ColumnInfo
 
 core_logger = get_logger()
 
@@ -282,6 +286,59 @@ class SaveAndArchiveOutputs:
             dest = figure_folder / f"{figure.name}.png"
             shutil.copy2(figure.path, dest)
 
+    def _update_sensor_info(
+        self,
+        fields_to_check: List[str] = [
+            "beta_coefficient",
+            "l_coefficient",
+            "mean_pressure",
+        ],
+        beta_col=str(ColumnInfo.Name.BETA_COEFFICIENT),
+        l_coeff_col=str(ColumnInfo.Name.L_COEFFICIENT),
+        mean_press_col=str(ColumnInfo.Name.MEAN_PRESSURE),
+    ):
+        """
+        Updates SensorInfo if values where calulated during processing.
+
+        Parameters
+        ----------
+        fields_to_check : List[str], optional
+            A list of values in SensorInfo to check, by default [
+            "beta_coefficient", "l_coefficient", "mean_pressure", ]
+        beta_col : str, optional
+            Beta Coefficient column name, by default
+            str(ColumnInfo.Name.BETA_COEFFICIENT)
+        l_coeff_col : str, optional
+            l coefficient column name, by default
+            str(ColumnInfo.Name.L_COEFFICIENT)
+        mean_press_col : str, optional
+            mean pressure column name, by default
+            str(ColumnInfo.Name.MEAN_PRESSURE)
+        """
+        missing_fields = [
+            field
+            for field in fields_to_check
+            if getattr(self.sensor_info, field) is None
+        ]
+        if (
+            beta_col in self.processed_data_frame.columns
+            and "beta_coefficient" in missing_fields
+        ):
+            beta_coeff = self.processed_data_frame[beta_col].iloc[0]
+            self.sensor_info.beta_coefficient = round(beta_coeff, 4)
+        if (
+            l_coeff_col in self.processed_data_frame.columns
+            and "l_coefficient" in missing_fields
+        ):
+            l_coeff = self.processed_data_frame[l_coeff_col].iloc[0]
+            self.sensor_info.l_coefficient = round(l_coeff, 4)
+        if (
+            mean_press_col in self.processed_data_frame.columns
+            and "mean_pressure" in missing_fields
+        ):
+            mean_pressure = self.processed_data_frame[mean_press_col].iloc[0]
+            self.sensor_info.mean_pressure = round(mean_pressure, 2)
+
     def save_outputs(
         self,
         nan_bad_data: bool = True,
@@ -324,35 +381,13 @@ class SaveAndArchiveOutputs:
         )
         if self.figure_handler:
             self._save_figures()
+        self._update_sensor_info()
 
         self.close_and_save_data_audit_log(
             append_hash=self.append_yaml_hash_to_folder_name
         )
 
     # ---- TODO below this line ----
-    def parse_new_yaml(
-        self,
-    ):
-        """
-        Creates a new station information YAML file and saves this in
-        the folder. For example, when new averages are created from new
-        data. Or when calibration produces a new N0.
-        """
-        # TODO
-        pass
-
-    def create_bespoke_output(
-        self,
-    ):
-        """
-        Provide an option which supports a specific type of output
-        table.
-
-        For example, creates a table which only includes meteo + SM
-        data.
-
-        """
-        pass
 
     def save_custom_column_names(
         self,
@@ -361,3 +396,37 @@ class SaveAndArchiveOutputs:
         WIP - save custom variable names using ColumnInfo.
         """
         pass
+
+
+class YamlSaver:
+
+    def __init__(
+        self,
+        save_folder_location: Path | str,
+        sensor_config: SensorConfig,
+    ):
+        self.save_folder_location = save_folder_location
+        self.sensor_config = sensor_config
+
+    def save(
+        self,
+    ):
+        """
+        Convert a Pydantic model to YAML and save it to a file.
+        """
+        save_location = (
+            self.save_folder_location / "updated_sensor_config.yaml"
+        )
+        json_str = self.sensor_config.model_dump_json()
+        data = json.loads(json_str)
+
+        yaml_str = yaml.safe_dump(
+            data,
+            default_flow_style=False,
+            allow_unicode=True,
+            sort_keys=False,
+            indent=2,
+            default_style=None,
+        )
+
+        Path(save_location).write_text(yaml_str)

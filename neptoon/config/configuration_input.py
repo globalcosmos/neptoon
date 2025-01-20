@@ -56,9 +56,6 @@ class SensorInfo(BaseConfig):
     beta_coefficient: Optional[float] = Field(default=None)
     l_coefficient: Optional[float] = Field(default=None)
     mean_pressure: Optional[float] = Field(default=None)
-    avg_precipitation: Optional[float] = Field(default=None)
-    avg_soil_moisture: Optional[float] = Field(default=None)
-    avg_biomass: Optional[float] = Field(default=None)
 
 
 # Time Series Validation
@@ -97,8 +94,8 @@ class TimeSeriesData(BaseConfig):
     path_to_data: Optional[str] = Field(default=None)
     time_step_resolution: str
     # date_time_format: str
-    initial_time_zone: Optional[str] = None
-    convert_time_zone_to: Optional[str] = None
+    # initial_time_zone: Optional[str] = None
+    # convert_time_zone_to: Optional[str] = None
     key_column_info: Optional[TimeSeriesColumns] = None
 
 
