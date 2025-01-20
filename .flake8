@@ -1,5 +1,7 @@
 [flake8]
-ignore = E226,E302,E41,E203,W503,E266
+ignore = E226,E302,E41,E203,W503,E266,E501
 max-line-length = 105
 exclude = .gitignore,build,dist,README.md,documentation,play_area.py,working_notebook.py, example_calibration.py
 max-complexity = 10
+per-file-ignores = 
+    */__init__.py:F401

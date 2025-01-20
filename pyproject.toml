@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "neptoon"
-version = "0.1.0"
+version = "0.3.0"
 description = "The neptoon package makes CRNS processing and research simple."
 authors = [
     "Daniel Power <daniel.power@ufz.de>",
@@ -26,6 +26,9 @@ pydantic = "^2.6.1"
 flake8 = "^7.0.0"
 pandera = "^0.18.0"
 saqc = "^2.6.0"
+magazine = "^0.3.2"
+figurex = "^0.2.10"
+seaborn = "^0.13.2"
 
 
 [tool.poetry.group.dev.dependencies]

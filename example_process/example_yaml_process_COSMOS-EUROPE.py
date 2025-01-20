@@ -1,33 +1,42 @@
 # import pandas as pd
 from pathlib import Path
-from neptoon.data_management.process_with_yaml import ProcessWithYaml
-from neptoon.configuration.configuration_input import ConfigurationManager
-from neptoon.data_management.data_audit import DataAuditLog
+from neptoon.workflow import ProcessWithYaml
+from neptoon.config import ConfigurationManager
+from magazine import Magazine
 
+Magazine.active = True
+
+# from neptoon.data_audit import DataAuditLog
 
 config = ConfigurationManager()
 
 station_config_path = (
     Path.cwd() / "configuration_files" / "FSC001_station.yaml"
 )
+
 processing_config_path = (
     Path.cwd() / "configuration_files" / "v1_processing_method.yaml"
 )
-
-config.load_and_validate_configuration(
-    name="station",
+config.load_configuration(
     file_path=station_config_path,
 )
-config.load_and_validate_configuration(
-    name="processing",
+config.load_configuration(
     file_path=processing_config_path,
 )
 
-DataAuditLog.create()
 yaml_processor = ProcessWithYaml(configuration_object=config)
 
 ## OPTION 1:
-data_hub = yaml_processor.create_data_hub()
+# data_hub = yaml_processor.create_data_hub()
 
 ## OPTION 2:
+# DataAuditLog.create()
 yaml_processor.run_full_process()
+
+
+# Magazine.topics
+# from magazine import Publish
+# with Publish("Report-FSC001_station.pdf", "FSC001 data") as M:
+#     for topic in Magazine.topics:
+#         M.add_topic(topic)
+#         M.add_figure(topic)
