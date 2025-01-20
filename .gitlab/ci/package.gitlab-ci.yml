@@ -1,5 +1,7 @@
 package_testpypi:
   stage: package_testpypi
+  needs:
+    - build:package
   before_script:
     - pip install -U pip
     - pip install poetry
@@ -11,6 +13,8 @@ package_testpypi:
 
 package_pypi:
   stage: package_pypi
+  needs:
+    - build:package
   before_script:
     - pip install -U pip
     - pip install poetry
