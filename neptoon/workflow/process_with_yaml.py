@@ -14,6 +14,7 @@ from neptoon.io.read.data_ingest import (
     FormatDataForCRNSDataHub,
     validate_and_convert_file_path,
 )
+from neptoon.io.save.save_data import YamlSaver
 from neptoon.quality_control.saqc_methods_and_params import YamlRegistry
 from neptoon.quality_control import QualityCheck
 from neptoon.corrections import (
@@ -282,6 +283,13 @@ class ProcessWithYaml:
                 create_all=False, selected_figures=to_create_list
             )
 
+    def _yaml_saver(self):
+        yaml_saver = YamlSaver(
+            save_folder_location=self.data_hub.saver.full_folder_location,
+            sensor_config=self.sensor_config,
+        )
+        yaml_saver.save()
+
     def _save_data(
         self,
     ):
@@ -372,6 +380,20 @@ class ProcessWithYaml:
                 sensor_info=self.sensor_config.sensor_info,
             )
 
+    def _smooth_data(
+        self,
+        column_to_smooth,
+        # smoothing_algo,
+        # window=12,
+        # polyorder=None,
+    ):
+        self.data_hub.smooth_data(
+            column_to_smooth=column_to_smooth,
+            smooth_method=self.process_config.data_smoothing.settings.algorithm,
+            window=self.process_config.data_smoothing.settings.window,
+            poly_order=self.process_config.data_smoothing.settings.poly_order,
+        )
+
     def run_full_process(
         self,
     ):
@@ -396,6 +418,10 @@ class ProcessWithYaml:
             partial_config=self.sensor_config.input_data_qa,
             name_of_target=None,
         )
+        if self.process_config.data_smoothing.smooth_raw_neutrons:
+            self._smooth_data(
+                column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL)
+            )
 
         self._select_corrections()
         self._correct_neutrons()
@@ -417,8 +443,13 @@ class ProcessWithYaml:
             name_of_target="corrected_neutrons",
         )
         self._produce_soil_moisture_estimates()
+        if self.process_config.data_smoothing.smooth_soil_moisture:
+            self._smooth_data(
+                column_to_smooth=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            )
         self._create_figures()
         self._save_data()
+        self._yaml_saver()
 
 
 class QualityAssessmentWithYaml:

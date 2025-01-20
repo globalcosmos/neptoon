@@ -56,9 +56,6 @@ class SensorInfo(BaseConfig):
     beta_coefficient: Optional[float] = Field(default=None)
     l_coefficient: Optional[float] = Field(default=None)
     mean_pressure: Optional[float] = Field(default=None)
-    avg_precipitation: Optional[float] = Field(default=None)
-    avg_soil_moisture: Optional[float] = Field(default=None)
-    avg_biomass: Optional[float] = Field(default=None)
 
 
 # Time Series Validation
@@ -97,8 +94,8 @@ class TimeSeriesData(BaseConfig):
     path_to_data: Optional[str] = Field(default=None)
     time_step_resolution: str
     # date_time_format: str
-    initial_time_zone: Optional[str] = None
-    convert_time_zone_to: Optional[str] = None
+    # initial_time_zone: Optional[str] = None
+    # convert_time_zone_to: Optional[str] = None
     key_column_info: Optional[TimeSeriesColumns] = None
 
 
@@ -444,22 +441,22 @@ class SmoothingAlgorithmSettings(BaseModel):
         - Polynomial order must be less than window size
     """
 
-    algorithm: Literal["savitsky-golay", "rolling-mean"] = Field(
-        default="savitsky-golay", description="Smoothing algorithm to apply"
+    algorithm: Literal["savitsky_golay", "rolling_mean"] = Field(
+        default="savitsky_golay", description="Smoothing algorithm to apply"
     )
     window: int = Field(
         default=12, description="Window size for smoothing", gt=0
     )
     poly_order: Optional[int] = Field(
         default=4,
-        description="Polynomial order for Savitzky-Golay filter",
+        description="Polynomial order for Savitzky_Golay filter",
         ge=0,
     )
 
     @model_validator(mode="after")
     def validate_poly_order(self) -> "SmoothingAlgorithmSettings":
         """Validate polynomial order relative to window size."""
-        if self.algorithm == "savitsky-golay":
+        if self.algorithm == "savitsky_golay":
             if self.poly_order >= self.window:
                 raise ValueError(
                     "Polynomial order must be less than window size "

@@ -197,18 +197,20 @@ class SmoothData:
             The smoothed data
         """
         if isinstance(self.window, int):
-            return data_to_smooth.rolling(
+            smoothed = data_to_smooth.rolling(
                 window=self.window,
                 min_periods=int((self.window / 2)),
                 center=False,
             ).mean()
         else:
             # TODO: Need to address min periods using TimeDelta
-            return data_to_smooth.rolling(
+            smoothed = data_to_smooth.rolling(
                 window=self.window,
                 min_periods=2,
                 center=False,
             ).mean()
+
+        return smoothed.round()
 
     def _apply_savitsky_golay(self, data_to_smooth):
         """
@@ -223,13 +225,18 @@ class SmoothData:
         -------
         pd.Series
             smoothed series
+
+        #TODO
+        THIS DOESN'T WORK WHEN NAN VALUES ARE IN WINDOW.
+
         """
+
         smoothed = savgol_filter(
             x=data_to_smooth,
             window_length=self.window,
             polyorder=self.poly_order,
         )
-        return pd.Series(smoothed, index=self.data.index)
+        return pd.Series(smoothed, index=self.data.index).round()
 
     def create_new_column_name(self):
         """
