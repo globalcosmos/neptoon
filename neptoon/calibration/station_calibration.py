@@ -17,7 +17,8 @@ class CalibrationConfiguration:
         self,
         hours_of_data_around_calib: int = 6,
         converge_accuracy: float = 0.01,
-        date_time_column_name: str = str(ColumnInfo.Name.DATE_TIME),
+        calib_data_date_time_column_name: str = str(ColumnInfo.Name.DATE_TIME),
+        calib_data_date_time_format: str = "%Y-%m-%d %H:%M",
         sample_depth_column: str = str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE),
         distance_column: str = str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR),
         bulk_density_of_sample_column: str = str(
@@ -83,7 +84,10 @@ class CalibrationConfiguration:
         """
         self.hours_of_data_around_calib = hours_of_data_around_calib
         self.converge_accuracy = converge_accuracy
-        self.date_time_column_name = date_time_column_name
+        self.calib_data_date_time_column_name = (
+            calib_data_date_time_column_name
+        )
+        self.calib_data_date_time_format = calib_data_date_time_format
         self.sample_depth_column = sample_depth_column
         self.distance_column = distance_column
         self.bulk_density_of_sample_column = bulk_density_of_sample_column
@@ -319,7 +323,9 @@ class PrepareCalibrationData:
         self._ensure_date_time_index()
 
         self.unique_calibration_days = np.unique(
-            self.calibration_data_frame[self.config.date_time_column_name]
+            self.calibration_data_frame[
+                self.config.calib_data_date_time_column_name
+            ]
         )
         self.list_of_data_frames = []
         self.list_of_profiles = []
@@ -329,12 +335,15 @@ class PrepareCalibrationData:
         Converts the date time column so the values are datetime type.
         """
 
-        self.calibration_data_frame[self.config.date_time_column_name] = (
-            pd.to_datetime(
-                self.calibration_data_frame[self.config.date_time_column_name],
-                utc=True,
-                dayfirst=True,
-            )
+        self.calibration_data_frame[
+            self.config.calib_data_date_time_column_name
+        ] = pd.to_datetime(
+            self.calibration_data_frame[
+                self.config.calib_data_date_time_column_name
+            ],
+            utc=True,
+            dayfirst=True,
+            format=self.config.calib_data_date_time_format,
         )
 
     def _create_list_of_df(self):
@@ -345,7 +354,9 @@ class PrepareCalibrationData:
 
         self.list_of_data_frames = [
             self.calibration_data_frame[
-                self.calibration_data_frame[self.config.date_time_column_name]
+                self.calibration_data_frame[
+                    self.config.calib_data_date_time_column_name
+                ]
                 == calibration_day
             ]
             for calibration_day in self.unique_calibration_days
@@ -429,7 +440,7 @@ class PrepareCalibrationData:
         lattice_water = profile_data_frame[self.config.lattice_water_column]
         # only need one calibration datetime
         calibration_datetime = profile_data_frame[
-            self.config.date_time_column_name
+            self.config.calib_data_date_time_column_name
         ].iloc[0]
         soil_profile = SampleProfile(
             soil_moisture_gravimetric=soil_moisture_gravimetric,

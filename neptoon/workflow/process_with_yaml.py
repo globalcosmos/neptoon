@@ -329,7 +329,8 @@ class ProcessWithYaml:
         calib_df = pd.read_csv(calib_df_path)
         self.data_hub.calibration_samples_data = calib_df
         calibration_config = CalibrationConfiguration(
-            date_time_column_name=self.sensor_config.calibration.key_column_names.date_time,
+            calib_data_date_time_column_name=self.sensor_config.calibration.key_column_names.date_time,
+            calib_data_date_time_format=self.sensor_config.calibration.date_time_format,
             profile_id_column=self.sensor_config.calibration.key_column_names.profile_id,
             distance_column=self.sensor_config.calibration.key_column_names.radial_distance_from_sensor,
             sample_depth_column=self.sensor_config.calibration.key_column_names.sample_depth,
