@@ -1471,6 +1471,7 @@ class FormatDataForCRNSDataHub:
         date_time_column = self.extract_date_time_column()
         date_time_column = self.convert_time_zone(date_time_column)
         self.data_frame.index = date_time_column
+        self.data_frame.sort_index(inplace=True)
         self.data_frame.drop(
             self.config.date_time_columns, axis=1, inplace=True
         )

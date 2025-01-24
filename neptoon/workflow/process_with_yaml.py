@@ -260,6 +260,12 @@ class ProcessWithYaml:
         """
         self.data_hub.correct_neutrons()
 
+    def _create_neutron_uncertainty_bounds(self):
+        """
+        Produces uncertainty bounds of neutron count rates
+        """
+        self.data_hub.create_neutron_uncertainty_bounds()
+
     def _produce_soil_moisture_estimates(self):
         """
         Completes the soil moisture estimation step
@@ -443,6 +449,13 @@ class ProcessWithYaml:
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="corrected_neutrons",
         )
+        if self.process_config.data_smoothing.smooth_corrected_neutrons:
+            self._smooth_data(
+                column_to_smooth=str(
+                    ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
+                ),
+            )
+        self._create_neutron_uncertainty_bounds()
         self._produce_soil_moisture_estimates()
         if self.process_config.data_smoothing.smooth_soil_moisture:
             self._smooth_data(
