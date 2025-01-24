@@ -273,6 +273,11 @@ class QAConfig(BaseConfig):
     air_humidity: Optional[QAColumnConfig] = None
     air_pressure: Optional[QAColumnConfig] = None
     temperature: Optional[QAColumnConfig] = None
+    soil_moisture: Optional[QAColumnConfig] = None
+
+
+class SoilMoistureQA(BaseConfig):
+    soil_moisture: Optional[QAColumnConfig] = None
 
 
 # Calibration Validation
@@ -327,6 +332,7 @@ class SensorConfig(BaseConfig):
     sensor_info: SensorInfo
     time_series_data: Optional[TimeSeriesData] = None
     input_data_qa: Optional[QAConfig] = None
+    soil_moisture_qa: Optional[SoilMoistureQA] = None
     raw_data_parse_options: Optional[RawDataParseConfig] = None
     calibration: Optional[CalibrationConfig] = None
     data_storage: Optional[DataStorageConfig] = None

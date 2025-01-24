@@ -461,6 +461,10 @@ class ProcessWithYaml:
             self._smooth_data(
                 column_to_smooth=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
             )
+        self._apply_quality_assessment(
+            partial_config=self.sensor_config.soil_moisture_qa,
+            name_of_target=None,
+        )
         self._create_figures()
         self._save_data()
         self._yaml_saver()
