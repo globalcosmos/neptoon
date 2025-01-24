@@ -510,8 +510,6 @@ class ManageFileCollection:
 
         TODO maybe add regexp or * functionality
         """
-        print(f"\nInitial files: {self.files}")
-        print(f"Prefix to match: '{self.config.prefix}'")
 
         # Need this step if zipping was done on MacOS
         files_filtered = [
@@ -523,7 +521,6 @@ class ManageFileCollection:
             for filename in files_filtered
             if filename.startswith(self.config.prefix)
         ]
-        print(f"After prefix filter: {files_filtered}")
 
         # End with ...
         files_filtered = [
@@ -531,7 +528,6 @@ class ManageFileCollection:
             for filename in files_filtered
             if filename.endswith(self.config.suffix)
         ]
-        print(f"After suffix filter: {files_filtered}")
         self.files = files_filtered
 
 
@@ -882,6 +878,7 @@ class InputDataFrameFormattingConfig:
         convert_time_zone_to: str = "utc",
         is_timestamp: bool = False,
         decimal: str = ".",
+        start_date_of_data: str | pd.DatetimeIndex = None,
     ):
         """
         A class storing information supporting automated processing of
@@ -921,6 +918,10 @@ class InputDataFrameFormattingConfig:
             Whether time stamp, by default False
         decimal : str, optional
             Decimal divider, by default "."
+        start_date_of_data : str | pd.DateTime, optional
+            The beginning date from which data should be processed. All
+            data before this date is removed during parsing. Should
+            always be in format: "%Y-%m-%d" e.g., 2024-04-22
 
         Notes
         -----
@@ -952,6 +953,7 @@ class InputDataFrameFormattingConfig:
         self.convert_time_zone_to = convert_time_zone_to
         self.is_timestamp = is_timestamp
         self.decimal = decimal
+        self.start_date_of_data = start_date_of_data
         self.column_data: List[InputColumnMetaData] = []
 
     @property
@@ -1135,6 +1137,9 @@ class InputDataFrameFormattingConfig:
 
         self.neutron_count_units = (
             tmp.time_series_data.key_column_info.neutron_count_units
+        )
+        self.start_date_of_data = pd.to_datetime(
+            tmp.sensor_info.install_date, format="%Y-%m-%d"
         )
 
         self.add_meteo_columns(
@@ -1711,6 +1716,18 @@ class FormatDataForCRNSDataHub:
             ]
             core_logger.info(f"Removed {duplicate_count} duplicate rows")
 
+    def snip_data_frame(self):
+        """
+        Removes data from before the defined install date.
+        """
+        if self.config.start_date_of_data is not None:
+            start_date = pd.to_datetime(
+                self.config.start_date_of_data, format="%Y-%m-%d"
+            ).tz_localize("UTC")
+            self.data_frame = self.data_frame[
+                ~(self.data_frame.index < start_date)
+            ]
+
     def format_data_and_return_data_frame(
         self,
     ):
@@ -1727,6 +1744,7 @@ class FormatDataForCRNSDataHub:
         self.clean_raw_dataframe()
         self.data_frame_to_numeric()
         self.prepare_key_columns()
+        self.snip_data_frame()
         return self.data_frame
 
 
@@ -1755,6 +1773,15 @@ class CollectAndParseRawData:
         return validate_and_convert_file_path(new_path)
 
     def create_data_frame(self):
+        """
+        Creates the data frame by parsing raw data files into a
+        DataFrame. It expects to use a YAML file.
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         self.file_collection_config = FileCollectionConfig(self.path_to_yaml)
         self.file_collection_config.build_from_yaml()
         file_manager = ManageFileCollection(config=self.file_collection_config)

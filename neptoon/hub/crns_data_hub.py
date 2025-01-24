@@ -84,6 +84,7 @@ class CRNSDataHub:
             The sample data taken during the calibration campaign.
         """
 
+        self._raw_data = crns_data_frame.copy()
         self._crns_data_frame = crns_data_frame
         self._flags_data_frame = flags_data_frame
         self._sensor_info = sensor_info
@@ -295,6 +296,9 @@ class CRNSDataHub:
         self.flags_data_frame = self.quality_assessor.return_flags_data_frame(
             current_flag_data_frame=self.flags_data_frame,
         )
+        self.crns_data_frame = self.mask_flagged_data(
+            data_frame=self.crns_data_frame
+        )
         message = "Flagging of data complete using Custom Flags"
         core_logger.info(message)
 
@@ -327,34 +331,22 @@ class CRNSDataHub:
 
     def correct_neutrons(
         self,
-        correct_flagged_values_too=False,
     ):
         """
         Create correction factors as well as the corrected epithermal
-        neutrons column. By default it will collect apply corrections
-        only on data that has been left unflagged during QA. Opionally
-        this can be turned off.
-
-        Parameters
-        ----------
-        correct_flagged_values_too : bool, optional
-            Whether to turn off the masking of data defined as poor in
-            QA, by default False
+        neutrons column.
         """
-        if correct_flagged_values_too:
-            corrector = CorrectNeutrons(
-                crns_data_frame=self.crns_data_frame,
-                correction_builder=self.correction_builder,
-            )
-            self.crns_data_frame = corrector.correct_neutrons()
-        else:
-            corrector = CorrectNeutrons(
-                crns_data_frame=self.mask_flagged_data(),
-                correction_builder=self.correction_builder,
-            )
-            self.crns_data_frame = corrector.correct_neutrons()
+        corrector = CorrectNeutrons(
+            crns_data_frame=self.crns_data_frame,
+            correction_builder=self.correction_builder,
+        )
+        self.crns_data_frame = corrector.correct_neutrons()
 
     def create_neutron_uncertainty_bounds(self):
+        """
+        Create uncertainty bounds for statistical uncertainty of neutron
+        count rates.
+        """
 
         uncertainty = NeutronUncertaintyCalculator(
             data_frame=self.crns_data_frame
@@ -514,15 +506,14 @@ class CRNSDataHub:
         soil_moisture_calculator.calculate_all_soil_moisture_data()
         self.crns_data_frame = soil_moisture_calculator.return_data_frame()
 
-    def mask_flagged_data(self):
+    def mask_flagged_data(self, data_frame: pd.DataFrame):
         """
         Returns a pd.DataFrame() where flagged data has been replaced
         with np.nan values
         """
         mask = self.flags_data_frame == "UNFLAGGED"
-        masked_df = self.crns_data_frame.copy()
-        masked_df[~mask] = np.nan
-        return masked_df
+        data_frame[~mask] = np.nan
+        return data_frame
 
     def prepare_static_values(self):
         """
@@ -581,9 +572,8 @@ class CRNSDataHub:
             Turn to False to not show Figures in the kernel, by default
             True
         """
-        masked_df = self.mask_flagged_data()
         self.figure_creator = FigureHandler(
-            data_frame=masked_df,
+            data_frame=self.crns_data_frame,
             sensor_info=self.sensor_info,
             create_all=create_all,
             ignore_sections=ignore_sections,
