@@ -596,6 +596,8 @@ class ParseFilesIntoDataFrame:
         if column_names is None:
             column_names = self._infer_column_names()
 
+        ## TEMP FILE CREATION IF TAR OR ZIP TODO
+
         data_str = self._merge_files()
 
         data = pd.read_csv(
@@ -608,6 +610,7 @@ class ParseFilesIntoDataFrame:
             decimal=self.config.decimal,
             on_bad_lines="skip",  # ignore all lines with bad columns
             dtype=object,  # Allows for reading strings
+            index_col=False,
         )
         return data
 
@@ -1362,7 +1365,13 @@ class FormatDataForCRNSDataHub:
             temp_columns = []
             for col_name in self.config.date_time_columns:
                 if isinstance(col_name, str):
-                    temp_columns.append(self.data_frame[col_name])
+                    dt_series = pd.concat(
+                        [
+                            self.data_frame[col].astype(str)
+                            for col in self.config.date_time_columns
+                        ],
+                        axis=1,
+                    ).apply(lambda x: " ".join(x.values), axis=1)
                 else:
                     message = (
                         "date_time_columns must contain only string "
@@ -1370,17 +1379,6 @@ class FormatDataForCRNSDataHub:
                     )
                     core_logger.error(message)
                     raise ValueError(message)
-
-            # Join columns together separated with a space
-            # dt_series = self.data_frame[temp_columns].apply(
-            #     lambda x: "{} {}".format(x[0], x[1]), axis=1
-            # )
-            if len(temp_columns) == 1:
-                dt_series = temp_columns[0]
-            else:
-                dt_series = pd.concat(temp_columns, axis=1).apply(
-                    " ".join, axis=1
-                )
         else:
             message = "date_time_columns must be either a string or a list of strings"
             core_logger.error(message)
@@ -1392,6 +1390,7 @@ class FormatDataForCRNSDataHub:
             unit="s" if self.config.is_timestamp else None,
             format=self.config.date_time_format,
         )
+
         return dt_series
 
     def convert_time_zone(self, date_time_series):
