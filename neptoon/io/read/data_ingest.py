@@ -228,9 +228,13 @@ class FileCollectionConfig:
         zip_dirname = Path(self._data_location).stem
         with tarfile.open(self._data_location) as tar:
             tar.extractall(path=temp_dir)
+        extracted_items = list(temp_dir.iterdir())
+        if extracted_items and extracted_items[0].is_dir():
+            self._data_location = temp_dir / zip_dirname
+        else:
+            self._data_location = temp_dir
         self._temp_dir = temp_dir
         self._original_location = self._data_location
-        self._data_location = temp_dir / zip_dirname
         atexit.register(self._cleanup_temp)
 
     def dump_zip(self):
@@ -243,8 +247,13 @@ class FileCollectionConfig:
         with zipfile.ZipFile(self._data_location) as zip_ref:
             zip_ref.extractall(temp_dir)
 
+        extracted_items = list(temp_dir.iterdir())
+        if extracted_items and extracted_items[0].is_dir():
+            self._data_location = temp_dir / zip_dirname
+        else:
+            self._data_location = temp_dir
+
         self._original_location = self._data_location
-        self._data_location = temp_dir / zip_dirname
         atexit.register(self._cleanup_temp)
 
     def _cleanup_temp(self):
@@ -413,9 +422,9 @@ class ManageFileCollection:
             for filename in files_filtered
             if filename.endswith(self.config.suffix)
         ]
-        files_filtered = [
-            filename for filename in files_filtered if not "._" in filename
-        ]
+        # files_filtered = [
+        #     filename for filename in files_filtered if "._" not in filename
+        # ]
         self.files = files_filtered
 
     def create_file_list(self):
@@ -501,7 +510,6 @@ class ParseFilesIntoDataFrame:
             dtype=object,  # Allows for reading strings
             index_col=False,
         )
-        print(data)
         return data
 
     def _merge_files(
@@ -1247,7 +1255,6 @@ class FormatDataForCRNSDataHub:
             dt_series = self.data_frame[self.config.date_time_columns]
         elif isinstance(self.config.date_time_columns, list):
             # Select Columns
-            temp_columns = []
             for col_name in self.config.date_time_columns:
                 if isinstance(col_name, str):
                     dt_series = pd.concat(
