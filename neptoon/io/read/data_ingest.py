@@ -1,5 +1,7 @@
 import pandas as pd
 import tarfile
+import tempfile
+import atexit
 import re
 from datetime import timedelta
 from dataclasses import dataclass
@@ -18,56 +20,6 @@ from neptoon.config.configuration_input import (
 from neptoon.data_prep import TimeStampAligner
 
 core_logger = get_logger()
-
-
-# ######
-# def validate_and_convert_file_path(
-#     file_path: Union[str, Path],
-#     base: Union[str, Path] = "",
-# ) -> Path:
-#     """
-#     Used when initialising the object. If a string is given as a
-#     data_location, it is converted to a pathlib.Path object. If a
-#     pathlib.Path object is given this is returned. Other types will
-#     cause an error.
-
-#     Parameters
-#     ----------
-#     data_location : Union[str, Path]
-#         The data_location attribute from initialisation.
-
-#     Returns
-#     -------
-#     pathlib.Path
-#         The data_location as a pathlib.Path object.
-
-#     Raises
-#     ------
-#     ValueError
-#         Error if string or pathlib.Path given.
-#     """
-
-# if file_path is None:
-#     return None
-# if isinstance(file_path, str):
-#     new_file_path = Path(file_path)
-#     if new_file_path.is_absolute():
-#         return new_file_path
-#     else:
-#         return base / Path(file_path).resolve()
-# elif isinstance(file_path, Path):
-#     if file_path.is_absolute():
-#         return file_path
-#     else:
-#         return base / file_path
-# else:
-#     message = (
-#         "data_location must be of type str or pathlib.Path. \n"
-#         f"{type(file_path).__name__} provided, "
-#         "please change this."
-#     )
-#     core_logger.error(message)
-#     raise ValueError(message)
 
 
 class FileCollectionConfig:
@@ -244,45 +196,69 @@ class FileCollectionConfig:
         if self._data_location.is_dir():
             self._data_source = "folder"
             core_logger.info("Extracting data from a folder")
-        elif tarfile.is_tarfile(self._data_location):
-            self._data_source = "tarfile"
-            core_logger.info("Extracting data from a tarfile")
-        elif zipfile.is_zipfile(self._data_location):
-            self._data_source = "zipfile"
-            core_logger.info("Extracting data from a zipfile")
+
+        try:
+            if tarfile.is_tarfile(self._data_location):
+                self._data_source = "tarfile"
+                core_logger.info("Extracting data from a tarfile")
+                self.dump_tar()
+
+            elif zipfile.is_zipfile(self._data_location):
+                self._data_source = "zipfile"
+                core_logger.info("Extracting data from a zipfile")
+                self.dump_zip()
+
+            else:
+                self._data_source = None
+                core_logger.warning("Cannot determine data source type")
+
+        except (tarfile.TarError, zipfile.BadZipFile) as e:
+            self._data_source = None
+            core_logger.error(f"Failed to extract archive: {str(e)}")
+            raise
+
         else:
             self._data_source = None
             core_logger.warning("Cannot determine data source type")
 
-    def _return_list_of_files_from_folder(self) -> list:
-        """
-        Returns the list of files from a given folder.
+    def dump_tar(self):
+        """Create temporary directory and extract"""
+        self._temp_dir_obj = tempfile.TemporaryDirectory()
+        temp_dir = Path(self._temp_dir_obj.name)
+        zip_dirname = Path(self._data_location).stem
+        with tarfile.open(self._data_location) as tar:
+            tar.extractall(path=temp_dir)
+        self._temp_dir = temp_dir
+        self._original_location = self._data_location
+        self._data_location = temp_dir / zip_dirname
+        atexit.register(self._cleanup_temp)
 
-        Returns
-        -------
-        list
-            list of files contained in the folder
+    def dump_zip(self):
+        """Create temporary directory and extract"""
+
+        self._temp_dir_obj = tempfile.TemporaryDirectory()
+        temp_dir = Path(self._temp_dir_obj.name)
+        zip_dirname = Path(self._data_location).stem
+
+        with zipfile.ZipFile(self._data_location) as zip_ref:
+            zip_ref.extractall(temp_dir)
+
+        self._original_location = self._data_location
+        self._data_location = temp_dir / zip_dirname
+        atexit.register(self._cleanup_temp)
+
+    def _cleanup_temp(self):
         """
-        files = []
-        if self._data_location.is_dir():
-            try:
-                item_list = self._data_location.glob("**/*")
-                files = [x.name for x in item_list if x.is_file()]
-            except FileNotFoundError as fnf_error:
-                message = (
-                    f"! Folder not found: {self._data_location}. "
-                    f"Error: {fnf_error}"
-                )
-                core_logger.error(message)
-                raise
-            except Exception as err:
-                message = (
-                    f"! Error accessing folder {self._data_location}. "
-                    f"Error: {err}"
-                )
-                core_logger.error(message)
-                raise
-        return files
+        Cleanup temporary directory. Registered with atexit for
+        automatic cleanup.
+        """
+        try:
+            if hasattr(self, "_temp_dir_obj"):
+                self._temp_dir_obj.cleanup()
+                delattr(self, "_temp_dir_obj")
+        except Exception as e:
+            # Just log any cleanup errors during exit
+            core_logger.warning(f"Failed to cleanup temporary directory: {e}")
 
     def build_from_yaml(
         self,
@@ -383,16 +359,11 @@ class ManageFileCollection:
         self.config = config
         self.files = files
 
-    def _return_list_of_files_from_folder(self) -> list:
+    def get_list_of_files(self):
         """
-        Returns the list of files from a given folder.
-
-        Returns
-        -------
-        list
-            list of files contained in the folder
+        Lists the files found at the data_location and assigns these to
+        the file attribute.
         """
-
         files = []
         if self.config.data_location.is_dir():
             try:
@@ -414,88 +385,7 @@ class ManageFileCollection:
                 core_logger.error(message)
                 raise
 
-        return files
-
-    def _return_list_of_files_from_zip(self) -> list:
-        """
-        Returns a list of files from a zip.
-
-        Returns
-        -------
-        list
-            list of files contained in the zip
-        """
-        files = []
-        try:
-            with zipfile.ZipFile(self.config.data_location, "r") as archive:
-                files = archive.namelist()
-
-        except FileNotFoundError as fnf_error:
-            message = (
-                f"! Archive file not found: {self.config.data_location}."
-                f"Error: {fnf_error}"
-            )
-
-            raise
-        except Exception as err:
-            message = (
-                f"! Error accessing archive {self.config.data_location}. "
-                f"Error: {err}"
-            )
-            core_logger.error(message)
-            raise
-
-        return files
-
-    def _return_list_of_files_from_tar(self) -> list:
-        """
-        Returns a list of files from a tar.
-
-        Returns
-        -------
-        list
-            list of files contained in the tar
-        """
-        files = []
-        try:
-            with tarfile.TarFile(self.config.data_location, "r") as archive:
-                files = archive.getnames()
-
-        except FileNotFoundError as fnf_error:
-            message = (
-                f"! Archive file not found: {self.config.data_location}."
-                f"Error: {fnf_error}"
-            )
-
-            raise
-        except Exception as err:
-            message = (
-                f"! Error accessing archive {self.config.data_location}. "
-                f"Error: {err}"
-            )
-            core_logger.error(message)
-            raise
-
-        return files
-
-    def get_list_of_files(self):
-        """
-        Lists the files found at the data_location and assigns these to
-        the file attribute.
-        """
-        if self.config.data_source == "folder":
-            self.files = self._return_list_of_files_from_folder()
-        elif self.config.data_source == "zipfile":
-            self.files = self._return_list_of_files_from_zip()
-        elif self.config.data_source == "tarfile":
-            self.files = self._return_list_of_files_from_tar()
-        else:
-            message = (
-                "Data source appears to not be folder, zip or tar file.\n"
-                "Cannot collect file names."
-            )
-            core_logger.error(message)
-            raise ValueError(message)
+        self.files = files
 
     def filter_files(
         self,
@@ -511,14 +401,9 @@ class ManageFileCollection:
         TODO maybe add regexp or * functionality
         """
 
-        # Need this step if zipping was done on MacOS
-        files_filtered = [
-            filename for filename in self.files if not "__MACOSX" in filename
-        ]
-
         files_filtered = [
             filename
-            for filename in files_filtered
+            for filename in self.files
             if filename.startswith(self.config.prefix)
         ]
 
@@ -528,7 +413,17 @@ class ManageFileCollection:
             for filename in files_filtered
             if filename.endswith(self.config.suffix)
         ]
+        files_filtered = [
+            filename for filename in files_filtered if not "._" in filename
+        ]
         self.files = files_filtered
+
+    def create_file_list(self):
+        """
+        Create clean file list
+        """
+        self.get_list_of_files()
+        self.filter_files()
 
 
 class ParseFilesIntoDataFrame:
@@ -592,8 +487,6 @@ class ParseFilesIntoDataFrame:
         if column_names is None:
             column_names = self._infer_column_names()
 
-        ## TEMP FILE CREATION IF TAR OR ZIP TODO
-
         data_str = self._merge_files()
 
         data = pd.read_csv(
@@ -608,6 +501,7 @@ class ParseFilesIntoDataFrame:
             dtype=object,  # Allows for reading strings
             index_col=False,
         )
+        print(data)
         return data
 
     def _merge_files(
@@ -694,24 +588,10 @@ class ParseFilesIntoDataFrame:
             returns the open file
         """
         try:
-            if self.config.data_source == "folder":
-                return open(
-                    self.config.data_location / filename,
-                    encoding=encoding,
-                )
-            elif self.config.data_source == "tarfile":
-                archive = tarfile.open(self.config.data_location, "r")
-                return archive.extractfile(filename)
-            elif self.config.data_source == "zipfile":
-                archive = zipfile.ZipFile(self.config.data_location, "r")
-                return archive.open(filename)
-            else:
-                message = (
-                    "Unsupported data type at source folder. It must be "
-                    "a folder, zipfile, or tarfile."
-                )
-                core_logger.error(message)
-                raise ValueError(message)
+            return open(
+                self.config.data_location / filename,
+                encoding=encoding,
+            )
         except Exception as e:
             raise IOError(f"Error opening file {filename}: {str(e)}")
 
@@ -1785,8 +1665,7 @@ class CollectAndParseRawData:
         self.file_collection_config = FileCollectionConfig(self.path_to_yaml)
         self.file_collection_config.build_from_yaml()
         file_manager = ManageFileCollection(config=self.file_collection_config)
-        file_manager.get_list_of_files()
-        file_manager.filter_files()
+        file_manager.create_file_list()
         file_parser = ParseFilesIntoDataFrame(
             file_manager=file_manager, config=self.file_collection_config
         )
