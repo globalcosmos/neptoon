@@ -510,17 +510,28 @@ class ManageFileCollection:
 
         TODO maybe add regexp or * functionality
         """
+        print(f"\nInitial files: {self.files}")
+        print(f"Prefix to match: '{self.config.prefix}'")
+
+        # Need this step if zipping was done on MacOS
+        files_filtered = [
+            filename for filename in self.files if not "__MACOSX" in filename
+        ]
+
         files_filtered = [
             filename
-            for filename in self.files
+            for filename in files_filtered
             if filename.startswith(self.config.prefix)
         ]
+        print(f"After prefix filter: {files_filtered}")
+
         # End with ...
         files_filtered = [
             filename
             for filename in files_filtered
             if filename.endswith(self.config.suffix)
         ]
+        print(f"After suffix filter: {files_filtered}")
         self.files = files_filtered
 
 
@@ -722,6 +733,9 @@ class ParseFilesIntoDataFrame:
         str
             a valid line or an empty string
         """
+
+        ###
+
         if isinstance(line, bytes) and self.config.encoding != "":
             line = line.decode(self.config.encoding, errors="ignore")
 
@@ -1677,6 +1691,26 @@ class FormatDataForCRNSDataHub:
                 self.data_frame[raw_column_name] * 3600
             )
 
+    def clean_raw_dataframe(self):
+        """
+        Cleans raw DataFrame by removing NaT values and duplicated rows.
+        """
+        original_size = len(self.data_frame)
+
+        # Remove NaT index values
+        self.data_frame = self.data_frame[self.data_frame.index.notna()]
+        nat_removed = original_size - len(self.data_frame)
+        if nat_removed > 0:
+            core_logger.info(f"Removed {nat_removed} rows with NaT index")
+
+        # Remove duplicates
+        if self.data_frame.index.duplicated().any():
+            duplicate_count = self.data_frame.index.duplicated().sum()
+            self.data_frame = self.data_frame[
+                ~self.data_frame.index.duplicated(keep="first")
+            ]
+            core_logger.info(f"Removed {duplicate_count} duplicate rows")
+
     def format_data_and_return_data_frame(
         self,
     ):
@@ -1690,6 +1724,7 @@ class FormatDataForCRNSDataHub:
             DataFrame
         """
         self.date_time_as_index()
+        self.clean_raw_dataframe()
         self.data_frame_to_numeric()
         self.prepare_key_columns()
         return self.data_frame
