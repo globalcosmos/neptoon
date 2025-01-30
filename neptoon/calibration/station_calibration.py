@@ -125,6 +125,11 @@ class CalibrationStation:
         self.times_series_prepper = None
         self.calibrator = None
 
+    def _collect_stats_for_magazine(self):
+        self.number_calib_days = len(
+            self.calibrator.return_output_dict_as_dataframe()
+        )
+
     def find_n0_value(self):
         """
         Runs the full process to obtain an N0 estimate.
