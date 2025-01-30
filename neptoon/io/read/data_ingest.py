@@ -1661,14 +1661,14 @@ class FormatDataForCRNSDataHub:
                 data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)]
                 * adjustment_factor
             )
-        except ValueError:
+        except KeyError:
             core_logger.info("No thermal neutrons to adjust")
         try:
             data_frame[str(ColumnInfo.Name.PRECIPITATION)] = (
                 data_frame[str(ColumnInfo.Name.PRECIPITATION)]
                 * adjustment_factor
             )
-        except ValueError:
+        except KeyError:
             core_logger.info("No precipitation data to adjust")
         self.data_frame = data_frame
 
