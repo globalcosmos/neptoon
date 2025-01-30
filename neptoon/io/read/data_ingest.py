@@ -1,5 +1,7 @@
 import pandas as pd
 import tarfile
+import tempfile
+import atexit
 import re
 from datetime import timedelta
 from dataclasses import dataclass
@@ -18,56 +20,6 @@ from neptoon.config.configuration_input import (
 from neptoon.data_prep import TimeStampAligner
 
 core_logger = get_logger()
-
-
-# ######
-# def validate_and_convert_file_path(
-#     file_path: Union[str, Path],
-#     base: Union[str, Path] = "",
-# ) -> Path:
-#     """
-#     Used when initialising the object. If a string is given as a
-#     data_location, it is converted to a pathlib.Path object. If a
-#     pathlib.Path object is given this is returned. Other types will
-#     cause an error.
-
-#     Parameters
-#     ----------
-#     data_location : Union[str, Path]
-#         The data_location attribute from initialisation.
-
-#     Returns
-#     -------
-#     pathlib.Path
-#         The data_location as a pathlib.Path object.
-
-#     Raises
-#     ------
-#     ValueError
-#         Error if string or pathlib.Path given.
-#     """
-
-# if file_path is None:
-#     return None
-# if isinstance(file_path, str):
-#     new_file_path = Path(file_path)
-#     if new_file_path.is_absolute():
-#         return new_file_path
-#     else:
-#         return base / Path(file_path).resolve()
-# elif isinstance(file_path, Path):
-#     if file_path.is_absolute():
-#         return file_path
-#     else:
-#         return base / file_path
-# else:
-#     message = (
-#         "data_location must be of type str or pathlib.Path. \n"
-#         f"{type(file_path).__name__} provided, "
-#         "please change this."
-#     )
-#     core_logger.error(message)
-#     raise ValueError(message)
 
 
 class FileCollectionConfig:
@@ -244,45 +196,78 @@ class FileCollectionConfig:
         if self._data_location.is_dir():
             self._data_source = "folder"
             core_logger.info("Extracting data from a folder")
-        elif tarfile.is_tarfile(self._data_location):
-            self._data_source = "tarfile"
-            core_logger.info("Extracting data from a tarfile")
-        elif zipfile.is_zipfile(self._data_location):
-            self._data_source = "zipfile"
-            core_logger.info("Extracting data from a zipfile")
+
+        try:
+            if tarfile.is_tarfile(self._data_location):
+                self._data_source = "tarfile"
+                core_logger.info("Extracting data from a tarfile")
+                self.dump_tar()
+
+            elif zipfile.is_zipfile(self._data_location):
+                self._data_source = "zipfile"
+                core_logger.info("Extracting data from a zipfile")
+                self.dump_zip()
+
+            else:
+                self._data_source = None
+                core_logger.warning("Cannot determine data source type")
+
+        except (tarfile.TarError, zipfile.BadZipFile) as e:
+            self._data_source = None
+            core_logger.error(f"Failed to extract archive: {str(e)}")
+            raise
+
         else:
             self._data_source = None
             core_logger.warning("Cannot determine data source type")
 
-    def _return_list_of_files_from_folder(self) -> list:
-        """
-        Returns the list of files from a given folder.
+    def dump_tar(self):
+        """Create temporary directory and extract"""
+        self._temp_dir_obj = tempfile.TemporaryDirectory()
+        temp_dir = Path(self._temp_dir_obj.name)
+        zip_dirname = Path(self._data_location).stem
+        with tarfile.open(self._data_location) as tar:
+            tar.extractall(path=temp_dir)
+        extracted_items = list(temp_dir.iterdir())
+        if extracted_items and extracted_items[0].is_dir():
+            self._data_location = temp_dir / zip_dirname
+        else:
+            self._data_location = temp_dir
+        self._temp_dir = temp_dir
+        self._original_location = self._data_location
+        atexit.register(self._cleanup_temp)
 
-        Returns
-        -------
-        list
-            list of files contained in the folder
+    def dump_zip(self):
+        """Create temporary directory and extract"""
+
+        self._temp_dir_obj = tempfile.TemporaryDirectory()
+        temp_dir = Path(self._temp_dir_obj.name)
+        zip_dirname = Path(self._data_location).stem
+
+        with zipfile.ZipFile(self._data_location) as zip_ref:
+            zip_ref.extractall(temp_dir)
+
+        extracted_items = list(temp_dir.iterdir())
+        if extracted_items and extracted_items[0].is_dir():
+            self._data_location = temp_dir / zip_dirname
+        else:
+            self._data_location = temp_dir
+
+        self._original_location = self._data_location
+        atexit.register(self._cleanup_temp)
+
+    def _cleanup_temp(self):
         """
-        files = []
-        if self._data_location.is_dir():
-            try:
-                item_list = self._data_location.glob("**/*")
-                files = [x.name for x in item_list if x.is_file()]
-            except FileNotFoundError as fnf_error:
-                message = (
-                    f"! Folder not found: {self._data_location}. "
-                    f"Error: {fnf_error}"
-                )
-                core_logger.error(message)
-                raise
-            except Exception as err:
-                message = (
-                    f"! Error accessing folder {self._data_location}. "
-                    f"Error: {err}"
-                )
-                core_logger.error(message)
-                raise
-        return files
+        Cleanup temporary directory. Registered with atexit for
+        automatic cleanup.
+        """
+        try:
+            if hasattr(self, "_temp_dir_obj"):
+                self._temp_dir_obj.cleanup()
+                delattr(self, "_temp_dir_obj")
+        except Exception as e:
+            # Just log any cleanup errors during exit
+            core_logger.warning(f"Failed to cleanup temporary directory: {e}")
 
     def build_from_yaml(
         self,
@@ -383,16 +368,11 @@ class ManageFileCollection:
         self.config = config
         self.files = files
 
-    def _return_list_of_files_from_folder(self) -> list:
+    def get_list_of_files(self):
         """
-        Returns the list of files from a given folder.
-
-        Returns
-        -------
-        list
-            list of files contained in the folder
+        Lists the files found at the data_location and assigns these to
+        the file attribute.
         """
-
         files = []
         if self.config.data_location.is_dir():
             try:
@@ -414,88 +394,7 @@ class ManageFileCollection:
                 core_logger.error(message)
                 raise
 
-        return files
-
-    def _return_list_of_files_from_zip(self) -> list:
-        """
-        Returns a list of files from a zip.
-
-        Returns
-        -------
-        list
-            list of files contained in the zip
-        """
-        files = []
-        try:
-            with zipfile.ZipFile(self.config.data_location, "r") as archive:
-                files = archive.namelist()
-
-        except FileNotFoundError as fnf_error:
-            message = (
-                f"! Archive file not found: {self.config.data_location}."
-                f"Error: {fnf_error}"
-            )
-
-            raise
-        except Exception as err:
-            message = (
-                f"! Error accessing archive {self.config.data_location}. "
-                f"Error: {err}"
-            )
-            core_logger.error(message)
-            raise
-
-        return files
-
-    def _return_list_of_files_from_tar(self) -> list:
-        """
-        Returns a list of files from a tar.
-
-        Returns
-        -------
-        list
-            list of files contained in the tar
-        """
-        files = []
-        try:
-            with tarfile.TarFile(self.config.data_location, "r") as archive:
-                files = archive.getnames()
-
-        except FileNotFoundError as fnf_error:
-            message = (
-                f"! Archive file not found: {self.config.data_location}."
-                f"Error: {fnf_error}"
-            )
-
-            raise
-        except Exception as err:
-            message = (
-                f"! Error accessing archive {self.config.data_location}. "
-                f"Error: {err}"
-            )
-            core_logger.error(message)
-            raise
-
-        return files
-
-    def get_list_of_files(self):
-        """
-        Lists the files found at the data_location and assigns these to
-        the file attribute.
-        """
-        if self.config.data_source == "folder":
-            self.files = self._return_list_of_files_from_folder()
-        elif self.config.data_source == "zipfile":
-            self.files = self._return_list_of_files_from_zip()
-        elif self.config.data_source == "tarfile":
-            self.files = self._return_list_of_files_from_tar()
-        else:
-            message = (
-                "Data source appears to not be folder, zip or tar file.\n"
-                "Cannot collect file names."
-            )
-            core_logger.error(message)
-            raise ValueError(message)
+        self.files = files
 
     def filter_files(
         self,
@@ -510,18 +409,28 @@ class ManageFileCollection:
 
         TODO maybe add regexp or * functionality
         """
+
         files_filtered = [
             filename
             for filename in self.files
             if filename.startswith(self.config.prefix)
         ]
+
         # End with ...
         files_filtered = [
             filename
             for filename in files_filtered
             if filename.endswith(self.config.suffix)
         ]
+
         self.files = files_filtered
+
+    def create_file_list(self):
+        """
+        Create clean file list
+        """
+        self.get_list_of_files()
+        self.filter_files()
 
 
 class ParseFilesIntoDataFrame:
@@ -597,6 +506,7 @@ class ParseFilesIntoDataFrame:
             decimal=self.config.decimal,
             on_bad_lines="skip",  # ignore all lines with bad columns
             dtype=object,  # Allows for reading strings
+            index_col=False,
         )
         return data
 
@@ -684,24 +594,10 @@ class ParseFilesIntoDataFrame:
             returns the open file
         """
         try:
-            if self.config.data_source == "folder":
-                return open(
-                    self.config.data_location / filename,
-                    encoding=encoding,
-                )
-            elif self.config.data_source == "tarfile":
-                archive = tarfile.open(self.config.data_location, "r")
-                return archive.extractfile(filename)
-            elif self.config.data_source == "zipfile":
-                archive = zipfile.ZipFile(self.config.data_location, "r")
-                return archive.open(filename)
-            else:
-                message = (
-                    "Unsupported data type at source folder. It must be "
-                    "a folder, zipfile, or tarfile."
-                )
-                core_logger.error(message)
-                raise ValueError(message)
+            return open(
+                self.config.data_location / filename,
+                encoding=encoding,
+            )
         except Exception as e:
             raise IOError(f"Error opening file {filename}: {str(e)}")
 
@@ -722,6 +618,9 @@ class ParseFilesIntoDataFrame:
         str
             a valid line or an empty string
         """
+
+        ###
+
         if isinstance(line, bytes) and self.config.encoding != "":
             line = line.decode(self.config.encoding, errors="ignore")
 
@@ -854,7 +753,10 @@ class InputDataFrameFormattingConfig:
     def __init__(
         self,
         path_to_yaml: Optional[Union[str, Path]] = None,
-        time_resolution: str = "1hour",
+        input_resolution: str = "1hour",
+        output_resolution: str = "1hour",
+        align_timestamps: bool = False,
+        align_method: str = "time",
         pressure_merge_method: MergeMethod = MergeMethod.PRIORITY,
         temperature_merge_method: MergeMethod = MergeMethod.PRIORITY,
         relative_humidity_merge_method: MergeMethod = MergeMethod.PRIORITY,
@@ -865,6 +767,7 @@ class InputDataFrameFormattingConfig:
         convert_time_zone_to: str = "utc",
         is_timestamp: bool = False,
         decimal: str = ".",
+        start_date_of_data: str | pd.DatetimeIndex = None,
     ):
         """
         A class storing information supporting automated processing of
@@ -878,6 +781,17 @@ class InputDataFrameFormattingConfig:
         time_resolution : str, optional
             Time resolution in format "<number><unit>, by default
             "1hour"
+        desired_time_resolution : str, optional
+            The desired time resolution of the dataframe to aggregate
+            to. If None no time aggregation is done. Otherwise in format
+            <number><unit>, by default None
+        align_timestamps: bool, optional
+            Whether to align the time stamps to a regular time. E.g., If
+            time_resolution is 1hour, 13:10, becomes 13:00, by default
+            False.
+        align_method: str, optional
+            The alignment method to use by default "time", see
+            https://rdm-software.pages.ufz.de/saqc/_api/saqc.SaQC.html#saqc.SaQC.align
         pressure_merge_method : MergeMethod, optional
             Method used to merge multiple pressure columns, by default
             MergeMethod.PRIORITY
@@ -904,6 +818,10 @@ class InputDataFrameFormattingConfig:
             Whether time stamp, by default False
         decimal : str, optional
             Decimal divider, by default "."
+        start_date_of_data : str | pd.DateTime, optional
+            The beginning date from which data should be processed. All
+            data before this date is removed during parsing. Should
+            always be in format: "%Y-%m-%d" e.g., 2024-04-22
 
         Notes
         -----
@@ -921,10 +839,13 @@ class InputDataFrameFormattingConfig:
               columns based on predefined priority.
         """
         self.path_to_yaml = validate_and_convert_file_path(path_to_yaml)
-        self._time_resolution = self.parse_resolution(time_resolution)
+        self._input_resolution = self.parse_resolution(input_resolution)
         self._conversion_factor_to_counts_per_hour = (
             self.get_conversion_factor()
         )
+        self._output_resolution = self.parse_resolution(output_resolution)
+        self.align_timestamps = align_timestamps
+        self.align_method = align_method
         self.pressure_merge_method = pressure_merge_method
         self.temperature_merge_method = temperature_merge_method
         self.relative_humidity_merge_method = relative_humidity_merge_method
@@ -935,11 +856,44 @@ class InputDataFrameFormattingConfig:
         self.convert_time_zone_to = convert_time_zone_to
         self.is_timestamp = is_timestamp
         self.decimal = decimal
+        self.start_date_of_data = start_date_of_data
         self.column_data: List[InputColumnMetaData] = []
 
     @property
-    def time_resolution(self):
-        return self._time_resolution
+    def input_resolution(self):
+        return self._input_resolution
+
+    @input_resolution.setter
+    def input_resolution(self, value):
+        """
+        When setting the input_resolution this method ensures the
+        conversion factor is updated.
+
+        Parameters
+        ----------
+        value : str
+            Time resolution
+        """
+        self._input_resolution = self.parse_resolution(value)
+        self._conversion_factor_to_counts_per_hour = (
+            self.get_conversion_factor()
+        )
+
+    @property
+    def output_resolution(self):
+        return self._output_resolution
+
+    @output_resolution.setter
+    def output_resolution(self, value):
+        """
+        Ensures output resolutions remains time delta internally.
+
+        Parameters
+        ----------
+        value : str
+            output resolution e.g., '1hour' or '15mins'
+        """
+        self._output_resolution = self.parse_resolution(value)
 
     @property
     def conversion_factor_to_counts_per_hour(self):
@@ -948,22 +902,6 @@ class InputDataFrameFormattingConfig:
     @conversion_factor_to_counts_per_hour.setter
     def conversion_factor_to_counts_per_hour(self, value):
         self._conversion_factor_to_counts_per_hour = value
-
-    @time_resolution.setter
-    def time_resolution(self, value):
-        """
-        When setting the time_resoltion this method ensures the
-        conversion factor is updated.
-
-        Parameters
-        ----------
-        value : str
-            Time resolution
-        """
-        self._time_resolution = self.parse_resolution(value)
-        self._conversion_factor_to_counts_per_hour = (
-            self.get_conversion_factor()
-        )
 
     def parse_resolution(
         self,
@@ -1033,7 +971,7 @@ class InputDataFrameFormattingConfig:
             The factor to convert to counts per hour
         """
 
-        hours = self.time_resolution.total_seconds() / 3600
+        hours = self.input_resolution.total_seconds() / 3600
         return 1 / hours
 
     def add_column_meta_data(
@@ -1114,20 +1052,27 @@ class InputDataFrameFormattingConfig:
         """
         tmp = self.yaml_information
 
-        self.time_resolution = tmp.time_series_data.time_step_resolution
-
+        self.input_resolution = tmp.time_series_data.temporal.input_resolution
+        self.output_resolution = (
+            tmp.time_series_data.temporal.output_resolution
+        )
+        self.align_timestamps = tmp.time_series_data.temporal.align_timestamps
+        self.align_method = tmp.time_series_data.temporal.alignment_method
         self.neutron_count_units = (
             tmp.time_series_data.key_column_info.neutron_count_units
         )
+        self.start_date_of_data = pd.to_datetime(
+            tmp.sensor_info.install_date, format="%Y-%m-%d"
+        )
 
         self.add_meteo_columns(
-            meteo_columns=tmp.time_series_data.key_column_info.epithermal_neutron_counts_columns,
+            meteo_columns=tmp.time_series_data.key_column_info.epithermal_neutron_columns,
             meteo_type=InputColumnDataType.EPI_NEUTRON_COUNT,
             unit=self.neutron_count_units,
         )
 
         self.add_meteo_columns(
-            meteo_columns=tmp.time_series_data.key_column_info.thermal_neutrons,
+            meteo_columns=tmp.time_series_data.key_column_info.thermal_neutron_columns,
             meteo_type=InputColumnDataType.THERM_NEUTRON_COUNT,
             unit=self.neutron_count_units,
         )
@@ -1345,10 +1290,15 @@ class FormatDataForCRNSDataHub:
             dt_series = self.data_frame[self.config.date_time_columns]
         elif isinstance(self.config.date_time_columns, list):
             # Select Columns
-            temp_columns = []
             for col_name in self.config.date_time_columns:
                 if isinstance(col_name, str):
-                    temp_columns.append(self.data_frame[col_name])
+                    dt_series = pd.concat(
+                        [
+                            self.data_frame[col].astype(str)
+                            for col in self.config.date_time_columns
+                        ],
+                        axis=1,
+                    ).apply(lambda x: " ".join(x.values), axis=1)
                 else:
                     message = (
                         "date_time_columns must contain only string "
@@ -1356,17 +1306,6 @@ class FormatDataForCRNSDataHub:
                     )
                     core_logger.error(message)
                     raise ValueError(message)
-
-            # Join columns together separated with a space
-            # dt_series = self.data_frame[temp_columns].apply(
-            #     lambda x: "{} {}".format(x[0], x[1]), axis=1
-            # )
-            if len(temp_columns) == 1:
-                dt_series = temp_columns[0]
-            else:
-                dt_series = pd.concat(temp_columns, axis=1).apply(
-                    " ".join, axis=1
-                )
         else:
             message = "date_time_columns must be either a string or a list of strings"
             core_logger.error(message)
@@ -1378,6 +1317,7 @@ class FormatDataForCRNSDataHub:
             unit="s" if self.config.is_timestamp else None,
             format=self.config.date_time_format,
         )
+
         return dt_series
 
     def convert_time_zone(self, date_time_series):
@@ -1407,44 +1347,6 @@ class FormatDataForCRNSDataHub:
             )
         return date_time_series
 
-    def align_time_stamps(
-        self,
-        freq: str = "1h",
-        method: str = "time",
-    ):
-        """
-        Aligns timestamps to occur on the hour. E.g., 01:00 not 01:05.
-
-        Uses the TimeStampAligner class.
-
-        Parameters
-        ----------
-        method : str, optional
-            method to use for shifting, defaults to shifting to nearest
-            hour, by default "time"
-        freq : str, optional
-            Define how regular the timestamps should be, 1 hour by
-            default, by default "1H"
-        """
-        if self.config.time_resolution:
-            freq = self.config.time_resolution
-
-        try:
-            timestamp_aligner = TimeStampAligner(self.data_frame)
-        except Exception as e:
-            message = (
-                "Could not align timestamps of dataframe. First the "
-                "dataframe must have a date time index.\n"
-                f"Exception: {e}"
-            )
-            print(message)
-            core_logger.error(message)
-        timestamp_aligner.align_timestamps(
-            freq=freq,
-            method=method,
-        )
-        self.data_frame = timestamp_aligner.return_dataframe()
-
     def date_time_as_index(
         self,
     ) -> pd.DataFrame:
@@ -1458,6 +1360,7 @@ class FormatDataForCRNSDataHub:
         date_time_column = self.extract_date_time_column()
         date_time_column = self.convert_time_zone(date_time_column)
         self.data_frame.index = date_time_column
+        self.data_frame.sort_index(inplace=True)
         self.data_frame.drop(
             self.config.date_time_columns, axis=1, inplace=True
         )
@@ -1478,10 +1381,6 @@ class FormatDataForCRNSDataHub:
 
         # Convert all the regular columns to numeric and drop any failures
         self.data_frame = self.data_frame.apply(pd.to_numeric, errors="coerce")
-
-    def aggregate_data_frame(self):
-        """TODO"""
-        pass
 
     def merge_multiple_meteo_columns(
         self,
@@ -1667,15 +1566,143 @@ class FormatDataForCRNSDataHub:
             self.data_frame[final_column_name] = self.data_frame[
                 raw_column_name
             ]
+            hours_fraction = (
+                self.config.input_resolution.total_seconds() / 3600
+            )
+            self.data_frame[raw_column_name] = (
+                self.data_frame[raw_column_name] * hours_fraction
+            )
+
         elif epi_neutron_unit == "absolute_count":
             self.data_frame[final_column_name] = (
                 self.data_frame[raw_column_name]
                 * self.config.conversion_factor_to_counts_per_hour
             )
         elif epi_neutron_unit == "counts_per_second":
+            seconds_in_period = self.config.input_resolution.total_seconds()
             self.data_frame[final_column_name] = (
                 self.data_frame[raw_column_name] * 3600
             )
+            self.data_frame[raw_column_name] * seconds_in_period
+
+    def align_time_stamps(
+        self,
+    ):
+        """
+        Aligns timestamps to occur on the hour. E.g., 01:00 not 01:05.
+
+        Uses the TimeStampAligner class.
+
+        Parameters
+        ----------
+        method : str, optional
+            method to use for shifting, defaults to shifting to nearest
+            hour, by default "time"
+        freq : str, optional
+            Define how regular the timestamps should be, 1 hour by
+            default, by default "1H"
+        """
+        freq = self.config.input_resolution
+        method = self.config.align_method
+
+        try:
+            timestamp_aligner = TimeStampAligner(self.data_frame)
+        except Exception as e:
+            message = (
+                "Could not align timestamps of dataframe. First the "
+                "dataframe must have a date time index.\n"
+                f"Exception: {e}"
+            )
+            print(message)
+            core_logger.error(message)
+        timestamp_aligner.align_timestamps(
+            freq=freq,
+            method=method,
+        )
+        self.data_frame = timestamp_aligner.return_dataframe()
+
+    def aggregate_data_frame(self):
+
+        if self.config.input_resolution > self.config.output_resolution:
+            raise ValueError(
+                "Neptoon cannot downscale at this point."
+                " output_resolution must be larger than"
+                " input_resolution."
+            )
+
+        adjustment_factor = (
+            self.config.output_resolution / self.config.input_resolution
+        )
+        freq = self.config.output_resolution
+        method = self.config.align_method
+        try:
+            timestamp_aligner = TimeStampAligner(self.data_frame)
+        except Exception as e:
+            message = (
+                "Could not align timestamps of dataframe. First the "
+                "dataframe must have a date time index.\n"
+                f"Exception: {e}"
+            )
+            print(message)
+            core_logger.error(message)
+        timestamp_aligner.align_timestamps(
+            freq=freq,
+            method=method,
+        )
+        data_frame = timestamp_aligner.return_dataframe()
+
+        # Convert columns with absolute counts to new aggregation
+        data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)] = (
+            data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
+            * adjustment_factor
+        )
+        try:
+            data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)] = (
+                data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)]
+                * adjustment_factor
+            )
+        except ValueError:
+            core_logger.info("No thermal neutrons to adjust")
+        try:
+            data_frame[str(ColumnInfo.Name.PRECIPITATION)] = (
+                data_frame[str(ColumnInfo.Name.PRECIPITATION)]
+                * adjustment_factor
+            )
+        except ValueError:
+            core_logger.info("No precipitation data to adjust")
+        self.data_frame = data_frame
+
+    def clean_raw_dataframe(self):
+        """
+        Cleans raw DataFrame by removing NaT values and duplicated rows.
+        """
+        original_size = len(self.data_frame)
+
+        # Remove NaT index values
+        self.data_frame = self.data_frame[self.data_frame.index.notna()]
+        nat_removed = original_size - len(self.data_frame)
+        if nat_removed > 0:
+            core_logger.info(f"Removed {nat_removed} rows with NaT index")
+
+        # Remove duplicates
+        if self.data_frame.index.duplicated().any():
+            duplicate_count = self.data_frame.index.duplicated().sum()
+            self.data_frame = self.data_frame[
+                ~self.data_frame.index.duplicated(keep="first")
+            ]
+            core_logger.info(f"Removed {duplicate_count} duplicate rows")
+
+    def snip_data_frame(self):
+        """
+        Removes data from before the defined install date.
+        """
+        if self.config.start_date_of_data is not None:
+            start_date = pd.to_datetime(
+                self.config.start_date_of_data, format="%Y-%m-%d"
+            ).tz_localize("UTC")
+            self.data_frame = self.data_frame[
+                ~(self.data_frame.index < start_date)
+            ]
 
     def format_data_and_return_data_frame(
         self,
@@ -1690,8 +1717,17 @@ class FormatDataForCRNSDataHub:
             DataFrame
         """
         self.date_time_as_index()
+        self.clean_raw_dataframe()
         self.data_frame_to_numeric()
         self.prepare_key_columns()
+        if (
+            self.config.input_resolution != self.config.output_resolution
+            and self.config.output_resolution is not None
+        ):
+            self.aggregate_data_frame()
+        elif self.config.align_timestamps:
+            self.align_time_stamps()
+        self.snip_data_frame()
         return self.data_frame
 
 
@@ -1720,11 +1756,19 @@ class CollectAndParseRawData:
         return validate_and_convert_file_path(new_path)
 
     def create_data_frame(self):
+        """
+        Creates the data frame by parsing raw data files into a
+        DataFrame. It expects to use a YAML file.
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         self.file_collection_config = FileCollectionConfig(self.path_to_yaml)
         self.file_collection_config.build_from_yaml()
         file_manager = ManageFileCollection(config=self.file_collection_config)
-        file_manager.get_list_of_files()
-        file_manager.filter_files()
+        file_manager.create_file_list()
         file_parser = ParseFilesIntoDataFrame(
             file_manager=file_manager, config=self.file_collection_config
         )

@@ -67,8 +67,8 @@ class TimeSeriesColumns(BaseConfig):
     extensions.
     """
 
-    epithermal_neutron_counts_columns: List[str]
-    thermal_neutrons: Optional[List[str]] = None
+    epithermal_neutron_columns: List[str]
+    thermal_neutron_columns: Optional[List[str]] = None
     neutron_count_units: Literal[
         "absolute_count", "counts_per_hour", "counts_per_second"
     ]
@@ -90,12 +90,16 @@ class TimeSeriesColumns(BaseConfig):
     date_time_format: str
 
 
+class Temporal(BaseConfig):
+    input_resolution: str = Field(default="1hour")
+    output_resolution: str = Field(default=None)
+    align_timestamps: bool = Field(default=False)
+    alignment_method: str = Field(default="time")
+
+
 class TimeSeriesData(BaseConfig):
     path_to_data: Optional[str] = Field(default=None)
-    time_step_resolution: str
-    # date_time_format: str
-    # initial_time_zone: Optional[str] = None
-    # convert_time_zone_to: Optional[str] = None
+    temporal: Optional[Temporal] = None
     key_column_info: Optional[TimeSeriesColumns] = None
 
 
@@ -273,6 +277,11 @@ class QAConfig(BaseConfig):
     air_humidity: Optional[QAColumnConfig] = None
     air_pressure: Optional[QAColumnConfig] = None
     temperature: Optional[QAColumnConfig] = None
+    soil_moisture: Optional[QAColumnConfig] = None
+
+
+class SoilMoistureQA(BaseConfig):
+    soil_moisture: Optional[QAColumnConfig] = None
 
 
 # Calibration Validation
@@ -327,6 +336,7 @@ class SensorConfig(BaseConfig):
     sensor_info: SensorInfo
     time_series_data: Optional[TimeSeriesData] = None
     input_data_qa: Optional[QAConfig] = None
+    soil_moisture_qa: Optional[SoilMoistureQA] = None
     raw_data_parse_options: Optional[RawDataParseConfig] = None
     calibration: Optional[CalibrationConfig] = None
     data_storage: Optional[DataStorageConfig] = None
@@ -381,7 +391,7 @@ class AirPressureCorrection(BaseModel):
     method: Literal["zreda_2012"] = Field(
         description="Air pressure correction method"
     )
-    Dunai_inclination: Optional[float] = Field(
+    dunai_inclination: Optional[float] = Field(
         default=None, description="Dunai inclination parameter"
     )
 

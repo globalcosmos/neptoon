@@ -30,10 +30,12 @@ def test_configuration_management_integration_test():
 
     assert station_object.sensor_info.country == "Germany"
     assert (
-        station_object.time_series_data.key_column_info.thermal_neutrons
+        station_object.time_series_data.key_column_info.thermal_neutron_columns
         is None
     )
-    assert station_object.calibration.key_column_names.profile == "PROF"
+    assert (
+        station_object.calibration.key_column_names.profile_id == "Profile_ID"
+    )
 
 
 # def test_loading_yaml_file():

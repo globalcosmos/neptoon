@@ -3,8 +3,8 @@ config: process
 neutron_quality_assessment:
   raw_neutrons:
     spike_uni_lof:
-      periods_in_calculation: 24
-      threshold: 1.2
+      periods_in_calculation: 20
+      threshold: 1.5
   corrected_neutrons:
     greater_than_N0:
       percent_maximum: 1.075 # Köhli 2021

@@ -152,7 +152,7 @@ class FigureHandler:
         create_all: bool = False,
         ignore_sections: List = None,
         selected_figures: List[str] = None,
-        show_figures: bool = False,
+        show_figures: bool = True,
     ):
 
         self.data_frame = data_frame
