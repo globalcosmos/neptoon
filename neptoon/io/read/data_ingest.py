@@ -422,9 +422,7 @@ class ManageFileCollection:
             for filename in files_filtered
             if filename.endswith(self.config.suffix)
         ]
-        # files_filtered = [
-        #     filename for filename in files_filtered if "._" not in filename
-        # ]
+
         self.files = files_filtered
 
     def create_file_list(self):
@@ -755,7 +753,10 @@ class InputDataFrameFormattingConfig:
     def __init__(
         self,
         path_to_yaml: Optional[Union[str, Path]] = None,
-        time_resolution: str = "1hour",
+        input_resolution: str = "1hour",
+        output_resolution: str = "1hour",
+        align_timestamps: bool = False,
+        align_method: str = "time",
         pressure_merge_method: MergeMethod = MergeMethod.PRIORITY,
         temperature_merge_method: MergeMethod = MergeMethod.PRIORITY,
         relative_humidity_merge_method: MergeMethod = MergeMethod.PRIORITY,
@@ -780,6 +781,17 @@ class InputDataFrameFormattingConfig:
         time_resolution : str, optional
             Time resolution in format "<number><unit>, by default
             "1hour"
+        desired_time_resolution : str, optional
+            The desired time resolution of the dataframe to aggregate
+            to. If None no time aggregation is done. Otherwise in format
+            <number><unit>, by default None
+        align_timestamps: bool, optional
+            Whether to align the time stamps to a regular time. E.g., If
+            time_resolution is 1hour, 13:10, becomes 13:00, by default
+            False.
+        align_method: str, optional
+            The alignment method to use by default "time", see
+            https://rdm-software.pages.ufz.de/saqc/_api/saqc.SaQC.html#saqc.SaQC.align
         pressure_merge_method : MergeMethod, optional
             Method used to merge multiple pressure columns, by default
             MergeMethod.PRIORITY
@@ -827,10 +839,13 @@ class InputDataFrameFormattingConfig:
               columns based on predefined priority.
         """
         self.path_to_yaml = validate_and_convert_file_path(path_to_yaml)
-        self._time_resolution = self.parse_resolution(time_resolution)
+        self._input_resolution = self.parse_resolution(input_resolution)
         self._conversion_factor_to_counts_per_hour = (
             self.get_conversion_factor()
         )
+        self._output_resolution = self.parse_resolution(output_resolution)
+        self.align_timestamps = align_timestamps
+        self.align_method = align_method
         self.pressure_merge_method = pressure_merge_method
         self.temperature_merge_method = temperature_merge_method
         self.relative_humidity_merge_method = relative_humidity_merge_method
@@ -845,8 +860,40 @@ class InputDataFrameFormattingConfig:
         self.column_data: List[InputColumnMetaData] = []
 
     @property
-    def time_resolution(self):
-        return self._time_resolution
+    def input_resolution(self):
+        return self._input_resolution
+
+    @input_resolution.setter
+    def input_resolution(self, value):
+        """
+        When setting the input_resolution this method ensures the
+        conversion factor is updated.
+
+        Parameters
+        ----------
+        value : str
+            Time resolution
+        """
+        self._input_resolution = self.parse_resolution(value)
+        self._conversion_factor_to_counts_per_hour = (
+            self.get_conversion_factor()
+        )
+
+    @property
+    def output_resolution(self):
+        return self._output_resolution
+
+    @output_resolution.setter
+    def output_resolution(self, value):
+        """
+        Ensures output resolutions remains time delta internally.
+
+        Parameters
+        ----------
+        value : str
+            output resolution e.g., '1hour' or '15mins'
+        """
+        self._output_resolution = self.parse_resolution(value)
 
     @property
     def conversion_factor_to_counts_per_hour(self):
@@ -855,22 +902,6 @@ class InputDataFrameFormattingConfig:
     @conversion_factor_to_counts_per_hour.setter
     def conversion_factor_to_counts_per_hour(self, value):
         self._conversion_factor_to_counts_per_hour = value
-
-    @time_resolution.setter
-    def time_resolution(self, value):
-        """
-        When setting the time_resoltion this method ensures the
-        conversion factor is updated.
-
-        Parameters
-        ----------
-        value : str
-            Time resolution
-        """
-        self._time_resolution = self.parse_resolution(value)
-        self._conversion_factor_to_counts_per_hour = (
-            self.get_conversion_factor()
-        )
 
     def parse_resolution(
         self,
@@ -940,7 +971,7 @@ class InputDataFrameFormattingConfig:
             The factor to convert to counts per hour
         """
 
-        hours = self.time_resolution.total_seconds() / 3600
+        hours = self.input_resolution.total_seconds() / 3600
         return 1 / hours
 
     def add_column_meta_data(
@@ -1021,8 +1052,12 @@ class InputDataFrameFormattingConfig:
         """
         tmp = self.yaml_information
 
-        self.time_resolution = tmp.time_series_data.time_step_resolution
-
+        self.input_resolution = tmp.time_series_data.temporal.input_resolution
+        self.output_resolution = (
+            tmp.time_series_data.temporal.output_resolution
+        )
+        self.align_timestamps = tmp.time_series_data.temporal.align_timestamps
+        self.align_method = tmp.time_series_data.temporal.alignment_method
         self.neutron_count_units = (
             tmp.time_series_data.key_column_info.neutron_count_units
         )
@@ -1031,13 +1066,13 @@ class InputDataFrameFormattingConfig:
         )
 
         self.add_meteo_columns(
-            meteo_columns=tmp.time_series_data.key_column_info.epithermal_neutron_counts_columns,
+            meteo_columns=tmp.time_series_data.key_column_info.epithermal_neutron_columns,
             meteo_type=InputColumnDataType.EPI_NEUTRON_COUNT,
             unit=self.neutron_count_units,
         )
 
         self.add_meteo_columns(
-            meteo_columns=tmp.time_series_data.key_column_info.thermal_neutrons,
+            meteo_columns=tmp.time_series_data.key_column_info.thermal_neutron_columns,
             meteo_type=InputColumnDataType.THERM_NEUTRON_COUNT,
             unit=self.neutron_count_units,
         )
@@ -1312,44 +1347,6 @@ class FormatDataForCRNSDataHub:
             )
         return date_time_series
 
-    def align_time_stamps(
-        self,
-        freq: str = "1h",
-        method: str = "time",
-    ):
-        """
-        Aligns timestamps to occur on the hour. E.g., 01:00 not 01:05.
-
-        Uses the TimeStampAligner class.
-
-        Parameters
-        ----------
-        method : str, optional
-            method to use for shifting, defaults to shifting to nearest
-            hour, by default "time"
-        freq : str, optional
-            Define how regular the timestamps should be, 1 hour by
-            default, by default "1H"
-        """
-        if self.config.time_resolution:
-            freq = self.config.time_resolution
-
-        try:
-            timestamp_aligner = TimeStampAligner(self.data_frame)
-        except Exception as e:
-            message = (
-                "Could not align timestamps of dataframe. First the "
-                "dataframe must have a date time index.\n"
-                f"Exception: {e}"
-            )
-            print(message)
-            core_logger.error(message)
-        timestamp_aligner.align_timestamps(
-            freq=freq,
-            method=method,
-        )
-        self.data_frame = timestamp_aligner.return_dataframe()
-
     def date_time_as_index(
         self,
     ) -> pd.DataFrame:
@@ -1384,10 +1381,6 @@ class FormatDataForCRNSDataHub:
 
         # Convert all the regular columns to numeric and drop any failures
         self.data_frame = self.data_frame.apply(pd.to_numeric, errors="coerce")
-
-    def aggregate_data_frame(self):
-        """TODO"""
-        pass
 
     def merge_multiple_meteo_columns(
         self,
@@ -1573,15 +1566,111 @@ class FormatDataForCRNSDataHub:
             self.data_frame[final_column_name] = self.data_frame[
                 raw_column_name
             ]
+            hours_fraction = (
+                self.config.input_resolution.total_seconds() / 3600
+            )
+            self.data_frame[raw_column_name] = (
+                self.data_frame[raw_column_name] * hours_fraction
+            )
+
         elif epi_neutron_unit == "absolute_count":
             self.data_frame[final_column_name] = (
                 self.data_frame[raw_column_name]
                 * self.config.conversion_factor_to_counts_per_hour
             )
         elif epi_neutron_unit == "counts_per_second":
+            seconds_in_period = self.config.input_resolution.total_seconds()
             self.data_frame[final_column_name] = (
                 self.data_frame[raw_column_name] * 3600
             )
+            self.data_frame[raw_column_name] * seconds_in_period
+
+    def align_time_stamps(
+        self,
+    ):
+        """
+        Aligns timestamps to occur on the hour. E.g., 01:00 not 01:05.
+
+        Uses the TimeStampAligner class.
+
+        Parameters
+        ----------
+        method : str, optional
+            method to use for shifting, defaults to shifting to nearest
+            hour, by default "time"
+        freq : str, optional
+            Define how regular the timestamps should be, 1 hour by
+            default, by default "1H"
+        """
+        freq = self.config.input_resolution
+        method = self.config.align_method
+
+        try:
+            timestamp_aligner = TimeStampAligner(self.data_frame)
+        except Exception as e:
+            message = (
+                "Could not align timestamps of dataframe. First the "
+                "dataframe must have a date time index.\n"
+                f"Exception: {e}"
+            )
+            print(message)
+            core_logger.error(message)
+        timestamp_aligner.align_timestamps(
+            freq=freq,
+            method=method,
+        )
+        self.data_frame = timestamp_aligner.return_dataframe()
+
+    def aggregate_data_frame(self):
+
+        if self.config.input_resolution > self.config.output_resolution:
+            raise ValueError(
+                "Neptoon cannot downscale at this point."
+                " output_resolution must be larger than"
+                " input_resolution."
+            )
+
+        adjustment_factor = (
+            self.config.output_resolution / self.config.input_resolution
+        )
+        freq = self.config.output_resolution
+        method = self.config.align_method
+        try:
+            timestamp_aligner = TimeStampAligner(self.data_frame)
+        except Exception as e:
+            message = (
+                "Could not align timestamps of dataframe. First the "
+                "dataframe must have a date time index.\n"
+                f"Exception: {e}"
+            )
+            print(message)
+            core_logger.error(message)
+        timestamp_aligner.align_timestamps(
+            freq=freq,
+            method=method,
+        )
+        data_frame = timestamp_aligner.return_dataframe()
+
+        # Convert columns with absolute counts to new aggregation
+        data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)] = (
+            data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
+            * adjustment_factor
+        )
+        try:
+            data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)] = (
+                data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)]
+                * adjustment_factor
+            )
+        except:
+            core_logger.info("No thermal neutrons to adjust")
+        try:
+            data_frame[str(ColumnInfo.Name.PRECIPITATION)] = (
+                data_frame[str(ColumnInfo.Name.PRECIPITATION)]
+                * adjustment_factor
+            )
+        except:
+            core_logger.info("No precipitation data to adjust")
+        self.data_frame = data_frame
 
     def clean_raw_dataframe(self):
         """
@@ -1631,6 +1720,13 @@ class FormatDataForCRNSDataHub:
         self.clean_raw_dataframe()
         self.data_frame_to_numeric()
         self.prepare_key_columns()
+        if (
+            self.config.input_resolution != self.config.output_resolution
+            and self.config.output_resolution is not None
+        ):
+            self.aggregate_data_frame()
+        elif self.config.align_timestamps:
+            self.align_time_stamps()
         self.snip_data_frame()
         return self.data_frame
 

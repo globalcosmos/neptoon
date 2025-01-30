@@ -395,6 +395,7 @@ class CRNSDataHub:
         col_name = smoother.create_new_column_name()
         self.crns_data_frame[col_name] = smoother.apply_smoothing()
 
+    @Magazine.reporting(topic="Calibration")
     def calibrate_station(
         self,
         config: CalibrationConfiguration = None,
@@ -412,6 +413,14 @@ class CRNSDataHub:
         ------
         ValueError
             When no calibration data provided
+
+        Report
+        ------
+        Calibration was undertaken. The N0 number was calculated as
+        {n0}. From the samples, the average dry soil bulk density is
+        {site_avg_bulk_density}, the average soil organic carbon is
+        {site_avg_organic_carbon}, and the average lattice water content
+        is {site_avg_lattice_water}.
         """
         if self.calibration_samples_data is None:
             message = "No calibration_samples_data found. Cannot calibrate."
