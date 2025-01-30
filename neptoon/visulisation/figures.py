@@ -69,6 +69,7 @@ def make_nmdb_data_figure(
         x_range=(data_frame.index.min(), data_frame.index.max()),
         show=show,
         save=(save_location if save_location else None),
+        backend="TkAgg",
     ) as ax:
 
         ax.plot(
@@ -87,6 +88,7 @@ def make_nmdb_data_figure(
         )
         ax.set_ylabel("Neutron count rate (counts)")
         ax.legend()
+        plt.ion()
 
 
 def soil_moisture_coloured_figure(

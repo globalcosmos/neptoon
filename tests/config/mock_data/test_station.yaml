@@ -1,5 +1,3 @@
-# This is essential information that will be unique to each sensor
-# Please refer to documentation for descriptions of each data point and its units.
 config: sensor
 
 sensor_info:
@@ -15,25 +13,26 @@ sensor_info:
   avg_lattice_water:
   avg_soil_organic_carbon:
   avg_dry_soil_bulk_density:
-  reference_incoming_neutron_value: 152
-  N0: 1111
+  reference_incoming_neutron_value: 159
+  N0:
   beta_coefficient:
   l_coefficient:
   mean_pressure:
-  avg_precipitation:
-  avg_soil_moisture:
-  avg_biomass:
 
 time_series_data:
-  path_to_data: ./example_data/FSC001_time_series.csv
-  time_step_resolution: 1hour
+  path_to_data: ../example_data/FSC001_time_series.csv
+  temporal:
+    input_resolution: 1hour
+    output_resolution: 1hour
+    align_timestamps: False
+    alignment_method: "time"
   key_column_info:
     date_time_columns:
       - DateTime_utc
     date_time_format: "%Y-%m-%d %H:%M:%S%z"
-    epithermal_neutron_counts_columns:
+    epithermal_neutron_columns:
       - NeutronCount_Epithermal_Cum1h
-    thermal_neutrons:
+    thermal_neutron_columns:
     neutron_count_units: absolute_count
     pressure_columns:
       - AirPressure # first priorty goes here
@@ -52,16 +51,9 @@ time_series_data:
     initial_time_zone: utc
     convert_time_zone_to: utc
 
-input_data_qa:
-  air_humidity:
-    column_name: standard
-    flag_range:
-      min: 0
-      max: 100
-
 raw_data_parse_options:
-  parse_raw_data: True
-  data_location: ./example_data/CRNS-station_data-Hydroinnova-A.zip
+  parse_raw_data: False
+  data_location:
   column_names:
   prefix: ""
   suffix: ""
@@ -78,10 +70,40 @@ raw_data_parse_options:
   strip_names: True
   remove_prefix: "//"
 
+input_data_qa:
+  air_relative_humidity:
+    flag_range:
+      min: 0
+      max: 100
+
+soil_moisture_qa:
+  soil_moisture:
+    flag_range:
+      min: 0
+      max: 1
+
 calibration:
   calibrate: True
-  location: /path/to/location
+  data_format: custom
+  location: ../example_data/FSCD001_calibration.csv
+  date_time_format: "%d.%m.%Y %H:%M"
   key_column_names:
-    profile: PROF
-    sample_depth: DETPH_AVG
-    radial_distance_from_sensor: LOC_rad
+    date_time: DateTime_utc
+    profile_id: Profile_ID
+    sample_depth: Profile_Depth_cm
+    radial_distance_from_sensor: Distance_to_CRNS_m
+    bulk_density_of_sample: DryBulkDensity_g_cm3
+    gravimetric_soil_moisture: SoilMoisture_g_g
+    soil_organic_carbon: SoilOrganicCarbon_g_g
+    lattice_water: LatticeWater_g_g
+
+data_storage:
+  save_folder:
+  data_source: None
+  append_yaml_to_folder_name: False
+
+figures:
+  create_figures: True
+  make_all_figures: True
+  custom_list:
+    - nmdb_incoming_radiation

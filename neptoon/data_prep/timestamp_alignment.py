@@ -1,6 +1,6 @@
 import pandas as pd
 from saqc import SaQC
-
+import datetime
 from neptoon.data_audit import log_key_step
 
 
@@ -65,6 +65,20 @@ class TimeStampAligner:
         if not pd.api.types.is_datetime64_any_dtype(data_frame.index):
             raise ValueError("The DataFrame index must be of datetime type")
 
+    @staticmethod
+    def timedelta_to_freq_str(time_delta: datetime.timedelta) -> str:
+        """Convert a timedelta to a pandas frequency string."""
+        total_seconds = time_delta.total_seconds()
+
+        if total_seconds % (86400) == 0:  # Days (86400 = 24 * 60 * 60)
+            return f"{int(total_seconds // 86400)}D"
+        elif total_seconds % 3600 == 0:  # Hours
+            return f"{int(total_seconds // 3600)}h"
+        elif total_seconds % 60 == 0:  # Minutes
+            return f"{int(total_seconds // 60)}min"
+        else:  # Seconds
+            return f"{int(total_seconds)}S"
+
     @log_key_step("method", "freq")
     def align_timestamps(self, freq: str = "1h", method: str = "time"):
         """
@@ -83,6 +97,9 @@ class TimeStampAligner:
         freq : str, optional
             The frequency of time stamps wanted, by default "1Hour"
         """
+
+        if isinstance(freq, datetime.timedelta):
+            freq = self.timedelta_to_freq_str(freq)
 
         self.qc = self.qc.align(
             field=self.data_frame.columns,

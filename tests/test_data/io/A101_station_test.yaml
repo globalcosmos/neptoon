@@ -25,11 +25,16 @@ sensor_info:
   avg_biomass:
 
 time_series_data:
-  time_step_resolution: 15mins
+  path_to_data:
+  temporal:
+    input_resolution: 1hour
+    output_resolution: 1hour
+    align_timestamps: False
+    alignment_method: "time"
   key_column_info:
-    epithermal_neutron_counts_columns:
+    epithermal_neutron_columns:
       - N1Cts
-    thermal_neutrons:
+    thermal_neutron_columns:
     neutron_count_units: absolute_count
     pressure_columns:
       - P4_mb # first priorty goes here

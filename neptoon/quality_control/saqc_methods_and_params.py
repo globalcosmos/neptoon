@@ -43,6 +43,7 @@ class QATarget(Enum):
     RELATIVE_HUMIDITY = str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
     AIR_PRESSURE = str(ColumnInfo.Name.AIR_PRESSURE)
     TEMPERATURE = str(ColumnInfo.Name.AIR_TEMPERATURE)
+    SOIL_MOISTURE = str(ColumnInfo.Name.SOIL_MOISTURE_FINAL)
     CUSTOM = "custom"
 
 
@@ -298,6 +299,7 @@ class YamlRegistry:
         "air_relative_humidity": QATarget.RELATIVE_HUMIDITY,
         "air_pressure": QATarget.AIR_PRESSURE,
         "temperature": QATarget.TEMPERATURE,
+        "soil_moisture": QATarget.SOIL_MOISTURE,
     }
 
     _method_mapping = {

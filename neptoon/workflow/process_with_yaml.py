@@ -260,6 +260,12 @@ class ProcessWithYaml:
         """
         self.data_hub.correct_neutrons()
 
+    def _create_neutron_uncertainty_bounds(self):
+        """
+        Produces uncertainty bounds of neutron count rates
+        """
+        self.data_hub.create_neutron_uncertainty_bounds()
+
     def _produce_soil_moisture_estimates(self):
         """
         Completes the soil moisture estimation step
@@ -329,7 +335,8 @@ class ProcessWithYaml:
         calib_df = pd.read_csv(calib_df_path)
         self.data_hub.calibration_samples_data = calib_df
         calibration_config = CalibrationConfiguration(
-            date_time_column_name=self.sensor_config.calibration.key_column_names.date_time,
+            calib_data_date_time_column_name=self.sensor_config.calibration.key_column_names.date_time,
+            calib_data_date_time_format=self.sensor_config.calibration.date_time_format,
             profile_id_column=self.sensor_config.calibration.key_column_names.profile_id,
             distance_column=self.sensor_config.calibration.key_column_names.radial_distance_from_sensor,
             sample_depth_column=self.sensor_config.calibration.key_column_names.sample_depth,
@@ -442,11 +449,22 @@ class ProcessWithYaml:
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="corrected_neutrons",
         )
+        if self.process_config.data_smoothing.smooth_corrected_neutrons:
+            self._smooth_data(
+                column_to_smooth=str(
+                    ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
+                ),
+            )
+        self._create_neutron_uncertainty_bounds()
         self._produce_soil_moisture_estimates()
         if self.process_config.data_smoothing.smooth_soil_moisture:
             self._smooth_data(
                 column_to_smooth=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
             )
+        self._apply_quality_assessment(
+            partial_config=self.sensor_config.soil_moisture_qa,
+            name_of_target=None,
+        )
         self._create_figures()
         self._save_data()
         self._yaml_saver()
