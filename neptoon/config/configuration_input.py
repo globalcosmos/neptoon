@@ -92,6 +92,9 @@ class TimeSeriesColumns(BaseConfig):
 class Temporal(BaseConfig):
     input_resolution: str = Field(default="1hour")
     output_resolution: str = Field(default=None)
+    aggregate_method: str = Field(default="bagg")
+    aggregate_func: str = Field(default="mean")
+    aggregate_maxna_fraction: float = Field(default=0.5)
     align_timestamps: bool = Field(default=False)
     alignment_method: str = Field(default="time")
 

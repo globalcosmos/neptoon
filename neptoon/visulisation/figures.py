@@ -149,11 +149,12 @@ def soil_moisture_figure_uncertainty(
     save_location: str = None,
 ):
     """
-    Creates a two-panel figure showing soil moisture content and associated uncertainties.
+    Creates a two-panel figure showing soil moisture content and
+    associated uncertainties.
 
-    The top panel displays the soil moisture time series with a filled region from
-    0 to the measured value. The bottom panel shows the uncertainty bounds as separate
-    lines with filled regions to emphasize the error margins.
+    The top panel displays the soil moisture time series. The bottom
+    panel shows the uncertainty bounds as separate lines with filled
+    regions to emphasize the error margins.
 
     Parameters
     ----------
@@ -162,13 +163,15 @@ def soil_moisture_figure_uncertainty(
     station_name : str
         Name of the CRNS station for the title
     soil_moisture_col : str, optional
-        Column name for soil moisture data, defaults to SOIL_MOISTURE_FINAL
+        Column name for soil moisture data, defaults to
+        SOIL_MOISTURE_FINAL
     upper_uncertainty_col : str, optional
         Column name for upper uncertainty bound
     lower_uncertainty_col : str, optional
         Column name for lower uncertainty bound
     sm_range : tuple, optional
-        Y-axis range for soil moisture plots as (min, max), defaults to (0, 0.5)
+        Y-axis range for soil moisture plots as (min, max), defaults to
+        (0, 0.5)
     show : bool, optional
         Whether to display the figure, defaults to False
     backend : str, optional
@@ -179,7 +182,8 @@ def soil_moisture_figure_uncertainty(
     Returns
     -------
     None
-        The figure is either displayed, saved, or both based on parameters
+        The figure is either displayed, saved, or both based on
+        parameters
     """
     with Figure(
         title=f"Soil Moisture Content at {station_name}",
@@ -200,14 +204,6 @@ def soil_moisture_figure_uncertainty(
             lw=1,
             label="Water content",
         )
-        # ax1.fill_between(
-        #     data_frame.index,
-        #     data_frame[soil_moisture_col],
-        #     0,
-        #     color="C0",
-        #     alpha=0.05,
-        #     step="post",
-        # )
         ax1.set_ylim(sm_range[0], sm_range[1])
         ax1.set_ylabel("Water content (m³/m³)")
         ax1.grid(alpha=0.2)
@@ -240,14 +236,6 @@ def soil_moisture_figure_uncertainty(
             alpha=0.2,
             step="post",
         )
-        # ax2.fill_between(
-        #     data_frame.index,
-        #     data_frame[upper_uncertainty_col],
-        #     0,
-        #     color="C2",
-        #     alpha=0.2,
-        #     step="post",
-        # )
 
         max_uncertainty = max(
             data_frame[upper_uncertainty_col].max(),
