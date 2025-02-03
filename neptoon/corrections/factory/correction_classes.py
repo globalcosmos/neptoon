@@ -771,10 +771,6 @@ class PressureCorrectionZreda2012(Correction):
                 axis=1,
             )
 
-        #     self.method_to_use = "beta"
-        # elif is_column_missing_or_empty(data_frame, column_name_beta):
-        #     self.method_to_use = "beta"
-
     def apply(self, data_frame):
         """
         Applies the neutron correction
@@ -802,7 +798,6 @@ class PressureCorrectionZreda2012(Correction):
             )
             core_logger.info(message)
             return data_frame
-
         else:
             self._prepare_for_correction(data_frame)
             data_frame[self.correction_factor_column_name] = data_frame.apply(
@@ -813,7 +808,6 @@ class PressureCorrectionZreda2012(Correction):
                 ),
                 axis=1,
             )
-
             return data_frame
 
 
