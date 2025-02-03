@@ -152,7 +152,8 @@ class FigureHandler:
         create_all: bool = False,
         ignore_sections: List = None,
         selected_figures: List[str] = None,
-        show_figures: bool = True,
+        show_figures: bool = False,
+        backend: str = "Agg",
     ):
 
         self.data_frame = data_frame
@@ -166,6 +167,7 @@ class FigureHandler:
             selected_figures if selected_figures is not None else []
         )
         self.show_figures = show_figures
+        self.backend = backend
 
     def _validate_required_columns(self, metadata: FigureMetadata):
         """
@@ -226,6 +228,7 @@ class FigureHandler:
                 ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY
             ),
             show=self.show_figures,
+            backend=self.backend,
             save_location=temp_path,
         )
 

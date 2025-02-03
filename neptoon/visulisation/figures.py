@@ -5,7 +5,7 @@ Here are basic figures for creating plots.
 import pandas as pd
 import numpy as np
 from typing import List
-from figurex import Figure
+from figurex import Figure, Panel
 from neptoon.columns import ColumnInfo
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -32,6 +32,7 @@ def make_nmdb_data_figure(
     incoming_neutron_col_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
     resolution: int = 60,
     show: bool = False,
+    backend: str = "agg",
     save_location: str = None,
 ):
     """
@@ -49,6 +50,8 @@ def make_nmdb_data_figure(
         resolution in minutes, by default 60
     show : bool, optional
         show interactively, by default False
+    backend : str, optional
+        the backend to use in matplotlib, by default "agg
     save : str
         The save path
 
@@ -61,6 +64,7 @@ def make_nmdb_data_figure(
     validate_columns_present(
         data_frame=data_frame, required_cols=[incoming_neutron_col_name]
     )
+    show = True  # REMOVE
 
     with Figure(
         title="Incoming cosmic radiation",
@@ -69,7 +73,7 @@ def make_nmdb_data_figure(
         x_range=(data_frame.index.min(), data_frame.index.max()),
         show=show,
         save=(save_location if save_location else None),
-        backend="TkAgg",
+        backend="Agg",
     ) as ax:
 
         ax.plot(
@@ -88,7 +92,16 @@ def make_nmdb_data_figure(
         )
         ax.set_ylabel("Neutron count rate (counts)")
         ax.legend()
-        plt.ion()
+
+
+# def plot_corr_neutrons_figure(
+#     data_frame: pd.DataFrame,
+#     station_name: str,
+#     neutron_col_name: str = str(
+#         ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+#     ),
+# ):
+#     pass
 
 
 def soil_moisture_coloured_figure(

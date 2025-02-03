@@ -379,15 +379,15 @@ numpy = "*"
 
 [[package]]
 name = "figurex"
-version = "0.2.12"
+version = "0.2.13"
 description = "Make figures with context managers in python: quicker, simpler, more readable."
 optional = false
 python-versions = ">3.9"
 groups = ["main"]
 markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
 files = [
-    {file = "figurex-0.2.12-py3-none-any.whl", hash = "sha256:7939149de4b24f3c5678590b888e46c064bbf33613106f82d692a7261a46cfd0"},
-    {file = "figurex-0.2.12.tar.gz", hash = "sha256:df045779b4844bd2989882840d91b130091b76f9a1d0640396a31ce6e07d539e"},
+    {file = "figurex-0.2.13-py3-none-any.whl", hash = "sha256:32d7c54aeaeb3013924ad05fc77a14bb0ed8dc4be954bd01eaad09604b878030"},
+    {file = "figurex-0.2.13.tar.gz", hash = "sha256:9f939223acc540f8c9b5f6aa4152fb853b53507943329d402c1c1f2d9a6bbaae"},
 ]
 
 [package.dependencies]

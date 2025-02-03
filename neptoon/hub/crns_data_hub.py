@@ -561,7 +561,7 @@ class CRNSDataHub:
         create_all=True,
         ignore_sections=[],
         selected_figures=[],
-        show_figures: bool = True,
+        show_figures: bool = False,
     ):
         """
         Handles creating the figures using the FigureHandler.
