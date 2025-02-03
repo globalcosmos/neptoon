@@ -54,7 +54,6 @@ class SensorInfo(BaseConfig):
         gt=0, description="The N0 calibration term.", default=None
     )
     beta_coefficient: Optional[float] = Field(default=None)
-    l_coefficient: Optional[float] = Field(default=None)
     mean_pressure: Optional[float] = Field(default=None)
 
 

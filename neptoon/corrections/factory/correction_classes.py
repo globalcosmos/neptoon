@@ -666,7 +666,6 @@ class PressureCorrectionZreda2012(Correction):
             ColumnInfo.Name.PRESSURE_CORRECTION
         ),
         beta_coefficient: str = str(ColumnInfo.Name.BETA_COEFFICIENT),
-        l_coefficient: str = str(ColumnInfo.Name.L_COEFFICIENT),
         latitude: str = str(ColumnInfo.Name.LATITUDE),
         site_cutoff_rigidity: str = str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY),
     ):
@@ -687,8 +686,6 @@ class PressureCorrectionZreda2012(Correction):
             ColumnInfo.Name.PRESSURE_CORRECTION )
         beta_coefficient : float, optional
             beta_coefficient for processing, by default None
-        l_coefficient : float, optional
-            mass attenuation length, by default None
         latitude : float, optional
             latitude of site in degrees, by default None
         site_cutoff_rigidity : _type_, optional
@@ -700,7 +697,6 @@ class PressureCorrectionZreda2012(Correction):
         )
         self.reference_pressure_value = reference_pressure_value
         self.beta_coefficient = beta_coefficient
-        self.l_coefficeint = l_coefficient
         self.site_elevation = site_elevation
         self.latitude = latitude
         self.site_cutoff_rigidity = site_cutoff_rigidity
@@ -753,15 +749,13 @@ class PressureCorrectionZreda2012(Correction):
 
     def _check_coefficient_available(self, data_frame):
         """
-        Checks for coefficients. If none given it will create the
-        beta_coefficient from supplied data.
+        Checks for coefficient availability. If not available it will
+        calculate it using latitude, site elevation and site cutoff
+        rigidity.
         """
         column_name_beta = self.beta_coefficient
-        column_name_l = self.l_coefficeint
 
-        if is_column_missing_or_empty(
-            data_frame, column_name_beta
-        ) and is_column_missing_or_empty(data_frame, column_name_l):
+        if is_column_missing_or_empty(data_frame, column_name_beta):
             message = (
                 "No coefficient given for pressure correction. "
                 "Calculating beta coefficient."
@@ -777,11 +771,9 @@ class PressureCorrectionZreda2012(Correction):
                 axis=1,
             )
 
-            self.method_to_use = "beta"
-        elif is_column_missing_or_empty(data_frame, column_name_beta):
-            self.method_to_use = "beta"
-        elif is_column_missing_or_empty(data_frame, column_name_l):
-            self.method_to_use = "l_coeff"
+        #     self.method_to_use = "beta"
+        # elif is_column_missing_or_empty(data_frame, column_name_beta):
+        #     self.method_to_use = "beta"
 
     def apply(self, data_frame):
         """
@@ -813,28 +805,15 @@ class PressureCorrectionZreda2012(Correction):
 
         else:
             self._prepare_for_correction(data_frame)
-            if self.method_to_use == "beta":
-                data_frame[self.correction_factor_column_name] = (
-                    data_frame.apply(
-                        lambda row: calc_pressure_correction_beta_coeff(
-                            row[str(ColumnInfo.Name.AIR_PRESSURE)],
-                            row[self.reference_pressure_value],
-                            row[self.beta_coefficient],
-                        ),
-                        axis=1,
-                    )
-                )
-            elif self.method_to_use == "l_coeff":
-                data_frame[self.correction_factor_column_name] = (
-                    data_frame.apply(
-                        lambda row: calc_pressure_correction_l_coeff(
-                            row[str(ColumnInfo.Name.AIR_PRESSURE)],
-                            row[self.reference_pressure_value],
-                            row[self.l_coefficeint],
-                        ),
-                        axis=1,
-                    )
-                )
+            data_frame[self.correction_factor_column_name] = data_frame.apply(
+                lambda row: calc_pressure_correction_beta_coeff(
+                    row[str(ColumnInfo.Name.AIR_PRESSURE)],
+                    row[self.reference_pressure_value],
+                    row[self.beta_coefficient],
+                ),
+                axis=1,
+            )
+
             return data_frame
 
 
