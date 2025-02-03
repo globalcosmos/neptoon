@@ -49,6 +49,7 @@ class ColumnInfo:
         HUMIDITY_CORRECTION = auto()
         INTENSITY_CORRECTION = auto()
         PRESSURE_CORRECTION = auto()
+        ABOVEGROUND_BIOMASS_CORRECTION = auto()
         CORRECTED_EPI_NEUTRON_COUNT = auto()
         CORRECTED_EPI_NEUTRON_COUNT_FINAL = auto()
         CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY = auto()
@@ -103,6 +104,7 @@ class ColumnInfo:
         Name.HUMIDITY_CORRECTION: "humidity_correction",
         Name.INTENSITY_CORRECTION: "incoming_neutron_intensity_correction",
         Name.PRESSURE_CORRECTION: "atmospheric_pressure_correction",
+        Name.ABOVEGROUND_BIOMASS_CORRECTION: "aboveground_biomass_correction",
         Name.CORRECTED_EPI_NEUTRON_COUNT: "corrected_epithermal_neutrons",
         Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL: "corrected_epithermal_neutrons",
         Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY: "corrected_epithermal_neutrons_uncertainty",

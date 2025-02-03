@@ -16,45 +16,6 @@ from neptoon.logging import get_logger
 core_logger = get_logger()
 
 
-def calc_pressure_correction_l_coeff(
-    current_pressure: float, reference_pressure: float, l_coeff: float
-):
-    """
-    Calculate a pressure correction factor accounting for changes in
-    atmospheric pressure on neutron counting rates, using the mass
-    attenuation length.
-
-    Parameters
-    ----------
-    current_pressure : float
-        Current atmospheric pressure at the site in pascals (Pa).
-    reference_pressure : float
-        Reference atmospheric pressure, typically a long-term average at
-        the site, in pascals (Pa) to keep correction factors around 1.
-    l_coeff : float
-        Mass attenuation length for high-energy neutrons, varying
-        between 128 g/cm^-2 (high latitude) and 142 g/cm^-2 (equator) in
-        grams per square centimeter.
-
-    Returns
-    -------
-    c_factor: float
-        Correction factor to multiply raw neutron count rates by, e.g.,
-        1.04.
-    """
-    if l_coeff <= 1:
-        message = (
-            "The l_coeff is < 1 which suggests "
-            "the incorrect function is being used. "
-            "Use pressure_correction_beta_coeff() instead"
-        )
-
-        core_logger.warning(message)
-        raise ValueError(message)
-    c_factor = np.exp((current_pressure - reference_pressure) / l_coeff)
-    return c_factor
-
-
 def calc_pressure_correction_beta_coeff(
     current_pressure: float, reference_pressure: float, beta_coeff: float
 ):

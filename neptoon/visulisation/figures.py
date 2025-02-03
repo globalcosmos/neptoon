@@ -4,8 +4,8 @@ Here are basic figures for creating plots.
 
 import pandas as pd
 import numpy as np
-from typing import List
-from figurex import Figure, Panel
+from typing import List, Tuple, Optional
+from figurex import Figure
 from neptoon.columns import ColumnInfo
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -324,3 +324,189 @@ def soil_moisture_coloured_figure(
         )
     if save_location:
         fig.savefig(save_location)
+
+
+def atmospheric_conditions_figure(
+    data_frame: pd.DataFrame,
+    station_name: str,
+    pressure_col: str = str(ColumnInfo.Name.AIR_PRESSURE),
+    temperature_col: str = str(ColumnInfo.Name.AIR_TEMPERATURE),
+    rel_humidity_col: str = str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY),
+    temperature_range: Tuple[float, float] = (-20.0, 40.0),
+    show: bool = False,
+    backend: str = "agg",
+    save_location: Optional[str] = None,
+) -> None:
+    """
+    Creates a three-panel figure showing atmospheric conditions
+    affecting CRNS measurements.
+
+    Parameters
+    ----------
+    data_frame : pd.DataFrame
+        DataFrame containing the atmospheric measurements
+    station_name : str
+        Name of the CRNS station for the title
+    pressure_col : str
+        Column name for air pressure data (hPa)
+    temperature_col : str
+        Column name for air temperature data (°C)
+    rel_humidity_col : str
+        Column name for relative humidity data (%)
+    abs_humidity_col : str
+        Column name for absolute humidity data (g/m³)
+    temperature_range : Tuple[float, float]
+        Temperature axis range (min, max) in °C
+    show : bool
+        Whether to display the figure
+    backend : str
+        Matplotlib backend to use
+    save_location : str, optional
+        Path to save the figure
+
+    Notes
+    -----
+    The function handles missing data gracefully - panels with no data
+    will be left blank with an appropriate message. This is particularly
+    useful for stations that may not record all atmospheric variables.
+    """
+    with Figure(
+        title=f"Atmospheric Conditions at {station_name}",
+        size=(12, 10),
+        transparent=False,
+        x_range=(data_frame.index.min(), data_frame.index.max()),
+        layout=(3, 1),
+        show=show,
+        save=(save_location if save_location else None),
+        backend=backend,
+    ) as (ax1, ax2, ax3):
+        # Air Pressure Panel
+        if not data_frame[pressure_col].isnull().all():
+            ax1.plot(
+                data_frame.index,
+                data_frame[pressure_col],
+                label="Air pressure",
+                lw=1,
+                color="lightgrey",
+            )
+            ax1.set_ylabel("Air pressure (hPa)")
+            ax1.grid(alpha=0.2)
+            ax1.legend()
+
+        # Temperature and Relative Humidity Panel
+        if not (
+            data_frame[temperature_col].isnull().all()
+            and data_frame[rel_humidity_col].isnull().all()
+        ):
+            # Temperature plot
+            ax2.plot(
+                data_frame.index,
+                data_frame[temperature_col],
+                lw=1,
+                color="C4",
+                label="Air temperature",
+            )
+            ax2.set_ylabel("Air temperature (°C)")
+            ax2.set_ylim(temperature_range)
+            ax2.grid(alpha=0.2)
+            ax2.legend()
+            # Relative humidity on secondary y-axis
+        # Absolute Humidity Panel
+        if not data_frame[rel_humidity_col].isnull().all():
+            ax3.plot(
+                data_frame.index,
+                data_frame[rel_humidity_col],
+                label="Relative humidity",
+                lw=1,
+                color="C9",
+            )
+            ax3.set_ylim(0, 110)
+            ax3.set_ylabel("Air relative humidity (%)")
+            ax3.grid(alpha=0.2)
+            ax3.legend()
+
+
+def correction_factors_figure(
+    data_frame: pd.DataFrame,
+    station_name: str,
+    pressure_corr_col: str = str(ColumnInfo.Name.PRESSURE_CORRECTION),
+    humidity_corr_col: str = str(ColumnInfo.Name.HUMIDITY_CORRECTION),
+    intensity_corr_col: str = str(ColumnInfo.Name.INTENSITY_CORRECTION),
+    biomass_corr_col: str = str(
+        ColumnInfo.Name.ABOVEGROUND_BIOMASS_CORRECTION
+    ),
+    show: bool = False,
+    backend: str = "agg",
+    save_location: Optional[str] = None,
+):
+    """
+    Creates a figure showing correction factors applied to CRNS data.
+
+
+    Parameters
+    ----------
+    data_frame : pd.DataFrame
+        DataFrame containing the correction factors and soil properties
+    station_name : str
+        Name of the CRNS station for the title
+    pressure_corr_col : str
+        Column name for pressure correction factor
+    humidity_corr_col : str
+        Column name for humidity correction factor
+    intensity_corr_col : str
+        Column name for incoming neutron intensity correction
+    show : bool
+        Whether to display the figure
+    backend : str
+        Matplotlib backend to use
+    save_location : str, optional
+        Path to save the figure
+
+
+    """
+    with Figure(
+        title=f"Correction Factors at {station_name}",
+        size=(12, 9),
+        transparent=False,
+        x_range=(data_frame.index.min(), data_frame.index.max()),
+        show=show,
+        save=(save_location if save_location else None),
+        backend=backend,
+    ) as ax1:
+        if pressure_corr_col and pressure_corr_col in data_frame.columns:
+            ax1.plot(
+                data_frame.index,
+                data_frame[pressure_corr_col],
+                label="Air pressure",
+                lw=1,
+                color="lightgrey",
+            )
+        if humidity_corr_col and humidity_corr_col in data_frame.columns:
+            ax1.plot(
+                data_frame.index,
+                data_frame[humidity_corr_col],
+                label="Air humidity",
+                lw=1,
+                color="C9",
+            )
+        if intensity_corr_col and intensity_corr_col in data_frame.columns:
+            ax1.plot(
+                data_frame.index,
+                data_frame[intensity_corr_col],
+                label="Incoming neutron flux",
+                lw=1,
+                color="C3",
+            )
+
+        if biomass_corr_col and biomass_corr_col in data_frame.columns:
+            ax1.plot(
+                data_frame.index,
+                data_frame[biomass_corr_col],
+                label="Biomass",
+                lw=1,
+                color="C2",
+            )
+
+        ax1.set_ylabel("Correction factor (-)")
+        ax1.grid(alpha=0.2)
+        ax1.legend()

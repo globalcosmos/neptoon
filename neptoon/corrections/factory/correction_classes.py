@@ -14,7 +14,6 @@ from neptoon.corrections import (
     calc_actual_vapour_pressure,
     humidity_correction_rosolem2013,
     calc_pressure_correction_beta_coeff,
-    calc_pressure_correction_l_coeff,
     calc_mean_pressure,
     calc_beta_coefficient,
     above_ground_biomass_correction_baatz2015,

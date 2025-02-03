@@ -286,7 +286,7 @@ class SaveAndArchiveOutputs:
                 dest = figure_folder / f"{figure.name}.png"
                 shutil.copy2(figure.path, dest)
             except FileNotFoundError as err:
-                message = f"{figure.name} not found, so it wasn't written."
+                message = f"{figure.name} not found: {err}."
                 core_logger.error(message)
 
     def _update_sensor_info(
