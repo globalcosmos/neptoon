@@ -73,7 +73,7 @@ def make_nmdb_data_figure(
         x_range=(data_frame.index.min(), data_frame.index.max()),
         show=show,
         save=(save_location if save_location else None),
-        backend="Agg",
+        backend=backend,
     ) as ax:
 
         ax.plot(
@@ -94,14 +94,171 @@ def make_nmdb_data_figure(
         ax.legend()
 
 
-# def plot_corr_neutrons_figure(
-#     data_frame: pd.DataFrame,
-#     station_name: str,
-#     neutron_col_name: str = str(
-#         ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
-#     ),
-# ):
-#     pass
+def uncorr_and_corr_neutrons_figure(
+    data_frame: pd.DataFrame,
+    station_name: str,
+    raw_neutron_col_name: str = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
+    corr_neutron_col_name: str = str(
+        ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+    ),
+    show=False,
+    backend: str = "agg",
+    save_location: str = None,
+):
+    with Figure(
+        title=f"Neutron counts at {station_name}",
+        size=(12, 3),
+        transparent=False,
+        x_range=(data_frame.index.min(), data_frame.index.max()),
+        show=show,
+        save=(save_location if save_location else None),
+        backend=backend,
+    ) as ax:
+        ax.plot(
+            data_frame.index,
+            data_frame[raw_neutron_col_name],
+            label="Uncorrected epitherma neutrons",
+        ),
+
+        ax.plot(
+            data_frame.index,
+            data_frame[corr_neutron_col_name],
+            label="Corrected epithermal neturons",
+        )
+
+        ax.set_ylabel("Neutron count rate (cph)")
+        ax.legend()
+
+
+def soil_moisture_figure_uncertainty(
+    data_frame: pd.DataFrame,
+    station_name: str,
+    soil_moisture_col: str = str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+    upper_uncertainty_col: str = str(
+        ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER
+    ),
+    lower_uncertainty_col: str = str(
+        ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER
+    ),
+    sm_range: tuple = (
+        0,
+        0.5,
+    ),
+    show: bool = False,
+    backend: str = "agg",
+    save_location: str = None,
+):
+    """
+    Creates a two-panel figure showing soil moisture content and associated uncertainties.
+
+    The top panel displays the soil moisture time series with a filled region from
+    0 to the measured value. The bottom panel shows the uncertainty bounds as separate
+    lines with filled regions to emphasize the error margins.
+
+    Parameters
+    ----------
+    data_frame : pd.DataFrame
+        DataFrame containing the soil moisture and uncertainty data
+    station_name : str
+        Name of the CRNS station for the title
+    soil_moisture_col : str, optional
+        Column name for soil moisture data, defaults to SOIL_MOISTURE_FINAL
+    upper_uncertainty_col : str, optional
+        Column name for upper uncertainty bound
+    lower_uncertainty_col : str, optional
+        Column name for lower uncertainty bound
+    sm_range : tuple, optional
+        Y-axis range for soil moisture plots as (min, max), defaults to (0, 0.5)
+    show : bool, optional
+        Whether to display the figure, defaults to False
+    backend : str, optional
+        Matplotlib backend to use, defaults to "agg"
+    save_location : str, optional
+        Path to save the figure, if None the figure is not saved
+
+    Returns
+    -------
+    None
+        The figure is either displayed, saved, or both based on parameters
+    """
+    with Figure(
+        title=f"Soil Moisture Content at {station_name}",
+        size=(12, 8),
+        transparent=False,
+        x_range=(data_frame.index.min(), data_frame.index.max()),
+        layout=(2, 1),
+        show=show,
+        save=(save_location if save_location else None),
+        backend=backend,
+    ) as (ax1, ax2):
+        # Top panel: Soil moisture content
+        ax1.plot(
+            data_frame.index,
+            data_frame[soil_moisture_col],
+            color="C0",
+            drawstyle="steps-post",
+            lw=1,
+            label="Water content",
+        )
+        # ax1.fill_between(
+        #     data_frame.index,
+        #     data_frame[soil_moisture_col],
+        #     0,
+        #     color="C0",
+        #     alpha=0.05,
+        #     step="post",
+        # )
+        ax1.set_ylim(sm_range[0], sm_range[1])
+        ax1.set_ylabel("Water content (m³/m³)")
+        ax1.grid(alpha=0.2)
+        ax1.legend()
+
+        # Bottom panel: Uncertainty bounds
+        ax2.plot(
+            data_frame.index,
+            data_frame[lower_uncertainty_col],
+            color="C3",
+            drawstyle="steps-post",
+            lw=0.6,
+            label="Lower uncertainty",
+        )
+        ax2.plot(
+            data_frame.index,
+            data_frame[upper_uncertainty_col],
+            color="C2",
+            drawstyle="steps-post",
+            lw=0.6,
+            label="Upper uncertainty",
+        )
+
+        # Fill uncertainty regions
+        ax2.fill_between(
+            data_frame.index,
+            data_frame[upper_uncertainty_col],
+            data_frame[lower_uncertainty_col],
+            color="C3",
+            alpha=0.2,
+            step="post",
+        )
+        # ax2.fill_between(
+        #     data_frame.index,
+        #     data_frame[upper_uncertainty_col],
+        #     0,
+        #     color="C2",
+        #     alpha=0.2,
+        #     step="post",
+        # )
+
+        max_uncertainty = max(
+            data_frame[upper_uncertainty_col].max(),
+            abs(data_frame[lower_uncertainty_col].min()),
+        )
+        y_limit = max_uncertainty * 1.1  # Add 10% padding
+
+        ax2.set_ylim(0, y_limit)
+        ax2.set_ylabel("Water content (m³/m³)")
+        ax2.grid(alpha=0.2)
+        ax2.legend()
 
 
 def soil_moisture_coloured_figure(

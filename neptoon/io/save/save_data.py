@@ -282,9 +282,12 @@ class SaveAndArchiveOutputs:
         figure_folder = self.full_folder_location / "figures"
         figure_folder.mkdir(parents=True, exist_ok=True)
         for figure in figure_metadata:
-
-            dest = figure_folder / f"{figure.name}.png"
-            shutil.copy2(figure.path, dest)
+            try:
+                dest = figure_folder / f"{figure.name}.png"
+                shutil.copy2(figure.path, dest)
+            except FileNotFoundError as err:
+                message = f"{figure_name} not found, so it wasn't written."
+                core_logger.error(message)
 
     def _update_sensor_info(
         self,
