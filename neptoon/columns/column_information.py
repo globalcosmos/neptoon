@@ -49,6 +49,7 @@ class ColumnInfo:
         HUMIDITY_CORRECTION = auto()
         INTENSITY_CORRECTION = auto()
         PRESSURE_CORRECTION = auto()
+        ABOVEGROUND_BIOMASS_CORRECTION = auto()
         CORRECTED_EPI_NEUTRON_COUNT = auto()
         CORRECTED_EPI_NEUTRON_COUNT_FINAL = auto()
         CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY = auto()
@@ -77,7 +78,6 @@ class ColumnInfo:
         SITE_BIOMASS = auto()
         N0 = auto()
         BETA_COEFFICIENT = auto()
-        L_COEFFICIENT = auto()
         CALIB_DEPTH_OF_SAMPLE = auto()
         CALIB_DISTANCE_TO_SENSOR = auto()
         CALIB_BULK_DENSITY = auto()
@@ -104,6 +104,7 @@ class ColumnInfo:
         Name.HUMIDITY_CORRECTION: "humidity_correction",
         Name.INTENSITY_CORRECTION: "incoming_neutron_intensity_correction",
         Name.PRESSURE_CORRECTION: "atmospheric_pressure_correction",
+        Name.ABOVEGROUND_BIOMASS_CORRECTION: "aboveground_biomass_correction",
         Name.CORRECTED_EPI_NEUTRON_COUNT: "corrected_epithermal_neutrons",
         Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL: "corrected_epithermal_neutrons",
         Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY: "corrected_epithermal_neutrons_uncertainty",
@@ -132,7 +133,6 @@ class ColumnInfo:
         Name.SITE_BIOMASS: "site_biomass",
         Name.N0: "n0",
         Name.BETA_COEFFICIENT: "beta_coefficient",
-        Name.L_COEFFICIENT: "l_coefficient",
         Name.CALIB_DEPTH_OF_SAMPLE: "depth_of_sample",
         Name.CALIB_DISTANCE_TO_SENSOR: "distance_to_sensor",
         Name.CALIB_BULK_DENSITY: "bulk_density",
@@ -163,7 +163,6 @@ class ColumnInfo:
         "site_biomass": Name.SITE_BIOMASS,
         "n0": Name.N0,
         "beta_coefficient": Name.BETA_COEFFICIENT,
-        "l_coefficient": Name.L_COEFFICIENT,
         "reference_monitor_cutoff_rigidity": Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY,
     }
 

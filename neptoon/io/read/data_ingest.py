@@ -17,7 +17,7 @@ from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import (
     ConfigurationManager,
 )
-from neptoon.data_prep import TimeStampAligner
+from neptoon.data_prep import TimeStampAligner, TimeStampAggregator
 
 core_logger = get_logger()
 
@@ -755,6 +755,9 @@ class InputDataFrameFormattingConfig:
         path_to_yaml: Optional[Union[str, Path]] = None,
         input_resolution: str = "1hour",
         output_resolution: str = "1hour",
+        aggregate_method: str = "bagg",
+        aggregate_func: str = "mean",
+        aggregate_maxna_fraction: float = 0.5,
         align_timestamps: bool = False,
         align_method: str = "time",
         pressure_merge_method: MergeMethod = MergeMethod.PRIORITY,
@@ -778,13 +781,23 @@ class InputDataFrameFormattingConfig:
         ----------
         path_to_yaml : Union[str, Path], optional
             path for a YAML file to automate the build, by default None
-        time_resolution : str, optional
+        input_resolution : str, optional
             Time resolution in format "<number><unit>, by default
             "1hour"
-        desired_time_resolution : str, optional
+        output_resolution : str, optional
             The desired time resolution of the dataframe to aggregate
             to. If None no time aggregation is done. Otherwise in format
             <number><unit>, by default None
+        aggregate_method : Literal['fagg', 'bagg', 'nagg']
+            Specifies which intervals to be aggregated for a certain
+            timestamp. (preceding, succeeding or “surrounding”
+            interval).
+        aggregate_func : str
+            Aggregation function. By default mean.
+        aggregate_maxna_fraction : float, optional
+            Maximum fraction of values in the aggregation period that
+            can be NaN. If set to 0.3 only 30% of the values can be NaN
+            by default 0.5
         align_timestamps: bool, optional
             Whether to align the time stamps to a regular time. E.g., If
             time_resolution is 1hour, 13:10, becomes 13:00, by default
@@ -844,6 +857,9 @@ class InputDataFrameFormattingConfig:
             self.get_conversion_factor()
         )
         self._output_resolution = self.parse_resolution(output_resolution)
+        self.aggregate_method = aggregate_method
+        self.aggregate_func = aggregate_func
+        self.aggregate_maxna_fraction = aggregate_maxna_fraction
         self.align_timestamps = align_timestamps
         self.align_method = align_method
         self.pressure_merge_method = pressure_merge_method
@@ -1058,6 +1074,11 @@ class InputDataFrameFormattingConfig:
         )
         self.align_timestamps = tmp.time_series_data.temporal.align_timestamps
         self.align_method = tmp.time_series_data.temporal.alignment_method
+        self.aggregate_method = tmp.time_series_data.temporal.aggregate_method
+        self.aggregate_func = tmp.time_series_data.temporal.aggregate_func
+        self.aggregate_maxna_fraction = (
+            tmp.time_series_data.temporal.aggregate_maxna_fraction
+        )
         self.neutron_count_units = (
             tmp.time_series_data.key_column_info.neutron_count_units
         )
@@ -1579,11 +1600,13 @@ class FormatDataForCRNSDataHub:
                 * self.config.conversion_factor_to_counts_per_hour
             )
         elif epi_neutron_unit == "counts_per_second":
-            seconds_in_period = self.config.input_resolution.total_seconds()
+            period_seconds = self.config.input_resolution.total_seconds()
             self.data_frame[final_column_name] = (
                 self.data_frame[raw_column_name] * 3600
             )
-            self.data_frame[raw_column_name] * seconds_in_period
+            self.data_frame[raw_column_name] = (
+                self.data_frame[raw_column_name] * period_seconds
+            )
 
     def align_time_stamps(
         self,
@@ -1622,10 +1645,13 @@ class FormatDataForCRNSDataHub:
         self.data_frame = timestamp_aligner.return_dataframe()
 
     def aggregate_data_frame(self):
+        """
+        Aggregates a dataframe to a new sample rate.
+        """
 
         if self.config.input_resolution > self.config.output_resolution:
             raise ValueError(
-                "Neptoon cannot downscale at this point."
+                "Neptoon cannot downscale:"
                 " output_resolution must be larger than"
                 " input_resolution."
             )
@@ -1633,10 +1659,12 @@ class FormatDataForCRNSDataHub:
         adjustment_factor = (
             self.config.output_resolution / self.config.input_resolution
         )
+        max_na = adjustment_factor * self.config.aggregate_maxna_fraction
         freq = self.config.output_resolution
-        method = self.config.align_method
+        method = self.config.aggregate_method
+        func = self.config.aggregate_func
         try:
-            timestamp_aligner = TimeStampAligner(self.data_frame)
+            timestamp_aggregator = TimeStampAggregator(self.data_frame)
         except Exception as e:
             message = (
                 "Could not align timestamps of dataframe. First the "
@@ -1645,11 +1673,13 @@ class FormatDataForCRNSDataHub:
             )
             print(message)
             core_logger.error(message)
-        timestamp_aligner.align_timestamps(
+        timestamp_aggregator.aggregate_data(
             freq=freq,
             method=method,
+            func=func,
+            max_na=max_na,
         )
-        data_frame = timestamp_aligner.return_dataframe()
+        data_frame = timestamp_aggregator.return_dataframe()
 
         # Convert columns with absolute counts to new aggregation
         data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)] = (

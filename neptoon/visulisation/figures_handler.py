@@ -4,6 +4,10 @@ from neptoon.config.configuration_input import SensorInfo
 from neptoon.visulisation.figures import (
     make_nmdb_data_figure,
     soil_moisture_coloured_figure,
+    soil_moisture_figure_uncertainty,
+    uncorr_and_corr_neutrons_figure,
+    atmospheric_conditions_figure,
+    correction_factors_figure,
 )
 from neptoon.columns import ColumnInfo
 from typing import List, Optional
@@ -19,6 +23,7 @@ class FigureTopic(Enum):
     NMDB = "nmdb"
     NEUTRONS = "neutrons"
     SOIL_MOISTURE = "soil_moisture"
+    ATMOSPHERIC = "atmospheric"
 
 
 @dataclass
@@ -137,11 +142,47 @@ class FigureHandler:
                 str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE),
             ],
         ),
+        "correction_factors_figure": FigureMetadata(
+            topic=FigureTopic.NEUTRONS,
+            description="Correction factors applied to raw neutron counts",
+            method="_neutron_correction_factors",
+            required_columns=[],  # empty for flexibility
+        ),
+        "neutron_counts_corr_uncorr": FigureMetadata(
+            topic=FigureTopic.NEUTRONS,
+            description="Corrected and uncorrected count rates at the sensor",
+            method="_uncorr_and_corr_neutrons_figure",
+            required_columns=[
+                str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL),
+            ],
+        ),
+        "soil_moisture_uncertainty": FigureMetadata(
+            topic=FigureTopic.SOIL_MOISTURE,
+            description="Soil moisture time series with uncertainty bounds",
+            method="_soil_moisture_uncertainty",
+            required_columns=[
+                str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+                str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER),
+                str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER),
+            ],
+        ),
         "soil_moisture_coloured": FigureMetadata(
             topic=FigureTopic.SOIL_MOISTURE,
             description="Soil moisture time series with colour filling",
             method="_soil_moisture_colour",
             required_columns=[str(ColumnInfo.Name.SOIL_MOISTURE_FINAL)],
+        ),
+        "atmospheric_variables": FigureMetadata(
+            topic=FigureTopic.ATMOSPHERIC,
+            description="Atmospheric variables.",
+            method="_atmospheric_variables",
+            required_columns=[
+                str(ColumnInfo.Name.AIR_PRESSURE),
+                str(ColumnInfo.Name.AIR_TEMPERATURE),
+                str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY),
+                str(ColumnInfo.Name.ABSOLUTE_HUMIDITY),
+            ],
         ),
     }
 
@@ -152,7 +193,8 @@ class FigureHandler:
         create_all: bool = False,
         ignore_sections: List = None,
         selected_figures: List[str] = None,
-        show_figures: bool = True,
+        show_figures: bool = False,
+        backend: str = "Agg",
     ):
 
         self.data_frame = data_frame
@@ -166,6 +208,7 @@ class FigureHandler:
             selected_figures if selected_figures is not None else []
         )
         self.show_figures = show_figures
+        self.backend = backend
 
     def _validate_required_columns(self, metadata: FigureMetadata):
         """
@@ -226,6 +269,60 @@ class FigureHandler:
                 ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY
             ),
             show=self.show_figures,
+            backend=self.backend,
+            save_location=temp_path,
+        )
+
+    @Magazine.reporting_figure(topic="Neutron Correction")
+    def _uncorr_and_corr_neutrons_figure(self):
+        """
+        Implements uncorrected and corrected neutrons figures
+        """
+        temp_path = self.temp_handler.store_figure(
+            name="neutron_counts_corr_uncorr",
+            topic=FigureTopic.NEUTRONS,
+        )
+        uncorr_and_corr_neutrons_figure(
+            data_frame=self.data_frame,
+            station_name=self.sensor_info.name,
+            raw_neutron_col_name=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
+            corr_neutron_col_name=str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+            ),
+            show=self.show_figures,
+            backend=self.backend,
+            save_location=temp_path,
+        )
+
+    @Magazine.reporting_figure(topic="Soil Moisture")
+    def _soil_moisture_uncertainty(self):
+        """
+        Implements soil moisture with uncertainty figure.
+        """
+        temp_path = self.temp_handler.store_figure(
+            name="soil_moisture_uncertainty",
+            topic=FigureTopic.SOIL_MOISTURE,
+        )
+
+        sm_max = (
+            self.data_frame[str(ColumnInfo.Name.SOIL_MOISTURE_FINAL)].max()
+        ) * 1.1
+        sm_min = 0
+        sm_range = (sm_min, sm_max)
+
+        soil_moisture_figure_uncertainty(
+            data_frame=self.data_frame,
+            station_name=self.sensor_info.name,
+            soil_moisture_col=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            upper_uncertainty_col=str(
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER
+            ),
+            lower_uncertainty_col=str(
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER
+            ),
+            sm_range=sm_range,
+            show=self.show_figures,
+            backend=self.backend,
             save_location=temp_path,
         )
 
@@ -243,6 +340,57 @@ class FigureHandler:
             data_frame=self.data_frame,
             station_name=self.sensor_info.name,
             sm_column_name=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            save_location=temp_path,
+        )
+
+    @Magazine.reporting_figure(topic="Atmospheric Conditions")
+    def _atmospheric_variables(self):
+        """
+        Implements 3 panel figure with atmopsheric variables
+        """
+        temp_path = self.temp_handler.store_figure(
+            name="atmospheric_variables",
+            topic=FigureTopic.ATMOSPHERIC,
+        )
+        temperature_min = (
+            self.data_frame[str(ColumnInfo.Name.AIR_TEMPERATURE)].min() - 2
+        )
+        temperature_max = (
+            self.data_frame[str(ColumnInfo.Name.AIR_TEMPERATURE)].max() + 2
+        )
+
+        atmospheric_conditions_figure(
+            data_frame=self.data_frame,
+            station_name=self.sensor_info.name,
+            pressure_col=str(ColumnInfo.Name.AIR_PRESSURE),
+            temperature_col=str(ColumnInfo.Name.AIR_TEMPERATURE),
+            rel_humidity_col=str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY),
+            temperature_range=(temperature_min, temperature_max),
+            show=self.show_figures,
+            backend=self.backend,
+            save_location=temp_path,
+        )
+
+    @Magazine.reporting_figure(topic="Neutron Correction")
+    def _neutron_correction_factors(self):
+        """
+        Implements the correction factor figure
+        """
+        temp_path = self.temp_handler.store_figure(
+            name="correction_factors_figure",
+            topic=FigureTopic.NEUTRONS,
+        )
+        correction_factors_figure(
+            data_frame=self.data_frame,
+            station_name=self.sensor_info.name,
+            pressure_corr_col=str(ColumnInfo.Name.PRESSURE_CORRECTION),
+            humidity_corr_col=str(ColumnInfo.Name.HUMIDITY_CORRECTION),
+            intensity_corr_col=str(ColumnInfo.Name.INTENSITY_CORRECTION),
+            biomass_corr_col=str(
+                ColumnInfo.Name.ABOVEGROUND_BIOMASS_CORRECTION
+            ),
+            show=self.show_figures,
+            backend=self.backend,
             save_location=temp_path,
         )
 

@@ -54,7 +54,6 @@ class SensorInfo(BaseConfig):
         gt=0, description="The N0 calibration term.", default=None
     )
     beta_coefficient: Optional[float] = Field(default=None)
-    l_coefficient: Optional[float] = Field(default=None)
     mean_pressure: Optional[float] = Field(default=None)
 
 
@@ -94,7 +93,10 @@ class Temporal(BaseConfig):
     input_resolution: str = Field(default="1hour")
     output_resolution: str = Field(default=None)
     align_timestamps: bool = Field(default=False)
-    alignment_method: str = Field(default="time")
+    alignment_method: str | None = Field(default="time")
+    aggregate_method: str | None = Field(default="bagg")
+    aggregate_func: str | None = Field(default="mean")
+    aggregate_maxna_fraction: float | None = Field(default=0.5)
 
 
 class TimeSeriesData(BaseConfig):

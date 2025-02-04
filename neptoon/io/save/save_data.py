@@ -282,19 +282,20 @@ class SaveAndArchiveOutputs:
         figure_folder = self.full_folder_location / "figures"
         figure_folder.mkdir(parents=True, exist_ok=True)
         for figure in figure_metadata:
-
-            dest = figure_folder / f"{figure.name}.png"
-            shutil.copy2(figure.path, dest)
+            try:
+                dest = figure_folder / f"{figure.name}.png"
+                shutil.copy2(figure.path, dest)
+            except FileNotFoundError as err:
+                message = f"{figure.name} not found: {err}."
+                core_logger.error(message)
 
     def _update_sensor_info(
         self,
         fields_to_check: List[str] = [
             "beta_coefficient",
-            "l_coefficient",
             "mean_pressure",
         ],
         beta_col=str(ColumnInfo.Name.BETA_COEFFICIENT),
-        l_coeff_col=str(ColumnInfo.Name.L_COEFFICIENT),
         mean_press_col=str(ColumnInfo.Name.MEAN_PRESSURE),
     ):
         """
@@ -308,9 +309,6 @@ class SaveAndArchiveOutputs:
         beta_col : str, optional
             Beta Coefficient column name, by default
             str(ColumnInfo.Name.BETA_COEFFICIENT)
-        l_coeff_col : str, optional
-            l coefficient column name, by default
-            str(ColumnInfo.Name.L_COEFFICIENT)
         mean_press_col : str, optional
             mean pressure column name, by default
             str(ColumnInfo.Name.MEAN_PRESSURE)
@@ -326,12 +324,6 @@ class SaveAndArchiveOutputs:
         ):
             beta_coeff = self.processed_data_frame[beta_col].iloc[0]
             self.sensor_info.beta_coefficient = round(beta_coeff, 4)
-        if (
-            l_coeff_col in self.processed_data_frame.columns
-            and "l_coefficient" in missing_fields
-        ):
-            l_coeff = self.processed_data_frame[l_coeff_col].iloc[0]
-            self.sensor_info.l_coefficient = round(l_coeff, 4)
         if (
             mean_press_col in self.processed_data_frame.columns
             and "mean_pressure" in missing_fields
