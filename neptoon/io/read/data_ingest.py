@@ -1600,11 +1600,13 @@ class FormatDataForCRNSDataHub:
                 * self.config.conversion_factor_to_counts_per_hour
             )
         elif epi_neutron_unit == "counts_per_second":
-            seconds_in_period = self.config.input_resolution.total_seconds()
+            period_seconds = self.config.input_resolution.total_seconds()
             self.data_frame[final_column_name] = (
                 self.data_frame[raw_column_name] * 3600
             )
-            self.data_frame[raw_column_name] * seconds_in_period
+            self.data_frame[raw_column_name] = (
+                self.data_frame[raw_column_name] * period_seconds
+            )
 
     def align_time_stamps(
         self,

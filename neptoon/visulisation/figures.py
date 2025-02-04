@@ -442,7 +442,6 @@ def correction_factors_figure(
     """
     Creates a figure showing correction factors applied to CRNS data.
 
-
     Parameters
     ----------
     data_frame : pd.DataFrame
