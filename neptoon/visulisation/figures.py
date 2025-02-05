@@ -27,7 +27,7 @@ def validate_columns_present(
 
 def make_nmdb_data_figure(
     data_frame: pd.DataFrame,
-    station_name: str,
+    # nmdb_station_name: str,
     reference_value: int,
     incoming_neutron_col_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
     resolution: int = 60,
@@ -42,8 +42,8 @@ def make_nmdb_data_figure(
     ----------
     data_frame : pd.DataFrame
         DataFrame containing data
-    station_name : str
-        Station name
+    nmdb_station_name : str
+        NMDB station name
     reference_value : int
         reference value
     resolution : int, optional
@@ -79,8 +79,8 @@ def make_nmdb_data_figure(
         ax.plot(
             data_frame.index,
             data_frame[incoming_neutron_col_name],
-            label="Station {:}, resolution: {:} minutes".format(
-                station_name,
+            label="Resolution: {:} minutes".format(
+                # nmdb_station_name,
                 resolution,
             ),
         )
