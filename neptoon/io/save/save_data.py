@@ -6,7 +6,7 @@ import shutil
 import json
 import yaml
 from typing import List
-from magazine import Publish, Magazine
+from magazine import Publish
 from neptoon.logging import get_logger
 from neptoon.data_audit import DataAuditLog
 from neptoon.config.configuration_input import SensorInfo, SensorConfig
