@@ -263,7 +263,7 @@ class FigureHandler:
 
         make_nmdb_data_figure(
             data_frame=self.data_frame,
-            station_name=self.sensor_info.name,
+            # nmdb_station_name=self.sensor_info.name,
             reference_value=reference_value,
             incoming_neutron_col_name=str(
                 ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY

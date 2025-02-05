@@ -321,6 +321,7 @@ class CalibrationConfig(BaseConfig):
 class DataStorageConfig(BaseConfig):
     save_folder: Optional[str] = Field(default=None)
     append_yaml_hash_to_folder_name: Optional[bool] = Field(default=False)
+    create_report: Optional[bool] = Field(default=False)
 
 
 class FiguresConfig(BaseConfig):

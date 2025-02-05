@@ -95,6 +95,7 @@ class CRNSDataHub:
         self._correction_builder = CorrectionBuilder()
         self.calibrator = None
         self.figure_creator = None
+        self.magazine_active = [Magazine.active if Magazine.active else False]
 
     @property
     def crns_data_frame(self):
@@ -193,6 +194,7 @@ class CRNSDataHub:
             core_logger.error(validation_error_message)
             print(validation_error_message)
 
+    @Magazine.reporting(topic="NMDB")
     def attach_nmdb_data(
         self,
         station="JUNG",
@@ -223,6 +225,12 @@ class CRNSDataHub:
             The resolution in minutes, by default "60"
         nmdb_table : str, optional
             The table to pull data from, by default "revori"
+
+        Report
+        ------
+        Neutron monitoring data was attached from NMDB.eu. The station
+        used was {station} at a resolution of {resolution} minutes. The
+        data table used was {nmdb_table}.
         """
         attacher = NMDBDataAttacher(
             data_frame=self.crns_data_frame, new_column_name=new_column_name
@@ -353,6 +361,7 @@ class CRNSDataHub:
         )
         self.crns_data_frame = uncertainty.add_neutron_uncertainty_columns()
 
+    @Magazine.reporting(topic="Data Preparation")
     def smooth_data(
         self,
         column_to_smooth: str,
@@ -382,6 +391,11 @@ class CRNSDataHub:
         column_to_smooth : str(ColumnInfo.Name.VALUE)
             The column in the crns_data_frame that needs to be smoothed.
             Automatically
+
+        Report
+        ------
+        Data smoothing was done on {column_to_smooth}. This was done
+        using {smooth_method} with a window of {window}.
         """
         series_to_smooth = pd.Series(self.crns_data_frame[column_to_smooth])
         smoother = SmoothData(
@@ -418,9 +432,9 @@ class CRNSDataHub:
         ------
         Calibration was undertaken. The N0 number was calculated as
         {n0}. From the samples, the average dry soil bulk density is
-        {site_avg_bulk_density}, the average soil organic carbon is
-        {site_avg_organic_carbon}, and the average lattice water content
-        is {site_avg_lattice_water}.
+        {avg_dry_soil_bulk_density}, the average soil organic carbon is
+        {avg_soil_organic_carbon}, and the average lattice water content
+        is {avg_lattice_water}.
         """
         if self.calibration_samples_data is None:
             message = "No calibration_samples_data found. Cannot calibrate."
@@ -436,31 +450,29 @@ class CRNSDataHub:
             time_series_data=self.crns_data_frame,
             config=config,
         )
-        n0 = self.calibrator.find_n0_value()
-        site_avg_bulk_density = (
+        n0 = int(self.calibrator.find_n0_value())
+        avg_dry_soil_bulk_density = round(
             self.calibrator.calibrator.calib_data_object.list_of_profiles[
                 0
-            ].site_avg_bulk_density
+            ].site_avg_bulk_density,
+            4,
         )
-        site_avg_organic_carbon = (
+        avg_soil_organic_carbon = round(
             self.calibrator.calibrator.calib_data_object.list_of_profiles[
                 0
-            ].site_avg_organic_carbon
+            ].site_avg_organic_carbon,
+            4,
         )
-        site_avg_lattice_water = (
+        avg_lattice_water = round(
             self.calibrator.calibrator.calib_data_object.list_of_profiles[
                 0
-            ].site_avg_lattice_water
+            ].site_avg_lattice_water,
         )
-        self.sensor_info.N0 = int(n0)
-        self.sensor_info.avg_dry_soil_bulk_density = round(
-            site_avg_bulk_density, 4
-        )
-        self.sensor_info.avg_lattice_water = round(site_avg_lattice_water, 4)
-        self.sensor_info.avg_soil_organic_carbon = round(
-            site_avg_organic_carbon, 4
-        )
-        print(f"N0 number was calculated as {int(n0)}")
+        self.sensor_info.N0 = n0
+        self.sensor_info.avg_dry_soil_bulk_density = avg_dry_soil_bulk_density
+        self.sensor_info.avg_lattice_water = avg_lattice_water
+        self.sensor_info.avg_soil_organic_carbon = avg_soil_organic_carbon
+        print(f"N0 number was calculated as {n0}")
 
     @Magazine.reporting(topic="Soil Moisture")
     def produce_soil_moisture_estimates(
@@ -489,9 +501,11 @@ class CRNSDataHub:
 
         Report
         ------
-        When soil moisture was produced it was done using an n0 of
-        {default_params[n0]} and a bulk density of
-        {default_params[dry_soil_bulk_density]}.
+        Soil moisture was estimated using an n0 of {default_params[n0]},
+        a bulk density of {default_params[dry_soil_bulk_density]}, a
+        lattice water content of {default_params[lattice_water]}, and a
+        soil organic carbon content of
+        {default_params[soil_organic_carbon]}
         """
         # Create attributes for NeutronsToSM
         default_params = {
@@ -615,6 +629,10 @@ class CRNSDataHub:
             folder_name = self.sensor_info.name
         if save_folder_location is None:
             save_folder_location = Path.cwd()
+        if self.calibrator:
+            calib_df = self.calibrator.return_calibration_results_data_frame()
+        else:
+            calib_df = None
 
         self.saver = SaveAndArchiveOutputs(
             folder_name=folder_name,
@@ -627,5 +645,7 @@ class CRNSDataHub:
             custom_column_names_dict=custom_column_names_dict,
             append_time_stamp=append_time_stamp,
             figure_handler=self.figure_creator,
+            calib_df=calib_df,
+            magazine_active=self.magazine_active,
         )
         self.saver.save_outputs()

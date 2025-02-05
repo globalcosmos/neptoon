@@ -6,7 +6,7 @@ import shutil
 import json
 import yaml
 from typing import List
-
+from magazine import Publish
 from neptoon.logging import get_logger
 from neptoon.data_audit import DataAuditLog
 from neptoon.config.configuration_input import SensorInfo, SensorConfig
@@ -40,6 +40,8 @@ class SaveAndArchiveOutputs:
         custom_column_names_dict: dict = None,
         append_time_stamp: bool = True,
         figure_handler: FigureHandler = None,
+        calib_df=None,
+        magazine_active: bool = False,
     ):
         """
         Attributes
@@ -83,6 +85,8 @@ class SaveAndArchiveOutputs:
         self.append_time_stamp = append_time_stamp
         self.full_folder_location = None
         self.figure_handler = figure_handler
+        self.calib_df = calib_df
+        self.magazine_active = magazine_active
 
     def _validate_save_folder(
         self,
@@ -331,9 +335,48 @@ class SaveAndArchiveOutputs:
             mean_pressure = self.processed_data_frame[mean_press_col].iloc[0]
             self.sensor_info.mean_pressure = round(mean_pressure, 2)
 
+    def _save_pdf(self, location: Path | str):
+        """
+        Exports the pdf built using magazine to the save folder.
+
+        Parameters
+        ----------
+        location : Path
+            The Path to the folder where the pdf is saved
+        """
+        if self.magazine_active:
+            name = self.sensor_info.name
+            save_location = location / f"Report-{name}.pdf"
+            with Publish(str(save_location), f"{name} data") as pdf:
+                pdf.add_topic("Neutron Correction")
+                pdf.add_figure("Neutron Correction")
+                pdf.add_topic("NMDB")
+                pdf.add_figure("NMDB")
+                pdf.add_topic("Soil Moisture")
+                pdf.add_figure("Soil Moisture")
+                pdf.add_topic("Atmospheric Conditions")
+                pdf.add_figure("Atmospheric Conditions")
+                pdf.add_topic("Calibration")
+                pdf.add_figure("Calibration")
+                pdf.add_topic("Data Preparation")
+                pdf.add_figure("Data Preparation")
+
+    def save_data_frames(self, file_name):
+        """
+        Saves various data frames as .csv files.
+        """
+        data_folder = self.full_folder_location / "data"
+        data_folder.mkdir()
+        self.processed_data_frame.to_csv(
+            data_folder / f"{file_name}_processed_data.csv"
+        )
+        self.flag_data_frame.to_csv(data_folder / f"{file_name}_flags.csv")
+        if self.calib_df is not None:
+            self.calib_df.to_csv(data_folder / f"{file_name}_calibration.csv")
+
     def save_outputs(
         self,
-        nan_bad_data: bool = True,
+        # nan_bad_data: bool = True,
         use_custom_column_names: bool = False,
     ):
         """
@@ -360,20 +403,13 @@ class SaveAndArchiveOutputs:
                 raise ValueError
         file_name = self.sensor_info.name
         self.create_save_folder()
-        if nan_bad_data:
-            self.processed_data_frame = self.mask_bad_data()
-        self.processed_data_frame.to_csv(
-            (
-                self.full_folder_location
-                / f"{file_name}_processed_time_series.csv"
-            )
-        )
-        self.flag_data_frame.to_csv(
-            (self.full_folder_location / f"{file_name}_flag_data_frame.csv")
-        )
+        # if nan_bad_data:
+        #     self.processed_data_frame = self.mask_bad_data() ########
+        self.save_data_frames(file_name=file_name)
         if self.figure_handler:
             self._save_figures()
         self._update_sensor_info()
+        self._save_pdf(location=self.full_folder_location)
 
         self.close_and_save_data_audit_log(
             append_hash=self.append_yaml_hash_to_folder_name
