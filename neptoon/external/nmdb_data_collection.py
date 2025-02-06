@@ -13,6 +13,24 @@ from neptoon.logging import get_logger
 
 core_logger = get_logger()
 
+NMDB_REFERENCES = {
+    "JUNG": 161,
+    "SOPO": 308,
+    "OULU": 108,
+    "PSNM": 615,
+    "MXCO": 227,
+    "HRMS": 78,
+}
+
+NMDB_CUTOFF_RIGIDITIES = {
+    "JUNG": 4.49,
+    "SOPO": 0.0,
+    "OULU": 0.619,
+    "PSNM": 16.674,
+    "MXCO": 7.495,
+    "HRMS": 4.294,
+}
+
 
 class NMDBDataAttacher:
     """
@@ -84,11 +102,22 @@ class NMDBDataAttacher:
         ValueError
             When index of the data is not Datetime an error occurs
         """
+        if self.config.reference_value is None:
+            if self.config.station not in list(NMDB_REFERENCES.keys()):
+                message = (
+                    "NMDB station not supported for automatic "
+                    "reference creation. Please choose one of: \n"
+                    f"{list(NMDB_REFERENCES.keys())}"
+                )
+                core_logger.error(message)
+                raise ValueError(message)
+            else:
+                self.config.reference_value = NMDB_REFERENCES[
+                    self.config.station
+                ]
+
         if not isinstance(self.tmp_data.index, pd.DatetimeIndex):
             raise ValueError("DataFrame source must have a DatetimeIndex.")
-
-        if self.config.reference_value is None:
-            self.config.reference_value = self.tmp_data["count"].iloc[0]
 
         mapped_data = self.tmp_data["count"].reindex(
             self.data_frame.index, method="nearest"
@@ -97,6 +126,13 @@ class NMDBDataAttacher:
         self.data_frame[
             str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE)
         ] = self.config.reference_value
+
+        self.data_frame[str(ColumnInfo.Name.NMDB_REFERENCE_STATION)] = (
+            self.config.station
+        )
+        self.data_frame[
+            str(ColumnInfo.Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY)
+        ] = NMDB_CUTOFF_RIGIDITIES[self.config.station]
 
     def return_data_frame(self):
         """
@@ -538,12 +574,17 @@ class DataFetcher:
             f"&tabchoice={self.config.nmdb_table}"
             f"&dtype=corr_for_efficiency"
             f"&tresolution={self.config.resolution}"
-            f"&force=1&yunits=0&date_choice=bydate"
+            f"&yunits=0&date_choice=bydate"
             f"&start_day={sd}&start_month={sm}&start_year={sy}"
             f"&start_hour=0&start_min=0&end_day={ed}&end_month={em}"
             f"&end_year={ey}&end_hour=23&end_min=59&output=ascii"
         )
+        print(url)
         return url
+
+    #     http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]=KERG&output=ascii&tabchoice=ori&dtype=corr_for_efficiency&date_choice=bydate
+    # &start_year=2009&start_month=09&start_day=01&start_hour=00&start_min=00&end_year=2009
+    # &end_month=09&end_day=05&end_hour=23&end_min=59&yunits=0
 
     def fetch_data_http(self):
         """

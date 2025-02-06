@@ -70,6 +70,7 @@ class ColumnInfo:
         REFERENCE_INCOMING_NEUTRON_VALUE = auto()
         SITE_CUTOFF_RIGIDITY = auto()
         REFERENCE_MONITOR_CUTOFF_RIGIDITY = auto()
+        NMDB_REFERENCE_STATION = auto()
         RC_CORRECTION_FACTOR = auto()
         DRY_SOIL_BULK_DENSITY = auto()
         LATTICE_WATER = auto()
@@ -125,6 +126,7 @@ class ColumnInfo:
         Name.REFERENCE_INCOMING_NEUTRON_VALUE: "reference_incoming_neutron_value",
         Name.SITE_CUTOFF_RIGIDITY: "site_cutoff_rigidity",
         Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY: "reference_monitor_cutoff_rigidity",
+        Name.NMDB_REFERENCE_STATION: "nmdb_reference_station",
         Name.RC_CORRECTION_FACTOR: "rc_correction_factor",
         Name.DRY_SOIL_BULK_DENSITY: "dry_soil_bulk_density",
         Name.LATTICE_WATER: "lattice_water",

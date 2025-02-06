@@ -198,10 +198,10 @@ class CRNSDataHub:
     def attach_nmdb_data(
         self,
         station="JUNG",
-        reference_value=None,
         new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
         resolution="60",
         nmdb_table="revori",
+        reference_value=None,
     ):
         """
         Utilises the NMDBDataAttacher class to attach NMDB incoming
@@ -214,10 +214,6 @@ class CRNSDataHub:
         ----------
         station : str, optional
             The station to collect data from, by default "JUNG"
-        reference_value : int, optional
-            The reference value of the neutron monitor, if left as None
-            it will use the value from the first data point in the time
-            series.
         new_column_name : str, optional
             The name of the column were data will be written to, by
             default "incoming_neutron_intensity"
@@ -225,7 +221,10 @@ class CRNSDataHub:
             The resolution in minutes, by default "60"
         nmdb_table : str, optional
             The table to pull data from, by default "revori"
-
+        reference_value : int, optional
+            The reference value of the neutron monitor, if left as None
+            it will use the value from the first data point in the time
+            series.
         Report
         ------
         Neutron monitoring data was attached from NMDB.eu. The station

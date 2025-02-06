@@ -408,9 +408,6 @@ class IncomingRadiationCorrection(BaseModel):
         "mcjannet_desilets_2024",
     ] = Field(description="Incoming radiation correction method")
 
-    reference_value: float = Field(
-        description="Reference value for radiation correction", gt=0
-    )
     reference_neutron_monitor: ReferenceNeutronMonitor = Field(
         default_factory=ReferenceNeutronMonitor,
         description="Reference neutron monitor configuration",
