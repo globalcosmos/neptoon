@@ -579,12 +579,7 @@ class DataFetcher:
             f"&start_hour=0&start_min=0&end_day={ed}&end_month={em}"
             f"&end_year={ey}&end_hour=23&end_min=59&output=ascii"
         )
-        print(url)
         return url
-
-    #     http://nest.nmdb.eu/draw_graph.php?formchk=1&stations[]=KERG&output=ascii&tabchoice=ori&dtype=corr_for_efficiency&date_choice=bydate
-    # &start_year=2009&start_month=09&start_day=01&start_hour=00&start_min=00&end_year=2009
-    # &end_month=09&end_day=05&end_hour=23&end_min=59&yunits=0
 
     def fetch_data_http(self):
         """

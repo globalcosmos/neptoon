@@ -469,7 +469,8 @@ class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
                 "only 'JUNG' (Jungfraujoch) can be given as a reference station. \n"
                 f"{station_supplied} was given"
             )
-            raise ValueError()
+            core_logger.error(message)
+            raise ValueError(message)
 
     def _calc_rc_scale_param(self, data_frame):
         """
