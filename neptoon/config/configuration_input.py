@@ -54,7 +54,6 @@ class SensorInfo(BaseConfig):
         gt=0, description="The N0 calibration term.", default=None
     )
     beta_coefficient: Optional[float] = Field(default=None)
-    l_coefficient: Optional[float] = Field(default=None)
     mean_pressure: Optional[float] = Field(default=None)
 
 
@@ -94,7 +93,10 @@ class Temporal(BaseConfig):
     input_resolution: str = Field(default="1hour")
     output_resolution: str = Field(default=None)
     align_timestamps: bool = Field(default=False)
-    alignment_method: str = Field(default="time")
+    alignment_method: str | None = Field(default="time")
+    aggregate_method: str | None = Field(default="bagg")
+    aggregate_func: str | None = Field(default="mean")
+    aggregate_maxna_fraction: float | None = Field(default=0.5)
 
 
 class TimeSeriesData(BaseConfig):
@@ -319,6 +321,7 @@ class CalibrationConfig(BaseConfig):
 class DataStorageConfig(BaseConfig):
     save_folder: Optional[str] = Field(default=None)
     append_yaml_hash_to_folder_name: Optional[bool] = Field(default=False)
+    create_report: Optional[bool] = Field(default=False)
 
 
 class FiguresConfig(BaseConfig):
@@ -405,9 +408,6 @@ class IncomingRadiationCorrection(BaseModel):
         "mcjannet_desilets_2024",
     ] = Field(description="Incoming radiation correction method")
 
-    reference_value: float = Field(
-        description="Reference value for radiation correction", gt=0
-    )
     reference_neutron_monitor: ReferenceNeutronMonitor = Field(
         default_factory=ReferenceNeutronMonitor,
         description="Reference neutron monitor configuration",
@@ -483,9 +483,6 @@ class DataSmoothingConfig(BaseModel):
     smoothing parameters to be applied.
     """
 
-    smooth_raw_neutrons: bool = Field(
-        default=False, description="Apply smoothing to raw neutron counts"
-    )
     smooth_corrected_neutrons: bool = Field(
         default=True, description="Apply smoothing to corrected neutron counts"
     )

@@ -6,10 +6,14 @@ import shutil
 import json
 import yaml
 from typing import List
-
+from magazine import Publish, Magazine
 from neptoon.logging import get_logger
 from neptoon.data_audit import DataAuditLog
-from neptoon.config.configuration_input import SensorInfo, SensorConfig
+from neptoon.config.configuration_input import (
+    SensorInfo,
+    SensorConfig,
+    ProcessConfig,
+)
 from neptoon.utils.general_utils import validate_and_convert_file_path
 from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.columns import ColumnInfo
@@ -40,6 +44,8 @@ class SaveAndArchiveOutputs:
         custom_column_names_dict: dict = None,
         append_time_stamp: bool = True,
         figure_handler: FigureHandler = None,
+        calib_df=None,
+        magazine_active: bool = False,
     ):
         """
         Attributes
@@ -83,6 +89,8 @@ class SaveAndArchiveOutputs:
         self.append_time_stamp = append_time_stamp
         self.full_folder_location = None
         self.figure_handler = figure_handler
+        self.calib_df = calib_df
+        self.magazine_active = magazine_active
 
     def _validate_save_folder(
         self,
@@ -282,19 +290,20 @@ class SaveAndArchiveOutputs:
         figure_folder = self.full_folder_location / "figures"
         figure_folder.mkdir(parents=True, exist_ok=True)
         for figure in figure_metadata:
-
-            dest = figure_folder / f"{figure.name}.png"
-            shutil.copy2(figure.path, dest)
+            try:
+                dest = figure_folder / f"{figure.name}.png"
+                shutil.copy2(figure.path, dest)
+            except FileNotFoundError as err:
+                message = f"{figure.name} not found: {err}."
+                core_logger.error(message)
 
     def _update_sensor_info(
         self,
         fields_to_check: List[str] = [
             "beta_coefficient",
-            "l_coefficient",
             "mean_pressure",
         ],
         beta_col=str(ColumnInfo.Name.BETA_COEFFICIENT),
-        l_coeff_col=str(ColumnInfo.Name.L_COEFFICIENT),
         mean_press_col=str(ColumnInfo.Name.MEAN_PRESSURE),
     ):
         """
@@ -308,9 +317,6 @@ class SaveAndArchiveOutputs:
         beta_col : str, optional
             Beta Coefficient column name, by default
             str(ColumnInfo.Name.BETA_COEFFICIENT)
-        l_coeff_col : str, optional
-            l coefficient column name, by default
-            str(ColumnInfo.Name.L_COEFFICIENT)
         mean_press_col : str, optional
             mean pressure column name, by default
             str(ColumnInfo.Name.MEAN_PRESSURE)
@@ -327,21 +333,53 @@ class SaveAndArchiveOutputs:
             beta_coeff = self.processed_data_frame[beta_col].iloc[0]
             self.sensor_info.beta_coefficient = round(beta_coeff, 4)
         if (
-            l_coeff_col in self.processed_data_frame.columns
-            and "l_coefficient" in missing_fields
-        ):
-            l_coeff = self.processed_data_frame[l_coeff_col].iloc[0]
-            self.sensor_info.l_coefficient = round(l_coeff, 4)
-        if (
             mean_press_col in self.processed_data_frame.columns
             and "mean_pressure" in missing_fields
         ):
             mean_pressure = self.processed_data_frame[mean_press_col].iloc[0]
             self.sensor_info.mean_pressure = round(mean_pressure, 2)
 
+    def _save_pdf(self, location: Path | str):
+        """
+        Exports the pdf built using magazine to the save folder.
+
+        Parameters
+        ----------
+        location : Path
+            The Path to the folder where the pdf is saved
+        """
+        if self.magazine_active:
+            name = self.sensor_info.name
+            save_location = location / f"Report-{name}.pdf"
+            with Publish(str(save_location), f"{name} data") as pdf:
+                pdf.add_topic("Neutron Correction")
+                pdf.add_figure("Neutron Correction")
+                pdf.add_topic("NMDB")
+                pdf.add_figure("NMDB")
+                pdf.add_topic("Soil Moisture")
+                pdf.add_figure("Soil Moisture")
+                pdf.add_topic("Atmospheric Conditions")
+                pdf.add_figure("Atmospheric Conditions")
+                pdf.add_topic("Calibration")
+                pdf.add_figure("Calibration")
+                pdf.add_topic("Data Preparation")
+                pdf.add_figure("Data Preparation")
+
+    def save_data_frames(self, file_name):
+        """
+        Saves various data frames as .csv files.
+        """
+        data_folder = self.full_folder_location / "data"
+        data_folder.mkdir()
+        self.processed_data_frame.to_csv(
+            data_folder / f"{file_name}_processed_data.csv"
+        )
+        self.flag_data_frame.to_csv(data_folder / f"{file_name}_flags.csv")
+        if self.calib_df is not None:
+            self.calib_df.to_csv(data_folder / f"{file_name}_calibration.csv")
+
     def save_outputs(
         self,
-        nan_bad_data: bool = True,
         use_custom_column_names: bool = False,
     ):
         """
@@ -368,21 +406,12 @@ class SaveAndArchiveOutputs:
                 raise ValueError
         file_name = self.sensor_info.name
         self.create_save_folder()
-        if nan_bad_data:
-            self.processed_data_frame = self.mask_bad_data()
-        self.processed_data_frame.to_csv(
-            (
-                self.full_folder_location
-                / f"{file_name}_processed_time_series.csv"
-            )
-        )
-        self.flag_data_frame.to_csv(
-            (self.full_folder_location / f"{file_name}_flag_data_frame.csv")
-        )
+        self.save_data_frames(file_name=file_name)
         if self.figure_handler:
             self._save_figures()
         self._update_sensor_info()
-
+        if Magazine.active:
+            self._save_pdf(location=self.full_folder_location)
         self.close_and_save_data_audit_log(
             append_hash=self.append_yaml_hash_to_folder_name
         )
@@ -403,10 +432,10 @@ class YamlSaver:
     def __init__(
         self,
         save_folder_location: Path | str,
-        sensor_config: SensorConfig,
+        config: SensorConfig,
     ):
         self.save_folder_location = save_folder_location
-        self.sensor_config = sensor_config
+        self.config = config
 
     def save(
         self,
@@ -414,10 +443,15 @@ class YamlSaver:
         """
         Convert a Pydantic model to YAML and save it to a file.
         """
-        save_location = (
-            self.save_folder_location / "updated_sensor_config.yaml"
-        )
-        json_str = self.sensor_config.model_dump_json()
+        if isinstance(self.config, SensorConfig):
+            save_location = (
+                self.save_folder_location / "updated_sensor_config.yaml"
+            )
+        if isinstance(self.config, ProcessConfig):
+            save_location = (
+                self.save_folder_location / "updated_process_config.yaml"
+            )
+        json_str = self.config.model_dump_json()
         data = json.loads(json_str)
 
         yaml_str = yaml.safe_dump(

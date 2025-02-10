@@ -369,13 +369,6 @@ def test_correction_factory_intensity_hawdon(
     assert tmp_corr.correction_factor_column_name is str(
         ColumnInfo.Name.INTENSITY_CORRECTION
     )
-    df_with_ref_monitor_output = tmp_corr.apply(df_with_ref_monitor)
-    df_without_ref_monitor_output = tmp_corr.apply(df_without_ref_monitor)
-    with pytest.raises(AssertionError):
-        pd.testing.assert_frame_equal(
-            df_with_ref_monitor_output, df_without_ref_monitor_output
-        )
-    tmp_corr._check_if_ref_monitor_supplied
 
 
 @pytest.fixture
@@ -416,6 +409,13 @@ def df_lat_and_elevation():
                 600,
                 600,
                 600,
+            ],
+            str(ColumnInfo.Name.NMDB_REFERENCE_STATION): [
+                "JUNG",
+                "JUNG",
+                "JUNG",
+                "JUNG",
+                "JUNG",
             ],
         }
     )
@@ -464,22 +464,6 @@ def test_correction_factory_intensity_mcjannet_desilets_error(
     with pytest.raises(ValueError):
         df = tmp_corr.apply(df_with_ref_monitor)
         return df
-
-
-def test_check_if_ref_monitor_supplied(
-    df_with_ref_monitor,
-    df_without_ref_monitor,
-):
-    factory = CorrectionFactory()
-    tmp_corr = factory.create_correction(
-        correction_type=CorrectionType.INCOMING_INTENSITY,
-        correction_theory=CorrectionTheory.HAWDON_2014,
-    )
-    tmp_corr._check_if_ref_monitor_supplied(df_without_ref_monitor)
-    assert tmp_corr.ref_monitor_missing
-    tmp_corr._check_if_ref_monitor_supplied(df_with_ref_monitor)
-    with pytest.raises(AssertionError):
-        assert tmp_corr.ref_monitor_missing
 
 
 def test_correction_factory_pressure():

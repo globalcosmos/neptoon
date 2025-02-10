@@ -31,17 +31,38 @@ core_logger = get_logger()
 
 
 class ProcessWithYaml:
+    """Process data using YAML config files."""
 
     def __init__(
         self,
         configuration_object: ConfigurationManager,
-        # run_with_data_audit_log: bool = True,
     ):
         self.configuration_object = configuration_object
-        # self.run_with_data_audit_log = run_with_data_audit_log
         self.process_config = self._get_config_object(wanted_object="process")
         self.sensor_config = self._get_config_object(wanted_object="sensor")
         self.data_hub = None
+
+    def _safely_get_config(
+        self, wanted_object: Literal["sensor", "processing"]
+    ):
+        """
+        Safely retrieve configuration object with error handling.
+
+        Parameters
+        ----------
+        wanted_object : Literal["sensor", "processing"]
+            The type of configuration object to retrieve
+
+        Returns
+        -------
+        Optional[object]
+            The configuration object if found, None otherwise
+        """
+        try:
+            return self.configuration_object.get_config(name=wanted_object)
+        except (AttributeError, KeyError):
+            core_logger.info(f"Configuration for {wanted_object} not found. ")
+            return None
 
     def _get_config_object(
         self,
@@ -61,7 +82,7 @@ class ProcessWithYaml:
         ConfigurationObject
             The required configuration object.
         """
-        return self.configuration_object.get_config(name=wanted_object)
+        return self._safely_get_config(wanted_object)
 
     def _parse_raw_data(
         self,
@@ -118,7 +139,6 @@ class ProcessWithYaml:
         self.input_formatter_config = InputDataFrameFormattingConfig()
         self.input_formatter_config.yaml_information = self.sensor_config
         self.input_formatter_config.build_from_yaml()
-        # date_time_column = self.input_formatter_config.
 
         data_formatter = FormatDataForCRNSDataHub(
             data_frame=self.raw_data_parsed,
@@ -162,7 +182,6 @@ class ProcessWithYaml:
         tmp = self.process_config.correction_steps.incoming_radiation
         self.data_hub.attach_nmdb_data(
             station=tmp.reference_neutron_monitor.station,
-            reference_value=tmp.reference_value,
             new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
             resolution=tmp.reference_neutron_monitor.resolution,
             nmdb_table=tmp.reference_neutron_monitor.nmdb_table,
@@ -290,11 +309,16 @@ class ProcessWithYaml:
             )
 
     def _yaml_saver(self):
-        yaml_saver = YamlSaver(
+        sensor_yaml_saver = YamlSaver(
             save_folder_location=self.data_hub.saver.full_folder_location,
-            sensor_config=self.sensor_config,
+            config=self.sensor_config,
         )
-        yaml_saver.save()
+        sensor_yaml_saver.save()
+        process_yaml_saver = YamlSaver(
+            save_folder_location=self.data_hub.saver.full_folder_location,
+            config=self.process_config,
+        )
+        process_yaml_saver.save()
 
     def _save_data(
         self,
@@ -304,13 +328,16 @@ class ProcessWithYaml:
         """
         file_name = self.sensor_config.sensor_info.name
         try:
-            initial_folder_str = self.sensor_config.data_storage.save_folder
-        except AttributeError:
+            initial_folder_str = Path(
+                self.sensor_config.data_storage.save_folder
+            )
+        except TypeError:
             initial_folder_str = None
             message = (
                 "No data storage location available in config. Using cwd()"
             )
             core_logger.info(message)
+
         folder = (
             Path.cwd()
             if initial_folder_str is None
@@ -328,7 +355,9 @@ class ProcessWithYaml:
     def _calibrate_data(
         self,
     ):
-        """Calibrates the sensor when this is selected."""
+        """
+        Calibrates the sensor when this is selected.
+        """
         calib_df_path = validate_and_convert_file_path(
             file_path=self.sensor_config.calibration.location
         )
@@ -390,15 +419,23 @@ class ProcessWithYaml:
     def _smooth_data(
         self,
         column_to_smooth,
-        # smoothing_algo,
-        # window=12,
-        # polyorder=None,
     ):
+        """
+        Smoothing data.
+
+        Parameters
+        ----------
+        column_to_smooth : str
+            Column to smooth
+        """
+        smooth_method = self.process_config.data_smoothing.settings.algorithm
+        window = self.process_config.data_smoothing.settings.window
+        poly_order = self.process_config.data_smoothing.settings.poly_order
         self.data_hub.smooth_data(
             column_to_smooth=column_to_smooth,
-            smooth_method=self.process_config.data_smoothing.settings.algorithm,
-            window=self.process_config.data_smoothing.settings.window,
-            poly_order=self.process_config.data_smoothing.settings.poly_order,
+            smooth_method=smooth_method,
+            window=window,
+            poly_order=poly_order,
         )
 
     def run_full_process(
@@ -412,6 +449,9 @@ class ProcessWithYaml:
         ValueError
             When no N0 supplied and no calibration completed.
         """
+        if self.sensor_config.data_storage.create_report:
+            Magazine.active = True
+
         self.create_data_hub(return_data_hub=False)
         self._attach_nmdb_data()
         self._prepare_static_values()
@@ -425,10 +465,6 @@ class ProcessWithYaml:
             partial_config=self.sensor_config.input_data_qa,
             name_of_target=None,
         )
-        if self.process_config.data_smoothing.smooth_raw_neutrons:
-            self._smooth_data(
-                column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL)
-            )
 
         self._select_corrections()
         self._correct_neutrons()
@@ -610,14 +646,14 @@ class CorrectionSelectorWithYaml:
         """
         Assigns the chosen pressure correction method.
 
-        Report
-        ------
-        The pressure correction method used was {tmp.method}.
-
         Raises
         ------
         ValueError
             Unknown correction method
+
+        Report
+        ------
+        The pressure correction method used was {tmp.method}.
         """
         tmp = self.process_config.correction_steps.air_pressure
         if tmp.method is None or str(tmp.method).lower() == "none":
@@ -636,6 +672,7 @@ class CorrectionSelectorWithYaml:
             core_logger.error(message)
             raise ValueError(message)
 
+    @Magazine.reporting(topic="Neutron Correction")
     def _humidity_correction(self):
         """
         Assigns the chosen humidity correction method.
@@ -644,6 +681,10 @@ class CorrectionSelectorWithYaml:
         ------
         ValueError
             Unknown correction method
+
+        Report
+        ------
+        The humidity correction was {tmp.method}.
         """
         tmp = self.process_config.correction_steps.air_humidity
         if tmp.method is None or str(tmp.method).lower() == "none":
@@ -661,6 +702,7 @@ class CorrectionSelectorWithYaml:
             core_logger.error(message)
             raise ValueError(message)
 
+    @Magazine.reporting(topic="Neutron Correction")
     def _incoming_intensity_correction(self):
         """
         Assigns the chosen incoming intensity correction method.
@@ -669,6 +711,10 @@ class CorrectionSelectorWithYaml:
         ------
         ValueError
             Unknown correction method
+
+        Report
+        ------
+        The incoming intensity correction was {tmp.method}.
         """
         tmp = self.process_config.correction_steps.incoming_radiation
 

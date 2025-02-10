@@ -29,7 +29,6 @@ from .theory.neutrons_to_soil_moisture import (
 )
 
 from .theory.pressure_corrections import (
-    calc_pressure_correction_l_coeff,
     calc_pressure_correction_beta_coeff,
     calc_mean_pressure,
     calc_beta_coefficient,
