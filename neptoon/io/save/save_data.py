@@ -9,7 +9,11 @@ from typing import List
 from magazine import Publish
 from neptoon.logging import get_logger
 from neptoon.data_audit import DataAuditLog
-from neptoon.config.configuration_input import SensorInfo, SensorConfig
+from neptoon.config.configuration_input import (
+    SensorInfo,
+    SensorConfig,
+    ProcessConfig,
+)
 from neptoon.utils.general_utils import validate_and_convert_file_path
 from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.columns import ColumnInfo
@@ -431,10 +435,10 @@ class YamlSaver:
     def __init__(
         self,
         save_folder_location: Path | str,
-        sensor_config: SensorConfig,
+        config: SensorConfig,
     ):
         self.save_folder_location = save_folder_location
-        self.sensor_config = sensor_config
+        self.config = config
 
     def save(
         self,
@@ -442,10 +446,15 @@ class YamlSaver:
         """
         Convert a Pydantic model to YAML and save it to a file.
         """
-        save_location = (
-            self.save_folder_location / "updated_sensor_config.yaml"
-        )
-        json_str = self.sensor_config.model_dump_json()
+        if isinstance(self.config, SensorConfig):
+            save_location = (
+                self.save_folder_location / "updated_sensor_config.yaml"
+            )
+        if isinstance(self.config, ProcessConfig):
+            save_location = (
+                self.save_folder_location / "updated_process_config.yaml"
+            )
+        json_str = self.config.model_dump_json()
         data = json.loads(json_str)
 
         yaml_str = yaml.safe_dump(

@@ -286,11 +286,16 @@ class ProcessWithYaml:
             )
 
     def _yaml_saver(self):
-        yaml_saver = YamlSaver(
+        sensor_yaml_saver = YamlSaver(
             save_folder_location=self.data_hub.saver.full_folder_location,
-            sensor_config=self.sensor_config,
+            config=self.sensor_config,
         )
-        yaml_saver.save()
+        sensor_yaml_saver.save()
+        process_yaml_saver = YamlSaver(
+            save_folder_location=self.data_hub.saver.full_folder_location,
+            config=self.process_config,
+        )
+        process_yaml_saver.save()
 
     def _save_data(
         self,
@@ -437,10 +442,6 @@ class ProcessWithYaml:
             partial_config=self.sensor_config.input_data_qa,
             name_of_target=None,
         )
-        if self.process_config.data_smoothing.smooth_raw_neutrons:
-            self._smooth_data(
-                column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL)
-            )
 
         self._select_corrections()
         self._correct_neutrons()

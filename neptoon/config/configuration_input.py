@@ -483,9 +483,6 @@ class DataSmoothingConfig(BaseModel):
     smoothing parameters to be applied.
     """
 
-    smooth_raw_neutrons: bool = Field(
-        default=False, description="Apply smoothing to raw neutron counts"
-    )
     smooth_corrected_neutrons: bool = Field(
         default=True, description="Apply smoothing to corrected neutron counts"
     )

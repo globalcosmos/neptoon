@@ -19,7 +19,9 @@ NMDB_REFERENCES = {
     "OULU": 108,
     "PSNM": 615,
     "MXCO": 227,
-    "HRMS": 78,
+    "AATA": 157,
+    "INVK": 111,
+    "KIEL": 166,
 }
 
 NMDB_CUTOFF_RIGIDITIES = {
@@ -28,7 +30,9 @@ NMDB_CUTOFF_RIGIDITIES = {
     "OULU": 0.619,
     "PSNM": 16.674,
     "MXCO": 7.495,
-    "HRMS": 4.294,
+    "AATA": 6.018,
+    "INVK": 0.186,
+    "KIEL": 2.383,
 }
 
 

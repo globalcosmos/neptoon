@@ -167,12 +167,12 @@ class FigureHandler:
                 str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER),
             ],
         ),
-        "soil_moisture_coloured": FigureMetadata(
-            topic=FigureTopic.SOIL_MOISTURE,
-            description="Soil moisture time series with colour filling",
-            method="_soil_moisture_colour",
-            required_columns=[str(ColumnInfo.Name.SOIL_MOISTURE_FINAL)],
-        ),
+        # "soil_moisture_coloured": FigureMetadata(
+        #     topic=FigureTopic.SOIL_MOISTURE,
+        #     description="Soil moisture time series with colour filling",
+        #     method="_soil_moisture_colour",
+        #     required_columns=[str(ColumnInfo.Name.SOIL_MOISTURE_FINAL)],
+        # ),
         "atmospheric_variables": FigureMetadata(
             topic=FigureTopic.ATMOSPHERIC,
             description="Atmospheric variables.",
