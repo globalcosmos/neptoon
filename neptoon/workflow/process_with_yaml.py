@@ -31,6 +31,7 @@ core_logger = get_logger()
 
 
 class ProcessWithYaml:
+    """Process data using YAML config files."""
 
     def __init__(
         self,
@@ -40,6 +41,28 @@ class ProcessWithYaml:
         self.process_config = self._get_config_object(wanted_object="process")
         self.sensor_config = self._get_config_object(wanted_object="sensor")
         self.data_hub = None
+
+    def _safely_get_config(
+        self, wanted_object: Literal["sensor", "processing"]
+    ):
+        """
+        Safely retrieve configuration object with error handling.
+
+        Parameters
+        ----------
+        wanted_object : Literal["sensor", "processing"]
+            The type of configuration object to retrieve
+
+        Returns
+        -------
+        Optional[object]
+            The configuration object if found, None otherwise
+        """
+        try:
+            return self.configuration_object.get_config(name=wanted_object)
+        except (AttributeError, KeyError):
+            core_logger.info(f"Configuration for {wanted_object} not found. ")
+            return None
 
     def _get_config_object(
         self,
@@ -59,7 +82,7 @@ class ProcessWithYaml:
         ConfigurationObject
             The required configuration object.
         """
-        return self.configuration_object.get_config(name=wanted_object)
+        return self._safely_get_config(wanted_object)
 
     def _parse_raw_data(
         self,
@@ -159,7 +182,6 @@ class ProcessWithYaml:
         tmp = self.process_config.correction_steps.incoming_radiation
         self.data_hub.attach_nmdb_data(
             station=tmp.reference_neutron_monitor.station,
-            reference_value=tmp.reference_value,
             new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
             resolution=tmp.reference_neutron_monitor.resolution,
             nmdb_table=tmp.reference_neutron_monitor.nmdb_table,
@@ -287,11 +309,16 @@ class ProcessWithYaml:
             )
 
     def _yaml_saver(self):
-        yaml_saver = YamlSaver(
+        sensor_yaml_saver = YamlSaver(
             save_folder_location=self.data_hub.saver.full_folder_location,
-            sensor_config=self.sensor_config,
+            config=self.sensor_config,
         )
-        yaml_saver.save()
+        sensor_yaml_saver.save()
+        process_yaml_saver = YamlSaver(
+            save_folder_location=self.data_hub.saver.full_folder_location,
+            config=self.process_config,
+        )
+        process_yaml_saver.save()
 
     def _save_data(
         self,
@@ -438,10 +465,6 @@ class ProcessWithYaml:
             partial_config=self.sensor_config.input_data_qa,
             name_of_target=None,
         )
-        if self.process_config.data_smoothing.smooth_raw_neutrons:
-            self._smooth_data(
-                column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL)
-            )
 
         self._select_corrections()
         self._correct_neutrons()

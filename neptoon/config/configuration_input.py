@@ -408,9 +408,6 @@ class IncomingRadiationCorrection(BaseModel):
         "mcjannet_desilets_2024",
     ] = Field(description="Incoming radiation correction method")
 
-    reference_value: float = Field(
-        description="Reference value for radiation correction", gt=0
-    )
     reference_neutron_monitor: ReferenceNeutronMonitor = Field(
         default_factory=ReferenceNeutronMonitor,
         description="Reference neutron monitor configuration",
@@ -486,9 +483,6 @@ class DataSmoothingConfig(BaseModel):
     smoothing parameters to be applied.
     """
 
-    smooth_raw_neutrons: bool = Field(
-        default=False, description="Apply smoothing to raw neutron counts"
-    )
     smooth_corrected_neutrons: bool = Field(
         default=True, description="Apply smoothing to corrected neutron counts"
     )
