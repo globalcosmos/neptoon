@@ -410,7 +410,7 @@ class SaveAndArchiveOutputs:
         if self.figure_handler:
             self._save_figures()
         self._update_sensor_info()
-        if Magazine.active == True:
+        if Magazine.active:
             self._save_pdf(location=self.full_folder_location)
         self.close_and_save_data_audit_log(
             append_hash=self.append_yaml_hash_to_folder_name
