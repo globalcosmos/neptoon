@@ -6,7 +6,7 @@ import shutil
 import json
 import yaml
 from typing import List
-from magazine import Publish
+from magazine import Publish, Magazine
 from neptoon.logging import get_logger
 from neptoon.data_audit import DataAuditLog
 from neptoon.config.configuration_input import (
@@ -380,7 +380,6 @@ class SaveAndArchiveOutputs:
 
     def save_outputs(
         self,
-        # nan_bad_data: bool = True,
         use_custom_column_names: bool = False,
     ):
         """
@@ -407,14 +406,12 @@ class SaveAndArchiveOutputs:
                 raise ValueError
         file_name = self.sensor_info.name
         self.create_save_folder()
-        # if nan_bad_data:
-        #     self.processed_data_frame = self.mask_bad_data() ########
         self.save_data_frames(file_name=file_name)
         if self.figure_handler:
             self._save_figures()
         self._update_sensor_info()
-        self._save_pdf(location=self.full_folder_location)
-
+        if Magazine.active == True:
+            self._save_pdf(location=self.full_folder_location)
         self.close_and_save_data_audit_log(
             append_hash=self.append_yaml_hash_to_folder_name
         )

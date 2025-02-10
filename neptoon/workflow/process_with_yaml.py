@@ -31,6 +31,7 @@ core_logger = get_logger()
 
 
 class ProcessWithYaml:
+    """Process data using YAML config files."""
 
     def __init__(
         self,
@@ -40,6 +41,28 @@ class ProcessWithYaml:
         self.process_config = self._get_config_object(wanted_object="process")
         self.sensor_config = self._get_config_object(wanted_object="sensor")
         self.data_hub = None
+
+    def _safely_get_config(
+        self, wanted_object: Literal["sensor", "processing"]
+    ):
+        """
+        Safely retrieve configuration object with error handling.
+
+        Parameters
+        ----------
+        wanted_object : Literal["sensor", "processing"]
+            The type of configuration object to retrieve
+
+        Returns
+        -------
+        Optional[object]
+            The configuration object if found, None otherwise
+        """
+        try:
+            return self.configuration_object.get_config(name=wanted_object)
+        except (AttributeError, KeyError):
+            core_logger.info(f"Configuration for {wanted_object} not found. ")
+            return None
 
     def _get_config_object(
         self,
@@ -59,7 +82,7 @@ class ProcessWithYaml:
         ConfigurationObject
             The required configuration object.
         """
-        return self.configuration_object.get_config(name=wanted_object)
+        return self._safely_get_config(wanted_object)
 
     def _parse_raw_data(
         self,
