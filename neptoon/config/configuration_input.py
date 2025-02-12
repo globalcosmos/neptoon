@@ -33,11 +33,11 @@ class SensorInfo(BaseConfig):
         description="The name of the site.",
         examples=["Sheepdrove", "Gatton"],
     )
-    country: str = Field(
+    country: Optional[str] = Field(
         description="The country the site is located in.",
         examples=["DEU", "UK", "USA", "KOR"],
     )
-    identifier: str = Field(
+    identifier: Optional[str] = Field(
         description="A unique identier",
         examples=["101", "456"],
     )

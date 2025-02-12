@@ -68,9 +68,10 @@ class CRNSDataHub:
         crns_data_frame : pd.DataFrame
             CRNS data in a dataframe format. It will be validated to
             ensure it has been formatted correctly.
-        configuration_manager : ConfigurationManager, optional
-            A ConfigurationManager instance storing configuration YAML
-            information, by default None
+        flags_data_frame : pd.DataFrame
+            A dataframe matching the crns_data_frame storing flag values
+        sensor_info : SensorInfo
+            Object storing information related to the sensor
         quality_assessor : SaQC
             SaQC object which is used for quality assessment. Used for
             the creation of flags to define poor data.
