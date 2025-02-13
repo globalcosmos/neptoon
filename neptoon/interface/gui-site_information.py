@@ -129,60 +129,83 @@ else:
     c1, c2 = st.columns(2)
 
     # Avg Lattice Water
-    c1.text_input(
+    c1.number_input(
         label="Avg Lattice Water",
         value=st.session_state[
             "yaml"
         ].sensor_config.sensor_info.avg_lattice_water,
         key="input_sensor_avg_lattice_water",
+        min_value=0.0,
+        max_value=0.5,
+        step=0.001,
     )
     # Avg soil organic carbon
-    c2.text_input(
-        label="Avg Lattice Water",
+    c2.number_input(
+        label="Avg Soil Organic Carbon",
         value=st.session_state[
             "yaml"
         ].sensor_config.sensor_info.avg_soil_organic_carbon,
         key="input_sensor_avg_soil_organic_carbon",
+        min_value=0.0,
+        max_value=0.5,
+        step=0.001,
     )
     # Avg dry_soil_bulk_density
-    c1.text_input(
+    c1.number_input(
         label="Avg dry_soil_bulk_density",
         value=st.session_state[
             "yaml"
         ].sensor_config.sensor_info.avg_dry_soil_bulk_density,
         key="input_sensor_avg_dry_soil_bulk_density",
+        min_value=0.1,
+        max_value=3.0,
+        step=0.01,
     )
     # mean_pressure
-    c2.text_input(
+    c2.number_input(
         label="Mean pressure",
         value=st.session_state["yaml"].sensor_config.sensor_info.mean_pressure,
         key="input_sensor_mean_pressure",
+        min_value=1.0,
+        max_value=1300.0,
+        step=0.1,
     )
     # beta_coefficient
-    c1.text_input(
+    c1.number_input(
         label="Beta coefficient",
         value=st.session_state[
             "yaml"
         ].sensor_config.sensor_info.beta_coefficient,
         key="input_sensor_beta_coefficient",
+        min_value=0.0,
+        max_value=1.0,
+        step=0.0001,
     )
     # Site_cutoff_rigidity
-    c2.text_input(
+    c2.number_input(
         label="Site cutoff rigidity",
         value=st.session_state[
             "yaml"
         ].sensor_config.sensor_info.site_cutoff_rigidity,
         key="input_sensor_site_cutoff_rigidity",
+        min_value=0.0,
+        max_value=19.0,
+        step=0.01,
     )
     # N0
-    c1.text_input(
+    c1.number_input(
         label="$N_0$",
         value=st.session_state["yaml"].sensor_config.sensor_info.N0,
         key="input_sensor_N0",
+        min_value=1,
+        max_value=100000,
+        step=1,
     )
     ################################
     st.subheader("3. Apply changes")
     ################################
+
+    from datetime import date, datetime
 
     if st.button("Apply"):
         st.session_state["yaml"].sensor_config.sensor_info.name = (
@@ -195,7 +218,10 @@ else:
             st.session_state["input_sensor_identifier"]
         )
         st.session_state["yaml"].sensor_config.sensor_info.install_date = (
-            st.session_state["input_sensor_install_date"]
+            datetime.combine(
+                st.session_state["input_sensor_install_date"],
+                datetime.min.time(),
+            )
         )
         st.session_state["yaml"].sensor_config.sensor_info.time_zone = (
             st.session_state["input_sensor_time_zone"]
