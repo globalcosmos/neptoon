@@ -1,9 +1,4 @@
 import streamlit as st
-import logging
-from streamlit.logger import get_logger
-import io
-from pathlib import Path
-from neptoon_gui_utils import *
 import pandas as pd
 
 st.title(":material/info: Site information")
@@ -205,7 +200,7 @@ else:
     st.subheader("3. Apply changes")
     ################################
 
-    from datetime import date, datetime
+    from datetime import datetime
 
     if st.button("Apply"):
         st.session_state["yaml"].sensor_config.sensor_info.name = (

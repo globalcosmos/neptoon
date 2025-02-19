@@ -1,10 +1,9 @@
 import streamlit as st
-import logging
-from streamlit.logger import get_logger
-import io
+import atexit
 from pathlib import Path
-from neptoon_gui_utils import *
-
+from neptoon_gui_utils import cleanup, save_uploaded_file, read_file
+from neptoon.io.read import ConfigurationManager
+from neptoon.workflow import ProcessWithYaml
 
 st.title(":material/settings: Configuration")
 """
@@ -203,9 +202,6 @@ else:
 
 ##################
 st.subheader("3. Apply configuration")
-
-from neptoon.io.read import ConfigurationManager
-from neptoon.workflow import ProcessWithYaml
 
 
 # @st.cache_data(show_spinner="Checking YAML files...")

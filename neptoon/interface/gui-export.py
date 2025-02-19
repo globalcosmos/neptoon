@@ -1,7 +1,5 @@
 import streamlit as st
 from pathlib import Path
-from neptoon_gui_utils import *
-import plotly.graph_objects as go
 
 st.title(":material/save: Export")
 

@@ -1,7 +1,9 @@
 import streamlit as st
-from pathlib import Path
-from neptoon_gui_utils import *
-import plotly.graph_objects as go
+
+# from pathlib import Path
+# from neptoon_gui_utils import cleanup, save_uploaded_file, read_file
+
+# import plotly.graph_objects as go
 
 st.title(":material/water_drop: Water")
 
@@ -83,9 +85,9 @@ if st.session_state["data_converted"]:
             default="soil_moisture",
         )
 
-        filtered_data = st.session_state["yaml"].data_hub.crns_data_frame[
-            selected_columns
-        ]
+        # filtered_data = st.session_state["yaml"].data_hub.crns_data_frame[
+        #     selected_columns
+        # ]
 
         tab2.plotly_chart(
             px.line(

@@ -1,6 +1,5 @@
 import io
 from pathlib import Path
-import atexit
 import tempfile
 import streamlit as st
 

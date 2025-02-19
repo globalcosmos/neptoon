@@ -1,6 +1,4 @@
 import streamlit as st
-from pathlib import Path
-from neptoon_gui_utils import *
 import plotly.graph_objects as go
 
 st.title(":material/blur_on: Neutron corrections")
@@ -256,9 +254,9 @@ if st.session_state["data_quality_checked"]:
     def create_correction_input():
         st.write("**3.1 Air pressure correction**")
         c1, c2 = st.columns([1, 1])
-        pressure_method = c1.segmented_control(
-            "Method", ["Zreda et al. (2012)"], default="Zreda et al. (2012)"
-        )
+        # pressure_method = c1.segmented_control(
+        #     "Method", ["Zreda et al. (2012)"], default="Zreda et al. (2012)"
+        # )
         with c2.popover(":material/help: Learn more"):
             st.markdown(
                 ":material/info: Air pressure represents the mass of air about the sensor. Every meter of air attenuates the cosmic radiations. The factor to correct for this effect is exponential:"
@@ -273,11 +271,11 @@ if st.session_state["data_quality_checked"]:
         """
         c1, c2 = st.columns([1, 1])
 
-        humidity_method = c1.segmented_control(
-            "Method",
-            ["Rosolem et al. (2013)"],
-            default="Rosolem et al. (2013)",
-        )
+        # humidity_method = c1.segmented_control(
+        #     "Method",
+        #     ["Rosolem et al. (2013)"],
+        #     default="Rosolem et al. (2013)",
+        # )
         with c2.popover(":material/help: Learn more"):
             st.markdown(
                 ":material/info: Air humidity represents the number of hydrogen atoms in the air above and around the sensor. They attenuate the cosmic radiation from above and the neutron radiation from the sides. The factor to correct for this effect is linear:"
@@ -291,12 +289,12 @@ if st.session_state["data_quality_checked"]:
         **3.3 Cosmic-ray incoming correction**
         """
         c1, c2 = st.columns([1, 1])
-        incoming_method = c1.segmented_control(
-            "Method",
-            ["Zreda et al. (2012)"],
-            key="other",
-            default="Zreda et al. (2012)",
-        )
+        # incoming_method = c1.segmented_control(
+        #     "Method",
+        #     ["Zreda et al. (2012)"],
+        #     key="other",
+        #     default="Zreda et al. (2012)",
+        # )
         with c2.popover(":material/help: Learn more"):
             st.markdown(
                 ":material/info: Incoming cosmic radiation varies with time and space depending on the solar activity, for instance. The reference signal is measured by neutron monitors and can be used inversely to correct the CRNS neutrons:"
@@ -400,7 +398,7 @@ if st.session_state["data_corrections_made"]:
     #     .max(),
     # )
 
-    from neptoon.columns import ColumnInfo
+    # from neptoon.columns import ColumnInfo
 
     column_to_smooth = "corrected_epithermal_neutrons"  # str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
 

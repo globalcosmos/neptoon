@@ -1,6 +1,7 @@
 import streamlit as st
 from pathlib import Path
-from neptoon_gui_utils import *
+from neptoon_gui_utils import cleanup, save_uploaded_file
+import atexit
 
 st.title(":material/full_stacked_bar_chart: Read data")
 
@@ -225,7 +226,7 @@ else:
 
     @st.cache_data(show_spinner="Creating data table...")
     def parse_data():
-        import plotly.express as px
+        # import plotly.express as px
 
         # with st.spinner("Creating data table..."):
         st.session_state["yaml"].create_data_hub(return_data_hub=False)

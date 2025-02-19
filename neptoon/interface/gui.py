@@ -1,6 +1,8 @@
 import streamlit as st
 from pathlib import Path
+from magazine import Magazine
 
+Magazine.active = True
 # Icons: https://fonts.google.com/icons?icon.set=Material+Symbols&icon.style=Rounded
 current_path = Path(__file__).parent
 
@@ -102,13 +104,9 @@ st.sidebar.image(
     width=70,
 )
 
-from neptoon.io.read import ConfigurationManager
-from neptoon.workflow import ProcessWithYaml
 
 # lets turn on the reporting system for our data
-from magazine import Magazine
 
-Magazine.active = True
 
 pg = st.navigation(pages)
 pg.run()
