@@ -1,0 +1,130 @@
+config: sensor
+
+sensor_info:
+  name: StyxHC
+  country: Germany
+  identifier: A106
+  install_date: 2022-05-23 # YYYY-mm-dd
+  latitude: 52.165029
+  longitude: 14.120927
+  elevation: 72
+  time_zone: +1
+  site_cutoff_rigidity: 2.74
+  avg_lattice_water: 0.02
+  avg_soil_organic_carbon: 0
+  avg_dry_soil_bulk_density: 1.48
+  N0: 1300
+  beta_coefficient:
+  mean_pressure: 1013.25
+
+time_series_data:
+  path_to_data: # blank if parsing raw data
+  temporal:
+    input_resolution: 25mins
+    output_resolution: 1day
+    align_timestamps: false
+    alignment_method: time
+    aggregate_method: bagg
+    aggregate_func: mean
+    aggregate_maxna_fraction: 0.3
+  key_column_info:
+    epithermal_neutron_columns:
+      - N_cps
+    thermal_neutron_columns:
+    neutron_count_units: counts_per_second
+    pressure_columns:
+      - extPress # first priorty goes here
+    pressure_units: hectopascals
+    pressure_merge_method: priority
+    temperature_columns:
+      - extTemp
+    temperature_units: celcius
+    temperature_merge_method: priority
+    relative_humidity_columns:
+      - extRelHumidity
+    relative_humidity_units: percent
+    relative_humidity_merge_method: priority
+    date_time_columns:
+      - UTCDate
+      - UTCTime
+    date_time_format: "%m/%d/%Y %H:%M:%S"
+    initial_time_zone: utc
+    convert_time_zone_to: utc
+
+raw_data_parse_options:
+  parse_raw_data: True
+  data_location: ../example_data/StyXHC_ENV.zip
+  column_names:
+    - Cycle
+    - timestamp
+    - Ubat
+    - iTemp
+    - iPress
+    - iRelHumidity
+    - extTemp
+    - extPress
+    - extRelHumidity
+    - smt1Raw
+    - smt1Permittivity
+    - smt1SoilMoist
+    - smt1Temp
+    - smt2Raw
+    - smt2Permittivity
+    - smt2SoilMoist
+    - smt2Temp
+    - smt3Raw
+    - smt3Permittivity
+    - smt3SoilMoist
+    - smt3Temp
+    - N_cps
+    - UTCDate
+    - UTCTime
+  prefix: ""
+  suffix: ".TXT"
+  encoding: "cp850"
+  skip_lines: 0
+  separator: "\t"
+  decimal: "."
+  skip_initial_space: False
+  parser_kw:
+    strip_left: False
+    digit_first: False
+  starts_with: ""
+  multi_header: False
+  strip_names: False
+  remove_prefix: ""
+
+input_data_qa:
+  air_relative_humidity:
+    flag_range:
+      min: 0
+      max: 100
+  air_pressure:
+    flag_range:
+      min: 600
+      max: 1300
+
+soil_moisture_qa:
+  soil_moisture:
+    flag_range:
+      min: 0
+      max: 1
+
+calibration:
+  calibrate: False
+  data_format: custom
+  location: /path/to/location
+  key_column_names:
+    profile_id_column: PROF
+    sample_depth: DETPH_AVG
+    radial_distance_from_sensor: LOC_rad
+
+data_storage:
+  save_folder:
+  append_yaml_hash_to_folder_name: False
+  create_report: true
+
+figures:
+  create_figures: True
+  make_all_figures: True
+  custom_list:

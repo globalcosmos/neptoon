@@ -1,0 +1,107 @@
+config: sensor
+
+sensor_info:
+  name: Fuerstensee
+  country: Germany
+  identifier: FSC001
+  install_date: 2014-01-01
+  latitude: 53.319
+  longitude: 13.122
+  elevation: 66
+  time_zone: +1
+  site_cutoff_rigidity: 2.55
+  avg_lattice_water:
+  avg_soil_organic_carbon:
+  avg_dry_soil_bulk_density:
+  N0:
+  beta_coefficient:
+  mean_pressure:
+
+time_series_data:
+  path_to_data: ../example_data/FSC001_time_series.csv
+  temporal:
+    input_resolution: 1hour
+    output_resolution: 1hour
+    align_timestamps: False
+    alignment_method: "time"
+  key_column_info:
+    date_time_columns:
+      - DateTime_utc
+    date_time_format: "%Y-%m-%d %H:%M:%S%z"
+    epithermal_neutron_columns:
+      - NeutronCount_Epithermal_Cum1h
+    thermal_neutron_columns:
+    neutron_count_units: absolute_count
+    pressure_columns:
+      - AirPressure # first priorty goes here
+    pressure_units: hectopascals
+    pressure_merge_method: priority
+    temperature_columns:
+      - AirTemperature_Sensor2
+      - AirTemperature
+    temperature_units: celcius
+    temperature_merge_method: priority
+    relative_humidity_columns:
+      - AirHumidity_Relative_Sensor2
+      - AirHumidity_Relative
+    relative_humidity_units: percent
+    relative_humidity_merge_method: priority
+    initial_time_zone: utc
+    convert_time_zone_to: utc
+
+raw_data_parse_options:
+  parse_raw_data: False
+  data_location:
+  column_names:
+  prefix: ""
+  suffix: ""
+  encoding: "cp850"
+  skip_lines: 0
+  separator: ","
+  decimal: "."
+  skip_initial_space: True
+  parser_kw: # leave blank
+    strip_left: True
+    digit_first: True
+  starts_with: ""
+  multi_header: False
+  strip_names: True
+  remove_prefix: "//"
+
+input_data_qa:
+  air_relative_humidity:
+    flag_range:
+      min: 0
+      max: 100
+
+soil_moisture_qa:
+  soil_moisture:
+    flag_range:
+      min: 0
+      max: 1
+
+calibration:
+  calibrate: True
+  data_format: custom
+  location: ../example_data/FSCD001_calibration.csv
+  date_time_format: "%d.%m.%Y %H:%M"
+  key_column_names:
+    date_time: DateTime_utc
+    profile_id: Profile_ID
+    sample_depth: Profile_Depth_cm
+    radial_distance_from_sensor: Distance_to_CRNS_m
+    bulk_density_of_sample: DryBulkDensity_g_cm3
+    gravimetric_soil_moisture: SoilMoisture_g_g
+    soil_organic_carbon: SoilOrganicCarbon_g_g
+    lattice_water: LatticeWater_g_g
+
+data_storage:
+  save_folder:
+  append_yaml_to_folder_name: False
+  create_report: True
+
+figures:
+  create_figures: True
+  make_all_figures: True
+  custom_list:
+    - nmdb_incoming_radiation
