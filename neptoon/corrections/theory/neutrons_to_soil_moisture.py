@@ -517,8 +517,8 @@ def compute_n0_uts(sm, h, n, lattice_water=0.0, water_equiv_soil_organic_carbon=
             sm=sm, h=h, n0=n0_try, off=off, bd=bd, method=method, bio=bio)
         error = np.abs(n - n_est)
         return np.mean(error)
-    
+
     singleopt = minimize_scalar(obj_n0)   # optimize to find best n0
     n0 = singleopt.x  #
 
-    return (n0) 
+    return (n0)
