@@ -36,7 +36,7 @@ st.selectbox(
 
 if st.session_state["config_sensor_selected"] == "Example: COSMOS Europe":
     st.session_state["config_sensor_file"] = (
-        Path.cwd() / "default_configuration" / "FSC001_station.yaml"
+        Path(__file__).parent / "default_configuration" / "FSC001_station.yaml"
     )
     st.success(
         ":material/check: Using **{:}** for sensor and site configuration.".format(
@@ -51,7 +51,7 @@ if st.session_state["config_sensor_selected"] == "Example: COSMOS Europe":
 
 elif st.session_state["config_sensor_selected"] == "Example: Hydroinnova":
     st.session_state["config_sensor_file"] = (
-        Path.cwd() / "default_configuration" / "A101_station.yaml"
+        Path(__file__).parent / "default_configuration" / "A101_station.yaml"
     )
     st.success(
         ":material/check: Using **{:}** for sensor and site configuration.".format(
@@ -66,7 +66,7 @@ elif st.session_state["config_sensor_selected"] == "Example: Hydroinnova":
 
 elif st.session_state["config_sensor_selected"] == "Example: Styx Neutronica":
     st.session_state["config_sensor_file"] = (
-        Path.cwd() / "default_configuration" / "StyxHC.yaml"
+        Path(__file__).parent / "default_configuration" / "StyxHC.yaml"
     )
     st.success(
         ":material/check: Using **{:}** for sensor and site configuration.".format(
@@ -81,7 +81,7 @@ elif st.session_state["config_sensor_selected"] == "Example: Styx Neutronica":
 
 elif st.session_state["config_sensor_selected"] == "Example: Finapp":
     st.session_state["config_sensor_file"] = (
-        Path.cwd() / "default_configuration" / "FinApp01.yaml"
+        Path(__file__).parent / "default_configuration" / "FinApp01.yaml"
     )
     st.success(
         ":material/check: Using **{:}** for sensor and site configuration.".format(
@@ -146,7 +146,9 @@ st.selectbox(
 if st.session_state["config_processing_selected"] == "COSMOS Standard v1.0":
 
     st.session_state["config_processing_file"] = (
-        Path.cwd() / "default_configuration" / "v1_processing_method.yaml"
+        Path(__file__).parent
+        / "default_configuration"
+        / "v1_processing_method.yaml"
     )
 
     st.success(

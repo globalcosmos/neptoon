@@ -1,6 +1,8 @@
 import streamlit as st
+from pathlib import Path
 
 # Icons: https://fonts.google.com/icons?icon.set=Material+Symbols&icon.style=Rounded
+current_path = Path(__file__).parent
 
 st.set_page_config(
     page_title="Neptoon GUI",
@@ -8,7 +10,7 @@ st.set_page_config(
 )
 
 st.logo(
-    "assets/neptoon-logo.svg",
+    image=current_path / "assets" / "neptoon-logo.svg",
     link="https://codebase.helmholtz.cloud/cosmos/neptoon_documentation",
     # icon_image=LOGO_URL_SMALL,
 )
@@ -95,7 +97,9 @@ for var in shared_session_variables:
 
 
 st.sidebar.image(
-    "assets/neptoon-affils.svg", use_container_width=False, width=70
+    image=current_path / "assets" / "neptoon-affils.svg",
+    use_container_width=False,
+    width=70,
 )
 
 from neptoon.io.read import ConfigurationManager
