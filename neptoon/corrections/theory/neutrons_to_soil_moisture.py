@@ -512,13 +512,13 @@ def compute_n0_uts(sm, h, n, lattice_water=0.0, water_equiv_soil_organic_carbon=
 
     off = lattice_water + water_equiv_soil_organic_carbon
 
-    def obj_n0(n0_try):   #objective function to optimize for best n0
+    def obj_n0(n0_try):   # objective function to optimize for best n0
         n_est = convert_soil_moisture_to_neutrons_uts(
             sm=sm, h=h, n0=n0_try, off=off, bd=bd, method=method, bio=bio)
         error = np.abs(n - n_est)
         return np.mean(error)
     
-    singleopt = minimize_scalar(obj_n0)   #optimize to find best n0
+    singleopt = minimize_scalar(obj_n0)   # optimize to find best n0
     n0 = singleopt.x  #
 
-    return(n0) 
+    return (n0) 
