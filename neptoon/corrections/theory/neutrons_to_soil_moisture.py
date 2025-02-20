@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Literal
 
 
 def neutrons_to_grav_sm_desilets(
@@ -212,14 +213,58 @@ def convert_soil_moisture_to_neutrons_uts(
     soil_moisture: float,
     air_humidity: float,
     n0: float,
-    off=0.0,
-    bulk_density=1,
-    method="Mar21_uranos_drf",
-    bio=0,
+    offset: float = 0.0,
+    bulk_density: float = 1.0,
+    method: Literal[
+        "Jan23_uranos",
+        "Jan23_mcnpfull",
+        "Mar12_atmprof",
+        "Mar21_mcnp_drf",
+        "Mar21_mcnp_ewin",
+        "Mar21_uranos_drf",
+        "Mar21_uranos_ewin",
+        "Mar22_mcnp_drf_Jan",
+        "Mar22_mcnp_ewin_gd",
+        "Mar22_uranos_drf_gd",
+        "Mar22_uranos_ewin_chi2",
+        "Mar22_uranos_drf_h200m",
+        "Aug08_mcnp_drf",
+        "Aug08_mcnp_ewin",
+        "Aug12_uranos_drf",
+        "Aug12_uranos_ewin",
+        "Aug13_uranos_atmprof",
+        "Aug13_uranos_atmprof2",
+    ] = "Mar21_uranos_drf",
+    biomass: float = 0.0,
 ):
+    """
+    Convert soil moisture to neutrons following following the method
+    outlined in Köhli et al. 2021
 
-    # total sm
-    soil_moisture_total = soil_moisture + off
+    https://doi.org/10.3389/frwa.2020.544847
+
+    Parameters
+    ----------
+    soil_moisture : float
+        soil moisture volumetric g/cm^3
+    air_humidity : float
+        air humidity at the site (%) e.g., 50
+    n0 : float
+        n0 calibration term
+    offset : float
+        offset to apply to soil moisture. e.g., to account for lattice
+        water
+    bulk_density : float
+        dry soil bulk density g/cm^3
+    method : str
+        The method to apply. See reference. default Mar21_uranos_drf
+    biomass : float
+        The biomass at the site kg/m^2
+
+
+    """
+
+    soil_moisture_total = soil_moisture + offset
     soil_moisture_total *= 1.43 / bulk_density
     if soil_moisture_total == 0.0:
         soil_moisture_total = 0.001
@@ -448,7 +493,7 @@ def convert_soil_moisture_to_neutrons_uts(
         + p[7] * air_humidity**2
         + p[8] * air_humidity**3 / soil_moisture_total
     ) + np.exp(-p[3] * soil_moisture_total) * (
-        p[4] + p[5] * (air_humidity + bio / 5 * 1000)
+        p[4] + p[5] * (air_humidity + biomass / 5 * 1000)
     )
 
     return N * n0
@@ -510,8 +555,27 @@ def compute_n0_uts(
     lattice_water=0.0,
     water_equiv_soil_organic_carbon=0.0,
     bulk_density=1,
-    method="Mar21_uranos_drf",
-    bio=0,
+    method: Literal[
+        "Jan23_uranos",
+        "Jan23_mcnpfull",
+        "Mar12_atmprof",
+        "Mar21_mcnp_drf",
+        "Mar21_mcnp_ewin",
+        "Mar21_uranos_drf",
+        "Mar21_uranos_ewin",
+        "Mar22_mcnp_drf_Jan",
+        "Mar22_mcnp_ewin_gd",
+        "Mar22_uranos_drf_gd",
+        "Mar22_uranos_ewin_chi2",
+        "Mar22_uranos_drf_h200m",
+        "Aug08_mcnp_drf",
+        "Aug08_mcnp_ewin",
+        "Aug12_uranos_drf",
+        "Aug12_uranos_ewin",
+        "Aug13_uranos_atmprof",
+        "Aug13_uranos_atmprof2",
+    ] = "Mar21_uranos_drf",
+    biomass=0,
 ):
     """
     Computes the n0 for the UTS-function following the method outlined
@@ -541,16 +605,17 @@ def compute_n0_uts(
 
     Example
     -------
-    sm=0.3 #soil moisture [-] h=3 #air humidity (%?) bd = 1.2 #bulk
-    density bio = 0 #(kg/m²]? n_obs = 3000 #observed neutron counts
-    (counts / hour)
 
-    n0  = compute_n0_uts(sm=sm, h=h, n=n_obs, lattice_water=0.0,
-    water_equiv_soil_organic_carbon=0.0, bd=bd,
-    method="Mar21_uranos_drf", bio=0) #check the determined n0, which
-    should be close to n: convert_soil_moisture_to_neutrons_uts(
-            sm=theta, h=h, n0=n0, off=0.0, bd=bd,
-            method="Mar21_uranos_drf", bio=bio)
+    n0  = compute_n0_uts(soil_moisture=0.3, air_humidity=30,
+    neutron_count=3000, lattice_water=0.0,
+    water_equiv_soil_organic_carbon=0.0, bulk_density=1.2,
+    method="Mar21_uranos_drf", bio=0)
+
+    # check the determined n0, which should be close to n:
+    convert_soil_moisture_to_neutrons_uts(
+            sm=theta, air_humidity=30, n0=n0, offset=0.0,
+            bulk_density=bulk_density, method="Mar21_uranos_drf",
+            biomass=biomass)
 
     """
     from scipy.optimize import minimize_scalar
@@ -562,10 +627,10 @@ def compute_n0_uts(
             soil_moisture=soil_moisture,
             air_humidity=air_humidity,
             n0=n0_try,
-            off=off,
+            offset=off,
             bulk_density=bulk_density,
             method=method,
-            bio=bio,
+            biomass=biomass,
         )
         error = np.abs(neutron_count - neutron_estimate)
         return np.mean(error)
