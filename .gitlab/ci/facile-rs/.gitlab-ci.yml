@@ -15,7 +15,6 @@ variables:
 
   # CodeMeta files location
   CODEMETA_LOCATION: codemeta.json # Replace with the location of your main CodeMeta metadata file
-  CREATORS_LOCATIONS: codemeta.json # Replace with the location of your creators metadata file
 
   # DataCite XML
   DATACITE_PATH: ${PROJECT_NAME}.xml
