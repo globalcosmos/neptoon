@@ -1,0 +1,114 @@
+config: sensor
+
+sensor_info:
+  name: Lindenberg
+  country: Germany
+  identifier: A105
+  install_date: 2016-10-21
+  latitude: 52.165029
+  longitude: 14.120927
+  elevation: 72
+  time_zone: +1
+  site_cutoff_rigidity: 2.74
+  avg_lattice_water: 0.018
+  avg_soil_organic_carbon: 0.026
+  avg_dry_soil_bulk_density: 1.5
+  N0: 2461
+  beta_coefficient:
+  l_coefficient:
+  mean_pressure:
+
+time_series_data:
+  path_to_data: # blank if parsing raw data
+  time_step_resolution: 20mins
+  key_column_info:
+    epithermal_neutron_counts_columns:
+      - N1Cts
+    thermal_neutrons:
+    neutron_count_units: absolute_count
+    pressure_columns:
+      - P4_mb # first priorty goes here
+      - P1_mb
+    pressure_units: hectopascals
+    pressure_merge_method: priority
+    temperature_columns:
+      - T_CS215
+    temperature_units: celcius
+    temperature_merge_method: priority
+    relative_humidity_columns:
+      - RH_CS215
+    relative_humidity_units: percent
+    relative_humidity_merge_method: priority
+    date_time_columns:
+      - Date Time(UTC)
+    date_time_format: "%Y/%m/%d %H:%M:%S"
+    initial_time_zone: utc
+    convert_time_zone_to: utc
+
+raw_data_parse_options:
+  parse_raw_data: True
+  data_location: ../example_data/temp_test_data/Lindenberg.zip
+  column_names:
+    - RecordNum
+    - Date Time(UTC)
+    - P4_mb
+    - P1_mb
+    - T1_C
+    - RH1
+    - T_CS215
+    - RH_CS215
+    - Vbat
+    - N1Cts
+    - N1ET_sec
+    - N1T_C
+    - N1RH
+  prefix: ""
+  suffix: ".txt"
+  encoding: "cp850"
+  skip_lines: 0
+  separator: ","
+  decimal: "."
+  skip_initial_space: True
+  parser_kw:
+    strip_left: True
+    digit_first: True
+  starts_with: ""
+  multi_header: False
+  strip_names: True
+  remove_prefix: "//"
+
+input_data_qa:
+  air_relative_humidity:
+    flag_range:
+      min: 0
+      max: 100
+  air_pressure:
+    flag_range:
+      min: 600
+      max: 1300
+
+soil_moisture_qa:
+  soil_moisture:
+    flag_range:
+      min: 0
+      max: 1
+
+calibration:
+  calibrate: False
+  data_format: custom
+  location: /path/to/location
+  key_column_names:
+    profile_id_column: PROF
+    sample_depth: DETPH_AVG
+    radial_distance_from_sensor: LOC_rad
+
+data_storage:
+  save_folder:
+  append_yaml_hash_to_folder_name: False
+  create_report: true
+
+figures:
+  create_figures: True
+  make_all_figures: True
+  custom_list:
+    - nmdb_incoming_radiation

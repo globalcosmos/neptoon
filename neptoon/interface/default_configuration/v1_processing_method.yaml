@@ -1,0 +1,38 @@
+config: process
+
+neutron_quality_assessment:
+  raw_neutrons:
+    spike_uni_lof:
+      periods_in_calculation: 12
+      threshold: 1.5
+  corrected_neutrons:
+    greater_than_N0:
+      percent_maximum: 1.075 # Köhli 2021
+    below_N0_factor:
+      percent_minimum: 0.3
+
+correction_steps:
+  air_humidity:
+    method: rosolem_2013
+    omega: 0.0054
+    humidity_ref: 0
+  air_pressure:
+    method: zreda_2012
+    dunai_inclination:
+  incoming_radiation:
+    method: hawdon_2014
+    reference_neutron_monitor:
+      station: JUNG
+      resolution: 60 # minutes
+      nmdb_table: revori # recommend revori
+  above_ground_biomass:
+    method:
+    biomass_units:
+
+data_smoothing:
+  smooth_corrected_neutrons: True
+  smooth_soil_moisture: False
+  settings:
+    algorithm: rolling_mean
+    window: 12
+    poly_order: 4

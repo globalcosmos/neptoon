@@ -1,0 +1,111 @@
+config: sensor
+
+sensor_info:
+  name: Cunnesdorf
+  country: Germany
+  identifier: A102
+  install_date: 2016-10-21
+  latitude: 51.369597
+  longitude: 12.557120
+  elevation: 300
+  time_zone: +1
+  site_cutoff_rigidity: 2.94
+  avg_lattice_water: 0.0043
+  avg_soil_organic_carbon: 0.0184
+  avg_dry_soil_bulk_density: 1.6
+  N0: 1000
+  beta_coefficient:
+  mean_pressure:
+
+time_series_data:
+  path_to_data: # blank if parsing raw data
+  temporal:
+    input_resolution: 15mins
+    output_resolution: 15mins
+    align_timestamps: false
+    alignment_method: time
+    aggregate_method: bagg
+    aggregate_func: mean
+    aggregate_maxna_fraction: 0.3
+  key_column_info:
+    epithermal_neutron_columns:
+      - N2Cts
+    thermal_neutron_columns:
+      - N1Cts
+    neutron_count_units: absolute_count
+    pressure_columns:
+      - P4_mb # first priorty goes here
+      - P3_mb
+      - P1_mb
+    pressure_units: hectopascals
+    pressure_merge_method: priority
+    temperature_columns:
+      - T_CS215
+      - T1_C
+      - T4_C
+    temperature_units: celcius
+    temperature_merge_method: priority
+    relative_humidity_columns:
+      - RH_CS215
+    relative_humidity_units: percent
+    relative_humidity_merge_method: priority
+    date_time_columns:
+      - Date Time(UTC)
+    date_time_format: "%Y/%m/%d %H:%M:%S"
+    initial_time_zone: utc
+    convert_time_zone_to: utc
+
+raw_data_parse_options:
+  parse_raw_data: True
+  data_location: ../example_data/temp_test_data/Cunnersdorf.zip
+  column_names:
+  prefix: ""
+  suffix: ".txt"
+  encoding: "cp850"
+  skip_lines: 0
+  separator: ","
+  decimal: "."
+  skip_initial_space: True
+  parser_kw: # leave blank
+    strip_left: True
+    digit_first: True
+  starts_with: ""
+  multi_header: False
+  strip_names: True
+  remove_prefix: "//"
+
+input_data_qa:
+  air_relative_humidity:
+    flag_range:
+      min: 0
+      max: 100
+  air_pressure:
+    flag_range:
+      min: 600
+      max: 1300
+
+soil_moisture_qa:
+  soil_moisture:
+    flag_range:
+      min: 0
+      max: 1
+
+calibration:
+  calibrate: False
+  data_format: custom
+  location: /path/to/location
+  key_column_names:
+    profile_id_column: PROF
+    sample_depth: DETPH_AVG
+    radial_distance_from_sensor: LOC_rad
+
+data_storage:
+  save_folder:
+  append_yaml_hash_to_folder_name: False
+  create_report: true
+
+figures:
+  create_figures: True
+  make_all_figures: True
+  custom_list:
+    - nmdb_incoming_radiation
