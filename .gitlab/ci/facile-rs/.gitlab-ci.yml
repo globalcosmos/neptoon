@@ -11,10 +11,11 @@ variables:
   DOCKER_DRIVER: overlay
   GIT_STRATEGY: clone
   GIT_DEPTH: 1
-  FACILE_RS_VERSION: 2.2.0
+  FACILE_RS_VERSION: 3.2.2
 
   # CodeMeta files location
   CODEMETA_LOCATION: codemeta.json # Replace with the location of your main CodeMeta metadata file
+  CREATORS_LOCATIONS: codemeta.json # Replace with the location of your creators metadata file
 
   # DataCite XML
   DATACITE_PATH: ${PROJECT_NAME}.xml
@@ -28,7 +29,7 @@ variables:
   RELEASE_BRANCH: ${CI_DEFAULT_BRANCH} # Replace with the branch on which the release tag is created
   RELEASE_TAG: ${CI_COMMIT_TAG}
   RELEASE_API_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases
-  RELEASE_ARCHIVE_URL: ${CI_PROJECT_URL}/-/archive/${CI_COMMIT_TAG}/${PROJECT_NAME}-${CI_COMMIT_TAG}.tar.gz
+  RELEASE_ARCHIVE_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/archive.tar.gz?sha=${CI_COMMIT_TAG}
   RELEASE_DESCRIPTION: |
     Find the changelog [here](${CI_PROJECT_URL}/blob/${RELEASE_BRANCH}/CHANGELOG.md).
   

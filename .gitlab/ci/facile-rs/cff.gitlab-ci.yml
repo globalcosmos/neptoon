@@ -9,7 +9,7 @@ create-cff:
   - git config --global user.name "${GITLAB_USER_NAME}"
   - git config --global user.email "${GITLAB_USER_EMAIL}"
   script:
-  - create_cff
+  - facile-rs cff create
   # Uncomment the following lines if you want to commit and push the CFF file to your repository
   # - git add ${CFF_PATH}
   # # Commit only if CFF file has been updated
