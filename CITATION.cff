@@ -1,30 +1,19 @@
-# This CITATION.cff file was generated with cffinit.
-# Visit https://bit.ly/cffinit to generate yours today!
-
 cff-version: 1.2.0
-title: neptoon
-message: >-
-  If you use this software, please cite it using the
-  metadata from this file.
+message: If you use this software, please cite the paper describing it as below. Specific
+  versions of the software can additionally be referenced using individual DOIs.
 type: software
+title: neptoon
+abstract: Processes cosmic ray neutron sensor (CRNS) data
 authors:
-  - given-names: Daniel
-    family-names: Power
-    email: daniel.power@ufz.de
-    affiliation: Helmholtz Zentrum für Umweltforschung
-    orcid: 'https://orcid.org/0000-0002-0829-8580'
-  - given-names: Martin
-    family-names: Schrön
-    email: martin.schroen@ufz.de
-    orcid: 'https://orcid.org/0000-0002-0220-0677'
-    affiliation: Helmholtz Zentrum für Umweltforschung
-repository-code: 'https://codebase.helmholtz.cloud/cosmos/neptoon'
-url: 'https://www.neptoon.org'
-keywords:
-  - CRNS
-  - cosmic ray neutron sensor
-  - soil moisture
-  - data processing
-  - space weather
-  - hydrology
+- given-names: Fredo
+  family-names: Erxleben
+- given-names: Daniel
+  family-names: Power
+- given-names: Rafael
+  family-names: Rosolem
+- given-names: Martin
+  family-names: Schrön
+- given-names: Steffen
+  family-names: Zacharias
 license: MIT
+repository-code: git+https://codebase.helmholtz.cloud/cosmos/neptoon
