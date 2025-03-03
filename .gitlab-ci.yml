@@ -51,7 +51,7 @@ variables:
   # Set ENABLE_ZENODO to "true" to activate release on Zenodo
   ENABLE_ZENODO: "true"
   ZENODO_PATH: ${PROJECT_NAME}-${CI_COMMIT_TAG}
-  ZENODO_URL: https://zenodo.org #https://sandbox.zenodo.org # Replace with https://zenodo.org for production environment
+  ZENODO_URL: https://sandbox.zenodo.org # Replace with https://zenodo.org for production environment
 
   # RADAR
   # Set ENABLE_RADAR to "true" to activate release on RADAR
