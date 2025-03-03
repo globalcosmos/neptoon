@@ -1,0 +1,94 @@
+{
+    "@context": "https://w3id.org/codemeta/3.0",
+    "type": "SoftwareSourceCode",
+    "author": [
+        {
+            "id": "https://orcid.org/0000-0002-0829-8580",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Helmholtz Zentrum für Umweltforschung"
+            },
+            "email": "daniel.power@ufz.de",
+            "familyName": "Power",
+            "givenName": "Daniel"
+        },
+        {
+            "type": "Role",
+            "schema:author": "https://orcid.org/0000-0002-0829-8580",
+            "roleName": "Maintainer",
+            "startDate": "2024-11-01"
+        },
+        {
+            "id": "https://orcid.org/0000-0002-7825-0072",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Helmholtz Zentrum für Umweltforschung"
+            },
+            "email": "steffen.zacharias@ufz.de",
+            "familyName": "Zacharias",
+            "givenName": "Steffen"
+        },
+        {
+            "id": "https://orcid.org/0000-0001-7233-3005",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Helmholtz-Zentrum Dresden-Rossendorf"
+            },
+            "email": "f.erxleben@hzdr.de",
+            "familyName": "Erxleben",
+            "givenName": "Fredo"
+        },
+        {
+            "id": "https://orcid.org/0000-0002-4914-692X",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "University of Bristol"
+            },
+            "email": "Rafael.Rosolem@bristol.ac.uk",
+            "familyName": "Rosolem",
+            "givenName": "Rafael"
+        },
+        {
+            "id": "https://orcid.org/0000-0002-0220-0677",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": "Helmholtz Zentrum für Umweltforschung"
+            },
+            "email": "martin.schroen@ufz.de",
+            "familyName": "Schrön",
+            "givenName": "Martin"
+        },
+        {
+            "type": "Role",
+            "schema:author": "https://orcid.org/0000-0002-0220-0677",
+            "roleName": "Maintainer",
+            "startDate": "2024-11-01"
+        }
+    ],
+    "codeRepository": "git+https://codebase.helmholtz.cloud/cosmos/neptoon",
+    "contributor": {
+        "id": "_:contributor_1",
+        "type": "Person",
+        "affiliation": {
+            "type": "Organization",
+            "name": "Universität Potsdam"
+        },
+        "email": "till.francke@uni-potsdam.de",
+        "familyName": "Francke",
+        "givenName": "Till"
+    },
+    "dateCreated": "2024-11-01",
+    "datePublished": "2025-09-25",
+    "description": "A Python processing toolbox for Cosmic Ray Neutron Sensors (CRNS)",
+    "license": "https://spdx.org/licenses/MIT",
+    "name": "neptoon",
+    "programmingLanguage": "Python 3",
+    "version": "0.6.0",
+    "developmentStatus": "wip",
+    "issueTracker": "https://codebase.helmholtz.cloud/cosmos/neptoon/-/issues"
+}
