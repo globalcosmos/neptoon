@@ -32,6 +32,7 @@ variables:
 
   # CFF (Citation File Format)
   CFF_PATH: CITATION.cff
+  SORT_AUTHORS: false facile-rs cff create
 
   # GitLab releases
   RELEASE_BRANCH: main # Replace with the branch on which the release tag is created

@@ -84,10 +84,11 @@
     },
     "dateCreated": "2024-11-01",
     "datePublished": "2025-09-25",
-    "description": "Processes cosmic ray neutron sensor (CRNS) data",
+    "description": "A Python processing toolbox for Cosmic Ray Neutron Sensors (CRNS)",
     "license": "https://spdx.org/licenses/MIT",
     "name": "neptoon",
     "programmingLanguage": "Python 3",
+    "version": "0.6.0",
     "developmentStatus": "wip",
     "issueTracker": "https://codebase.helmholtz.cloud/cosmos/neptoon/-/issues"
 }
