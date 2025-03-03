@@ -80,7 +80,6 @@ cache:
     - .cache/pip
     - .venv/
   key: ${CI_COMMIT_REF_SLUG}-${CI_JOB_NAME}
-
-default:
-  tags:
-    - docker
+# default:
+#   tags:
+#     - docker
