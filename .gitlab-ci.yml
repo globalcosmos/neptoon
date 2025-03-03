@@ -5,9 +5,9 @@ stages:
   - lint
   - test
   - build
+  - package_testpypi
   - release
   - archive
-  - package_testpypi
   - package_pypi
 
 variables:
