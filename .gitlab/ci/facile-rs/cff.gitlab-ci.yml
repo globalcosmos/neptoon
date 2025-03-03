@@ -3,7 +3,8 @@ create-cff:
   image: python:3.11
   stage: build
   rules:
-    - if: $CI_COMMIT_REF_PROTECTED == "true"
+    # - if: $CI_COMMIT_REF_PROTECTED == "true"
+    - if: $CI_COMMIT_BRANCH
   before_script:
     - pip install FACILE-RS==${FACILE_RS_VERSION}
     - git config --global user.name "${GITLAB_USER_NAME}"
