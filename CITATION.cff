@@ -3,17 +3,18 @@ message: If you use this software, please cite the paper describing it as below.
   versions of the software can additionally be referenced using individual DOIs.
 type: software
 title: neptoon
-abstract: Processes cosmic ray neutron sensor (CRNS) data
+abstract: A Python processing toolbox for Cosmic Ray Neutron Sensors (CRNS)
+version: 0.6.0
 authors:
-- given-names: Fredo
-  family-names: Erxleben
 - given-names: Daniel
   family-names: Power
+- given-names: Steffen
+  family-names: Zacharias
+- given-names: Fredo
+  family-names: Erxleben
 - given-names: Rafael
   family-names: Rosolem
 - given-names: Martin
   family-names: Schrön
-- given-names: Steffen
-  family-names: Zacharias
 license: MIT
 repository-code: git+https://codebase.helmholtz.cloud/cosmos/neptoon
