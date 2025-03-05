@@ -20,15 +20,21 @@
             "startDate": "2024-11-01"
         },
         {
-            "id": "https://orcid.org/0000-0002-7825-0072",
+            "id": "https://orcid.org/0000-0002-0220-0677",
             "type": "Person",
             "affiliation": {
                 "type": "Organization",
                 "name": "Helmholtz Zentrum für Umweltforschung"
             },
-            "email": "steffen.zacharias@ufz.de",
-            "familyName": "Zacharias",
-            "givenName": "Steffen"
+            "email": "martin.schroen@ufz.de",
+            "familyName": "Schrön",
+            "givenName": "Martin"
+        },
+        {
+            "type": "Role",
+            "schema:author": "https://orcid.org/0000-0002-0220-0677",
+            "roleName": "Maintainer",
+            "startDate": "2024-11-01"
         },
         {
             "id": "https://orcid.org/0000-0001-7233-3005",
@@ -53,21 +59,15 @@
             "givenName": "Rafael"
         },
         {
-            "id": "https://orcid.org/0000-0002-0220-0677",
+            "id": "https://orcid.org/0000-0002-7825-0072",
             "type": "Person",
             "affiliation": {
                 "type": "Organization",
                 "name": "Helmholtz Zentrum für Umweltforschung"
             },
-            "email": "martin.schroen@ufz.de",
-            "familyName": "Schrön",
-            "givenName": "Martin"
-        },
-        {
-            "type": "Role",
-            "schema:author": "https://orcid.org/0000-0002-0220-0677",
-            "roleName": "Maintainer",
-            "startDate": "2024-11-01"
+            "email": "steffen.zacharias@ufz.de",
+            "familyName": "Zacharias",
+            "givenName": "Steffen"
         }
     ],
     "codeRepository": "git+https://codebase.helmholtz.cloud/cosmos/neptoon",
