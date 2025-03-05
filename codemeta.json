@@ -88,7 +88,6 @@
     "license": "https://spdx.org/licenses/MIT",
     "name": "neptoon",
     "programmingLanguage": "Python 3",
-    "version": "0.6.0",
     "developmentStatus": "wip",
     "issueTracker": "https://codebase.helmholtz.cloud/cosmos/neptoon/-/issues"
 }
