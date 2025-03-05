@@ -14,11 +14,11 @@ create-cff:
   script:
     - facile-rs cff create --no-sort-authors
     # Uncomment the following lines if you want to commit and push the CFF file to your repository
-    - git add ${CFF_PATH}
-    # Commit only if CFF file has been updated
-    - git diff-index --quiet HEAD || git commit -m 'Update CFF file'
-    # Push to the repository, but do not trigger CI
-    - git push -o ci.skip "https://PUSH_TOKEN:${PRIVATE_TOKEN}@${CI_REPOSITORY_URL#*@}" "HEAD:${CI_COMMIT_BRANCH}"
+    # - git add ${CFF_PATH}
+    # # Commit only if CFF file has been updated
+    # - git diff-index --quiet HEAD || git commit -m 'Update CFF file'
+    # # Push to the repository, but do not trigger CI
+    # - git push -o ci.skip "https://PUSH_TOKEN:${PRIVATE_TOKEN}@${CI_REPOSITORY_URL#*@}" "HEAD:${CI_COMMIT_BRANCH}"
   artifacts:
     paths:
       - ${CFF_PATH}
