@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "neptoon"
-version = "0.6.4"
+version = "0.6.5"
 description = "The neptoon package makes CRNS processing and research simple."
 authors = [
     "Daniel Power <daniel.power@ufz.de>",
