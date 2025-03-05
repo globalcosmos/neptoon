@@ -8,13 +8,13 @@ version: 0.6.0
 authors:
 - given-names: Daniel
   family-names: Power
-- given-names: Steffen
-  family-names: Zacharias
+- given-names: Martin
+  family-names: Schrön
 - given-names: Fredo
   family-names: Erxleben
 - given-names: Rafael
   family-names: Rosolem
-- given-names: Martin
-  family-names: Schrön
+- given-names: Steffen
+  family-names: Zacharias
 license: MIT
 repository-code: git+https://codebase.helmholtz.cloud/cosmos/neptoon
