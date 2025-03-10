@@ -5,6 +5,7 @@ stages:
   - lint
   - test
   - build
+  - docs
   - package_testpypi
   - release
   - archive
