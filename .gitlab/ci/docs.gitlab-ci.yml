@@ -1,0 +1,15 @@
+image: python:3.10-slim
+
+pages:
+  stage: docs
+  script:
+    # Install all of the python packages for mkdocs
+    - apt-get update && apt-get install -y git
+    - git --version # This will confirm git is installed
+    - pip install -r requirements-docs.txt
+    - mkdocs build --verbose
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
