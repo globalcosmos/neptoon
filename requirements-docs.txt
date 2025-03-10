@@ -1,0 +1,9 @@
+# Documentation static site generator & deployment tool
+mkdocs>=1.1.2
+mkdocs-material
+mkdocs-roamlinks-plugin
+mkdocs-rss-plugin
+neptoon
+mkdocstrings
+mkdocstrings-python
+mkdocs-include-markdown-plugin
