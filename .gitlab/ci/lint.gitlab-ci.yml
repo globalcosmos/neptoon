@@ -1,6 +1,6 @@
 test:flake8:
   stage: lint
-  image: ghcr.io/astral-sh/uv:python3.11-alpine
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   before_script:
     - uv run
     - uv pip install flake8
