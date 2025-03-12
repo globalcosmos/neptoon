@@ -1,4 +1,4 @@
-test:flake8:
+test:ruff-check:
   stage: lint
   image: ghcr.io/astral-sh/uv:python3.11-bookworm
   before_script:

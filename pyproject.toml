@@ -55,25 +55,6 @@ line-length = 79
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.flake8]
-ignore = ["E226", 'E302', 'E41', 'E203', 'W503', 'E266', 'E501', 'W605', 'C901']
-max-line-length = 105
-exclude = [
-    '.gitignore',
-    'build',
-    'dist',
-    'README.md',
-    'documentation',
-    'play_area.py',
-    'working_notebook.py',
-    'example_calibration.py',
-    '.venv',
-    '.uv-cache',
-]
-max-complexity = 10
-per-file-ignores = ['*/__init__.py:F401']
-
-
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [
@@ -128,23 +109,3 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
-
-# [tool.ruff.lint]
-# select = ['W']
-# ignore = [
-#     "E226", # Missing whitespace around arithmetic operator
-#     "E302", # Expected 2 blank lines before top-level function/class
-#     "E41",  # Whitespace error
-#     "E203", # Whitespace before ':'
-#     "W503", # Line break before binary operator
-#     "E266", # Too many leading '#' for block comment
-#     "E501", # Line too long
-#     "W605", # Invalid escape sequence
-#     "C901", # Function is too complex
-# ]
-
-# [tool.ruff.lint.per-file-ignores]
-# "*/__init__.py" = ["F401"] # Imported but unused modules in __init__
-
-# [tool.ruff.lint.extend-ignore]
-# # Optional: Add any additional ignored rules specific to your project
