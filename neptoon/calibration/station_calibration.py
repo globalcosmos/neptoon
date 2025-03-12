@@ -904,7 +904,7 @@ class CalibrationWeightsCalculator:
 
         def calculate_sm_and_error(n0):
             sm_prediction = neutrons_to_grav_sm_desilets(
-                neutrons=neutron_mean, N0=n0
+                neutrons=neutron_mean, n0=n0
             )
             absolute_error = abs(sm_prediction - gravimetric_sm_on_day)
             return pd.Series(
