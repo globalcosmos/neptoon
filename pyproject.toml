@@ -1,59 +1,56 @@
-[tool.poetry]
+[project]
 name = "neptoon"
-version = "0.6.7"
+version = "0.6.8"
 description = "The neptoon package makes CRNS processing and research simple."
-authors = [
-    "Daniel Power <daniel.power@ufz.de>",
-    "Martin Schroen <martin.schroen@ufz.de>",
-]
-license = "MIT"
 readme = "README.md"
-repository = "https://codebase.helmholtz.cloud/cosmos/neptoon"
-documentation = "https://neptoon-docs.readthedocs.io/en/latest/"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.2.0",
+    "urllib3>=2.2.0",
+    "python-dateutil>=2.8.2",
+    "pytest>=8.0.0",
+    "requests>=2.31.0",
+    "platformdirs>=4.2.0",
+    "PyYAML>=6.0.1",
+    "pyarrow>=18.0.0",
+    "pyaml>=23.12.0",
+    "pydantic>=2.6.1",
+    "flake8>=7.0.0",
+    "pandera>=0.18.0",
+    "saqc>=2.6.0",
+    "magazine>=0.3.2",
+    "figurex>=0.2.10",
+    "seaborn>=0.13.2",
+]
+authors = [
+    { name = "Daniel Power", email = "daniel.power@ufz.de" },
+    { name = "Martin Schroen", email = "martin.schroen@ufz.de" },
+]
+keywords = [
+    "soil",
+    "soil moisture",
+    "crns",
+    "CRNS",
+    "Cosmic Ray Neutron Sensors",
+    "Cosmic Rays",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-pandas = "^2.2.0"
-urllib3 = "^2.2.0"
-python-dateutil = "^2.8.2"
-pytest = "^8.0.0"
-requests = "^2.31.0"
-platformdirs = "^4.2.0"
-PyYAML = "^6.0.1"
-pyarrow = "^18.0.0"
-pyaml = "^23.12.0"
-pydantic = "^2.6.1"
-flake8 = "^7.0.0"
-pandera = "^0.18.0"
-saqc = "^2.6.0"
-magazine = "^0.3.2"
-figurex = "^0.2.10"
-seaborn = "^0.13.2"
+[project.optional-dependencies]
+gui = ["streamlit>1.31.0", "typer>0.15.1", "plotly>6.0.0"]
+dev = ["black>24.1.1"]
 
+[project.urls]
+Homepage = "https://www.neptoon.org"
+Repository = "https://codebase.helmholtz.cloud/cosmos/neptoon"
+Documentation = "https://www.neptoon.org"
 
-[tool.poetry.group.dev.dependencies]
-black = "^24.1.1"
-
-[tool.poetry.group.gui]
-optional = true
-
-[tool.poetry.group.gui.dependencies]
-streamlit = "^1.31.0"
-typer = "^0.15.1"
-plotly = "^6.0.0"
-
-[tool.poetry.extras]
-gui = ["streamlit", "typer", "plotly"]
+[project.scripts]
+neptoon-gui = "neptoon.cli.launcher:app"
 
 [tool.black]
 line-length = 79
 
-[tool.poetry.scripts]
-neptoon-gui = "neptoon.cli.launcher:app"
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.pytest.ini_options]
-markers = ["test_logging: marks test that require logging on"]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
