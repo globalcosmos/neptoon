@@ -1,9 +1,9 @@
 test:flake8:
   stage: lint
   image: ghcr.io/astral-sh/uv:python3.11-bookworm
-  before_script:
-    - uv run
-    - uv pip install flake8
+  # before_script:
+  #   - uv run
+  #   - uv pip install flake8
   script:
     - uv run flake8 .
     - uv cache prune --ci
