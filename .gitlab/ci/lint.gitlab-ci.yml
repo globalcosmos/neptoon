@@ -3,9 +3,9 @@ test:flake8:
   image: ghcr.io/astral-sh/uv:python3.11-bookworm
   before_script:
     #   - uv run
-    - uv pip install flake8
+    - uv pip install ruff
   script:
-    - uv run flake8 .
+    - ruff check
     - uv cache prune --ci
   cache:
     paths:
