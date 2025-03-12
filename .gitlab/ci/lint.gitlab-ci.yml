@@ -5,7 +5,7 @@ test:flake8:
     - uv run
     - uv pip install flake8
   script:
-    - flake8 .
+    - uv run flake8 .
     - uv cache prune --ci
   cache:
     paths:
