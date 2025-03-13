@@ -2,41 +2,41 @@
 # This job is run only for release tags, starting with "v"
 archive-radar:
   stage: archive
-  image: python:3.11
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   rules:
-  - if: ($CI_COMMIT_TAG =~ /^v/ && $ENABLE_RADAR == "true")
+    - if: ($CI_COMMIT_TAG =~ /^v/ && $ENABLE_RADAR == "true")
   before_script:
-  - pip install FACILE-RS==${FACILE_RS_VERSION}
+    - uv pip install FACILE-RS==${FACILE_RS_VERSION}
   script:
-  - >
-    facile-rs radar upload
-    $RELEASE_ARCHIVE_URL
+    - >
+      uv run facile-rs radar upload
+      $RELEASE_ARCHIVE_URL
 
 # Upload release on Zenodo
 # This job is run only for release tags, starting with "v"
 archive-zenodo:
   stage: archive
-  image: python:3.11
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   rules:
-  - if: ($CI_COMMIT_TAG =~ /^v/ && $ENABLE_ZENODO == "true")
+    - if: ($CI_COMMIT_TAG =~ /^v/ && $ENABLE_ZENODO == "true")
   before_script:
-  - pip install FACILE-RS==${FACILE_RS_VERSION}
+    - uv pip install FACILE-RS==${FACILE_RS_VERSION}
   script:
-  - >
-    facile-rs zenodo upload
-    $RELEASE_ARCHIVE_URL
+    - >
+      uv run facile-rs zenodo upload
+      $RELEASE_ARCHIVE_URL
 
 # Create a BagPack archive and upload it to the GitLab registry
 archive-bagpack:
   stage: archive
-  image: python:3.11
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   dependencies:
-  - build-datacite
+    - build-datacite
   rules:
-  - if: ($CI_COMMIT_TAG =~ /^v/ && $ENABLE_BAGPACK == "true")
+    - if: ($CI_COMMIT_TAG =~ /^v/ && $ENABLE_BAGPACK == "true")
   before_script:
-  - apt-get update && apt-get install -y curl
-  - pip install FACILE-RS==${FACILE_RS_VERSION}
+    - apt-get update && apt-get install -y curl
+    - uv pip install FACILE-RS==${FACILE_RS_VERSION}
   script:
-  - facile-rs bagpack create $RELEASE_ARCHIVE_URL
-  - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${BAG_PATH} ${BAGPACK_REGISTRY_URL}/${BAG_PATH}'
+    - uv run facile-rs bagpack create $RELEASE_ARCHIVE_URL
+    - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${BAG_PATH} ${BAGPACK_REGISTRY_URL}/${BAG_PATH}'
