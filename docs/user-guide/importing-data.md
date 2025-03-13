@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Data collection and formatting are crucial first steps in using neptoon. This section will explain the process of acquiring and preparing your data for use with neptoon, whether you're a sensor owner with raw data files or a researcher working with publicly available datasets.
+Data collection and formatting are crucial first steps when using neptoon. This section will explain the process of preparing your data for use with neptoon, whether you're a sensor owner with raw data files, or a researcher working with publicly available datasets.
 
 ## Why is this step important?
 
@@ -10,27 +10,26 @@ Proper data collection and formatting ensure that:
 : 1. Your data is in a structure that neptoon can process efficiently.
 2. Subsequent analysis and processing steps in neptoon will run smoothly.
 
-Many different organisations are interested in using CRNS and this leads to numerous different data formats.
-### Sensor Owners
-If you own or operate a CRNS, you likely have raw sensor files that need to be parsed and formatted. neptoon provides tools to streamline this process, converting your raw data into a structured format ready for processing.
-### Researchers, Students, and Citizen Scientists
-For those working with CRNS data that has already been structured (e.g., it's in a `csv` format), neptoon offers methods to format such data ready for processing. We additionally provide methods which support efficiently formatting some of the publicly available datasets available through different organisations. 
+Preparing data for use in neptoon goes through two distinct steps:
 
-## Process Flowchart
+#### Sensor Owners
+If you own or operate a CRNS, you likely have raw sensor files that need to be parsed and formatted. This mean that you might have a folder which contains 100s (or 1000s) of small `.txt` files containing the recorded information from your sensor. The first step then is parsing these files and converting them into a more standard format ready for use with neptoon. Neptoon provides tools to streamline this process, converting your raw data into a structured format ready for processing.
+#### Researchers, Students, and Citizen Scientists
+If all of your data is already in a structured format, for example, a `.csv` that can easily be read in as a DataFrame, we still need to prepare it ready for use in neptoon. 
 
-Depending on what kind of data your working with might change.
+
+### Process Flowchart
+
+Given this how you import your data will depend on what stage your data is in. If it is raw sensor files, you need to utilise the parsing, filtering and preparing stage. This creates a single DataFrame ready for formatting. If you already have data available in a .csv or other structure format, you can skip the first step, import your data and go straight to the formatting step. 
 
 ```mermaid 
 graph TD 
-A[Start] --> B{Select Data Source} 
-B -->|Raw Data| C[Data Ingest] 
+A[Start] --> B{What data do you have?} 
+B -->|Raw Data| C[Raw Data Ingest and Parsing] 
 %% B -->|Public Data - work in progress| D[File Collection]  %%
-B -->|Tables| E[Data Formatting] 
-C --> F[Parsing] 
-%% D --> F  %%
-F --> E 
-E --> G[Prepared Data for neptoon] 
-G --> H[End]
+B -->|Single Table| E[Format Data for use in neptoon] 
+C -->|Single Table| E
+E -->|Formatted DataFrame| H[Continue in neptoon]
 ```
 
 !!! tip "Section Selection"
@@ -41,15 +40,11 @@ G --> H[End]
 
 Like everything in neptoon, it is possible to use pre-configured configuration files which automatically supply the settings for neptoon, allowing replicable data processing. Here we describe how to do this, as it is the most efficient way of using neptoon. More detailed descriptions on using neptoon directly, for example in a Jupyter notebook, are outlined below for those who wish to do this.
 
-If you want to import and format your data using a yaml file - first you make sure the configuration file is appropriately filled out (see [here](intro-to-config.md) for more information on that). After this you run the following code
+If you want to import and format your data using a yaml file - first you make sure the configuration file is appropriately filled out (see [here](intro-to-config.md) for more information on that). After this you run the following code:
 
 ```python
 from neptoon.data_ingest_and_formatting import CollectAndParseRawData
-
-data_creator = CollectAndParseRawData(
-						path_to_yaml="path/to/your_yaml.yaml"
-)
-
+data_creator = CollectAndParseRawData(path_to_yaml="path/to/your_config.yaml")
 crns_df = data_creator.create_data_frame()
 ```
 
