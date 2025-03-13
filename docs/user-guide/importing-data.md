@@ -12,9 +12,9 @@ Proper data collection and formatting ensure that:
 
 Preparing data for use in neptoon goes through two distinct steps:
 
-#### Sensor Owners
+#### <u>Sensor Owners</u>
 If you own or operate a CRNS, you likely have raw sensor files that need to be parsed and formatted. This mean that you might have a folder which contains 100s (or 1000s) of small `.txt` files containing the recorded information from your sensor. The first step then is parsing these files and converting them into a more standard format ready for use with neptoon. Neptoon provides tools to streamline this process, converting your raw data into a structured format ready for processing.
-#### Researchers, Students, and Citizen Scientists
+#### <u>Researchers, Students, and Citizen Scientists</u>
 If all of your data is already in a structured format, for example, a `.csv` that can easily be read in as a DataFrame, we still need to prepare it ready for use in neptoon. 
 
 
