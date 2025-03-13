@@ -1,1 +1,1 @@
-from .process_with_yaml import ProcessWithYaml
+from .process_with_config import ProcessWithConfig

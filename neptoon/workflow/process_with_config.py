@@ -14,8 +14,8 @@ from neptoon.io.read.data_ingest import (
     FormatDataForCRNSDataHub,
     validate_and_convert_file_path,
 )
-from neptoon.io.save.save_data import YamlSaver
-from neptoon.quality_control.saqc_methods_and_params import YamlRegistry
+from neptoon.io.save.save_data import ConfigSaver
+from neptoon.quality_control.saqc_methods_and_params import QAConfigRegistry
 from neptoon.quality_control import QualityCheck
 from neptoon.corrections import (
     CorrectionType,
@@ -30,8 +30,8 @@ from magazine import Magazine
 core_logger = get_logger()
 
 
-class ProcessWithYaml:
-    """Process data using YAML config files."""
+class ProcessWithConfig:
+    """Process data using config files."""
 
     def __init__(
         self,
@@ -308,17 +308,17 @@ class ProcessWithYaml:
                 create_all=False, selected_figures=to_create_list
             )
 
-    def _yaml_saver(self):
-        sensor_yaml_saver = YamlSaver(
+    def _config_saver(self):
+        sensor_config_saver = ConfigSaver(
             save_folder_location=self.data_hub.saver.full_folder_location,
             config=self.sensor_config,
         )
-        sensor_yaml_saver.save()
-        process_yaml_saver = YamlSaver(
+        sensor_config_saver.save()
+        process_config_saver = ConfigSaver(
             save_folder_location=self.data_hub.saver.full_folder_location,
             config=self.process_config,
         )
-        process_yaml_saver.save()
+        process_config_saver.save()
 
     def _save_data(
         self,
@@ -503,7 +503,7 @@ class ProcessWithYaml:
         )
         self._create_figures()
         self._save_data()
-        self._yaml_saver()
+        self._config_saver()
 
 
 class QualityAssessmentWithYaml:
@@ -596,8 +596,8 @@ class QualityAssessmentWithYaml:
 
         for check_method, check_params in target_dict.items():
             if isinstance(check_params, dict):
-                target = YamlRegistry.get_target(name_of_target)
-                method = YamlRegistry.get_method(check_method)
+                target = QAConfigRegistry.get_target(name_of_target)
+                method = QAConfigRegistry.get_method(check_method)
                 if method in [QAMethod.ABOVE_N0, QAMethod.BELOW_N0_FACTOR]:
                     check_params["N0"] = self.sensor_config.sensor_info.N0
                 check = QualityCheck(
