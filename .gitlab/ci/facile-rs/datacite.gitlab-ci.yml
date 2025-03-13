@@ -2,14 +2,14 @@
 # This job is run on every commit
 build-datacite:
   stage: build
-  image: python:3.11
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   before_script:
-  - pip install FACILE-RS==${FACILE_RS_VERSION}
+    - uv pip install FACILE-RS==${FACILE_RS_VERSION}
   script:
-  - facile-rs datacite create
+    - uv run facile-rs datacite create
   artifacts:
     paths:
-    - $DATACITE_PATH
+      - $DATACITE_PATH
     expire_in: 2 hrs
 
 # Upload DataCite metadata to the GitLab registry
@@ -20,10 +20,10 @@ upload-datacite:
   stage: release
   image: curlimages/curl:7.77.0
   needs:
-  - build-datacite
+    - build-datacite
   rules:
-  - if: $CI_COMMIT_TAG =~ /^v/
+    - if: $CI_COMMIT_TAG =~ /^v/
   script:
-  - mv $DATACITE_PATH $DATACITE_RELEASE
-  - |
-    curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${DATACITE_RELEASE} ${DATACITE_REGISTRY_URL}/${DATACITE_RELEASE}
+    - mv $DATACITE_PATH $DATACITE_RELEASE
+    - |
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${DATACITE_RELEASE} ${DATACITE_REGISTRY_URL}/${DATACITE_RELEASE}

@@ -1,13 +1,13 @@
-image: python:3.10-slim
+image: ghcr.io/astral-sh/uv:python3.11-bookworm
 
 pages:
   stage: docs
   script:
-    # Install all of the python packages for mkdocs
-    - apt-get update && apt-get install -y git
-    - git --version # This will confirm git is installed
-    - pip install -r requirements-docs.txt
-    - mkdocs build --verbose
+    # # Install all of the python packages for mkdocs
+    # - apt-get update && apt-get install -y git
+    # - git --version # This will confirm git is installed
+    - uv pip install -r requirements-docs.txt
+    - uv run mkdocs build --verbose
   artifacts:
     paths:
       - public
