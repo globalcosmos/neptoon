@@ -24,65 +24,111 @@ from neptoon.corrections import (
 from neptoon.calibration import CalibrationConfiguration
 from neptoon.quality_control.saqc_methods_and_params import QAMethod
 from neptoon.columns import ColumnInfo
-from neptoon.config.configuration_input import ConfigurationManager
+from neptoon.config.configuration_input import ConfigurationManager, BaseConfig
 from magazine import Magazine
 
 core_logger = get_logger()
 
 
-class ProcessWithConfig:
-    """Process data using config files."""
+def _get_config_section(
+    configuration_object: ConfigurationManager,
+    wanted_config: Literal["sensor", "processing"],
+):
+    """
+    Retrieves the specific config object from the configuration manager.
+
+    Parameters
+    ----------
+    wanted_object : Literal["sensor", "processing"]
+        The type of configuration object to retrieve
+
+    Returns
+    -------
+    Optional[ConfigurationObject]
+        The required configuration object if found, None otherwise
+    """
+    try:
+        return configuration_object.get_config(name=wanted_config)
+    except (AttributeError, KeyError):
+        core_logger.info(f"Configuration for {wanted_config} not found.")
+        return None
+
+
+class DataHubFromConfig:
+    """
+    Creates a DataHub instance using a configuration file.
+    """
 
     def __init__(
         self,
-        configuration_object: ConfigurationManager,
+        path_to_sensor_config: str | Path = None,
+        configuration_object: ConfigurationManager = None,
+        sensor_config: BaseConfig = None,  # Internal use
     ):
-        self.configuration_object = configuration_object
-        self.process_config = self._get_config_object(wanted_object="process")
-        self.sensor_config = self._get_config_object(wanted_object="sensor")
-        self.data_hub = None
+        self.configuration_object = None
+        self.sensor_config = None
 
-    def _safely_get_config(
-        self, wanted_object: Literal["sensor", "processing"]
-    ):
-        """
-        Safely retrieve configuration object with error handling.
+        self._initialise_configuration(
+            path_to_sensor_config=validate_and_convert_file_path(
+                path_to_sensor_config
+            ),
+            configuration_object=configuration_object,
+            sensor_config=sensor_config,
+        )
 
-        Parameters
-        ----------
-        wanted_object : Literal["sensor", "processing"]
-            The type of configuration object to retrieve
-
-        Returns
-        -------
-        Optional[object]
-            The configuration object if found, None otherwise
-        """
-        try:
-            return self.configuration_object.get_config(name=wanted_object)
-        except (AttributeError, KeyError):
-            core_logger.info(f"Configuration for {wanted_object} not found. ")
-            return None
-
-    def _get_config_object(
+    def _initialise_configuration(
         self,
-        wanted_object: Literal["sensor", "processing"],
+        path_to_sensor_config: str | Path,
+        configuration_object: ConfigurationManager,
+        sensor_config: BaseConfig,
     ):
         """
-        Collects the specific config object from the larger
-        configuration object.
+        Organises the preprocessing steps to ensure a configuration
+        object is available
+        """
+        if self.sensor_config is not None:
+            self.sensor_config = sensor_config
+        elif path_to_sensor_config is None and configuration_object is None:
+            self._no_data_given_error()
+        elif self.configuration_object is None:
+            self.sensor_config = self._load_sensor_config(
+                path_to_sensor_config=path_to_sensor_config
+            )
+
+    def _no_data_given_error(self):
+        """
+        Raise ValueError if nothing supplied
+
+        Raises
+        ------
+        ValueError
+            No Data
+        """
+        message = (
+            "Please provide either a path_to_sensor_config"
+            " or a configuration_object"
+        )
+        core_logger.error(message)
+        raise ValueError(message)
+
+    def _load_sensor_config(self, path_to_sensor_config):
+        """
+        Loads the config file into a ConfigurationManager and returns
+        the sensor config part
 
         Parameters
         ----------
-        wanted_object : Literal["sensor", "processing"]
-            The object to collect
-
-        Returns
-        -------
-        ConfigurationObject
-            The required configuration object.
+        path_to_sensor_config : str | Path
+            Path to sensor config file
         """
-        return self._safely_get_config(wanted_object)
+        configuration_object = ConfigurationManager()
+        configuration_object.load_configuration(
+            file_path=path_to_sensor_config,
+        )
+        self.configuration_object = configuration_object
+        return _get_config_section(
+            self.configuration_object, wanted_config="sensor"
+        )
 
     def _parse_raw_data(
         self,
@@ -123,29 +169,7 @@ class ProcessWithConfig:
         )
         parsed_data = file_parser.make_dataframe()
 
-        self.raw_data_parsed = parsed_data
-
-    def _prepare_time_series(
-        self,
-    ):
-        """
-        Method for preparing the time series data.
-
-        Returns
-        -------
-        pd.DataFrame
-            Returns a formatted dataframe
-        """
-        self.input_formatter_config = InputDataFrameFormattingConfig()
-        self.input_formatter_config.yaml_information = self.sensor_config
-        self.input_formatter_config.build_from_yaml()
-
-        data_formatter = FormatDataForCRNSDataHub(
-            data_frame=self.raw_data_parsed,
-            config=self.input_formatter_config,
-        )
-        df = data_formatter.format_data_and_return_data_frame()
-        return df
+        return parsed_data
 
     def _import_data(
         self,
@@ -163,9 +187,9 @@ class ProcessWithConfig:
             Prepared DataFrame
         """
         if self.sensor_config.raw_data_parse_options.parse_raw_data:
-            self._parse_raw_data()
+            raw_data_parsed = self._parse_raw_data()
         else:
-            self.raw_data_parsed = pd.read_csv(
+            raw_data_parsed = pd.read_csv(
                 validate_and_convert_file_path(
                     file_path=self.sensor_config.time_series_data.path_to_data,
                 )
@@ -173,8 +197,70 @@ class ProcessWithConfig:
         df = self._prepare_time_series()
         return df
 
+    def _prepare_time_series(
+        self,
+        raw_data_parsed: pd.DataFrame,
+    ):
+        """
+        Method for preparing the time series data.
+
+        Returns
+        -------
+        pd.DataFrame
+            Returns a formatted dataframe
+        """
+        input_formatter_config = InputDataFrameFormattingConfig()
+        input_formatter_config.config_info = self.sensor_config
+        input_formatter_config.build_from_config()
+
+        data_formatter = FormatDataForCRNSDataHub(
+            data_frame=raw_data_parsed,
+            config=input_formatter_config,
+        )
+        df = data_formatter.format_data_and_return_data_frame()
+        return df
+
+    def create_data_hub(self):
+        """
+        Creates a CRNSDataHub using the supplied information from the
+        config file.
+
+        Parameters
+        ----------
+        return_data_frame : bool, optional
+            Whether to return the CRNSDataHub directly, by default True
+
+        Returns
+        -------
+        CRNSDataHub
+            The CRNSDataHub
+        """
+        # import here to avoid circular dependency
+        from neptoon.hub import CRNSDataHub
+
+        return CRNSDataHub(
+            crns_data_frame=self._import_data(),
+            sensor_info=self.sensor_config.sensor_info,
+        )
+
+
+class ProcessWithConfig:
+    """Process data using config files."""
+
+    def __init__(
+        self,
+        path_to_sensor_config: str | Path = None,
+        path_to_process_config: str | Path = None,
+        configuration_object: ConfigurationManager = None,
+    ):
+        self.configuration_object = configuration_object
+        self.process_config = _get_config_section(wanted_object="process")
+        self.sensor_config = _get_config_section(wanted_object="sensor")
+        self.data_hub = None
+
     def _attach_nmdb_data(
         self,
+        data_hub,
     ):
         """
         Attaches incoming neutron data with NMDB database.
@@ -227,7 +313,7 @@ class ProcessWithConfig:
         name_of_target: str = None,
     ):
         """
-
+        Prepares quality assessment checks based on configuration.
 
         Parameters
         ----------
@@ -249,7 +335,7 @@ class ProcessWithConfig:
             List of QualityChecks
         """
 
-        qa_builder = QualityAssessmentWithYaml(
+        qa_builder = QualityAssessmentFromConfig(
             partial_config=partial_config,
             sensor_config=self.sensor_config,
             name_of_target=name_of_target,
@@ -263,10 +349,10 @@ class ProcessWithConfig:
         """
         Selects corrections.
 
-        See CorrectionSelectorWithYaml
+        See CorrectionSelectorFromConfig
 
         """
-        selector = CorrectionSelectorWithYaml(
+        selector = CorrectionSelectorFromConfig(
             data_hub=self.data_hub,
             process_config=self.process_config,
             sensor_config=self.sensor_config,
@@ -343,13 +429,13 @@ class ProcessWithConfig:
             if initial_folder_str is None
             else Path(initial_folder_str)
         )
-        append_yaml_bool = bool(
-            self.sensor_config.data_storage.append_yaml_hash_to_folder_name
+        append_timestamp_bool = bool(
+            self.sensor_config.data_storage.append_timestamp_to_folder_name
         )
         self.data_hub.save_data(
             folder_name=file_name,
             save_folder_location=folder,
-            append_yaml_hash_to_folder_name=append_yaml_bool,
+            append_timestamp=append_timestamp_bool,
         )
 
     def _calibrate_data(
@@ -378,44 +464,6 @@ class ProcessWithConfig:
         self.sensor_config.sensor_info.N0 = self.data_hub.sensor_info.N0
         self.data_hub.crns_data_frame["N0"] = self.sensor_config.sensor_info.N0
 
-    def create_data_hub(
-        self,
-        return_data_hub: bool = True,
-    ):
-        """
-        Creates a CRNSDataHub using the supplied information from the
-        YAML config file.
-
-        By default this method will return a configured CRNSDataHub.
-
-        When running the whole process with the run() method, it will
-        save the data hub to an attribute so that it can access it for
-        further steps.
-
-        Parameters
-        ----------
-        return_data_frame : bool, optional
-            Whether to return the CRNSDataHub directly, by default True
-
-        Returns
-        -------
-        CRNSDataHub
-            The CRNSDataHub
-        """
-        # import here to avoid circular dependency
-        from neptoon.hub import CRNSDataHub
-
-        if return_data_hub:
-            return CRNSDataHub(
-                crns_data_frame=self._import_data(),
-                sensor_info=self.sensor_config.sensor_info,
-            )
-        else:
-            self.data_hub = CRNSDataHub(
-                crns_data_frame=self._import_data(),
-                sensor_info=self.sensor_config.sensor_info,
-            )
-
     def _smooth_data(
         self,
         column_to_smooth,
@@ -442,7 +490,7 @@ class ProcessWithConfig:
         self,
     ):
         """
-        Full process run with YAML file
+        Full process run with config file
 
         Raises
         ------
@@ -452,7 +500,9 @@ class ProcessWithConfig:
         if self.sensor_config.data_storage.create_report:
             Magazine.active = True
 
-        self.create_data_hub(return_data_hub=False)
+        data_hub_creator = DataHubFromConfig(sensor_config=self.sensor_config)
+        self.data_hub = data_hub_creator.create_data_hub()
+
         self._attach_nmdb_data()
         self._prepare_static_values()
         # QA raw N spikes
@@ -475,7 +525,7 @@ class ProcessWithConfig:
         if self.sensor_config.sensor_info.N0 is None:
             message = (
                 "Cannot proceed with quality assessment or processing "
-                "without an N0 number. Supply an N0 number in the YAML "
+                "without an N0 number. Supply an N0 number in the sensor config "
                 "file or use site calibration"
             )
             core_logger.error(message)
@@ -506,7 +556,7 @@ class ProcessWithConfig:
         self._config_saver()
 
 
-class QualityAssessmentWithYaml:
+class QualityAssessmentFromConfig:
     """
     Handles bulding out QualityChecks from config files. When an SaQC
     system is bridged (see quality_assessment.py), for it to be
@@ -606,7 +656,7 @@ class QualityAssessmentWithYaml:
                 self.checks.append(check)
 
 
-class CorrectionSelectorWithYaml:
+class CorrectionSelectorFromConfig:
     """
     Idea is to work with the Enum objects and Correction Factory based
     on values.

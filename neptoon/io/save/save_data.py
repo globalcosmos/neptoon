@@ -42,7 +42,7 @@ class SaveAndArchiveOutputs:
         append_audit_log_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: dict = None,
-        append_time_stamp: bool = True,
+        append_timestamp: bool = True,
         figure_handler: FigureHandler = None,
         calib_df=None,
         magazine_active: bool = False,
@@ -72,7 +72,7 @@ class SaveAndArchiveOutputs:
         custom_column_names_dict : dict, optional
             A dictionary to convert standard neptoon names into custom a
             custom naming convention, by default None
-        append_time_stamp: bool, optional, by default True
+        append_timestamp: bool, optional, by default True
             Whether to append a timestamp to the folder name when
             saving.
         """
@@ -88,7 +88,7 @@ class SaveAndArchiveOutputs:
         )
         self.use_custom_column_names = use_custom_column_names
         self.custom_column_names_dict = custom_column_names_dict
-        self.append_time_stamp = append_time_stamp
+        self.append_timestamp = append_timestamp
         self.full_folder_location = None
         self.figure_handler = figure_handler
         self.calib_df = calib_df
@@ -133,7 +133,7 @@ class SaveAndArchiveOutputs:
             message = f"Error: {e} \nFolder already exists."
             core_logger.info(message)
 
-        if self.append_time_stamp:
+        if self.append_timestamp:
             from datetime import datetime
 
             # timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")

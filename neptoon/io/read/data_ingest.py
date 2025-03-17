@@ -33,7 +33,7 @@ class FileCollectionConfig:
 
     def __init__(
         self,
-        path_to_yaml: Union[str, Path] = None,
+        path_to_config: Union[str, Path] = None,
         data_location: Union[str, Path] = None,
         column_names: list = None,
         prefix="",
@@ -55,9 +55,9 @@ class FileCollectionConfig:
 
         Parameters
         ----------
-        path_to_yaml : Union[str, Path]
-            The location of the yaml file. Can be either a string or
-            Path object
+        path_to_config : Union[str, Path]
+            The location of the sensor configuration file. Can be either
+            a string or Path object
         data_location : Union[str, Path]
             The location of the data files. Can be either a string or
             Path object
@@ -94,14 +94,14 @@ class FileCollectionConfig:
         remove_prefix : str, optional
             Prefix to remove from column names, by default "//"
         """
-        self._path_to_yaml = validate_and_convert_file_path(
-            file_path=path_to_yaml
+        self._path_to_config = validate_and_convert_file_path(
+            file_path=path_to_config
         )
         self._data_location = validate_and_convert_file_path(
             file_path=data_location,
             base=(
-                self.path_to_yaml.parent
-                if self.path_to_yaml is not None
+                self.path_to_config.parent
+                if self.path_to_config is not None
                 else ""
             ),
         )
@@ -124,12 +124,12 @@ class FileCollectionConfig:
         self._determine_source_type()
 
     @property
-    def path_to_yaml(self):
-        return self._path_to_yaml
+    def path_to_config(self):
+        return self._path_to_config
 
-    @path_to_yaml.setter
-    def path_to_yaml(self, new_path):
-        self._path_to_yaml = validate_and_convert_file_path(new_path)
+    @path_to_config.setter
+    def path_to_config(self, new_path):
+        self._path_to_config = validate_and_convert_file_path(new_path)
 
     @property
     def data_location(self):
@@ -138,7 +138,7 @@ class FileCollectionConfig:
     @data_location.setter
     def data_location(self, new_location):
         self._data_location = validate_and_convert_file_path(
-            new_location, base=self._path_to_yaml.parent
+            new_location, base=self._path_to_config.parent
         )
         self._determine_source_type()
 
@@ -269,9 +269,9 @@ class FileCollectionConfig:
             # Just log any cleanup errors during exit
             core_logger.warning(f"Failed to cleanup temporary directory: {e}")
 
-    def build_from_yaml(
+    def build_from_config(
         self,
-        path_to_yaml: Optional[Union[Path, str]] = None,
+        path_to_config: Optional[Union[Path, str]] = None,
     ):
         """
         Imports the attributes for the instance of FileCollectionConfig
@@ -279,23 +279,23 @@ class FileCollectionConfig:
 
         Parameters
         ----------
-        path_to_yaml : Union[Path, str], optional
-            Path to the pre-configured YAML file, by default None
+        path_to_config : Union[Path, str], optional
+            Path to the sensor configuration file, by default None
 
         Raises
         ------
         ValueError
             If no suitable path given
         """
-        if path_to_yaml is None and self._path_to_yaml is None:
-            message = "No path given for yaml file"
+        if path_to_config is None and self._path_to_config is None:
+            message = "No path given for config file"
             core_logger.error(message)
             raise ValueError(message)
         else:
             path = (
-                path_to_yaml
-                if path_to_yaml is not None
-                else self._path_to_yaml
+                path_to_config
+                if path_to_config is not None
+                else self._path_to_config
             )
             path = validate_and_convert_file_path(path)
 
@@ -303,37 +303,29 @@ class FileCollectionConfig:
         internal_config.load_configuration(
             file_path=path,
         )
-        yaml_information = internal_config.get_config("sensor")
+        sensor_config = internal_config.get_config("sensor")
 
-        self.data_location = (
-            yaml_information.raw_data_parse_options.data_location
-        )
-        self.column_names = (
-            yaml_information.raw_data_parse_options.column_names
-        )
-        self.prefix = yaml_information.raw_data_parse_options.prefix
-        self.suffix = yaml_information.raw_data_parse_options.suffix
-        self.encoding = yaml_information.raw_data_parse_options.encoding
-        self.skip_lines = yaml_information.raw_data_parse_options.skip_lines
+        self.data_location = sensor_config.raw_data_parse_options.data_location
+        self.column_names = sensor_config.raw_data_parse_options.column_names
+        self.prefix = sensor_config.raw_data_parse_options.prefix
+        self.suffix = sensor_config.raw_data_parse_options.suffix
+        self.encoding = sensor_config.raw_data_parse_options.encoding
+        self.skip_lines = sensor_config.raw_data_parse_options.skip_lines
         self.parser_kw_strip_left = (
-            yaml_information.raw_data_parse_options.parser_kw.strip_left
+            sensor_config.raw_data_parse_options.parser_kw.strip_left
         )
         self.parser_kw_digit_first = (
-            yaml_information.raw_data_parse_options.parser_kw.digit_first
+            sensor_config.raw_data_parse_options.parser_kw.digit_first
         )
-        self.separator = yaml_information.raw_data_parse_options.separator
-        self.decimal = yaml_information.raw_data_parse_options.decimal
+        self.separator = sensor_config.raw_data_parse_options.separator
+        self.decimal = sensor_config.raw_data_parse_options.decimal
         self.skip_initial_space = (
-            yaml_information.raw_data_parse_options.skip_initial_space
+            sensor_config.raw_data_parse_options.skip_initial_space
         )
-        self.starts_with = yaml_information.raw_data_parse_options.starts_with
-        self.multi_header = (
-            yaml_information.raw_data_parse_options.multi_header
-        )
-        self.strip_names = yaml_information.raw_data_parse_options.strip_names
-        self.remove_prefix = (
-            yaml_information.raw_data_parse_options.remove_prefix
-        )
+        self.starts_with = sensor_config.raw_data_parse_options.starts_with
+        self.multi_header = sensor_config.raw_data_parse_options.multi_header
+        self.strip_names = sensor_config.raw_data_parse_options.strip_names
+        self.remove_prefix = sensor_config.raw_data_parse_options.remove_prefix
 
 
 class ManageFileCollection:
@@ -725,8 +717,9 @@ class InputDataFrameFormattingConfig:
 
     Attributes
     ----------
-    yaml_path : str | Path
-        The path to the YAML file storing attribute information
+    path_to_config : str | Path
+        The path to the configuration file storing attribute
+        information. This will be the sensor configuration file.
     time_resolution : str
         Time resolution in format "<number> <unit>".
     pressure_merge_method : {'mean', 'priority'}, optional
@@ -738,21 +731,11 @@ class InputDataFrameFormattingConfig:
         'priority'.
     neutron_count_units :
 
-    Methods
-    -------
-    - parse_resolution
-    - get_conversion_factor
-    - add_column_meta_data
-    - build_from_yaml
-    - assign_merge_methods
-    - add_meteo_columns
-    - add_date_time_column_info
-    - add_neutron_columns
     """
 
     def __init__(
         self,
-        path_to_yaml: Optional[Union[str, Path]] = None,
+        path_to_config: Optional[Union[str, Path]] = None,
         input_resolution: str = "1hour",
         output_resolution: str = "1hour",
         aggregate_method: str = "bagg",
@@ -779,8 +762,9 @@ class InputDataFrameFormattingConfig:
 
         Parameters
         ----------
-        path_to_yaml : Union[str, Path], optional
-            path for a YAML file to automate the build, by default None
+        path_to_config : Union[str, Path], optional
+            path to the sensor configuration file
+            by default None
         input_resolution : str, optional
             Time resolution in format "<number><unit>, by default
             "1hour"
@@ -851,7 +835,7 @@ class InputDataFrameFormattingConfig:
             - Mergemethod.PRIORITY: Select one column from available
               columns based on predefined priority.
         """
-        self.path_to_yaml = validate_and_convert_file_path(path_to_yaml)
+        self.path_to_config = validate_and_convert_file_path(path_to_config)
         self._input_resolution = self.parse_resolution(input_resolution)
         self._conversion_factor_to_counts_per_hour = (
             self.get_conversion_factor()
@@ -1026,9 +1010,9 @@ class InputDataFrameFormattingConfig:
             )
         )
 
-    def import_yaml(
+    def import_config(
         self,
-        path_to_yaml: str = None,
+        path_to_config: str = None,
     ):
         """
         Automatically assigns the internal attributes using a provided
@@ -1036,9 +1020,9 @@ class InputDataFrameFormattingConfig:
 
         Parameters
         ----------
-        path_to_yaml : str, optional
+        path_to_config : str, optional
             Location of the YAML file, if not supplied here it expects
-            that the self.yaml_path attribute is already set, by default
+            that the self.path_to_config attribute is already set, by default
             None
 
         Raises
@@ -1046,13 +1030,15 @@ class InputDataFrameFormattingConfig:
         ValueError
             When no path is given but the method is called.
         """
-        if path_to_yaml is None and self.path_to_yaml is None:
-            message = "No path given for yaml file"
+        if path_to_config is None and self.path_to_config is None:
+            message = "No path given for config file"
             core_logger.error(message)
             raise ValueError(message)
         else:
             path = (
-                path_to_yaml if path_to_yaml is not None else self.path_to_yaml
+                path_to_config
+                if path_to_config is not None
+                else self.path_to_config
             )
 
         internal_config = ConfigurationManager()
@@ -1060,13 +1046,13 @@ class InputDataFrameFormattingConfig:
             file_path=path,
         )
 
-        self.yaml_information = internal_config.get_config("sensor")
+        self.config_info = internal_config.get_config("sensor")
 
-    def build_from_yaml(self):
+    def build_from_config(self):
         """
         Assign attributes using the YAML information.
         """
-        tmp = self.yaml_information
+        tmp = self.config_info
 
         self.input_resolution = tmp.time_series_data.temporal.input_resolution
         self.output_resolution = (
@@ -1769,20 +1755,20 @@ class CollectAndParseRawData:
 
     def __init__(
         self,
-        path_to_yaml: Union[str, Path],
+        path_to_config: Union[str, Path],
         file_collection_config: FileCollectionConfig = None,
         input_formatter_config: InputDataFrameFormattingConfig = None,
     ):
-        self._path_to_yaml = validate_and_convert_file_path(path_to_yaml)
+        self._path_to_config = validate_and_convert_file_path(path_to_config)
         self.file_collection_config = file_collection_config
         self.input_formatter_config = input_formatter_config
 
     @property
-    def path_to_yaml(self):
-        return self._path_to_yaml
+    def path_to_config(self):
+        return self._path_to_config
 
-    @path_to_yaml.setter
-    def path_to_yaml(self, new_path):
+    @path_to_config.setter
+    def path_to_config(self, new_path):
         return validate_and_convert_file_path(new_path)
 
     def create_data_frame(self):
@@ -1795,8 +1781,10 @@ class CollectAndParseRawData:
         _type_
             _description_
         """
-        self.file_collection_config = FileCollectionConfig(self.path_to_yaml)
-        self.file_collection_config.build_from_yaml()
+        self.file_collection_config = FileCollectionConfig(
+            path_to_config=self.path_to_config
+        )
+        self.file_collection_config.build_from_config()
         file_manager = ManageFileCollection(config=self.file_collection_config)
         file_manager.create_file_list()
         file_parser = ParseFilesIntoDataFrame(
@@ -1805,10 +1793,10 @@ class CollectAndParseRawData:
         parsed_data = file_parser.make_dataframe()
 
         self.input_formatter_config = InputDataFrameFormattingConfig(
-            path_to_yaml=self.path_to_yaml
+            path_to_config=self.path_to_config
         )
-        self.input_formatter_config.import_yaml()
-        self.input_formatter_config.build_from_yaml()
+        self.input_formatter_config.import_config()
+        self.input_formatter_config.build_from_config()
         data_formatter = FormatDataForCRNSDataHub(
             data_frame=parsed_data,
             config=self.input_formatter_config,
