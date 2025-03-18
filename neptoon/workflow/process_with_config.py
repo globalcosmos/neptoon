@@ -2,8 +2,8 @@ import pandas as pd
 from typing import Literal, TYPE_CHECKING
 from pathlib import Path
 
-if TYPE_CHECKING:
-    from neptoon.hub import CRNSDataHub
+# if TYPE_CHECKING:
+from neptoon.hub import CRNSDataHub
 
 from neptoon.logging import get_logger
 from neptoon.io.read.data_ingest import (
@@ -54,6 +54,45 @@ def _get_config_section(
         return None
 
 
+def _return_config(
+    self, path_to_config, config_to_return: Literal["sensor", "processing"]
+):
+    """
+    Loads the config file into a ConfigurationManager and returns
+    the sensor config part
+
+    Parameters
+    ----------
+    path_to_sensor_config : str | Path
+        Path to sensor config file
+    """
+    configuration_object = ConfigurationManager()
+    configuration_object.load_configuration(
+        file_path=path_to_config,
+    )
+    self.configuration_object = configuration_object
+    return _get_config_section(
+        self.configuration_object, wanted_config=config_to_return
+    )
+
+
+def _no_data_given_error():
+    """
+    Raise ValueError if nothing supplied
+
+    Raises
+    ------
+    ValueError
+        No Data
+    """
+    message = (
+        "Please provide either a path_to_sensor_config"
+        " or a configuration_object"
+    )
+    core_logger.error(message)
+    raise ValueError(message)
+
+
 class DataHubFromConfig:
     """
     Creates a DataHub instance using a configuration file.
@@ -68,10 +107,11 @@ class DataHubFromConfig:
         self.configuration_object = None
         self.sensor_config = None
 
-        self._initialise_configuration(
-            path_to_sensor_config=validate_and_convert_file_path(
-                path_to_sensor_config
-            ),
+        path_to_sensor_config = validate_and_convert_file_path(
+            path_to_sensor_config
+        )
+        self.sensor_config = self._initialise_configuration(
+            path_to_sensor_config=path_to_sensor_config,
             configuration_object=configuration_object,
             sensor_config=sensor_config,
         )
@@ -86,14 +126,21 @@ class DataHubFromConfig:
         Organises the preprocessing steps to ensure a configuration
         object is available
         """
-        if self.sensor_config is not None:
-            self.sensor_config = sensor_config
-        elif path_to_sensor_config is None and configuration_object is None:
-            self._no_data_given_error()
-        elif self.configuration_object is None:
-            self.sensor_config = self._load_sensor_config(
-                path_to_sensor_config=path_to_sensor_config
+        if sensor_config is not None:
+            return sensor_config
+        elif configuration_object:
+            sensor_config = _get_config_section(
+                configuration_object=self.configuration_object,
+                wanted_config="sensor",
             )
+            return sensor_config
+        elif path_to_sensor_config:
+            sensor_config = _return_config(
+                path_to_config=path_to_sensor_config, config_to_return="sensor"
+            )
+            return sensor_config
+        else:
+            _no_data_given_error()
 
     def _no_data_given_error(self):
         """
@@ -110,25 +157,6 @@ class DataHubFromConfig:
         )
         core_logger.error(message)
         raise ValueError(message)
-
-    def _load_sensor_config(self, path_to_sensor_config):
-        """
-        Loads the config file into a ConfigurationManager and returns
-        the sensor config part
-
-        Parameters
-        ----------
-        path_to_sensor_config : str | Path
-            Path to sensor config file
-        """
-        configuration_object = ConfigurationManager()
-        configuration_object.load_configuration(
-            file_path=path_to_sensor_config,
-        )
-        self.configuration_object = configuration_object
-        return _get_config_section(
-            self.configuration_object, wanted_config="sensor"
-        )
 
     def _parse_raw_data(
         self,
@@ -194,7 +222,7 @@ class DataHubFromConfig:
                     file_path=self.sensor_config.time_series_data.path_to_data,
                 )
             )
-        df = self._prepare_time_series()
+        df = self._prepare_time_series(raw_data_parsed=raw_data_parsed)
         return df
 
     def _prepare_time_series(
@@ -253,28 +281,88 @@ class ProcessWithConfig:
         path_to_process_config: str | Path = None,
         configuration_object: ConfigurationManager = None,
     ):
-        self.configuration_object = configuration_object
-        self.process_config = _get_config_section(wanted_object="process")
-        self.sensor_config = _get_config_section(wanted_object="sensor")
+        # Initialise blank attributes
+        self.configuration_object = None
+        self.sensor_config = None
+        self.process_config = None
         self.data_hub = None
+
+        # Set up base attributes
+        self.sensor_config, self.process_config = (
+            self._initialise_configuration(
+                path_to_sensor_config=path_to_sensor_config,
+                path_to_process_config=path_to_process_config,
+                configuration_object=configuration_object,
+            )
+        )
+
+    def _initialise_configuration(
+        self,
+        path_to_sensor_config: str | Path,
+        path_to_process_config: str | Path,
+        configuration_object: ConfigurationManager,
+    ):
+        """
+        Creates the sensor and process config files depending on how
+        they've been supplied. This could be a directly provided
+        ConfigurationManager object or by providing paths to the config
+        files
+
+        Parameters
+        ----------
+        path_to_sensor_config : str | Path
+            path to the sensor config file
+        path_to_process_config : str | Path
+            path to the processing config file
+        configuration_object : ConfigurationManager
+            a configuration object
+
+        Returns
+        -------
+        sensor_config, process_config
+
+        """
+        if configuration_object:
+            sensor_config = configuration_object.get_config("sensor")
+            process_config = configuration_object.get_config("process")
+            return sensor_config, process_config
+        elif path_to_process_config and path_to_sensor_config:
+            sensor_config = _return_config(
+                path_to_config=path_to_sensor_config,
+                config_to_return="sensor",
+            )
+            process_config = _return_config(
+                path_to_config=path_to_process_config,
+                config_to_return="processing",
+            )
+            return sensor_config, process_config
+        else:
+            _no_data_given_error()
+
+    def _create_data_hub(self, sensor_config: BaseConfig):
+        # Import data as data_hub
+        data_hub_creator = DataHubFromConfig(sensor_config=sensor_config)
+        return data_hub_creator.create_data_hub()
 
     def _attach_nmdb_data(
         self,
-        data_hub,
+        data_hub: CRNSDataHub,
     ):
         """
         Attaches incoming neutron data with NMDB database.
         """
         tmp = self.process_config.correction_steps.incoming_radiation
-        self.data_hub.attach_nmdb_data(
+        data_hub.attach_nmdb_data(
             station=tmp.reference_neutron_monitor.station,
             new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
             resolution=tmp.reference_neutron_monitor.resolution,
             nmdb_table=tmp.reference_neutron_monitor.nmdb_table,
         )
+        return data_hub
 
     def _prepare_static_values(
         self,
+        data_hub: CRNSDataHub,
     ):
         """
         Prepares the SiteInformation values by converting them into
@@ -282,10 +370,12 @@ class ProcessWithConfig:
 
         Currently it just uses method in the CRNSDataHub.
         """
-        self.data_hub.prepare_static_values()
+        data_hub.prepare_static_values()
+        return data_hub
 
     def _apply_quality_assessment(
         self,
+        data_hub: CRNSDataHub,
         partial_config,
         name_of_target: str = None,
     ):
@@ -304,8 +394,9 @@ class ProcessWithConfig:
             name_of_target=name_of_target,
             partial_config=partial_config,
         )
-        self.data_hub.add_quality_flags(add_check=list_of_checks)
-        self.data_hub.apply_quality_flags()
+        data_hub.add_quality_flags(add_check=list_of_checks)
+        data_hub.apply_quality_flags()
+        return data_hub
 
     def _prepare_quality_assessment(
         self,
@@ -345,6 +436,9 @@ class ProcessWithConfig:
 
     def _select_corrections(
         self,
+        data_hub: CRNSDataHub,
+        process_config: BaseConfig,
+        sensor_config: BaseConfig,
     ):
         """
         Selects corrections.
@@ -353,70 +447,120 @@ class ProcessWithConfig:
 
         """
         selector = CorrectionSelectorFromConfig(
-            data_hub=self.data_hub,
-            process_config=self.process_config,
-            sensor_config=self.sensor_config,
+            data_hub=data_hub,
+            process_config=process_config,
+            sensor_config=sensor_config,
         )
-        self.data_hub = selector.select_corrections()
+        data_hub = selector.select_corrections()
+        return data_hub
 
-    def _correct_neutrons(self):
+    def _correct_neutrons(
+        self,
+        data_hub: CRNSDataHub,
+    ):
         """
         Runs the correction routine.
         """
-        self.data_hub.correct_neutrons()
+        data_hub.correct_neutrons()
+        return data_hub
 
-    def _create_neutron_uncertainty_bounds(self):
+    def _create_neutron_uncertainty_bounds(self, data_hub: CRNSDataHub):
         """
-        Produces uncertainty bounds of neutron count rates
-        """
-        self.data_hub.create_neutron_uncertainty_bounds()
+        Creates neutron statistical uncertainty bounds
 
-    def _produce_soil_moisture_estimates(self):
-        """
-        Completes the soil moisture estimation step
-        """
-        self.data_hub.produce_soil_moisture_estimates()
+        Parameters
+        ----------
+        data_hub : CRNSDataHub
+            datahub
 
-    def _create_figures(self):
+        Returns
+        -------
+        data_hub
+            updated data_hub
         """
-        Creates the figures selected in the YAML
+        data_hub.create_neutron_uncertainty_bounds()
+        return data_hub
+
+    def _produce_soil_moisture_estimates(self, data_hub: CRNSDataHub):
         """
-        if self.sensor_config.figures.create_figures is False:
+        produces soil moisture estimates
+
+        Parameters
+        ----------
+        data_hub : CRNSDataHub
+            datahub
+
+        Returns
+        -------
+        data_hub
+            updated data_hub
+        """
+        data_hub.produce_soil_moisture_estimates()
+        return data_hub
+
+    def _create_figures(
+        self,
+        data_hub: CRNSDataHub,
+        sensor_config: BaseConfig,
+    ):
+        """
+        Creates figures
+
+        Parameters
+        ----------
+        data_hub : CRNSDataHub
+            data_hub
+
+        Return
+        ------
+        data_hub: CRNSDataHub
+            updated data_hub
+        """
+        if sensor_config.figures.create_figures is False:
             return
 
-        if self.sensor_config.figures.make_all_figures:
-            self.data_hub.create_figures(create_all=True)
+        if sensor_config.figures.make_all_figures:
+            data_hub.create_figures(create_all=True)
         else:
             to_create_list = [
-                name for name in self.sensor_config.figures.custom_list
+                name for name in sensor_config.figures.custom_list
             ]
-            self.data_hub.create_figures(
+            data_hub.create_figures(
                 create_all=False, selected_figures=to_create_list
             )
+        return data_hub
 
-    def _config_saver(self):
+    def _config_saver(
+        self,
+        data_hub: CRNSDataHub,
+        sensor_config: BaseConfig,
+        process_config: BaseConfig,
+    ):
+        """
+        Saves the config files (with any updates) into the save folder.
+        """
         sensor_config_saver = ConfigSaver(
-            save_folder_location=self.data_hub.saver.full_folder_location,
-            config=self.sensor_config,
+            save_folder_location=data_hub.saver.full_folder_location,
+            config=sensor_config,
         )
         sensor_config_saver.save()
         process_config_saver = ConfigSaver(
-            save_folder_location=self.data_hub.saver.full_folder_location,
-            config=self.process_config,
+            save_folder_location=data_hub.saver.full_folder_location,
+            config=process_config,
         )
         process_config_saver.save()
 
     def _save_data(
         self,
+        data_hub: CRNSDataHub,
+        sensor_config: BaseConfig,
     ):
         """
         Arranges saving the data in the folder.
         """
-        file_name = self.sensor_config.sensor_info.name
+        file_name = sensor_config.sensor_info.name
         try:
-            initial_folder_str = Path(
-                self.sensor_config.data_storage.save_folder
-            )
+            initial_folder_str = Path(sensor_config.data_storage.save_folder)
         except TypeError:
             initial_folder_str = None
             message = (
@@ -430,61 +574,152 @@ class ProcessWithConfig:
             else Path(initial_folder_str)
         )
         append_timestamp_bool = bool(
-            self.sensor_config.data_storage.append_timestamp_to_folder_name
+            sensor_config.data_storage.append_timestamp_to_folder_name
         )
-        self.data_hub.save_data(
+        data_hub.save_data(
             folder_name=file_name,
             save_folder_location=folder,
             append_timestamp=append_timestamp_bool,
         )
+        return data_hub
 
     def _calibrate_data(
         self,
+        data_hub: CRNSDataHub,
+        sensor_config: BaseConfig,
     ):
         """
-        Calibrates the sensor when this is selected.
-        """
-        calib_df_path = validate_and_convert_file_path(
-            file_path=self.sensor_config.calibration.location
-        )
-        calib_df = pd.read_csv(calib_df_path)
-        self.data_hub.calibration_samples_data = calib_df
-        calibration_config = CalibrationConfiguration(
-            calib_data_date_time_column_name=self.sensor_config.calibration.key_column_names.date_time,
-            calib_data_date_time_format=self.sensor_config.calibration.date_time_format,
-            profile_id_column=self.sensor_config.calibration.key_column_names.profile_id,
-            distance_column=self.sensor_config.calibration.key_column_names.radial_distance_from_sensor,
-            sample_depth_column=self.sensor_config.calibration.key_column_names.sample_depth,
-            soil_moisture_gravimetric_column=self.sensor_config.calibration.key_column_names.gravimetric_soil_moisture,
-            bulk_density_of_sample_column=self.sensor_config.calibration.key_column_names.bulk_density_of_sample,
-            soil_organic_carbon_column=self.sensor_config.calibration.key_column_names.soil_organic_carbon,
-            lattice_water_column=self.sensor_config.calibration.key_column_names.lattice_water,
-        )
-        self.data_hub.calibrate_station(config=calibration_config)
-        self.sensor_config.sensor_info.N0 = self.data_hub.sensor_info.N0
-        self.data_hub.crns_data_frame["N0"] = self.sensor_config.sensor_info.N0
-
-    def _smooth_data(
-        self,
-        column_to_smooth,
-    ):
-        """
-        Smoothing data.
+        Calibrates the sensor producing an N0 calibration term
 
         Parameters
         ----------
-        column_to_smooth : str
-            Column to smooth
+        data_hub : CRNSDataHub
+            DataHub
+        sensor_config : BaseConfig
+            A sensor config file
+
+        Returns
+        -------
+        data_hub, sensor_config
+            Returns hub with updates from calibration and sensor_config
+            with updated N0
         """
-        smooth_method = self.process_config.data_smoothing.settings.algorithm
-        window = self.process_config.data_smoothing.settings.window
-        poly_order = self.process_config.data_smoothing.settings.poly_order
-        self.data_hub.smooth_data(
+        calib_df_path = validate_and_convert_file_path(
+            file_path=sensor_config.calibration.location
+        )
+        calib_df = pd.read_csv(calib_df_path)
+        data_hub.calibration_samples_data = calib_df
+        calibration_config = CalibrationConfiguration(
+            calib_data_date_time_column_name=sensor_config.calibration.key_column_names.date_time,
+            calib_data_date_time_format=sensor_config.calibration.date_time_format,
+            profile_id_column=sensor_config.calibration.key_column_names.profile_id,
+            distance_column=sensor_config.calibration.key_column_names.radial_distance_from_sensor,
+            sample_depth_column=sensor_config.calibration.key_column_names.sample_depth,
+            soil_moisture_gravimetric_column=sensor_config.calibration.key_column_names.gravimetric_soil_moisture,
+            bulk_density_of_sample_column=sensor_config.calibration.key_column_names.bulk_density_of_sample,
+            soil_organic_carbon_column=sensor_config.calibration.key_column_names.soil_organic_carbon,
+            lattice_water_column=sensor_config.calibration.key_column_names.lattice_water,
+        )
+        data_hub.calibrate_station(config=calibration_config)
+        sensor_config = self._update_sensor_config_after_calibration(
+            sensor_config, data_hub
+        )
+        data_hub = self._update_hub_after_calibration(data_hub=data_hub)
+        return data_hub, sensor_config
+
+    def _update_hub_after_calibration(
+        self,
+        data_hub: CRNSDataHub,
+        sensor_config: BaseConfig,
+    ):
+        """
+        Updates the dataframe in the data_hub with a column for N0.
+
+        Parameters
+        ----------
+        data_hub : CRNSDataHub
+            DataHub
+
+        Returns
+        -------
+        data_hub
+            CRNSDataHub
+        """
+
+        data_hub = data_hub.crns_data_frame["N0"] = (
+            sensor_config.sensor_info.N0
+        )
+        return data_hub
+
+    def _update_sensor_config_after_calibration(
+        self,
+        sensor_config,
+        data_hub,
+    ):
+        """
+        Updates sensor_config with N0 term calculatd during calibration.
+
+        Parameters
+        ----------
+        sensor_config : BaseCondig
+            The Sensor Config
+        data_hub : CRNSDataHub
+            DataHub
+
+        Returns
+        -------
+        sensor_config
+            sensor_config file with updated N0
+        """
+        sensor_config.sensor_info.N0 = data_hub.sensor_info.N0
+        return sensor_config
+
+    def _smooth_data(
+        self,
+        data_hub: CRNSDataHub,
+        process_config: BaseConfig,
+        column_to_smooth: str,
+    ):
+        """
+        Smooth a data column
+
+        Parameters
+        ----------
+        data_hub : CRNSDataHub
+            Data Hub
+        process_config : BaseConfig
+            Process Config
+        column_to_smooth : str
+            name of column to smooth
+        """
+        smooth_method = process_config.data_smoothing.settings.algorithm
+        window = process_config.data_smoothing.settings.window
+        poly_order = process_config.data_smoothing.settings.poly_order
+        data_hub.smooth_data(
             column_to_smooth=column_to_smooth,
             smooth_method=smooth_method,
             window=window,
             poly_order=poly_order,
         )
+        return data_hub
+
+    def _check_n0_available(self, sensor_config: BaseConfig):
+        """
+        Checks if N0 available before proceeding
+
+        Raises
+        ------
+        ValueError
+            Error if no N0 as cannot work then
+        """
+        if sensor_config.sensor_info.N0 is None:
+            message = (
+                "Cannot proceed with quality assessment or processing "
+                "without an N0 number. Supply an N0 number in the sensor config "
+                "file or use site calibration"
+            )
+            core_logger.error(message)
+            raise ValueError(message)
 
     def run_full_process(
         self,
@@ -500,60 +735,86 @@ class ProcessWithConfig:
         if self.sensor_config.data_storage.create_report:
             Magazine.active = True
 
-        data_hub_creator = DataHubFromConfig(sensor_config=self.sensor_config)
-        self.data_hub = data_hub_creator.create_data_hub()
+        self.data_hub = self._create_data_hub(sensor_config=self.sensor_config)
 
-        self._attach_nmdb_data()
-        self._prepare_static_values()
-        # QA raw N spikes
-        self._apply_quality_assessment(
+        # Prepare data
+        self.data_hub = self._attach_nmdb_data(self.data_hub)
+        self.data_hub = self._prepare_static_values(self.data_hub)
+
+        # First Quality assessment
+        ## Raw Neutrons
+        self.data_hub = self._apply_quality_assessment(
+            data_hub=self.data_hub,
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="raw_neutrons",
         )
-        # QA meteo
-        self._apply_quality_assessment(
+        ## Meteo Variables
+        self.data_hub = self._apply_quality_assessment(
+            data_hub=self.data_hub,
             partial_config=self.sensor_config.input_data_qa,
             name_of_target=None,
         )
 
-        self._select_corrections()
-        self._correct_neutrons()
+        # Corrections
+        self.data_hub = self._select_corrections(
+            data_hub=self.data_hub,
+            process_config=self.process_config,
+            sensor_config=self.sensor_config,
+        )
+        self.data_hub = self._correct_neutrons(self.data_hub)
 
+        # Calibration
         if self.sensor_config.calibration.calibrate:
-            self._calibrate_data()
-
-        if self.sensor_config.sensor_info.N0 is None:
-            message = (
-                "Cannot proceed with quality assessment or processing "
-                "without an N0 number. Supply an N0 number in the sensor config "
-                "file or use site calibration"
+            self.data_hub, self.sensor_config = self._calibrate_data(
+                data_hub=self.data_hub,
+                sensor_config=self.sensor_config,
             )
-            core_logger.error(message)
-            raise ValueError(message)
 
-        self._apply_quality_assessment(
+        # Second QA and Smoothing
+        self._check_n0_available(sensor_config=self.sensor_config)
+        self.data_hub = self._apply_quality_assessment(
+            data_hub=self.data_hub,
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="corrected_neutrons",
         )
         if self.process_config.data_smoothing.smooth_corrected_neutrons:
-            self._smooth_data(
+            self.data_hub = self._smooth_data(
+                data_hub=self.data_hub,
+                process_config=self.process_config,
                 column_to_smooth=str(
                     ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
                 ),
             )
-        self._create_neutron_uncertainty_bounds()
-        self._produce_soil_moisture_estimates()
+
+        # Produce soil moisture estimates
+        self.data_hub = self._create_neutron_uncertainty_bounds(self.data_hub)
+        self.data_hub = self._produce_soil_moisture_estimates(self.data_hub)
         if self.process_config.data_smoothing.smooth_soil_moisture:
-            self._smooth_data(
+            self.data_hub = self._smooth_data(
+                data_hub=self.data_hub,
+                process_config=self.process_config,
                 column_to_smooth=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
             )
-        self._apply_quality_assessment(
+        self.data_hub = self._apply_quality_assessment(
+            data_hub=self.data_hub,
             partial_config=self.sensor_config.soil_moisture_qa,
             name_of_target=None,
         )
-        self._create_figures()
-        self._save_data()
-        self._config_saver()
+
+        # Create figures and save outputs
+        self.data_hub = self._create_figures(
+            data_hub=self.data_hub,
+            sensor_config=self.sensor_config,
+        )
+        self.data_hub = self._save_data(
+            data_hub=self.data_hub,
+            sensor_config=self.sensor_config,
+        )
+        self._config_saver(
+            data_hub=self.data_hub,
+            sensor_config=self.sensor_config,
+            process_config=self.process_config,
+        )
 
 
 class QualityAssessmentFromConfig:
