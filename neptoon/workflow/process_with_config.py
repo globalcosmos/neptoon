@@ -67,7 +67,7 @@ def _return_config(
     Parameters
     ----------
     path_to_config : str | Path
-        Path to config file
+        Path to config file (in yaml format)
     config_to_return: Literal["sensor", "process"]
         name of config to return
     """
@@ -305,18 +305,18 @@ class DataHubFromConfig:
 
     def create_data_hub(self):
         """
-        Creates a CRNSDataHub using the supplied information from the
-        config file.
+        Creates a CRNSDataHub using the supplied configuration
+        information.
 
-        Parameters
-        ----------
-        return_data_frame : bool, optional
-            Whether to return the CRNSDataHub directly, by default True
+        This method processes raw data according to the configuration
+        settings, formats it appropriately, and initializes a new
+        CRNSDataHub instance.
 
         Returns
         -------
         CRNSDataHub
-            The CRNSDataHub
+            A fully configured CRNSDataHub instance ready for further
+            processing
         """
         # import here to avoid circular dependency
         from neptoon.hub import CRNSDataHub
@@ -329,13 +329,15 @@ class DataHubFromConfig:
 
 class ProcessWithConfig:
     """
-    Process data using config files.
+    Processes CRNS data according to configuration files.
 
-    A user can supply either:
-        - A ConfigurationManager with both sensor_config and
-          process_configs already loaded (legacy)
-        - The paths to both a sensor config and a process config yaml
-          file
+    This class implements the complete CRNS data processing pipeline
+    using configurations for both sensor parameters and processing
+    steps. It handles all stages from raw data import to final data
+    output and visualization.
+
+    Users can provide configurations either as file paths or as a
+    pre-configured ConfigurationManager object.
 
     Example:
     --------
@@ -838,12 +840,26 @@ class ProcessWithConfig:
         self,
     ):
         """
-        Full process run with config file
+        Executes the complete CRNS data processing pipeline.
+
+        This method performs the following steps in sequence:
+
+        1. Creates a data hub using the sensor configuration
+        2. Attaches NMDB reference data
+        3. Prepares static values and performs initial quality
+           assessment
+        4. Applies appropriate corrections to neutron counts
+        5. Performs calibration if requested
+        6. Applies additional quality assessment and smoothing
+        7. Calculates soil moisture estimates with uncertainty bounds
+        8. Creates visualizations
+        9. Saves processed data and updated configurations
 
         Raises
         ------
         ValueError
-            When no N0 supplied and no calibration completed.
+            When no N0 calibration parameter is available and
+            calibration is not enabled
         """
         if self.sensor_config.data_storage.create_report:
             Magazine.active = True
@@ -936,10 +952,23 @@ class ProcessWithConfig:
 
 class QualityAssessmentFromConfig:
     """
-    Handles bulding out QualityChecks from config files. When an SaQC
-    system is bridged (see quality_assessment.py), for it to be
-    accessible for YAML processing it a method must be in here to.
+    Builds quality assessment checks from configuration data.
 
+    This class translates quality assessment configuration parameters
+    into executable QualityCheck objects that can be applied to CRNS
+    data. It supports various check types and automatically handles
+    parameter inheritance from sensor information (e.g., N0 values).
+
+    Parameters
+    ----------
+    partial_config : BaseConfig
+        Configuration section containing quality assessment parameters
+    sensor_config : BaseConfig
+        Sensor configuration containing reference parameters
+    name_of_target : Literal["raw_neutrons", "corrected_neutrons"],
+    optional
+        Specific target to process; if None, processes all targets in
+        config
     """
 
     def __init__(
@@ -985,12 +1014,16 @@ class QualityAssessmentFromConfig:
 
     def create_checks(self):
         """
-        Creates the checks based on what is provided in the YAML file.
+        Creates quality check objects based on the provided
+        configuration.
+
+        This method processes the configuration and converts it into a
+        list of QualityCheck objects ready to be applied to data.
 
         Returns
         -------
-        List
-            A list of Checks is saved in self.checks
+        List[QualityCheck]
+            List of configured quality check objects
         """
         qa_dict = self.partial_config.model_dump()
 
@@ -1036,15 +1069,22 @@ class QualityAssessmentFromConfig:
 
 class CorrectionSelectorFromConfig:
     """
-    Idea is to work with the Enum objects and Correction Factory based
-    on values.
+    Selects and configures neutron count corrections based on
+    configuration.
 
-    I'm hoping it will be simply a matter of:
+    This class translates correction configuration parameters into the
+    appropriate correction objects to be applied to neutron count data.
+    It supports various correction types including pressure, humidity,
+    incoming intensity, and above-ground biomass.
 
-    if processing.pressure == desilets_2012
-        factory add - CorrectionType = pressure - CorrectionTheory =
-        desilets
-
+    Parameters
+    ----------
+    data_hub : CRNSDataHub
+        The data hub instance to which corrections will be applied
+    process_config : BaseConfig
+        Process configuration containing correction specifications
+    sensor_config : BaseConfig
+        Sensor configuration containing site-specific parameters
     """
 
     def __init__(
@@ -1201,12 +1241,17 @@ class CorrectionSelectorFromConfig:
 
     def select_corrections(self):
         """
-        Chains together each correction step and outputs the data_hub.
+        Applies all configured corrections to the data hub.
+
+        This method processes all correction specifications in the
+        process configuration and applies them to the data hub in the
+        appropriate sequence.
 
         Returns
         -------
         CRNSDataHub
-            With corrections selected.
+            The data hub with all corrections selected and ready to be
+            applied
         """
         self._pressure_correction()
         self._humidity_correction()
