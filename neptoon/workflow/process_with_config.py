@@ -32,20 +32,22 @@ core_logger = get_logger()
 
 def _get_config_section(
     configuration_object: ConfigurationManager,
-    wanted_config: Literal["sensor", "processing"],
+    wanted_config: Literal["sensor", "process"],
 ):
     """
-    Retrieves the specific config object from the configuration manager.
+    Retrieves the specific config from the configuration manager.
 
     Parameters
     ----------
-    wanted_object : Literal["sensor", "processing"]
+    configuration_object : ConfigurationManager
+        The configuration object containing loaded configs
+    wanted_object : Literal["sensor", "process"]
         The type of configuration object to retrieve
 
     Returns
     -------
-    Optional[ConfigurationObject]
-        The required configuration object if found, None otherwise
+    Optional[BaseConfig]
+        The requested configuration object if found, None otherwise
     """
     try:
         return configuration_object.get_config(name=wanted_config)
@@ -55,24 +57,27 @@ def _get_config_section(
 
 
 def _return_config(
-    self, path_to_config, config_to_return: Literal["sensor", "processing"]
+    path_to_config,
+    config_to_return: Literal["sensor", "process"],
 ):
     """
-    Loads the config file into a ConfigurationManager and returns
-    the sensor config part
+    Loads the config file into a ConfigurationManager and returns the
+    sensor config part
 
     Parameters
     ----------
-    path_to_sensor_config : str | Path
-        Path to sensor config file
+    path_to_config : str | Path
+        Path to config file
+    config_to_return: Literal["sensor", "process"]
+        name of config to return
     """
     configuration_object = ConfigurationManager()
     configuration_object.load_configuration(
         file_path=path_to_config,
     )
-    self.configuration_object = configuration_object
     return _get_config_section(
-        self.configuration_object, wanted_config=config_to_return
+        configuration_object=configuration_object,
+        wanted_config=config_to_return,
     )
 
 
@@ -96,6 +101,27 @@ def _no_data_given_error():
 class DataHubFromConfig:
     """
     Creates a DataHub instance using a configuration file.
+
+    This class handles the configuration and initialization of a
+    CRNSDataHub using a sensor configuration file. It manages raw data
+    parsing, time series preparation, and final hub creation.
+
+    Example:
+    --------
+    >>> # Method 1: Using a path to sensor configuration file
+    >>> sensor_config_path = "/path/to/configurations/A101_station.yaml"
+    >>> data_hub_creator = DataHubFromConfig(path_to_sensor_config=sensor_config_path)
+    >>> data_hub = data_hub_creator.create_data_hub()
+    >>>
+    >>> # Method 2: Using a pre-configured ConfigurationManager
+    >>> config_manager = ConfigurationManager()
+    >>> config_manager.load_configuration(file_path=sensor_config_path)
+    >>> data_hub_creator = DataHubFromConfig(configuration_object=config_manager)
+    >>> data_hub = data_hub_creator.create_data_hub()
+    >>>
+    >>> # After creating the data hub, you can proceed with operations:
+    >>> data_hub.attach_nmdb_data(station="JUNG")
+    >>> data_hub.prepare_static_values()
     """
 
     def __init__(
@@ -104,6 +130,19 @@ class DataHubFromConfig:
         configuration_object: ConfigurationManager = None,
         sensor_config: BaseConfig = None,  # Internal use
     ):
+        """
+
+        Parameters
+        ----------
+        path_to_sensor_config : str | Path, optional
+            path where sensor config file is found , by default None
+        configuration_object : ConfigurationManager, optional
+            ConfigurationManager, presumed to contain a sensor config
+            object, by default None
+        sensor_config : BaseConfig, optional
+            SensorConfig directly supplied (internal use with
+            ProcessWithConfig), by default None
+        """
         self.configuration_object = None
         self.sensor_config = None
 
@@ -123,8 +162,24 @@ class DataHubFromConfig:
         sensor_config: BaseConfig,
     ):
         """
-        Organises the preprocessing steps to ensure a configuration
+        Organises the initialisation steps to ensure a configuration
         object is available
+
+        Parameters
+        ----------
+        path_to_sensor_config : str | Path, optional
+            path where sensor config file is found , by default None
+        configuration_object : ConfigurationManager, optional
+            ConfigurationManager, presumed to contain a sensor config
+            object, by default None
+        sensor_config : BaseConfig, optional
+            SensorConfig directly supplied (internal use with
+            ProcessWithConfig), by default None
+
+        Returns
+        -------
+        sensor_config
+            sensor config file
         """
         if sensor_config is not None:
             return sensor_config
@@ -273,7 +328,39 @@ class DataHubFromConfig:
 
 
 class ProcessWithConfig:
-    """Process data using config files."""
+    """
+    Process data using config files.
+
+    A user can supply either:
+        - A ConfigurationManager with both sensor_config and
+          process_configs already loaded (legacy)
+        - The paths to both a sensor config and a process config yaml
+          file
+
+    Example:
+    --------
+    >>> # Using string paths to configuration files
+    >>> sensor_config_path = "/path/to/configuration_files/A101_station.yaml"
+    >>> processing_config_path = "/path/to/configuration_files/v1_processing_method.yaml"
+    >>>
+    >>> # Initialize the processor with paths to config files
+    >>> config_processor = ProcessWithConfig(
+    ...     path_to_sensor_config=sensor_config_path,
+    ...     path_to_process_config=processing_config_path
+    ... )
+    >>>
+    >>> # Run the full processing pipeline
+    >>> config_processor.run_full_process()
+    >>>
+    >>> # Alternatively, with a pre-configured ConfigurationManager:
+    >>> config_manager = ConfigurationManager()
+    >>> config_manager.load_configuration(file_path=sensor_config_path)
+    >>> config_manager.load_configuration(file_path=processing_config_path)
+    >>>
+    >>> # Initialize using the configuration manager
+    >>> config_processor = ProcessWithConfig(configuration_manager=config_manager)
+    >>> config_processor.run_full_process()
+    """
 
     def __init__(
         self,
@@ -333,7 +420,7 @@ class ProcessWithConfig:
             )
             process_config = _return_config(
                 path_to_config=path_to_process_config,
-                config_to_return="processing",
+                config_to_return="process",
             )
             return sensor_config, process_config
         else:
@@ -350,6 +437,16 @@ class ProcessWithConfig:
     ):
         """
         Attaches incoming neutron data with NMDB database.
+
+        Parameters
+        ----------
+        data_hub : CRNSDataHub
+            data_hub
+
+        Returns
+        -------
+        data_hub
+            _description_
         """
         tmp = self.process_config.correction_steps.incoming_radiation
         data_hub.attach_nmdb_data(
@@ -368,7 +465,15 @@ class ProcessWithConfig:
         Prepares the SiteInformation values by converting them into
         column in the data frame.
 
-        Currently it just uses method in the CRNSDataHub.
+        Parameters
+        ----------
+        data_hub : CRNSDataHub
+            data hub
+
+        Returns
+        -------
+        data_hub
+            data_hub
         """
         data_hub.prepare_static_values()
         return data_hub
@@ -377,6 +482,7 @@ class ProcessWithConfig:
         self,
         data_hub: CRNSDataHub,
         partial_config,
+        sensor_config,
         name_of_target: str = None,
     ):
         """
@@ -384,14 +490,20 @@ class ProcessWithConfig:
 
         Parameters
         ----------
+        data_hub : CRNSDataHub
+            data hub
+        sensor_config : ConfigurationObject
+            The sensor_config
         partial_config : ConfigurationObject
-            A ConfigurationObject section
+            A ConfigurationObject section, can come from either
+            process_config or sensor_config.
         name_of_target : str
             Name of the target for QA - if None it will loop through
             available targets in the partial_config
         """
         list_of_checks = self._prepare_quality_assessment(
             name_of_target=name_of_target,
+            sensor_config=sensor_config,
             partial_config=partial_config,
         )
         data_hub.add_quality_flags(add_check=list_of_checks)
@@ -401,6 +513,7 @@ class ProcessWithConfig:
     def _prepare_quality_assessment(
         self,
         partial_config,
+        sensor_config,
         name_of_target: str = None,
     ):
         """
@@ -428,7 +541,7 @@ class ProcessWithConfig:
 
         qa_builder = QualityAssessmentFromConfig(
             partial_config=partial_config,
-            sensor_config=self.sensor_config,
+            sensor_config=sensor_config,
             name_of_target=name_of_target,
         )
         list_of_checks = qa_builder.create_checks()
@@ -745,12 +858,14 @@ class ProcessWithConfig:
         ## Raw Neutrons
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
+            sensor_config=self.sensor_config,
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="raw_neutrons",
         )
         ## Meteo Variables
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
+            sensor_config=self.sensor_config,
             partial_config=self.sensor_config.input_data_qa,
             name_of_target=None,
         )
@@ -774,6 +889,7 @@ class ProcessWithConfig:
         self._check_n0_available(sensor_config=self.sensor_config)
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
+            sensor_config=self.sensor_config,
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="corrected_neutrons",
         )
@@ -797,6 +913,7 @@ class ProcessWithConfig:
             )
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
+            sensor_config=self.sensor_config,
             partial_config=self.sensor_config.soil_moisture_qa,
             name_of_target=None,
         )
