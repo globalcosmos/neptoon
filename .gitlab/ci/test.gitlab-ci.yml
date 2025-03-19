@@ -4,7 +4,7 @@ test:pytest:
   before_script:
     - uv pip install -e ".[gui]"
   script:
-    - uv run pytest
+    - pytest
   cache:
     paths:
       - "$UV_CACHE_DIR"
