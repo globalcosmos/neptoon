@@ -35,7 +35,7 @@ Here some example scripts to do this using mamba or conda:
 ## GUI Installation Guide
 
 !!! info "**Work in Progress**"
-    The GUI is now available in v0.6.0 to be installed locally. This is still a work in progress, and should be considered in a beta phase. Updates coming in the future.
+    The GUI is now available as of v0.6.0 to be installed locally. This is still a work in progress, and should be considered in a beta phase. Updates coming in the future.
 
 
 Neptoon provides a graphical user interface (GUI) that enables researchers and practitioners to process Cosmic-Ray Neutron Sensor data without requiring Python programming expertise. This guide walks you through the installation and initial setup process for those users who expect to only need the GUI.
