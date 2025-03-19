@@ -83,10 +83,9 @@ neptoon-gui
 When you execute this command:
 
 - A local server will start automatically
-- Your terminal will display a URL (typically http://localhost:XXXX)
-- Copy this URL and open it in your web browser
-- The neptoon GUI will load in your browser window
-
+- The launcher should automatically start in a browser window
+- Your terminal will also display a URL (typically http://localhost:8501)
+- You can copy this URL and open it in your web browser
 
 ### Uninstallation
  
