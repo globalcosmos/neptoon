@@ -3,6 +3,7 @@ from pathlib import Path
 import typer
 import platform
 import sys
+import shutil
 
 app = typer.Typer()
 
@@ -20,6 +21,15 @@ def find_streamlit_executable():
 
     if streamlit_path.exists():
         return streamlit_path
+
+    streamlit_in_path = shutil.which("streamlit")
+    if streamlit_in_path:
+        print(f"Found streamlit in PATH: {streamlit_in_path}")
+        return Path(streamlit_in_path)
+
+    print(f"Python executable: {sys.executable}")
+    print(f"Looked in: {streamlit_path}")
+    print("Searched PATH but couldn't find streamlit")
 
     return None
 
