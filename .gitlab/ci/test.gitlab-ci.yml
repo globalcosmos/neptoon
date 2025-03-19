@@ -3,6 +3,7 @@ test:pytest:
   image: ghcr.io/astral-sh/uv:python3.11-bookworm
   before_script:
     - uv pip install pytest
+    - uv pip install typer # for GUI tests
   script:
     - uv run pytest
   cache:
