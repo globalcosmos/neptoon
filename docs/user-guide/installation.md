@@ -66,7 +66,7 @@ First, we'll install `pipx`, a specialized tool that manages Python applications
 Once pipx is installed and your terminal has been restarted, install neptoon using:
 
 ```bash
-pipx install neptoon[gui]
+pipx install "neptoon[gui]"
 ```
 
 This command will:
