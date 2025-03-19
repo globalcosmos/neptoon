@@ -2,8 +2,7 @@ test:pytest:
   stage: test
   image: ghcr.io/astral-sh/uv:python3.11-bookworm
   before_script:
-    - uv pip install pytest
-    - uv pip install typer # for GUI tests
+    - uv pip install -e ".[gui]"
   script:
     - uv run pytest
   cache:
