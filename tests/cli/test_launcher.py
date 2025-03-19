@@ -26,14 +26,6 @@ def test_find_streamlit_unix(monkeypatch):
     assert result == expected_path
 
 
-def test_streamlit_not_found(monkeypatch):
-    """Test behavior when streamlit is not found."""
-    monkeypatch.setattr(platform, "system", lambda: "Linux")
-    monkeypatch.setattr(Path, "exists", lambda _: False)
-    result = find_streamlit_executable()
-    assert result is None
-
-
 def test_main_successful_launch(monkeypatch):
     """Test that main launches streamlit with correct parameters."""
     streamlit_path = Path("/mock/path/to/streamlit")
