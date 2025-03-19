@@ -739,7 +739,10 @@ class ProcessWithConfig:
         sensor_config = self._update_sensor_config_after_calibration(
             sensor_config, data_hub
         )
-        data_hub = self._update_hub_after_calibration(data_hub=data_hub)
+        data_hub = self._update_hub_after_calibration(
+            data_hub=data_hub,
+            sensor_config=sensor_config,
+        )
         return data_hub, sensor_config
 
     def _update_hub_after_calibration(
@@ -761,9 +764,7 @@ class ProcessWithConfig:
             CRNSDataHub
         """
 
-        data_hub = data_hub.crns_data_frame["N0"] = (
-            sensor_config.sensor_info.N0
-        )
+        data_hub.crns_data_frame["N0"] = sensor_config.sensor_info.N0
         return data_hub
 
     def _update_sensor_config_after_calibration(
