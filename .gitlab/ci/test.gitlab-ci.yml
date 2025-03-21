@@ -2,9 +2,9 @@ test:pytest:
   stage: test
   image: ghcr.io/astral-sh/uv:python3.11-bookworm
   before_script:
-    - uv pip install pytest
+    - uv pip install -e ".[gui]"
   script:
-    - uv run pytest
+    - pytest
   cache:
     paths:
       - "$UV_CACHE_DIR"
