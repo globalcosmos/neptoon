@@ -88,7 +88,7 @@ def test_init(save_and_archive, tmp_path):
     """
     assert save_and_archive.folder_name == "test_folder"
     assert save_and_archive.save_folder_location == tmp_path
-    assert not save_and_archive.append_yaml_hash_to_folder_name
+    assert save_and_archive.append_timestamp
     assert not save_and_archive.use_custom_column_names
     assert save_and_archive.custom_column_names_dict is None
 
