@@ -39,10 +39,10 @@ class SaveAndArchiveOutputs:
         flag_data_frame: pd.DataFrame,
         sensor_info: SensorInfo,
         save_folder_location: Union[str, Path] = None,
-        append_yaml_hash_to_folder_name: bool = False,
+        append_audit_log_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: dict = None,
-        append_time_stamp: bool = True,
+        append_timestamp: bool = True,
         figure_handler: FigureHandler = None,
         calib_df=None,
         magazine_active: bool = False,
@@ -62,9 +62,9 @@ class SaveAndArchiveOutputs:
             The SensorInfo object.
         save_folder_location : Union[str, Path], optional
             The folder where the data should be saved. If left as None
-        append_yaml_hash_to_folder_name : bool, optional
+        append_audit_log_hash_to_folder_name : bool, optional
             The DataAuditLog gets converted to a hash, meaning sites
-            procesed the same way share a hash. This can be appended to
+            processed the same way share a hash. This can be appended to
             the folder automatically helping to identify sites processed
             differently, by default False
         use_custom_column_names : bool, optional
@@ -72,7 +72,7 @@ class SaveAndArchiveOutputs:
         custom_column_names_dict : dict, optional
             A dictionary to convert standard neptoon names into custom a
             custom naming convention, by default None
-        append_time_stamp: bool, optional, by default True
+        append_timestamp: bool, optional, by default True
             Whether to append a timestamp to the folder name when
             saving.
         """
@@ -83,10 +83,12 @@ class SaveAndArchiveOutputs:
         self.save_folder_location = self._validate_save_folder(
             save_folder_location
         )
-        self.append_yaml_hash_to_folder_name = append_yaml_hash_to_folder_name
+        self.append_audit_log_hash_to_folder_name = (
+            append_audit_log_hash_to_folder_name
+        )
         self.use_custom_column_names = use_custom_column_names
         self.custom_column_names_dict = custom_column_names_dict
-        self.append_time_stamp = append_time_stamp
+        self.append_timestamp = append_timestamp
         self.full_folder_location = None
         self.figure_handler = figure_handler
         self.calib_df = calib_df
@@ -131,7 +133,7 @@ class SaveAndArchiveOutputs:
             message = f"Error: {e} \nFolder already exists."
             core_logger.info(message)
 
-        if self.append_time_stamp:
+        if self.append_timestamp:
             from datetime import datetime
 
             # timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
@@ -413,7 +415,7 @@ class SaveAndArchiveOutputs:
         if Magazine.active:
             self._save_pdf(location=self.full_folder_location)
         self.close_and_save_data_audit_log(
-            append_hash=self.append_yaml_hash_to_folder_name
+            append_hash=self.append_audit_log_hash_to_folder_name
         )
 
     # ---- TODO below this line ----
@@ -427,7 +429,10 @@ class SaveAndArchiveOutputs:
         pass
 
 
-class YamlSaver:
+class ConfigSaver:
+    """
+    Saves the SensorConfig object as a yaml file.
+    """
 
     def __init__(
         self,
@@ -441,7 +446,7 @@ class YamlSaver:
         self,
     ):
         """
-        Convert a Pydantic model to YAML and save it to a file.
+        Convert a Pydantic model to YAML file and save it.
         """
         if isinstance(self.config, SensorConfig):
             save_location = (
@@ -454,7 +459,7 @@ class YamlSaver:
         json_str = self.config.model_dump_json()
         data = json.loads(json_str)
 
-        yaml_str = yaml.safe_dump(
+        config_str = yaml.safe_dump(
             data,
             default_flow_style=False,
             allow_unicode=True,
@@ -463,4 +468,4 @@ class YamlSaver:
             default_style=None,
         )
 
-        Path(save_location).write_text(yaml_str)
+        Path(save_location).write_text(config_str)

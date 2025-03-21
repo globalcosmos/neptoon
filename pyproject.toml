@@ -1,6 +1,6 @@
 [project]
 name = "neptoon"
-version = "0.6.8"
+version = "0.7.0"
 description = "The neptoon package makes CRNS processing and research simple."
 readme = "README.md"
 license = "MIT"
@@ -16,7 +16,6 @@ dependencies = [
     "pyarrow>=18.0.0",
     "pyaml>=23.12.0",
     "pydantic>=2.6.1",
-    # "flake8>=7.0.0",
     "pandera>=0.18.0",
     "saqc>=2.6.0",
     "magazine>=0.3.2",
