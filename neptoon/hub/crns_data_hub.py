@@ -608,10 +608,10 @@ class CRNSDataHub:
         self,
         folder_name: Union[str, None] = None,
         save_folder_location: Union[str, Path, None] = None,
-        append_yaml_hash_to_folder_name: bool = False,
+        append_audit_log_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: Union[dict, None] = None,
-        append_time_stamp: bool = True,
+        append_timestamp: bool = True,
     ):
         """
         Saves the file to a specified location. It must contain the
@@ -639,10 +639,10 @@ class CRNSDataHub:
             flag_data_frame=self.flags_data_frame,
             sensor_info=self.sensor_info,
             save_folder_location=save_folder_location,
-            append_yaml_hash_to_folder_name=append_yaml_hash_to_folder_name,
+            append_audit_log_hash_to_folder_name=append_audit_log_hash_to_folder_name,
             use_custom_column_names=use_custom_column_names,
             custom_column_names_dict=custom_column_names_dict,
-            append_time_stamp=append_time_stamp,
+            append_timestamp=append_timestamp,
             figure_handler=self.figure_creator,
             calib_df=calib_df,
             magazine_active=self.magazine_active,

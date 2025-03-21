@@ -288,9 +288,10 @@ class ParameterRegistry:
         return cls._registry[method]
 
 
-class YamlRegistry:
+class QAConfigRegistry:
     """
-    Registry system for mapping YAML configuration keys to QA enums.
+    Registry system for mapping strings as found in the configuration
+    file to specific QATarget and QAMethods.
     """
 
     _target_mapping = {

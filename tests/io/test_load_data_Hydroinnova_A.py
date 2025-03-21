@@ -21,7 +21,7 @@ test_filename = (
     / "CRNS-station_data-Hydroinnova-A.zip"
 )
 
-yaml_path = (
+config_path = (
     Path(__file__).parent.parent
     / "test_data"
     / "io"
@@ -36,9 +36,9 @@ whole YAML run. If this breaks we investigate where it broke.
 
 # %%
 def test_canary(
-    yaml_path=yaml_path,
+    config_path=config_path,
 ):
-    data_creator = CollectAndParseRawData(path_to_yaml=yaml_path)
+    data_creator = CollectAndParseRawData(path_to_config=config_path)
     df = data_creator.create_data_frame()
     assert "air_pressure" in df.columns
     assert "epithermal_neutrons_cph" in df.columns
