@@ -515,10 +515,22 @@ class ConfigurationManager:
     def __init__(self):
         self._configs: Dict[str, BaseConfig] = {}
 
+    def _get_working_directory(
+        self,
+        config_dict: dict,
+        config_path: Path,
+    ):
+        if "working_directory" in config_dict and isinstance(config_dict["working_directory"],str):
+            parent_path = Path(config_dict["working_directory"])
+        else:
+            parent_path = config_path.parent
+        return parent_path
+
     def _resolve_paths(
         self,
         config_dict: dict,
         config_path: Path,
+        parent_path: Optional[Path] = None,
     ):
         """
         Resolves the paths in the YAML file so that any relative paths
@@ -537,18 +549,24 @@ class ConfigurationManager:
         dict
             Dictionary with paths as Path objects.
         """
+        if parent_path is None:
+            parent_path = self._get_working_directory(
+                config_dict=config_dict, config_path=config_path
+            )
+
         resolved_dict = {}
         for key, value in config_dict.items():
             if isinstance(value, dict):
                 resolved_dict[key] = self._resolve_paths(
-                    value, config_path=config_path
+                    value, config_path=config_path, parent_path=parent_path,
                 )
             elif isinstance(value, str) and (
                 "path_" in key.lower() or "location" in key.lower()
             ):
                 path = Path(value)
                 if not path.is_absolute():
-                    path = (config_path.parent / path).resolve()
+                    path = (parent_path / path).resolve()
+
                 resolved_dict[key] = str(path)
             else:
                 resolved_dict[key] = value
@@ -568,7 +586,6 @@ class ConfigurationManager:
 
         with open(file_path) as f:
             config_dict = yaml.safe_load(f)
-
         config_dict = self._resolve_paths(config_dict, config_path)
 
         if config_dict["config"] == "sensor":
