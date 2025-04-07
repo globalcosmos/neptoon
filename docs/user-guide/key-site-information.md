@@ -1,11 +1,12 @@
-# SensorInfo Class
+Key information describing the sensor is necessary for both metadata (e.g., how to understand )
 
-The `SiteInformation` class is used to store essential information about a CRNS site that is needed for data processing. When processing data with YAML configuration files this information is automatically extracted from the supplied YAML. 
+## SensorInfo Class
 
-## Class Definition
+The `SensorInfo` class is used to store essential information about a CRNS site that is needed for data processing. When processing data with YAML configuration files this information is automatically extracted from the supplied YAML. 
+
+### Class Definition
 
 ```python
-@dataclass
 class SensorInfo:
     latitude: float
     longitude: float
@@ -111,5 +112,5 @@ data_hub = CRNSDataHub(
 ```
 
 
-!!! note "How much information?"
+!!! Note "How much information?"
 	Optional attributes can be set to `None` if the information is not available. However, providing as much information as possible will ensure outputs (e.g., PDF reports) are complete

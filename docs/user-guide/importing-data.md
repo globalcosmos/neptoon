@@ -95,7 +95,7 @@ We offer a priorty style (use sensor A, when A is missing use sensor B). For thi
 
 We also offer a `mean` option, which takes an average of all available sensors and uses that as the actual value.
 
-#### DateTime preperation
+#### DateTime preparation
 
 The DataFrame in neptoon must have a DateTime index. So there are options to let neptoon know what columns contain the DateTime data. If data is split into two columns (e.g., `Date` and `Time`) these can be provided in a list and neptoon will combine them.
 
