@@ -520,7 +520,9 @@ class ConfigurationManager:
         config_dict: dict,
         config_path: Path,
     ):
-        if "working_directory" in config_dict and isinstance(config_dict["working_directory"],str):
+        if "working_directory" in config_dict and isinstance(
+            config_dict["working_directory"], str
+        ):
             parent_path = Path(config_dict["working_directory"])
         else:
             parent_path = config_path.parent
@@ -558,7 +560,9 @@ class ConfigurationManager:
         for key, value in config_dict.items():
             if isinstance(value, dict):
                 resolved_dict[key] = self._resolve_paths(
-                    value, config_path=config_path, parent_path=parent_path,
+                    value,
+                    config_path=config_path,
+                    parent_path=parent_path,
                 )
             elif isinstance(value, str) and (
                 "path_" in key.lower() or "location" in key.lower()
