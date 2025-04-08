@@ -96,13 +96,12 @@ Available theoretical implementations:
 |--------|-------------|
 | `BAATZ_2015` | Based on biomass in kg/m² | 
 | `MORRIS_2024` | Based on biomass water equivalent in mm | 
-roperty of radioactive decay processes like neutron detection.
 
 ## Scientific References
 
 The corrections implemented in this module are based on peer-reviewed scientific literature:
 
-- **Pressure Correction**: Based on exponential attenuation of cosmic rays in the atmosphere ([Zreda et al., 2012](https://doi.org/10.5194/hess-16-4079-2012))
-- **Incoming Intensity**: Methods from [Hawdon et al., 2014](https://doi.org/10.1002/2013WR015138) and [McJannet & Desilets, 2023](https://doi.org/10.1029/2022WR033889)
+- **Pressure Correction**: Based on exponential attenuation of cosmic rays in the atmosphere, from [Zreda et al., 2012](https://doi.org/10.5194/hess-16-4079-2012)
+- **Incoming Intensity**: Methods from [Zreda et al., 2012](https://doi.org/10.5194/hess-16-4079-2012), [Hawdon et al., 2014](https://doi.org/10.1002/2013WR015138) and [McJannet & Desilets, 2023](https://doi.org/10.1029/2022WR033889)
 - **Humidity Correction**: From [Rosolem et al., 2013](https://doi.org/10.1175/JHM-D-12-0120.1)
 - **Biomass Correction**: Methods from [Baatz et al., 2015](https://doi.org/10.5194/hess-19-3203-2015) and [Morris et al., 2024](https://doi.org/10.3390/s24134094)

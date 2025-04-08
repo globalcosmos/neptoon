@@ -13,6 +13,8 @@ To convert neutrons to soil moisture we now take the ratio between the actual co
 
 ### Weighting samples
 
+The closer a sample is to the sensor, the greater weight it's soil moisture values should be given. The weighting procedure in neptoon is done automatically [(Schrön et al., 2017)](https://doi.org/10.5194/hess-21-5009-2017).
+
 ## Before you calibrate...
 
 Before we begin lets describe whats expected at this stage. 
@@ -78,3 +80,5 @@ Checkout the [examples](neptoon-examples.md). The example demonstrating this is 
 ## References
 
 Franz, T. E., Zreda, M., Rosolem, R., and Ferre, T. P. A.: A universal calibration function for determination of soil moisture with cosmic-ray neutrons, Hydrol. Earth Syst. Sci., 17, 453–460, https://doi.org/10.5194/hess-17-453-2013, 2013. 
+
+ Schrön, M., Köhli, M., Scheiffele, L., Iwema, J., Bogena, H. R., Lv, L., Martini, E., Baroni, G., Rosolem, R., Weimar, J., Mai, J., Cuntz, M., Rebmann, C., Oswald, S. E., Dietrich, P., Schmidt, U., and Zacharias, S.: Improving calibration and validation of cosmic-ray neutron sensors in the light of spatial sensitivity, Hydrol. Earth Syst. Sci., 21, 5009–5030, https://doi.org/10.5194/hess-21-5009-2017, 2017. 
