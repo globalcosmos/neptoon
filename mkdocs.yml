@@ -58,13 +58,14 @@ nav:
           - Process config: user-guide/process-with-config/process-config.md
           - Sensor config: user-guide/process-with-config/sensor-config.md
           - Using config files: user-guide/process-with-config/config-usage.md
-      - Process data with python CLI:
-          - Overview: user-guide/python-cli-overview.md
+      - Process data with python IDE:
+          - Overview: user-guide/python-ide-overview.md
           - Importing data: user-guide/importing-data.md
-          - Sensor calibration: user-guide/sensor-calibration.md
           - Sensor information: user-guide/key-site-information.md
+          - External data collection: user-guide/external-data.md
           - Quality checks: user-guide/data-quality-checks.md
           - Corrections: user-guide/choosing-corrections.md
+          - Sensor calibration: user-guide/sensor-calibration.md
           - Soil moisture estimates: user-guide/producing-soil-moisture-estimates.md
           - Saving data: user-guide/saving-data.md
           - PDF output: user-guide/pdf-output.md
@@ -119,6 +120,8 @@ markdown_extensions:
       permalink: true
   - pymdownx.highlight:
       anchor_linenums: true
+      use_pygments: true
+      pygments_style: "github-dark" 
 plugins:
   - search
   - roamlinks
