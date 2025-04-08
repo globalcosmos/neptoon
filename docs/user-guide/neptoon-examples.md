@@ -10,15 +10,20 @@ https://codebase.helmholtz.cloud/cosmos/neptoon_examples
 
 # Setting Up Neptoon Examples
 
-This guide walks you through setting up and working with the Neptoon examples repository, covering both local development and browser-based options.
+Here we'll explain how to set your environment up to work with the neptoon examples. 
 
 ## Quick Start
 
-First, clone the repository:
+Here we show how to set up using the terminal. First, clone the examples repository and change into the downloaded repository with the following terminal command:
+
 ```bash
 git clone https://codebase.helmholtz.cloud/cosmos/neptoon_examples.git
 cd neptoon_examples
 ```
+
+This will download the example data and scripts.
+
+Next you want to create a python environment on your system to use neptoon. Below are some commands that will do just that for you, using the requirements.txt you've just downloaded from the examples repository.
 
 === "pip + venv (Windows)"
     Create and activate a virtual environment using Python's built-in venv:
@@ -30,8 +35,6 @@ cd neptoon_examples
     # Install dependencies
     pip install -r requirements.txt
     
-    # Optional: Install Jupyter
-    pip install jupyterlab ipykernel
     ```
 === "pip + venv (Linux/macOS)"
     Create and activate a virtual environment using Python's built-in venv:
@@ -43,8 +46,6 @@ cd neptoon_examples
     # Install dependencies
     pip install -r requirements.txt
     
-    # Optional: Install Jupyter
-    pip install jupyterlab ipykernel
     ```
 
 === "conda"
@@ -56,8 +57,6 @@ cd neptoon_examples
     # Install dependencies
     conda install --file requirements.txt
     
-    # Optional: Install Jupyter
-    conda install jupyterlab ipykernel
     ```
 
 === "mamba"
@@ -69,14 +68,13 @@ cd neptoon_examples
     # Install dependencies
     mamba install --file requirements.txt
     
-    # Optional: Install Jupyter
-    mamba install jupyterlab ipykernel
     ```
-
 
 ## Development Environments
 
 ### VS Code Setup
+
+Whilst your terminal is still in the example repository - launch VSCode
 
 1. Open project in VS Code:
     ```bash
@@ -86,7 +84,6 @@ cd neptoon_examples
 2. Install essential VS Code extensions:
     - Python (ms-python.python)
     - Jupyter (ms-toolsai.jupyter)
-    - Git Lens (eamodio.gitlens)
 
 3. Configure Python interpreter:
 
@@ -101,7 +98,7 @@ cd neptoon_examples
     ```
     1. Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)
     2. Type "Python: Select Interpreter"
-    3. Look for `conda env:neptoon-dev` in the list
+    3. Look for `conda env:neptoon_examples` in the list
     ```
 
 !!! tip "Environment Detection"
@@ -113,7 +110,7 @@ cd neptoon_examples
 
 4. Working with notebooks:
     - Open `.ipynb` files directly in VS Code
-    - Select your configured kernel (neptoon-dev)
+    - Select your configured kernel (neptoon_examples)
 
 ### Jupyter Lab (Optional)
 
@@ -127,7 +124,6 @@ Features:
 - Browser-based interface at `http://localhost:8888`
 - Multiple notebook support
 - Integrated file browser
-- Terminal access
 
 ### MyBinder (No Installation)
 
@@ -139,11 +135,4 @@ For quick exploration without local setup:
 
 !!! warning "Temporary"
     MyBinder sessions are temporary. All changes are lost after inactivity.
-
-## Support
-
-- Issues: Report on GitLab repository
-- Updates: Check repository for latest changes
-
-
 
