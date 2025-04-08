@@ -120,6 +120,8 @@ markdown_extensions:
       permalink: true
   - pymdownx.highlight:
       anchor_linenums: true
+      use_pygments: true
+      pygments_style: "github-dark" 
 plugins:
   - search
   - roamlinks

@@ -19,7 +19,7 @@ Before we begin lets describe whats expected at this stage.
 - You have imported your CRNS data into the hub (more on that [here](importing-data.md))
 - You have a SensorInformation in the hub (more on that [here](key-site-information.md))
 - You have collected any external data you need (more on that [here](external-data.md))
-- You have ideally performed some quality assessment on your data (more on that [here](data-quality-checks.md))
+- You have performed some quality assessment on your data (more on that [here](data-quality-checks.md))
 - You have corrected your neutron counts so that you have a corrected neutrons column (more on that [here](choosing-corrections.md))
 
 ## Your sample data 
