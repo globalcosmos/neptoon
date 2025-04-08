@@ -34,7 +34,7 @@ Neptoon is designed to facilitate the painless processing of CRNS sites, utilisi
 <a href="user-guide/process-with-config/intro-to-config" class="card"> <div class="card-content"> <i class="fas fa-download"></i> <h3>Configuration Files</h3> <p>How to prepare and use configuration files for fast (and reproduceable!) processing.</p> </div> </a>
 
 
-<a href="user-guide/python-cli-overview" class="card"> <div class="card-content"> <i class="fas fa-download"></i> <h3>Using neptoon in your PythonIDE</h3> <p>Learn how to use the GUI to process a site with simply your data, and some config files</p> </div> </a>
+<a href="user-guide/python-ide-overview" class="card"> <div class="card-content"> <i class="fas fa-download"></i> <h3>Using neptoon in your PythonIDE</h3> <p>Learn how to use the GUI to process a site with simply your data, and some config files</p> </div> </a>
 
 <a href="user-guide/sensor-calibration" class="card"> <div class="card-content"> <i class="fas fa-download"></i> <h3>Calibration</h3> <p>Need to calibrate your site? Check this out.</p> </div> </a>
 <a href="user-guide/neptoon-examples" class="card"> <div class="card-content"> <i class="fas fa-download"></i> <h3>Examples!</h3> <p>Here we present examples we have made to help you understand Neptoon and start working with it.</p> </div> </a>
