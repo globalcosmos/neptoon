@@ -9,7 +9,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     color: #222222;
-    /* Darker text for better readability */
 }
 
 /* Paragraphs */
@@ -121,22 +120,14 @@
 /* Light Mode Colors */
 :root {
     --primary-color: #2d58af;
-    /* Stronger blue for primary elements */
     --accent-color: #ff5722;
-    /* Deep orange for accents */
     --background-color: #ffffff;
     --text-color: #222222;
-    /* Dark text for better readability */
     --code-color: #333333;
-    /* Fixed: Darker code text color */
     --code-bg-color: #f5f7f9;
-    /* Light blue-gray for code blocks */
     --table-header-bg: #eef2f7;
-    /* Light blue-gray for table headers */
     --table-header-text: #333333;
-    /* Dark text for table headers */
     --table-border: #e1e4e8;
-    /* Subtle gray for borders */
 }
 
 /* Dark Mode Colors */
@@ -149,24 +140,15 @@
     --md-default-fg-color--lightest: #6e7681;
 
     --primary-color: #58a6ff;
-    /* Bright blue for primary elements */
     --accent-color: #79ffe6;
-    /* Teal for accents */
     --background-color: #1a2332;
     --text-color: #c9d1d9;
-    /* Lighter gray for better readability */
     --header-color: #58a6ff;
-    /* Bright blue for headers */
-    --table-header-bg: #2d3748;
-    /* Darker blue-gray for table headers */
+    --table-header-bg: #353d4b;
     --table-header-text: #e6edf3;
-    /* Light text for table headers */
-    --table-border: #30363d;
-    /* Subtle gray for borders */
+    --table-border: #33363a;
     --code-color: #e6edf3;
-    /* Light text for code */
     --code-bg-color: #2d3748;
-    /* Dark blue-gray for code blocks */
 }
 
 /* High Contrast Mode */
