@@ -2,14 +2,14 @@
 
 ## Overview
 
-The quality assessment (QA) system in neptoon provides tools to identify and flag questionable data points in CRNS time series. Built on top of [SaQC](https://rdm-software.pages.ufz.de/saqc/) framework, neptoon's QA system allows users to apply standardized quality checks to their data, helping to ensure that downstream analyses are based on reliable measurements.
+The quality assessment (QA) system in neptoon provides tools to identify and flag bad data in CRNS time series. Built on top of [SaQC](https://rdm-software.pages.ufz.de/saqc/) framework, neptoon's QA system allows users to apply standardized quality checks to their data, helping to ensure that soil moisture estimates are based on reliable measurements.
 
 ## Key Components
 
-The quality assessment system in neptoon is built from several interconnected parts, each serving a specific function in the data quality workflow:
+The quality assessment system in neptoon is built from several interconnected parts:
 
 - **QualityCheck**: This is the fundamental building block that defines what you want to check (like neutron counts), how you want to check it (like range validation), and the specific thresholds or criteria to use.
-- **QualityAssessmentFlagBuilder**: Collects multiple quality checks into a cohesive set
+- **QualityAssessmentFlagBuilder**: Collects multiple quality checks into a set
 - **DataQualityAssessor**: Applies quality checks to data and manages the SaQC integration
 - **QAMethod**: This is a set of pre-defined checking methods you can choose from, such as range checks (is the value between X and Y?), spike detection, or constant value detection.
 - **QATarget**: This defines which data columns in your CRNS dataset you want to check, such as raw neutron counts, air pressure, or humidity measurements.
@@ -169,56 +169,82 @@ print(flags_df.head())
 
 ## Recommendations for CRNS Data
 
-For CRNS data, we recommend the following quality checks as a starting point:
+For CRNS data processing, we recommend implementing the following quality checks as a starting point in your workflow:
 
-1. **Neutron count range check**:
-   ```python
-   QualityCheck(
-       target=QATarget.RAW_EPI_NEUTRONS,
-       method=QAMethod.RANGE_CHECK,
-       parameters={"min": 500, "max": 3000}
-   )
-   ```
+### 1. Spike Detection on Raw Neutron Counts
 
-2. **Pressure anomaly check**:
-   ```python
-   QualityCheck(
-       target=QATarget.AIR_PRESSURE,
-       method=QAMethod.RANGE_CHECK,
-       parameters={"min": 800, "max": 1100}
-   )
-   ```
-
-3. **Humidity range check**:
-   ```python
-   QualityCheck(
-       target=QATarget.RELATIVE_HUMIDITY,
-       method=QAMethod.RANGE_CHECK,
-       parameters={"min": 0, "max": 100}
-   )
-   ```
-
-4. **Neutron spike detection**:
-   ```python
-   QualityCheck(
-       target=QATarget.CORRECTED_EPI_NEUTRONS,
-       method=QAMethod.SPIKE_UNILOF,
-       parameters={"periods_in_calculation": 12}
-   )
-   ```
-
-These values should be adjusted based on your specific site characteristics and sensor properties.
-
-## Integration with Data Processing Pipeline
-
-Quality assessment is typically performed after corrections have been applied but before soil moisture conversion:
+Identify anomalous spikes in your raw neutron count data:
 
 ```python
-# Abbreviated workflow
-data_hub.correct_neutrons()  # Apply corrections first
-data_hub.add_quality_flags(custom_flags=flag_builder)
-data_hub.apply_quality_flags()  # Apply QA
-data_hub.produce_soil_moisture_estimates()  # Then calculate soil moisture
+QualityCheck(
+    target=QATarget.RAW_EPI_NEUTRONS,
+    method=QAMethod.SPIKE_UNILOF, 
+    parameters={
+        "periods_in_calculation": 24,  
+        "threshold": 2.0              
+    }
+)
 ```
 
-This ensures that quality checks can be applied to both raw and corrected data, but soil moisture is only calculated from quality-controlled data.
+### 2. Meteorological Variable Validation
+
+Ensure meteorological variables are within physically reasonable ranges:
+
+```python
+# Air pressure range check 
+QualityCheck(
+    target=QATarget.AIR_PRESSURE,
+    method=QAMethod.RANGE_CHECK,
+    parameters={"min": 800, "max": 1100} 
+)
+
+# Relative humidity range check
+QualityCheck(
+    target=QATarget.RELATIVE_HUMIDITY,
+    method=QAMethod.RANGE_CHECK,
+    parameters={"min": 0, "max": 100}  # Percentage (0-100%)
+)
+
+# Temperature checks....
+```
+
+!!! note "further processing here"
+	At this point you would correct your neutrons and calibrate your sensor to get an N0 value
+
+### 3. Calibration-Based Checks (Apply After Calibration)
+
+After performing calibration and determining your N0 value, add these checks based on the N0:
+
+```python
+qa_flags_2 = QualityAssessmentFlagBuilder()
+qa_flags_2.add_check(
+    
+    QualityCheck(
+        target=QATarget.CORRECTED_EPI_NEUTRONS,
+        method=QAMethod.ABOVE_N0,
+        parameters={
+            "percent_maximum":1.075,
+            "N0":data_hub.sensor_info.N0
+                }),
+
+    QualityCheck(
+        target=QATarget.CORRECTED_EPI_NEUTRONS,
+        method=QAMethod.BELOW_N0_FACTOR,
+        parameters={
+            "N0":data_hub.sensor_info.N0,
+            "percent_minimum":0.3
+                }),
+    )
+data_hub.add_quality_flags(custom_flags=qa_flags_2)
+data_hub.apply_quality_flags()
+```
+
+The parameter values presented here are general guidelines. You should adjust these values based on your:
+- Site-specific environmental conditions
+- Sensor model and characteristics
+- Elevation and local atmospheric patterns
+- Expected soil moisture range
+
+These quality checks should be applied at appropriate stages in your processing pipeline: spike detection on raw data, meteorological variable validation before corrections, and N0-based checks after calibration has been performed.
+
+
