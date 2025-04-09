@@ -5,8 +5,10 @@ Calibration of a CRNS generally involves finding the so-called "N0" number. This
 To convert neutrons to soil moisture we now take the ratio between the actual count rate vs the theorised dry count rate. This ratio places us on the calibration curve which can be seen in Figure 1 below (Franz et al., 2012). 
 
 
-<img src="/assets/N0-calib-curve.png" alt="N0 calibration curve" width="60%" style="display: block; margin: 0 auto;">
-<p style="text-align: center; font-style: italic;">Figure 1: N0 calibration curve showing the relationship between neutron counts and soil moisture.</p>
+![N0 calibration curve showing the relationship between neutron counts and soil moisture.](/assets/N0-calib-curve.png){ width="70%" .center }
+
+*Figure 1: N0 calibration curve showing the relationship between neutron counts and soil moisture.*
+{ .caption .center }
 
 !!! important "Neutron Correction"
 	Neutron count rates are expected to be corrected by the time we get to calibration. The correction removes external influences on the neutron counts (e.g., changes in atmospheric pressure). So the N0 is a corrected term. More on corrections [here](choosing-corrections.md). This means that if you change your corrections steps you **must** recalibrate and get a new N0 number. If not your N0 and N numbers are being corrected differently!

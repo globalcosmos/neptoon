@@ -21,6 +21,7 @@ dependencies = [
     "magazine>=0.3.2",
     "figurex>=0.2.10",
     "seaborn>=0.13.2",
+    "typer>=0.15.2",
 ]
 authors = [
     { name = "Daniel Power", email = "daniel.power@ufz.de" },
@@ -46,6 +47,7 @@ Documentation = "https://www.neptoon.org"
 
 [project.scripts]
 neptoon-gui = "neptoon.cli.launcher:app"
+neptoon = "neptoon.cli.cli:app"
 
 [tool.black]
 line-length = 79
