@@ -55,7 +55,7 @@ gitlab-release-create:
   before_script:
     - git config --global user.name "${GITLAB_USER_NAME}"
     - git config --global user.email "${GITLAB_USER_EMAIL}"
-    - pip install FACILE-RS==${FACILE_RS_VERSION}
+    - uv pip install FACILE-RS==${FACILE_RS_VERSION}
     - export DEBIAN_FRONTEND="noninteractive"
     - apt update
     - apt-get install -y jq
