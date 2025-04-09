@@ -9,7 +9,7 @@ package_testpypi:
     - poetry config repositories.testpypi "https://test.pypi.org/legacy/"
     - poetry publish -r testpypi -u "__token__" -p "${neptoon_pypi_test_api_key}"
   rules:
-    - if: "$CI_COMMIT_TAG"
+    - if: $CI_COMMIT_TAG =~ /^v/
 
 package_pypi:
   stage: package_pypi
@@ -21,5 +21,5 @@ package_pypi:
   script:
     - poetry publish -u "__token__" -p "${neptoon_pypi_api_key_ACTUAL}"
   rules:
-    - if: "$CI_COMMIT_TAG"
+    - if: $CI_COMMIT_TAG =~ /^v/
       when: manual
