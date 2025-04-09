@@ -758,7 +758,7 @@ wheels = [
 
 [[package]]
 name = "neptoon"
-version = "0.6.8"
+version = "0.7.2"
 source = { editable = "." }
 dependencies = [
     { name = "figurex" },
@@ -775,6 +775,7 @@ dependencies = [
     { name = "requests" },
     { name = "saqc" },
     { name = "seaborn" },
+    { name = "typer" },
     { name = "urllib3" },
 ]
 
@@ -807,6 +808,7 @@ requires-dist = [
     { name = "saqc", specifier = ">=2.6.0" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "streamlit", marker = "extra == 'gui'", specifier = ">=1.31.0" },
+    { name = "typer", specifier = ">=0.15.2" },
     { name = "typer", marker = "extra == 'gui'", specifier = ">=0.15.1" },
     { name = "urllib3", specifier = ">=2.2.0" },
 ]
