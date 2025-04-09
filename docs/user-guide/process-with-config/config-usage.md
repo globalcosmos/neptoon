@@ -1,7 +1,17 @@
 
-## How to import the YAML file
+## Processing from the command line
 
-Once you have your config files you need to import them with the `ConfigurationManager`. We recommend to use pathlib.Paths as its more stable, especially if there's a change you'll swap operating systems. 
+You can process data from the command line using your config files. Firstly make sure you have installed neptoon using `pipx`. This means you will have access to the CLI commands in your terminal. See [here](installation.md#cli-installation-guide) for more on installation steps
+
+To run:
+
+```bash
+neptoon -p /path/to/process.yaml -s /path/to/sensor.yaml
+```
+
+## Processing in your Python IDE
+
+Once you have your config files you need to import them with the `ConfigurationManager`. We recommend to use pathlib.Paths as its more stable, especially if you swap operating systems (for example sharing data with a colleague). 
 
 
 ### Complete script
@@ -68,19 +78,3 @@ You can use this code block as a starting point for your own, make sure to chang
     # Run
     yaml_processor.run_full_process()
     ```
-
-## How to run
-
-At this stage we will presume some things:
-
-- You have installed neptoon on your machine in it's own virtual environment called `neptoon` ([more info](/user-guide/installation/))
-- You have created your configuration files for processing and sensor, called `process_crns_1.yaml` and `sensor_1.yaml`
-- You have created a `.py` file using the above template, called `run_my_sensor_1.py` and it's inside a folder `/home/crns_data/`
-
-The final stage is to open up terminal/powershell, change into the folder with your .py file, activate your envrionment and run it. After this you will have your data processed.
-
-```bash
-cd /home/crns_data/
-mamba activate neptoon
-python3 run_my_sensor.py
-```
