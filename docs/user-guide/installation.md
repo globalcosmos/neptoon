@@ -31,6 +31,13 @@ Here some example scripts to do this using mamba or conda:
 !!! tip "Jupyter Integration"
     The ipykernel package is included to enable using neptoon in Jupyter notebooks, which is particularly useful for interactive data analysis and visualization. For example when working through the [examples](neptoon-examples.md). Leave this out if you don't need it.
 
+## CLI Installation Guide
+
+If you want to use the command line interface to process your sites it is recommended to install neptoon using pipx. This means you have access to CLI commands in your terminal/shell. 
+
+```bash
+pipx install neptoon
+```
 
 ## GUI Installation Guide
 

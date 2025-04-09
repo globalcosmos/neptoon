@@ -1509,8 +1509,8 @@ class FormatDataForCRNSDataHub:
                 neutron_column_type=InputColumnDataType.THERM_NEUTRON_COUNT
             )
         except Exception as e:
-            message = f"Failed trying to process thermal_neutron_counts. {e}"
-            core_logger.error(message)
+            message = f"Could not process thermal_neutron_counts. {e}"
+            core_logger.info(message)
 
     def prepare_neutron_count_columns(
         self,
