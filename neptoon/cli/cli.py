@@ -24,17 +24,22 @@ def main(
 ):
     """
     Process CRNS data using configuration files.
+
+    
+    Example
+
+    -------
+    
+    neptoon -p /path/to/process.yaml -s /path/to/sensor.yaml
     """
     if processing_config and sensor_config:
-        print("Processing the sensor data...")
+        typer.secho("Processing the sensor data...", fg=typer.colors.GREEN, bold=True)
         process_data(processing_config, sensor_config, verbose)
     elif processing_config or sensor_config:
-        typer.echo("Error: Both processing and station configs are required")
+        typer.echo(typer.style("Error:",fg=typer.colors.RED, bold=True) +" Both processing and station configs are required")
         raise typer.Exit(code=1)
     else:
-        ctx = typer.Context.get_current()
-        if ctx and not ctx.invoked_subcommand:
-            typer.echo(ctx.get_help())
+        typer.echo("Type " + typer.style("neptoon --help", fg=typer.colors.CYAN, bold=True) + " for help.")
 
 
 def process_data(processing_config: str, sensor_config: str, verbose: bool):
