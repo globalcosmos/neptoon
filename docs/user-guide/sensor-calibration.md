@@ -5,7 +5,7 @@ Calibration of a CRNS generally involves finding the so-called "N0" number. This
 To convert neutrons to soil moisture we now take the ratio between the actual count rate vs the theorised dry count rate. This ratio places us on the calibration curve which can be seen in Figure 1 below (Franz et al., 2012). 
 
 
-![N0 calibration curve showing the relationship between neutron counts and soil moisture.](/assets/N0-calib-curve.png){ width="70%" .center }
+![N0 calibration curve showing the relationship between neutron counts and soil moisture.](N0-calib-curve.png){ width="70%" .center }
 
 *Figure 1: N0 calibration curve showing the relationship between neutron counts and soil moisture.*
 { .caption .center }
