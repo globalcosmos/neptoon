@@ -3,7 +3,7 @@ import atexit
 from pathlib import Path
 from neptoon_gui_utils import cleanup, save_uploaded_file, read_file
 from neptoon.io.read import ConfigurationManager
-from neptoon.workflow import ProcessWithYaml
+from neptoon.workflow import ProcessWithConfig
 
 st.title(":material/settings: Configuration")
 """
@@ -211,7 +211,7 @@ def parse_yaml_files():
     config.load_configuration(
         file_path=st.session_state["config_processing_file"]
     )
-    st.session_state["yaml"] = ProcessWithYaml(configuration_object=config)
+    st.session_state["yaml"] = ProcessWithConfig(configuration_object=config)
 
 
 if (
