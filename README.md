@@ -47,7 +47,7 @@ For more detailed installation instructions, see the [installation documentation
 
 ```python
 from neptoon.io.read import DataHubFromConfig
-from neptoon.workflow.process_with_yaml import ProcessWithYaml
+from neptoon.workflow.process_with_yaml import ProcessWithConfig
 from neptoon.config import ConfigurationManager
 
 # Load configurations
@@ -56,7 +56,7 @@ config.load_configuration(file_path="path/to/sensor_config.yaml")
 config.load_configuration(file_path="path/to/processing_config.yaml")
 
 # Process data
-yaml_processor = ProcessWithYaml(configuration_object=config)
+yaml_processor = ProcessWithConfig(configuration_object=config)
 yaml_processor.run_full_process()
 ```
 
