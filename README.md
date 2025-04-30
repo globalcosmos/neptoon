@@ -1,59 +1,106 @@
+# neptoon
 
-## Name
+[![PyPI version](https://img.shields.io/pypi/v/neptoon.svg)](https://pypi.org/project/neptoon/)
+[![Python Version](https://img.shields.io/pypi/pyversions/neptoon.svg)](https://pypi.org/project/neptoon/)
+[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://www.neptoon.org)
+[![License](https://img.shields.io/pypi/l/neptoon.svg)](https://codebase.helmholtz.cloud/cosmos/neptoon/-/blob/main/LICENSE)
+[![PyPI Downloads](https://static.pepy.tech/badge/neptoon)](https://pepy.tech/projects/neptoon)
 
-neptoon
+neptoon is a Python package for processing Cosmic-Ray Neutron Sensor (CRNS) data to produce field-scale soil moisture estimates. 
 
-## **What is neptoon?**
+## Key Features
 
-neptoon is a python tool for processing Cosmic-Ray Neutron Sensors (CRNS). CRNS estimate soil moisture at the field scale, and up to root-zone depths, by tracking changes in the number of fast neutrons found at a particular location. This is primarily due to the strong inverse relationship quantities of hydrogen atoms and fast neutrons. To have estimates of only the impact of hydrogen in soil moisture, additional processing and correction steps are required. Our understanding of the sensor continues to grow and change, which brings about an increasing number of theories and equations that can be applied. 
-
-Neptoon is designed to facilitate the painless processing of CRNS sites, utilising the most current techniques and knowledge available. It is designed to be simple to use for those who wish to simply correct a sensor with the most current understanding, as well as full featured for researchers in the CRNS space who want to experiment and test new ideas. 
-
-
-## Badges
-
-WIP
-
-## Visuals
-
-WIP
+- **Modular Correction Pipeline**: Apply multiple correction methods for pressure, incoming intensity, humidity, and biomass
+- **Quality Assessment**: Built-in data quality checks integrated with [SaQC](https://rdm-software.pages.ufz.de/saqc/index.html)
+- **Sensor Calibration**: Tools for N0 calibration using soil sampling data
+- **External Data Integration**: Automatic integration with NMDB.eu for incoming neutron corrections
+- **Multiple Interfaces**: Use via Python API, configuration files, or GUI
+- **Published Science**: Implementations based on peer-reviewed methodologies
+- **Reproducibility**: Built-in reporting, reproduceable workflows, and comprehensive documentation
 
 ## Installation
 
-Installation of neptoon will be via pip using:
+### Basic Installation
 
-`pip install neptoon`
+```bash
+pip install neptoon
+```
 
-## Usage
+### GUI Installation
 
-WIP
+```bash
+pipx install "neptoon[gui]"
+```
 
-## Support
+### Recommended Installation (Isolated Environment)
 
-daniel.power@ufz.de
-martin.schroen@ufz.de
+```bash
+# Create a new environment with Python 3.10
+conda create -n neptoon python=3.10 ipykernel
+conda activate neptoon
+pip install neptoon
+```
 
-## Roadmap
+For more detailed installation instructions, see the [installation documentation](https://www.neptoon.org/en/latest/user-guide/installation/).
 
-WIP
+## Quick Start
 
-## Contributing
+```python
+from neptoon.io.read import DataHubFromConfig
+from neptoon.workflow.process_with_yaml import ProcessWithConfig
+from neptoon.config import ConfigurationManager
 
-State if you are open to contributions and what your requirements are for accepting them.
+# Load configurations
+config = ConfigurationManager()
+config.load_configuration(file_path="path/to/sensor_config.yaml")
+config.load_configuration(file_path="path/to/processing_config.yaml")
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+# Process data
+yaml_processor = ProcessWithConfig(configuration_object=config)
+yaml_processor.run_full_process()
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+Ready-to-use examples with sample data are available in the [neptoon_examples repository](https://codebase.helmholtz.cloud/cosmos/neptoon_examples).
 
-## Authors and acknowledgment
+## Documentation
 
-Martin Schrön, Daniel Power
+Comprehensive documentation is available at:
+- [www.neptoon.org](https://www.neptoon.org) - Main documentation
+- [User Guide](https://www.neptoon.org/en/latest/user-guide/workflow-description/) - Detailed workflow description
+- [Examples](https://www.neptoon.org/en/latest/user-guide/neptoon-examples/) - Practical examples and tutorials
+
+## Project Status
+
+neptoon is currently in active development. Version 1.0, focusing on stability and robustness, is expected soon. Future plans include:
+
+- Roving CRNS processing capabilities
+- Server/Docker versions for automated processing
+
+## Support and Contribution
+
+- **Issues**: Report bugs or request features through [GitLab issues](https://codebase.helmholtz.cloud/cosmos/neptoon/-/issues)
+- **Contact**: Email us at [neptoon-contact@ufz.de](mailto:neptoon-contact@ufz.de)
+- **Contributing**: See the [contribution guidelines](https://www.neptoon.org/en/latest/contribution/overview-contribution/) for details on how to contribute
+
+## Authors and Acknowledgments
+
+**Lead Developers:**
+- Daniel Power (daniel.power@ufz.de)
+- Martin Schrön (martin.schroen@ufz.de)
+
+**Additional Contributors:**
+- Fredo Erxleben
+- Steffen Zacharias
+- Rafael Rosolem
 
 ## License
 
-MIT License
+neptoon is licensed under the MIT License. See the [LICENSE](https://codebase.helmholtz.cloud/cosmos/neptoon/-/blob/main/LICENSE) file for details.
 
-## Project status
+## Citation
 
-Ongoing project currently being supported by Helmholtz Zentrum for
-Research and University of Bristo
+If you use neptoon in your research, please cite:
+
+```
+Power, D., Erxleben, F., Zacharias, S., Rosolem, R., & Schrön, M. (2025). neptoon (v0.8.2). Helmholtz Zentrum für Umweltforschung. https://doi.org/10.5281/zenodo.15181751
+```
