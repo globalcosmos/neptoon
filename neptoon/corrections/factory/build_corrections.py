@@ -225,6 +225,51 @@ class CorrectNeutrons:
             )
         return df
 
+    def correct_neutrons(self):
+        """
+        Corrects neutrons using the CorrectionBuilder. Returns the
+        DataFrame.
+
+        Returns
+        -------
+        df: pd.DataFrame
+            DataFrame returned with additional columns.
+        """
+        df = self.create_correction_factors(self.crns_data_frame)
+        df = self.create_corrected_neutron_column(df)
+
+        return df
+
+
+class NeutronUncertaintyCalculator:
+    """Calculates statistical uncertainty of neutron counts"""
+
+    def __init__(self, data_frame: pd.DataFrame):
+        """
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame with neutron counts
+        """
+        self.data_frame = data_frame
+
+    def add_neutron_uncertainty_columns(
+        self,
+    ):
+        """
+        Creates uncertainty neutron columns
+
+        Returns
+        -------
+        pd.DataFrame
+            Output DataFrame with uncertainty columns
+        """
+        self.data_frame = self.calculate_neutron_count_uncertainty(
+            self.data_frame
+        )
+        self.data_frame = self.calculate_neutron_count_bounds(self.data_frame)
+        return self.data_frame
+
     def calculate_neutron_count_uncertainty(
         self,
         df,
@@ -278,42 +323,6 @@ class CorrectNeutrons:
             df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)]
             - df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)]
         )
-        return df
-
-    def add_neutron_uncertainty_columns(
-        self,
-        df,
-    ):
-        """
-        Creates uncertainty neutron columns
-
-        Parameters
-        ----------
-        df : pd.DataFrame
-            Input DataFrame
-
-        Returns
-        -------
-        pd.DataFrame
-            Output DataFrame with uncertainty columns
-        """
-        df = self.calculate_neutron_count_uncertainty(df)
-        df = self.calculate_neutron_count_bounds(df)
-        return df
-
-    def correct_neutrons(self):
-        """
-        Corrects neutrons using the CorrectionBuilder. Returns the
-        DataFrame.
-
-        Returns
-        -------
-        df: pd.DataFrame
-            DataFrame returned with additional columns.
-        """
-        df = self.create_correction_factors(self.crns_data_frame)
-        df = self.create_corrected_neutron_column(df)
-        df = self.add_neutron_uncertainty_columns(df)
         return df
 
 

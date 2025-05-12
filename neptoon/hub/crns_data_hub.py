@@ -15,21 +15,23 @@ from neptoon.corrections.factory.build_corrections import (
     CorrectionType,
     CorrectionTheory,
     CorrectNeutrons,
+    NeutronUncertaintyCalculator,
 )
 from neptoon.config.configuration_input import SensorInfo
 from neptoon.products.estimate_sm import NeutronsToSM
 from neptoon.quality_control.data_validation_tables import (
     FormatCheck,
 )
-
 from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
+from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
 from neptoon.columns import ColumnInfo
 from neptoon.logging import get_logger
+from magazine import Magazine
 
 core_logger = get_logger()
 
@@ -82,6 +84,7 @@ class CRNSDataHub:
             The sample data taken during the calibration campaign.
         """
 
+        self._raw_data = crns_data_frame.copy()
         self._crns_data_frame = crns_data_frame
         self._flags_data_frame = flags_data_frame
         self._sensor_info = sensor_info
@@ -91,6 +94,8 @@ class CRNSDataHub:
         self._correction_factory = CorrectionFactory()
         self._correction_builder = CorrectionBuilder()
         self.calibrator = None
+        self.figure_creator = None
+        self.magazine_active = [Magazine.active if Magazine.active else False]
 
     @property
     def crns_data_frame(self):
@@ -189,13 +194,14 @@ class CRNSDataHub:
             core_logger.error(validation_error_message)
             print(validation_error_message)
 
+    @Magazine.reporting(topic="NMDB")
     def attach_nmdb_data(
         self,
         station="JUNG",
-        reference_value=None,
         new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
         resolution="60",
         nmdb_table="revori",
+        reference_value=None,
     ):
         """
         Utilises the NMDBDataAttacher class to attach NMDB incoming
@@ -208,10 +214,6 @@ class CRNSDataHub:
         ----------
         station : str, optional
             The station to collect data from, by default "JUNG"
-        reference_value : int, optional
-            The reference value of the neutron monitor, if left as None
-            it will use the value from the first data point in the time
-            series.
         new_column_name : str, optional
             The name of the column were data will be written to, by
             default "incoming_neutron_intensity"
@@ -219,6 +221,15 @@ class CRNSDataHub:
             The resolution in minutes, by default "60"
         nmdb_table : str, optional
             The table to pull data from, by default "revori"
+        reference_value : int, optional
+            The reference value of the neutron monitor, if left as None
+            it will use the value from the first data point in the time
+            series.
+        Report
+        ------
+        Neutron monitoring data was attached from NMDB.eu. The station
+        used was {station} at a resolution of {resolution} minutes. The
+        data table used was {nmdb_table}.
         """
         attacher = NMDBDataAttacher(
             data_frame=self.crns_data_frame, new_column_name=new_column_name
@@ -292,6 +303,9 @@ class CRNSDataHub:
         self.flags_data_frame = self.quality_assessor.return_flags_data_frame(
             current_flag_data_frame=self.flags_data_frame,
         )
+        self.crns_data_frame = self.mask_flagged_data(
+            data_frame=self.crns_data_frame
+        )
         message = "Flagging of data complete using Custom Flags"
         core_logger.info(message)
 
@@ -299,13 +313,9 @@ class CRNSDataHub:
         self,
         correction_type: CorrectionType = "empty",
         correction_theory: CorrectionTheory = None,
-        use_all_default_corrections=False,
     ):
         """
-        Method to select corrections to be applied to data. If
-        use_all_default_corrections is True then it will apply the
-        default correction methods. These will periodically be updated
-        to the most current and agreed best methods.
+        Method to select corrections to be applied to data.
 
         Individual corrections can be applied using a CorrectionType and
         CorrectionTheory. If a user assigns a CorrectionType without a
@@ -314,53 +324,43 @@ class CRNSDataHub:
 
         Parameters
         ----------
-        use_all_default_corrections : bool, optional
-            decision to use defaults, by default False
         correction_type : CorrectionType, optional
             A CorrectionType, by default "empty"
         correction_theory : CorrectionTheory, optional
             A CorrectionTheory, by default None
         """
 
-        if use_all_default_corrections:
-            pass  # TODO build default corrections
-
-        else:
-            correction = self.correction_factory.create_correction(
-                correction_type=correction_type,
-                correction_theory=correction_theory,
-            )
-            self.correction_builder.add_correction(correction=correction)
+        correction = self.correction_factory.create_correction(
+            correction_type=correction_type,
+            correction_theory=correction_theory,
+        )
+        self.correction_builder.add_correction(correction=correction)
 
     def correct_neutrons(
         self,
-        correct_flagged_values_too=False,
     ):
         """
         Create correction factors as well as the corrected epithermal
-        neutrons column. By default it will collect apply corrections
-        only on data that has been left unflagged during QA. Opionally
-        this can be turned off.
-
-        Parameters
-        ----------
-        correct_flagged_values_too : bool, optional
-            Whether to turn off the masking of data defined as poor in
-            QA, by default False
+        neutrons column.
         """
-        if correct_flagged_values_too:
-            corrector = CorrectNeutrons(
-                crns_data_frame=self.crns_data_frame,
-                correction_builder=self.correction_builder,
-            )
-            self.crns_data_frame = corrector.correct_neutrons()
-        else:
-            corrector = CorrectNeutrons(
-                crns_data_frame=self.mask_flagged_data(),
-                correction_builder=self.correction_builder,
-            )
-            self.crns_data_frame = corrector.correct_neutrons()
+        corrector = CorrectNeutrons(
+            crns_data_frame=self.crns_data_frame,
+            correction_builder=self.correction_builder,
+        )
+        self.crns_data_frame = corrector.correct_neutrons()
 
+    def create_neutron_uncertainty_bounds(self):
+        """
+        Create uncertainty bounds for statistical uncertainty of neutron
+        count rates.
+        """
+
+        uncertainty = NeutronUncertaintyCalculator(
+            data_frame=self.crns_data_frame
+        )
+        self.crns_data_frame = uncertainty.add_neutron_uncertainty_columns()
+
+    @Magazine.reporting(topic="Data Preparation")
     def smooth_data(
         self,
         column_to_smooth: str,
@@ -390,6 +390,11 @@ class CRNSDataHub:
         column_to_smooth : str(ColumnInfo.Name.VALUE)
             The column in the crns_data_frame that needs to be smoothed.
             Automatically
+
+        Report
+        ------
+        Data smoothing was done on {column_to_smooth}. This was done
+        using {smooth_method} with a window of {window}.
         """
         series_to_smooth = pd.Series(self.crns_data_frame[column_to_smooth])
         smoother = SmoothData(
@@ -403,10 +408,33 @@ class CRNSDataHub:
         col_name = smoother.create_new_column_name()
         self.crns_data_frame[col_name] = smoother.apply_smoothing()
 
+    @Magazine.reporting(topic="Calibration")
     def calibrate_station(
         self,
         config: CalibrationConfiguration = None,
     ):
+        """
+        Calibrate the sensor
+
+        Parameters
+        ----------
+        config : CalibrationConfiguration, optional
+            Config file which contains all the required info for
+            calibration, by default None
+
+        Raises
+        ------
+        ValueError
+            When no calibration data provided
+
+        Report
+        ------
+        Calibration was undertaken. The N0 number was calculated as
+        {n0}. From the samples, the average dry soil bulk density is
+        {avg_dry_soil_bulk_density}, the average soil organic carbon is
+        {avg_soil_organic_carbon}, and the average lattice water content
+        is {avg_lattice_water}.
+        """
         if self.calibration_samples_data is None:
             message = "No calibration_samples_data found. Cannot calibrate."
             core_logger.error(message)
@@ -421,10 +449,31 @@ class CRNSDataHub:
             time_series_data=self.crns_data_frame,
             config=config,
         )
-        n0 = self.calibrator.find_n0_value()
+        n0 = int(self.calibrator.find_n0_value())
+        avg_dry_soil_bulk_density = round(
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_bulk_density,
+            4,
+        )
+        avg_soil_organic_carbon = round(
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_organic_carbon,
+            4,
+        )
+        avg_lattice_water = round(
+            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+                0
+            ].site_avg_lattice_water,
+        )
         self.sensor_info.N0 = n0
-        print(f"N0 number was calculated as {int(n0)}")
+        self.sensor_info.avg_dry_soil_bulk_density = avg_dry_soil_bulk_density
+        self.sensor_info.avg_lattice_water = avg_lattice_water
+        self.sensor_info.avg_soil_organic_carbon = avg_soil_organic_carbon
+        print(f"N0 number was calculated as {n0}")
 
+    @Magazine.reporting(topic="Soil Moisture")
     def produce_soil_moisture_estimates(
         self,
         n0: float = None,
@@ -448,6 +497,14 @@ class CRNSDataHub:
             given as decimal percent e.g., 0.01, by default None
         soil_organic_carbon : float, optional
             Given as decimal percent, e.g., 0.001, by default None
+
+        Report
+        ------
+        Soil moisture was estimated using an n0 of {default_params[n0]},
+        a bulk density of {default_params[dry_soil_bulk_density]}, a
+        lattice water content of {default_params[lattice_water]}, and a
+        soil organic carbon content of
+        {default_params[soil_organic_carbon]}
         """
         # Create attributes for NeutronsToSM
         default_params = {
@@ -471,15 +528,14 @@ class CRNSDataHub:
         soil_moisture_calculator.calculate_all_soil_moisture_data()
         self.crns_data_frame = soil_moisture_calculator.return_data_frame()
 
-    def mask_flagged_data(self):
+    def mask_flagged_data(self, data_frame: pd.DataFrame):
         """
         Returns a pd.DataFrame() where flagged data has been replaced
         with np.nan values
         """
         mask = self.flags_data_frame == "UNFLAGGED"
-        masked_df = self.crns_data_frame.copy()
-        masked_df[~mask] = np.nan
-        return masked_df
+        data_frame[~mask] = np.nan
+        return data_frame
 
     def prepare_static_values(self):
         """
@@ -513,24 +569,53 @@ class CRNSDataHub:
             else:
                 self.crns_data_frame[key] = value
 
+    def create_figures(
+        self,
+        create_all=True,
+        ignore_sections=[],
+        selected_figures=[],
+        show_figures: bool = False,
+    ):
+        """
+        Handles creating the figures using the FigureHandler.
+
+        Parameters
+        ----------
+        create_all : bool, optional
+            Default to create all figures in the
+            FigureHandler._register, by default True
+        ignore_sections : list, optional
+            Ignore a whole topic section of figure names, by default []
+        selected_figures : list, optional
+            A list of the figures to be created if not using create_all.
+            See FigureHandler._figure_registry for the names of possible
+            figures, by default []
+        show_figures : bool, optional
+            Turn to False to not show Figures in the kernel, by default
+            True
+        """
+        self.figure_creator = FigureHandler(
+            data_frame=self.crns_data_frame,
+            sensor_info=self.sensor_info,
+            create_all=create_all,
+            ignore_sections=ignore_sections,
+            selected_figures=selected_figures,
+            show_figures=show_figures,
+        )
+        self.figure_creator.create_figures()
+
     def save_data(
         self,
         folder_name: Union[str, None] = None,
         save_folder_location: Union[str, Path, None] = None,
-        append_yaml_hash_to_folder_name: bool = False,
+        append_audit_log_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: Union[dict, None] = None,
+        append_timestamp: bool = True,
     ):
         """
         Saves the file to a specified location. It must contain the
         correct folder_path and file_name.
-
-        Provide options on what is saved:
-
-        - everything (uncertaities, flags, etc)
-        - seperate
-        - key variables only
-
 
         Parameters
         ----------
@@ -543,15 +628,23 @@ class CRNSDataHub:
             folder_name = self.sensor_info.name
         if save_folder_location is None:
             save_folder_location = Path.cwd()
+        if self.calibrator:
+            calib_df = self.calibrator.return_calibration_results_data_frame()
+        else:
+            calib_df = None
 
-        saver = SaveAndArchiveOutputs(
+        self.saver = SaveAndArchiveOutputs(
             folder_name=folder_name,
             processed_data_frame=self.crns_data_frame,
             flag_data_frame=self.flags_data_frame,
             sensor_info=self.sensor_info,
             save_folder_location=save_folder_location,
-            append_yaml_hash_to_folder_name=append_yaml_hash_to_folder_name,
+            append_audit_log_hash_to_folder_name=append_audit_log_hash_to_folder_name,
             use_custom_column_names=use_custom_column_names,
             custom_column_names_dict=custom_column_names_dict,
+            append_timestamp=append_timestamp,
+            figure_handler=self.figure_creator,
+            calib_df=calib_df,
+            magazine_active=self.magazine_active,
         )
-        saver.save_outputs()
+        self.saver.save_outputs()

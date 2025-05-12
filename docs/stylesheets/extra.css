@@ -1,0 +1,367 @@
+/***********************
+ * 1. TYPOGRAPHY
+ ***********************/
+
+/* Base Typography */
+.md-typeset {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.8rem !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #222222;
+}
+
+/* Paragraphs */
+.md-typeset p {
+    margin-bottom: 1.2em;
+}
+
+/* Headings */
+.md-typeset h1 {
+    font-size: 2.1em !important;
+    font-weight: 500 !important;
+    color: var(--primary-color);
+    letter-spacing: -0.02em;
+}
+
+.md-typeset h2 {
+    font-size: 2em !important;
+    font-weight: 400 !important;
+    margin: 1em 0 0.5em;
+    border-bottom: 1px solid rgba(53, 117, 177, 0.2);
+    padding-bottom: 0.3em;
+    margin-top: 2em;
+}
+
+.md-typeset h3 {
+    font-size: 1.75em !important;
+    font-weight: 350 !important;
+}
+
+.md-typeset h4 {
+    font-size: 1.3em !important;
+    font-weight: 300 !important;
+}
+
+.md-typeset h5 {
+    font-size: 1em !important;
+    font-weight: 300 !important;
+}
+
+.md-typeset h6 {
+    font-size: 1.1em !important;
+    font-weight: 300 !important;
+}
+
+/* Code Typography */
+.md-typeset code {
+    font-size: 0.7rem !important;
+    color: var(--code-color);
+    background-color: var(--code-bg-color);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+/* Navigation Typography */
+.md-nav {
+    font-size: 0.75rem !important;
+}
+
+/* Component Typography */
+.md-typeset .admonition,
+.md-typeset details {
+    font-size: 0.8rem !important;
+}
+
+.md-typeset table:not([class]) {
+    font-size: 0.7rem !important;
+}
+
+/* Additional vertical spacing between sections */
+.md-typeset>section {
+    margin-bottom: 3em;
+}
+
+/***********************
+ * 2. LAYOUT & STRUCTURE
+ ***********************/
+
+/* Main Content Layout */
+.md-grid {
+    max-width: 1400px;
+}
+
+.md-content__inner {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Navigation Indentation */
+.md-nav__list .md-nav__list {
+    margin-left: .3rem;
+}
+
+.md-nav__list .md-nav__list .md-nav__list {
+    margin-left: .1rem;
+}
+
+/* Card Grid Layout */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+}
+
+.center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.caption {
+    text-align: center;
+    font-style: italic;
+}
+
+/***********************
+ * 3. COLOR SCHEMES
+ ***********************/
+
+/* Light Mode Colors */
+:root {
+    --primary-color: #2d58af;
+    --accent-color: #ff5722;
+    --background-color: #ffffff;
+    --text-color: #222222;
+    --code-color: #333333;
+    --code-bg-color: #f5f7f9;
+    --table-header-bg: #eef2f7;
+    --table-header-text: #333333;
+    --table-border: #e1e4e8;
+}
+
+/* Dark Mode Colors */
+[data-md-color-scheme="slate"] {
+    --md-default-bg-color: #292f39;
+    /* Slightly darker blue-gray */
+    --md-default-fg-color: #e6edf3;
+    --md-default-fg-color--light: #c9d1d9;
+    --md-default-fg-color--lighter: #8b949e;
+    --md-default-fg-color--lightest: #6e7681;
+
+    --primary-color: #58a6ff;
+    --accent-color: #79ffe6;
+    --background-color: #1a2332;
+    --text-color: #c9d1d9;
+    --header-color: #58a6ff;
+    --table-header-bg: #353d4b;
+    --table-header-text: #e6edf3;
+    --table-border: #33363a;
+    --code-color: #e6edf3;
+    --code-bg-color: #2d3748;
+}
+
+/* High Contrast Mode */
+[data-md-color-scheme="highcontrast"] {
+    --primary-color: #ffffff;
+    --accent-color: #ffffff;
+    --background-color: #000000;
+    --text-color: #ffffff;
+    --code-color: #ffffff;
+    --code-bg-color: #333333;
+    --table-header-bg: #333333;
+    --table-header-text: #ffffff;
+    --table-border: #666666;
+}
+
+/***********************
+ * 4. COMPONENT STYLES
+ ***********************/
+
+/* Navigation */
+.md-nav__link--active {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.md-nav__link:hover {
+    color: var(--accent-color);
+    transition: color 0.2s ease;
+}
+
+/* Dark Mode Navigation */
+[data-md-color-scheme="slate"] .md-nav__item .md-nav__item {
+    color: var(--md-default-fg-color--light);
+}
+
+[data-md-color-scheme="slate"] .md-nav__item .md-nav__link {
+    color: var(--text-color);
+}
+
+[data-md-color-scheme="slate"] .md-nav__item .md-nav__link--active {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+[data-md-color-scheme="slate"] .md-nav__item .md-nav__link:hover {
+    color: var(--accent-color);
+}
+
+[data-md-color-scheme="slate"] .md-nav__title {
+    color: var(--md-default-fg-color--light);
+}
+
+/* Admonitions & Details */
+.md-typeset .admonition,
+.md-typeset details {
+    border-left: 4px solid var(--primary-color);
+    border-radius: 4px;
+    margin: 1.5em 0;
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+    background-color: rgba(45, 88, 175, 0.1);
+    font-weight: 600;
+}
+
+.md-typeset .admonition p,
+.md-typeset details p {
+    font-size: 0.7rem !important;
+    line-height: 1.4;
+}
+
+.md-typeset .admonition li,
+.md-typeset details li {
+    font-size: 0.75rem !important;
+}
+
+.md-typeset .admonition code,
+.md-typeset details code {
+    font-size: 0.7rem !important;
+}
+
+/* Code blocks */
+.md-typeset pre {
+    background-color: var(--code-bg-color);
+    border-radius: 4px;
+    margin: 1em 0;
+    padding: 0.5em;
+}
+
+[data-md-color-scheme="slate"] .md-typeset pre {
+    background-color: #2d3748;
+}
+
+/* Tables */
+.md-typeset table:not([class]) {
+    border-collapse: collapse;
+    width: 100%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+    background-color: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-weight: 600;
+    text-align: left;
+    padding: 0.75em 1em;
+    border-bottom: 2px solid var(--table-border);
+}
+
+.md-typeset table:not([class]) td {
+    padding: 0.75em 1em;
+    border-bottom: 1px solid var(--table-border);
+}
+
+.md-typeset table:not([class]) tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Cards */
+.card {
+    background-color: #fff;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+.card-content {
+    display: flex;
+    padding: 1rem;
+    flex-direction: column;
+    height: 100%;
+}
+
+.card:hover {
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+}
+
+.card h3 {
+    font-size: 1rem;
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.card p {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Card Dark Mode */
+[data-md-color-scheme="slate"] .card {
+    background-color: #2d3748;
+    border-color: #30363d;
+}
+
+[data-md-color-scheme="slate"] .card:hover {
+    background-color: #323c4f;
+}
+
+/* Dark Mode Typography & Elements */
+[data-md-color-scheme="slate"] .md-typeset h1,
+[data-md-color-scheme="slate"] .md-typeset h2,
+[data-md-color-scheme="slate"] .md-typeset h3,
+[data-md-color-scheme="slate"] .md-typeset h4,
+[data-md-color-scheme="slate"] .md-typeset h5,
+[data-md-color-scheme="slate"] .md-typeset h6 {
+    color: var(--header-color);
+}
+
+[data-md-color-scheme="slate"] body,
+[data-md-color-scheme="slate"] .md-typeset {
+    color: var(--text-color);
+}
+
+[data-md-color-scheme="slate"] .md-typeset a {
+    color: var(--primary-color);
+}
+
+[data-md-color-scheme="slate"] .md-typeset a:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+}
+
+[data-md-color-scheme="slate"] .md-typeset code {
+    background-color: var(--code-bg-color);
+    color: var(--code-color);
+}
+
+[data-md-color-scheme="slate"] .card h3,
+[data-md-color-scheme="slate"] .card p {
+    color: var(--text-color);
+}

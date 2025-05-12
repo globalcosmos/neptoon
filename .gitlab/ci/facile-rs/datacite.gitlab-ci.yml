@@ -1,0 +1,29 @@
+# Generate DataCite metadata and export it as an artifact
+# This job is run on every commit
+build-datacite:
+  stage: build
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  before_script:
+    - uv pip install FACILE-RS==${FACILE_RS_VERSION}
+  script:
+    - uv run facile-rs datacite create
+  artifacts:
+    paths:
+      - $DATACITE_PATH
+    expire_in: 2 hrs
+
+# Upload DataCite metadata to the GitLab registry
+# This job is run only for release tags, starting with "v"
+upload-datacite:
+  variables:
+    GIT_STRATEGY: none
+  stage: release
+  image: curlimages/curl:7.77.0
+  needs:
+    - build-datacite
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  script:
+    - mv $DATACITE_PATH $DATACITE_RELEASE
+    - |
+      curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${DATACITE_RELEASE} ${DATACITE_REGISTRY_URL}/${DATACITE_RELEASE}

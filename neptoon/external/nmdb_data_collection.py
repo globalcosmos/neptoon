@@ -13,6 +13,28 @@ from neptoon.logging import get_logger
 
 core_logger = get_logger()
 
+NMDB_REFERENCES = {
+    "JUNG": 161,
+    "SOPO": 308,
+    "OULU": 108,
+    "PSNM": 615,
+    "MXCO": 227,
+    "AATA": 157,
+    "INVK": 111,
+    "KIEL": 166,
+}
+
+NMDB_CUTOFF_RIGIDITIES = {
+    "JUNG": 4.49,
+    "SOPO": 0.0,
+    "OULU": 0.619,
+    "PSNM": 16.674,
+    "MXCO": 7.495,
+    "AATA": 6.018,
+    "INVK": 0.186,
+    "KIEL": 2.383,
+}
+
 
 class NMDBDataAttacher:
     """
@@ -84,11 +106,22 @@ class NMDBDataAttacher:
         ValueError
             When index of the data is not Datetime an error occurs
         """
+        if self.config.reference_value is None:
+            if self.config.station not in list(NMDB_REFERENCES.keys()):
+                message = (
+                    "NMDB station not supported for automatic "
+                    "reference creation. Please choose one of: \n"
+                    f"{list(NMDB_REFERENCES.keys())}"
+                )
+                core_logger.error(message)
+                raise ValueError(message)
+            else:
+                self.config.reference_value = NMDB_REFERENCES[
+                    self.config.station
+                ]
+
         if not isinstance(self.tmp_data.index, pd.DatetimeIndex):
             raise ValueError("DataFrame source must have a DatetimeIndex.")
-
-        if self.config.reference_value is None:
-            self.config.reference_value = self.tmp_data["count"][0]
 
         mapped_data = self.tmp_data["count"].reindex(
             self.data_frame.index, method="nearest"
@@ -97,6 +130,13 @@ class NMDBDataAttacher:
         self.data_frame[
             str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE)
         ] = self.config.reference_value
+
+        self.data_frame[str(ColumnInfo.Name.NMDB_REFERENCE_STATION)] = (
+            self.config.station
+        )
+        self.data_frame[
+            str(ColumnInfo.Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY)
+        ] = NMDB_CUTOFF_RIGIDITIES[self.config.station]
 
     def return_data_frame(self):
         """
@@ -272,15 +312,15 @@ class NMDBConfig:
         self._start_date_wanted = start_date_wanted
         self._end_date_wanted = end_date_wanted
         self._cache_dir = cache_dir
-        self._station = station if station is not None else "JUNG"
-        self._reference_value = reference_value
-        self._nmdb_table = nmdb_table if nmdb_table is not None else "revori"
-        self._resolution = resolution if resolution is not None else "60"
-        self._cache_exists = cache_exists
-        self._cache_start_date = cache_start_date
-        self._cache_end_date = cache_end_date
-        self._start_date_needed = start_date_needed
-        self._end_date_needed = end_date_needed
+        self.station = station if station is not None else "JUNG"
+        self.reference_value = reference_value
+        self.nmdb_table = nmdb_table if nmdb_table is not None else "revori"
+        self.resolution = resolution if resolution is not None else "60"
+        self.cache_exists = cache_exists
+        self.cache_start_date = cache_start_date
+        self.cache_end_date = cache_end_date
+        self.start_date_needed = start_date_needed
+        self.end_date_needed = end_date_needed
 
     @property
     def start_date_wanted(self):
@@ -305,62 +345,6 @@ class NMDBConfig:
             return self._cache_dir
         else:
             return GlobalConfig.get_cache_dir()
-
-    @property
-    def station(self):
-        return self._station
-
-    @property
-    def reference_value(self):
-        return self._reference_value
-
-    @property
-    def nmdb_table(self):
-        return self._nmdb_table
-
-    @property
-    def resolution(self):
-        return self._resolution
-
-    @property
-    def cache_exists(self):
-        return self._cache_exists
-
-    @cache_exists.setter
-    def cache_exists(self, value):
-        self._cache_exists = value
-
-    @property
-    def cache_start_date(self):
-        return self._cache_start_date
-
-    @cache_start_date.setter
-    def cache_start_date(self, value):
-        self._cache_start_date = value
-
-    @property
-    def cache_end_date(self):
-        return self._cache_end_date
-
-    @cache_end_date.setter
-    def cache_end_date(self, value):
-        self._cache_end_date = value
-
-    @property
-    def start_date_needed(self):
-        return self._start_date_needed
-
-    @start_date_needed.setter
-    def start_date_needed(self, value):
-        self._start_date_needed = value
-
-    @property
-    def end_date_needed(self):
-        return self._end_date_needed
-
-    @end_date_needed.setter
-    def end_date_needed(self, value):
-        self._end_date_needed = value
 
 
 class CacheHandler:
@@ -594,7 +578,7 @@ class DataFetcher:
             f"&tabchoice={self.config.nmdb_table}"
             f"&dtype=corr_for_efficiency"
             f"&tresolution={self.config.resolution}"
-            f"&force=1&yunits=0&date_choice=bydate"
+            f"&yunits=0&date_choice=bydate"
             f"&start_day={sd}&start_month={sm}&start_year={sy}"
             f"&start_hour=0&start_min=0&end_day={ed}&end_month={em}"
             f"&end_year={ey}&end_hour=23&end_min=59&output=ascii"

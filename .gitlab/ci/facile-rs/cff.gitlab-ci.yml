@@ -1,0 +1,19 @@
+# Generate a CFF (Citation File Format) file and export it as an artifact
+create-cff:
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  stage: build
+  rules:
+    # - if: $CI_COMMIT_TAG =~ /^pre/
+    - if: $CI_COMMIT_REF_PROTECTED == "true" && $CI_COMMIT_BRANCH != "main" && $CI_COMMIT_BRANCH
+    # - if: $CI_COMMIT_BRANCH
+    # - if: $CI_COMMIT_BRANCH != "main" && $CI_COMMIT_BRANCH
+  before_script:
+    - uv pip install FACILE-RS==${FACILE_RS_VERSION}
+    - git config --global user.name "${GITLAB_USER_NAME}"
+    - git config --global user.email "${GITLAB_USER_EMAIL}"
+  script:
+    - uv run facile-rs cff create --no-sort-authors
+  artifacts:
+    paths:
+      - ${CFF_PATH}
+    expire_in: 2 hrs

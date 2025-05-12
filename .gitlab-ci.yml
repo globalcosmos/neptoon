@@ -1,12 +1,74 @@
-image: python:3.10
+image: ghcr.io/astral-sh/uv:python3.11-bookworm
 
 # Define the stages of pipeline
 stages:
-  - test
   - lint
+  - test
   - build
+  - docs
   - package_testpypi
+  - release
+  - archive
   - package_pypi
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  # UV Configuration
+  UV_SYSTEM_PYTHON: 1
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+  UV_LINK_MODE: copy
+  UV_VERSION: 0.6
+
+  ##### FACILE-RS Variables #####
+  PROJECT_NAME: neptoon
+  GIT_SUBMODULE_STRATEGY: recursive
+  DOCKER_DRIVER: overlay
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 1
+  FACILE_RS_VERSION: 3.2.2
+
+  # CodeMeta files location
+  CODEMETA_LOCATION: codemeta.json # Replace with the location of your main CodeMeta metadata file
+  CREATORS_LOCATIONS: codemeta.json # Replace with the location of your creators metadata file
+
+  # DataCite XML
+  DATACITE_PATH: ${PROJECT_NAME}.xml
+  DATACITE_RELEASE: ${PROJECT_NAME}-${CI_COMMIT_TAG}.xml
+  DATACITE_REGISTRY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PROJECT_NAME}-datacite/${CI_COMMIT_TAG}
+
+  # CFF (Citation File Format)
+  CFF_PATH: CITATION.cff
+  SORT_AUTHORS: false facile-rs cff create
+
+  # GitLab releases
+  RELEASE_BRANCH: main # Replace with the branch on which the release tag is created
+  RELEASE_TAG: ${CI_COMMIT_TAG}
+  RELEASE_API_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases
+  RELEASE_ARCHIVE_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/archive.tar.gz?sha=${CI_COMMIT_TAG}
+  RELEASE_DESCRIPTION: |
+    Find the changelog [here](${CI_PROJECT_URL}/blob/${RELEASE_BRANCH}/CHANGELOG.md).
+
+  # BagPack
+  ENABLE_BAGPACK: "true"
+  BAG_PATH: ${PROJECT_NAME}-${CI_COMMIT_TAG}
+  BAGPACK_REGISTRY_URL: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PROJECT_NAME}-bagpack/${CI_COMMIT_TAG}
+
+  # Zenodo
+  # Set ENABLE_ZENODO to "true" to activate release on Zenodo
+  ENABLE_ZENODO: "true"
+  ZENODO_PATH: ${PROJECT_NAME}-${CI_COMMIT_TAG}
+  ZENODO_URL: https://zenodo.org # https://sandbox.zenodo.org # Replace with https://zenodo.org for production environment
+
+  # RADAR
+  # Set ENABLE_RADAR to "true" to activate release on RADAR
+  ENABLE_RADAR: "false"
+  RADAR_PATH: ${PROJECT_NAME}-${CI_COMMIT_TAG}
+  RADAR_BACKLINK: ${CI_PROJECT_URL}/-/releases
+
+  # Notification email configuration
+  # Configure and uncomment to activate email notifications when RADAR or Zenodo releases are uploaded
+  # SMTP_SERVER: smtp.example.com
+  # NOTIFICATION_EMAIL: your.name@example.com
 
 # Include CI/CD configuration files
 include:
@@ -14,8 +76,18 @@ include:
   - local: .gitlab/ci/test.gitlab-ci.yml
   - local: .gitlab/ci/package.gitlab-ci.yml
   - local: .gitlab/ci/lint.gitlab-ci.yml
+  ###### FACILE-RS includes ######
+  - local: .gitlab/ci/facile-rs/cff.gitlab-ci.yml
+  - local: .gitlab/ci/facile-rs/datacite.gitlab-ci.yml
+  - local: .gitlab/ci/facile-rs/release.gitlab-ci.yml
+  - local: .gitlab/ci/facile-rs/archive.gitlab-ci.yml
 
 cache:
   paths:
+    - "$UV_CACHE_DIR"
     - .cache/pip
     - .venv/
+  key:
+    files:
+      - pyproject.toml
+    prefix: ${CI_JOB_NAME}

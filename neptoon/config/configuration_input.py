@@ -54,11 +54,7 @@ class SensorInfo(BaseConfig):
         gt=0, description="The N0 calibration term.", default=None
     )
     beta_coefficient: Optional[float] = Field(default=None)
-    l_coefficient: Optional[float] = Field(default=None)
     mean_pressure: Optional[float] = Field(default=None)
-    avg_precipitation: Optional[float] = Field(default=None)
-    avg_soil_moisture: Optional[float] = Field(default=None)
-    avg_biomass: Optional[float] = Field(default=None)
 
 
 # Time Series Validation
@@ -70,8 +66,8 @@ class TimeSeriesColumns(BaseConfig):
     extensions.
     """
 
-    epithermal_neutron_counts_columns: List[str]
-    thermal_neutrons: Optional[List[str]] = None
+    epithermal_neutron_columns: List[str]
+    thermal_neutron_columns: Optional[List[str]] = None
     neutron_count_units: Literal[
         "absolute_count", "counts_per_hour", "counts_per_second"
     ]
@@ -93,12 +89,19 @@ class TimeSeriesColumns(BaseConfig):
     date_time_format: str
 
 
+class Temporal(BaseConfig):
+    input_resolution: str = Field(default="1hour")
+    output_resolution: str = Field(default=None)
+    align_timestamps: bool = Field(default=False)
+    alignment_method: str | None = Field(default="time")
+    aggregate_method: str | None = Field(default="bagg")
+    aggregate_func: str | None = Field(default="mean")
+    aggregate_maxna_fraction: float | None = Field(default=0.5)
+
+
 class TimeSeriesData(BaseConfig):
     path_to_data: Optional[str] = Field(default=None)
-    time_step_resolution: str
-    # date_time_format: str
-    initial_time_zone: Optional[str] = None
-    convert_time_zone_to: Optional[str] = None
+    temporal: Optional[Temporal] = None
     key_column_info: Optional[TimeSeriesColumns] = None
 
 
@@ -276,6 +279,11 @@ class QAConfig(BaseConfig):
     air_humidity: Optional[QAColumnConfig] = None
     air_pressure: Optional[QAColumnConfig] = None
     temperature: Optional[QAColumnConfig] = None
+    soil_moisture: Optional[QAColumnConfig] = None
+
+
+class SoilMoistureQA(BaseConfig):
+    soil_moisture: Optional[QAColumnConfig] = None
 
 
 # Calibration Validation
@@ -312,7 +320,18 @@ class CalibrationConfig(BaseConfig):
 
 class DataStorageConfig(BaseConfig):
     save_folder: Optional[str] = Field(default=None)
-    append_yaml_hash_to_folder_name: Optional[bool] = Field(default=False)
+    append_timestamp_to_folder_name: Optional[bool] = Field(default=True)
+    append_audit_log_hash_to_folder_name: Optional[bool] = Field(default=False)
+    create_report: Optional[bool] = Field(default=False)
+
+
+class FiguresConfig(BaseConfig):
+    create_figures: bool = Field(default=True)
+    make_all_figures: bool = Field(default=True)
+    custom_list: Optional[List[str]] = Field(
+        default=None,
+        description="A list of the figures to process",
+    )
 
 
 class SensorConfig(BaseConfig):
@@ -321,12 +340,16 @@ class SensorConfig(BaseConfig):
     sensor_info: SensorInfo
     time_series_data: Optional[TimeSeriesData] = None
     input_data_qa: Optional[QAConfig] = None
+    soil_moisture_qa: Optional[SoilMoistureQA] = None
     raw_data_parse_options: Optional[RawDataParseConfig] = None
     calibration: Optional[CalibrationConfig] = None
     data_storage: Optional[DataStorageConfig] = None
+    figures: Optional[FiguresConfig] = None
 
 
-## Process Config
+####################
+## Process Config ##
+####################
 
 
 class NeutronQualityAssessment(BaseConfig):
@@ -372,7 +395,7 @@ class AirPressureCorrection(BaseModel):
     method: Literal["zreda_2012"] = Field(
         description="Air pressure correction method"
     )
-    Dunai_inclination: Optional[float] = Field(
+    dunai_inclination: Optional[float] = Field(
         default=None, description="Dunai inclination parameter"
     )
 
@@ -386,9 +409,6 @@ class IncomingRadiationCorrection(BaseModel):
         "mcjannet_desilets_2024",
     ] = Field(description="Incoming radiation correction method")
 
-    reference_value: float = Field(
-        description="Reference value for radiation correction", gt=0
-    )
     reference_neutron_monitor: ReferenceNeutronMonitor = Field(
         default_factory=ReferenceNeutronMonitor,
         description="Reference neutron monitor configuration",
@@ -432,22 +452,22 @@ class SmoothingAlgorithmSettings(BaseModel):
         - Polynomial order must be less than window size
     """
 
-    algorithm: Literal["savitsky-golay", "rolling-mean"] = Field(
-        default="savitsky-golay", description="Smoothing algorithm to apply"
+    algorithm: Literal["savitsky_golay", "rolling_mean"] = Field(
+        default="savitsky_golay", description="Smoothing algorithm to apply"
     )
     window: int = Field(
         default=12, description="Window size for smoothing", gt=0
     )
     poly_order: Optional[int] = Field(
         default=4,
-        description="Polynomial order for Savitzky-Golay filter",
+        description="Polynomial order for Savitzky_Golay filter",
         ge=0,
     )
 
     @model_validator(mode="after")
     def validate_poly_order(self) -> "SmoothingAlgorithmSettings":
         """Validate polynomial order relative to window size."""
-        if self.algorithm == "savitsky-golay":
+        if self.algorithm == "savitsky_golay":
             if self.poly_order >= self.window:
                 raise ValueError(
                     "Polynomial order must be less than window size "
@@ -464,9 +484,6 @@ class DataSmoothingConfig(BaseModel):
     smoothing parameters to be applied.
     """
 
-    smooth_raw_neutrons: bool = Field(
-        default=False, description="Apply smoothing to raw neutron counts"
-    )
     smooth_corrected_neutrons: bool = Field(
         default=True, description="Apply smoothing to corrected neutron counts"
     )
@@ -498,10 +515,24 @@ class ConfigurationManager:
     def __init__(self):
         self._configs: Dict[str, BaseConfig] = {}
 
+    def _get_working_directory(
+        self,
+        config_dict: dict,
+        config_path: Path,
+    ):
+        if "working_directory" in config_dict and isinstance(
+            config_dict["working_directory"], str
+        ):
+            parent_path = Path(config_dict["working_directory"])
+        else:
+            parent_path = config_path.parent
+        return parent_path
+
     def _resolve_paths(
         self,
         config_dict: dict,
         config_path: Path,
+        parent_path: Optional[Path] = None,
     ):
         """
         Resolves the paths in the YAML file so that any relative paths
@@ -520,18 +551,26 @@ class ConfigurationManager:
         dict
             Dictionary with paths as Path objects.
         """
+        if parent_path is None:
+            parent_path = self._get_working_directory(
+                config_dict=config_dict, config_path=config_path
+            )
+
         resolved_dict = {}
         for key, value in config_dict.items():
             if isinstance(value, dict):
                 resolved_dict[key] = self._resolve_paths(
-                    value, config_path=config_path
+                    value,
+                    config_path=config_path,
+                    parent_path=parent_path,
                 )
             elif isinstance(value, str) and (
                 "path_" in key.lower() or "location" in key.lower()
             ):
                 path = Path(value)
                 if not path.is_absolute():
-                    path = (config_path.parent / path).resolve()
+                    path = (parent_path / path).resolve()
+
                 resolved_dict[key] = str(path)
             else:
                 resolved_dict[key] = value
@@ -551,7 +590,6 @@ class ConfigurationManager:
 
         with open(file_path) as f:
             config_dict = yaml.safe_load(f)
-
         config_dict = self._resolve_paths(config_dict, config_path)
 
         if config_dict["config"] == "sensor":

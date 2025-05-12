@@ -2,11 +2,21 @@ import pandas as pd
 import math
 from pathlib import Path
 from typing import Union
-
+import shutil
+import json
+import yaml
+from typing import List
+from magazine import Publish, Magazine
 from neptoon.logging import get_logger
 from neptoon.data_audit import DataAuditLog
-from neptoon.config.configuration_input import SensorInfo
+from neptoon.config.configuration_input import (
+    SensorInfo,
+    SensorConfig,
+    ProcessConfig,
+)
 from neptoon.utils.general_utils import validate_and_convert_file_path
+from neptoon.visulisation.figures_handler import FigureHandler
+from neptoon.columns import ColumnInfo
 
 core_logger = get_logger()
 
@@ -29,10 +39,13 @@ class SaveAndArchiveOutputs:
         flag_data_frame: pd.DataFrame,
         sensor_info: SensorInfo,
         save_folder_location: Union[str, Path] = None,
-        append_yaml_hash_to_folder_name: bool = False,
+        append_audit_log_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: dict = None,
-        append_time_stamp: bool = True,
+        append_timestamp: bool = True,
+        figure_handler: FigureHandler = None,
+        calib_df=None,
+        magazine_active: bool = False,
     ):
         """
         Attributes
@@ -49,9 +62,9 @@ class SaveAndArchiveOutputs:
             The SensorInfo object.
         save_folder_location : Union[str, Path], optional
             The folder where the data should be saved. If left as None
-        append_yaml_hash_to_folder_name : bool, optional
+        append_audit_log_hash_to_folder_name : bool, optional
             The DataAuditLog gets converted to a hash, meaning sites
-            procesed the same way share a hash. This can be appended to
+            processed the same way share a hash. This can be appended to
             the folder automatically helping to identify sites processed
             differently, by default False
         use_custom_column_names : bool, optional
@@ -59,7 +72,7 @@ class SaveAndArchiveOutputs:
         custom_column_names_dict : dict, optional
             A dictionary to convert standard neptoon names into custom a
             custom naming convention, by default None
-        append_time_stamp: bool, optional, by default True
+        append_timestamp: bool, optional, by default True
             Whether to append a timestamp to the folder name when
             saving.
         """
@@ -70,11 +83,16 @@ class SaveAndArchiveOutputs:
         self.save_folder_location = self._validate_save_folder(
             save_folder_location
         )
-        self.append_yaml_hash_to_folder_name = append_yaml_hash_to_folder_name
+        self.append_audit_log_hash_to_folder_name = (
+            append_audit_log_hash_to_folder_name
+        )
         self.use_custom_column_names = use_custom_column_names
         self.custom_column_names_dict = custom_column_names_dict
-        self.append_time_stamp = append_time_stamp
+        self.append_timestamp = append_timestamp
         self.full_folder_location = None
+        self.figure_handler = figure_handler
+        self.calib_df = calib_df
+        self.magazine_active = magazine_active
 
     def _validate_save_folder(
         self,
@@ -115,7 +133,7 @@ class SaveAndArchiveOutputs:
             message = f"Error: {e} \nFolder already exists."
             core_logger.info(message)
 
-        if self.append_time_stamp:
+        if self.append_timestamp:
             from datetime import datetime
 
             # timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
@@ -262,9 +280,108 @@ class SaveAndArchiveOutputs:
         masked_df[~mask] = math.nan
         return masked_df
 
+    def _save_figures(self):
+        """
+        Handles saving figures
+        """
+
+        figure_metadata = [
+            fig_md for fig_md in self.figure_handler.temp_handler.get_figures()
+        ]
+
+        figure_folder = self.full_folder_location / "figures"
+        figure_folder.mkdir(parents=True, exist_ok=True)
+        for figure in figure_metadata:
+            try:
+                dest = figure_folder / f"{figure.name}.png"
+                shutil.copy2(figure.path, dest)
+            except FileNotFoundError as err:
+                message = f"{figure.name} not found: {err}."
+                core_logger.error(message)
+
+    def _update_sensor_info(
+        self,
+        fields_to_check: List[str] = [
+            "beta_coefficient",
+            "mean_pressure",
+        ],
+        beta_col=str(ColumnInfo.Name.BETA_COEFFICIENT),
+        mean_press_col=str(ColumnInfo.Name.MEAN_PRESSURE),
+    ):
+        """
+        Updates SensorInfo if values where calulated during processing.
+
+        Parameters
+        ----------
+        fields_to_check : List[str], optional
+            A list of values in SensorInfo to check, by default [
+            "beta_coefficient", "l_coefficient", "mean_pressure", ]
+        beta_col : str, optional
+            Beta Coefficient column name, by default
+            str(ColumnInfo.Name.BETA_COEFFICIENT)
+        mean_press_col : str, optional
+            mean pressure column name, by default
+            str(ColumnInfo.Name.MEAN_PRESSURE)
+        """
+        missing_fields = [
+            field
+            for field in fields_to_check
+            if getattr(self.sensor_info, field) is None
+        ]
+        if (
+            beta_col in self.processed_data_frame.columns
+            and "beta_coefficient" in missing_fields
+        ):
+            beta_coeff = self.processed_data_frame[beta_col].iloc[0]
+            self.sensor_info.beta_coefficient = round(beta_coeff, 4)
+        if (
+            mean_press_col in self.processed_data_frame.columns
+            and "mean_pressure" in missing_fields
+        ):
+            mean_pressure = self.processed_data_frame[mean_press_col].iloc[0]
+            self.sensor_info.mean_pressure = round(mean_pressure, 2)
+
+    def _save_pdf(self, location: Path | str):
+        """
+        Exports the pdf built using magazine to the save folder.
+
+        Parameters
+        ----------
+        location : Path
+            The Path to the folder where the pdf is saved
+        """
+        if self.magazine_active:
+            name = self.sensor_info.name
+            save_location = location / f"Report-{name}.pdf"
+            with Publish(str(save_location), f"{name} data") as pdf:
+                pdf.add_topic("Neutron Correction")
+                pdf.add_figure("Neutron Correction")
+                pdf.add_topic("NMDB")
+                pdf.add_figure("NMDB")
+                pdf.add_topic("Soil Moisture")
+                pdf.add_figure("Soil Moisture")
+                pdf.add_topic("Atmospheric Conditions")
+                pdf.add_figure("Atmospheric Conditions")
+                pdf.add_topic("Calibration")
+                pdf.add_figure("Calibration")
+                pdf.add_topic("Data Preparation")
+                pdf.add_figure("Data Preparation")
+
+    def save_data_frames(self, file_name):
+        """
+        Saves various data frames as .csv files.
+        """
+        data_folder = self.full_folder_location / "data"
+        data_folder.mkdir()
+        self.processed_data_frame.to_csv(
+            data_folder / f"{file_name}_processed_data.csv"
+        )
+        self.flag_data_frame.to_csv(data_folder / f"{file_name}_flags.csv")
+        if self.calib_df is not None:
+            self.calib_df.to_csv(data_folder / f"{file_name}_calibration.csv")
+
     def save_outputs(
         self,
-        nan_bad_data: bool = True,
         use_custom_column_names: bool = False,
     ):
         """
@@ -291,46 +408,17 @@ class SaveAndArchiveOutputs:
                 raise ValueError
         file_name = self.sensor_info.name
         self.create_save_folder()
-        if nan_bad_data:
-            self.processed_data_frame = self.mask_bad_data()
-        self.processed_data_frame.to_csv(
-            (
-                self.full_folder_location
-                / f"{file_name}_processed_time_series.csv"
-            )
-        )
-        self.flag_data_frame.to_csv(
-            (self.full_folder_location / f"{file_name}_flag_data_frame.csv")
-        )
-
+        self.save_data_frames(file_name=file_name)
+        if self.figure_handler:
+            self._save_figures()
+        self._update_sensor_info()
+        if Magazine.active:
+            self._save_pdf(location=self.full_folder_location)
         self.close_and_save_data_audit_log(
-            append_hash=self.append_yaml_hash_to_folder_name
+            append_hash=self.append_audit_log_hash_to_folder_name
         )
 
     # ---- TODO below this line ----
-    def parse_new_yaml(
-        self,
-    ):
-        """
-        Creates a new station information YAML file and saves this in
-        the folder. For example, when new averages are created from new
-        data. Or when calibration produces a new N0.
-        """
-        # TODO
-        pass
-
-    def create_bespoke_output(
-        self,
-    ):
-        """
-        Provide an option which supports a specific type of output
-        table.
-
-        For example, creates a table which only includes meteo + SM
-        data.
-
-        """
-        pass
 
     def save_custom_column_names(
         self,
@@ -340,20 +428,44 @@ class SaveAndArchiveOutputs:
         """
         pass
 
-    def save_to_cloud(
-        self,
-    ):
-        """
-        WIP - future integration with cloud services.
-        """
-        # TODO
-        pass
 
-    def create_pdf_output(
+class ConfigSaver:
+    """
+    Saves the SensorConfig object as a yaml file.
+    """
+
+    def __init__(
+        self,
+        save_folder_location: Path | str,
+        config: SensorConfig,
+    ):
+        self.save_folder_location = save_folder_location
+        self.config = config
+
+    def save(
         self,
     ):
         """
-        WIP - produce the PDF output and save in the folder.
+        Convert a Pydantic model to YAML file and save it.
         """
-        # TODO
-        pass
+        if isinstance(self.config, SensorConfig):
+            save_location = (
+                self.save_folder_location / "updated_sensor_config.yaml"
+            )
+        if isinstance(self.config, ProcessConfig):
+            save_location = (
+                self.save_folder_location / "updated_process_config.yaml"
+            )
+        json_str = self.config.model_dump_json()
+        data = json.loads(json_str)
+
+        config_str = yaml.safe_dump(
+            data,
+            default_flow_style=False,
+            allow_unicode=True,
+            sort_keys=False,
+            indent=2,
+            default_style=None,
+        )
+
+        Path(save_location).write_text(config_str)

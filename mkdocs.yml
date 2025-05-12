@@ -1,0 +1,145 @@
+site_name: neptoon documentation
+docs_dir: docs
+site_dir: public
+repo_url: https://codebase.helmholtz.cloud/cosmos/neptoon
+repo_name: cosmos/neptoon
+theme:
+  name: "material"
+  logo: "assets/logo2.svg"
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - content.code.copy
+    - content.code.select
+    #- toc.integrate
+    - toc.follow
+    - toc.collapse
+  toc_depth: 2 # Controls depth of ToC
+  collapse_navigation: true # Ensures navigation is collapsible
+  sticky_navigation: true
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+markdown_extensions:
+  - toc:
+      permalink: true
+      toc_depth: 3
+      baselevel: 1
+      separator: "_"
+
+nav:
+  - Home:
+      - Home: index.md
+      - How does Cosmic-Ray Neutron Sensing work?: home/crns-overview.md
+      # - Key Features in neptoon: home/key-features.md
+      - Roadmap: home/roadmap.md
+      - Contact: home/contact.md
+  - User Guide:
+      - Introduction:
+          - Installation: user-guide/installation.md
+          - Workflow: user-guide/workflow-description.md
+          - Examples: user-guide/neptoon-examples.md
+      - Process data with config files:
+          - Overview: user-guide/process-with-config/intro-to-config.md
+          - Process config: user-guide/process-with-config/process-config.md
+          - Sensor config: user-guide/process-with-config/sensor-config.md
+          - Using config files: user-guide/process-with-config/config-usage.md
+      - Process data with python IDE:
+          - Overview: user-guide/python-ide-overview.md
+          - Importing data: user-guide/importing-data.md
+          - Sensor information: user-guide/key-site-information.md
+          - External data collection: user-guide/external-data.md
+          - Quality checks: user-guide/data-quality-checks.md
+          - Corrections: user-guide/choosing-corrections.md
+          - Sensor calibration: user-guide/sensor-calibration.md
+          - Soil moisture estimates: user-guide/producing-soil-moisture-estimates.md
+          - Saving data: user-guide/saving-data.md
+          - PDF output: user-guide/pdf-output.md
+      - Process data with the Graphical User Interface:
+          - Working with the GUI: user-guide/the-neptoon-GUI.md
+      - Further Information:
+          - What's the CRNSDataHub?: user-guide/CRNSDataHub.md
+          - Units in neptoon: user-guide/internal-units.md
+          - Columns in neptoon: user-guide/columns-in-neptoon.md
+  - Advanced Usage:
+      - Overview: advanced-users/overview.md
+      - Changing Expected Column Names: advanced-users/changing-column-names.md
+      - Write Your Own Corrections: advanced-users/write-your-own-corrections.md
+  - API Reference:
+      - Overview: api-reference/index.md
+      - Corrections: api-reference/corrections.md
+      - Quality Control: api-reference/quality.md
+      - Calibration: api-reference/calibration.md
+  - Develop with Neptoon:
+      - Overview: contribution/overview-contribution.md
+
+# Extensions
+markdown_extensions:
+  - footnotes
+  - md_in_html
+  - attr_list
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.details
+  - admonition
+  - pymdownx.magiclink
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - def_list
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      use_pygments: true
+      pygments_style: "github-dark" 
+plugins:
+  - search
+  - roamlinks
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["../neptoon"]
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            heading_level: 2
+            merge_init_into_class: true
+            show_signature: true
+            show_signature_annotations: true
+            docstring_section_style: table
+            members_order: source # Maintains source code order
+extra_css:
+  - stylesheets/extra.css
+  - https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap

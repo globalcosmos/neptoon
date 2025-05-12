@@ -14,7 +14,6 @@ from neptoon.corrections import (
     calc_actual_vapour_pressure,
     humidity_correction_rosolem2013,
     calc_pressure_correction_beta_coeff,
-    calc_pressure_correction_l_coeff,
     calc_mean_pressure,
     calc_beta_coefficient,
     above_ground_biomass_correction_baatz2015,
@@ -301,53 +300,6 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
                 f"Required columns are missing or empty: {', '.join(missing_columns)}"
             )
 
-    def _check_if_ref_monitor_supplied(self, data_frame):
-        """
-        This check will find if a specific reference monitor was
-        supplied. If not (i.e., the data_frame is empty for this
-        column), then Jungfraujoch is used automatically.
-
-        Parameters
-        ----------
-        data_frame : pd.DataFrame
-            DataFrame with Data
-        """
-        self.ref_monitor_missing = is_column_missing_or_empty(
-            data_frame=data_frame,
-            column_name=self.ref_monitor_cutoff_rigidity,
-        )
-
-    def _assign_default_ref_monitor(
-        self,
-        data_frame,
-        default_ref_monitor_gv=4.49,
-    ):
-        """
-        If the ref_monitor_missing assignment is true, it will fill in a
-        default value to be used.
-
-        Parameters
-        ----------
-        data_frame : pd.DataFrame
-            DataFrame with data
-        default_ref_monitor_gv : float, optional
-            Set as JUNG by default, by default 4.49
-
-        Returns
-        -------
-
-        pd.DataFrame
-            Returns dataframe with filled in values if ref monitor is
-            missing
-        """
-        if self.ref_monitor_missing:
-            data_frame[self.ref_monitor_cutoff_rigidity] = (
-                default_ref_monitor_gv
-            )
-            return data_frame
-        else:
-            return data_frame
-
     def _calc_rc_scale_param(self, data_frame):
         """
         Calculates the correction to account for difference in site and
@@ -385,8 +337,6 @@ class IncomingIntensityCorrectionHawdon2014(Correction):
             DataFrame with the correction values attached
         """
         self._check_required_columns(data_frame=data_frame)
-        self._check_if_ref_monitor_supplied(data_frame=data_frame)
-        data_frame = self._assign_default_ref_monitor(data_frame=data_frame)
         data_frame = self._calc_rc_scale_param(data_frame=data_frame)
 
         data_frame[self.correction_factor_column_name] = data_frame.apply(
@@ -499,6 +449,29 @@ class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
                 f"Required columns are missing or empty: {', '.join(missing_columns)}"
             )
 
+    def _check_reference_monitor_is_jung(self, data_frame):
+        """
+        The reference station in the mcjannet desillets formulation is
+        Jungfraujoch. If different reference monitor is supplied, and
+        therefore a different reference point, an error is raised.
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame with data
+        """
+        station_supplied = data_frame[
+            str(ColumnInfo.Name.NMDB_REFERENCE_STATION)
+        ].iloc[0]
+        if station_supplied != "JUNG":
+            message = (
+                "If using the McjannetDesilets2023 method for incoming intensity correction "
+                "only 'JUNG' (Jungfraujoch) can be given as a reference station. \n"
+                f"{station_supplied} was given"
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
     def _calc_rc_scale_param(self, data_frame):
         """
         Calculates the correction to account for difference in site and
@@ -521,6 +494,7 @@ class IncomingIntensityCorrectionMcJannetDesilets2023(Correction):
 
     def apply(self, data_frame):
         self._check_required_columns(data_frame=data_frame)
+        self._check_reference_monitor_is_jung(data_frame=data_frame)
         data_frame = self._calc_rc_scale_param(data_frame=data_frame)
 
         data_frame[self.correction_factor_column_name] = data_frame.apply(
@@ -666,7 +640,6 @@ class PressureCorrectionZreda2012(Correction):
             ColumnInfo.Name.PRESSURE_CORRECTION
         ),
         beta_coefficient: str = str(ColumnInfo.Name.BETA_COEFFICIENT),
-        l_coefficient: str = str(ColumnInfo.Name.L_COEFFICIENT),
         latitude: str = str(ColumnInfo.Name.LATITUDE),
         site_cutoff_rigidity: str = str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY),
     ):
@@ -687,8 +660,6 @@ class PressureCorrectionZreda2012(Correction):
             ColumnInfo.Name.PRESSURE_CORRECTION )
         beta_coefficient : float, optional
             beta_coefficient for processing, by default None
-        l_coefficient : float, optional
-            mass attenuation length, by default None
         latitude : float, optional
             latitude of site in degrees, by default None
         site_cutoff_rigidity : _type_, optional
@@ -700,7 +671,6 @@ class PressureCorrectionZreda2012(Correction):
         )
         self.reference_pressure_value = reference_pressure_value
         self.beta_coefficient = beta_coefficient
-        self.l_coefficeint = l_coefficient
         self.site_elevation = site_elevation
         self.latitude = latitude
         self.site_cutoff_rigidity = site_cutoff_rigidity
@@ -753,15 +723,13 @@ class PressureCorrectionZreda2012(Correction):
 
     def _check_coefficient_available(self, data_frame):
         """
-        Checks for coefficients. If none given it will create the
-        beta_coefficient from supplied data.
+        Checks for coefficient availability. If not available it will
+        calculate it using latitude, site elevation and site cutoff
+        rigidity.
         """
         column_name_beta = self.beta_coefficient
-        column_name_l = self.l_coefficeint
 
-        if is_column_missing_or_empty(
-            data_frame, column_name_beta
-        ) and is_column_missing_or_empty(data_frame, column_name_l):
+        if is_column_missing_or_empty(data_frame, column_name_beta):
             message = (
                 "No coefficient given for pressure correction. "
                 "Calculating beta coefficient."
@@ -776,12 +744,6 @@ class PressureCorrectionZreda2012(Correction):
                 ),
                 axis=1,
             )
-
-            self.method_to_use = "beta"
-        elif is_column_missing_or_empty(data_frame, column_name_beta):
-            self.method_to_use = "beta"
-        elif is_column_missing_or_empty(data_frame, column_name_l):
-            self.method_to_use = "l_coeff"
 
     def apply(self, data_frame):
         """
@@ -810,31 +772,16 @@ class PressureCorrectionZreda2012(Correction):
             )
             core_logger.info(message)
             return data_frame
-
         else:
             self._prepare_for_correction(data_frame)
-            if self.method_to_use == "beta":
-                data_frame[self.correction_factor_column_name] = (
-                    data_frame.apply(
-                        lambda row: calc_pressure_correction_beta_coeff(
-                            row[str(ColumnInfo.Name.AIR_PRESSURE)],
-                            row[self.reference_pressure_value],
-                            row[self.beta_coefficient],
-                        ),
-                        axis=1,
-                    )
-                )
-            elif self.method_to_use == "l_coeff":
-                data_frame[self.correction_factor_column_name] = (
-                    data_frame.apply(
-                        lambda row: calc_pressure_correction_l_coeff(
-                            row[str(ColumnInfo.Name.AIR_PRESSURE)],
-                            row[self.reference_pressure_value],
-                            row[self.l_coefficeint],
-                        ),
-                        axis=1,
-                    )
-                )
+            data_frame[self.correction_factor_column_name] = data_frame.apply(
+                lambda row: calc_pressure_correction_beta_coeff(
+                    row[str(ColumnInfo.Name.AIR_PRESSURE)],
+                    row[self.reference_pressure_value],
+                    row[self.beta_coefficient],
+                ),
+                axis=1,
+            )
             return data_frame
 
 

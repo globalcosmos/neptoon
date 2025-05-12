@@ -7,6 +7,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 data_audit_log/
+.ruff_cache
+.venv-dev
 
 # C extensions
 *.so
