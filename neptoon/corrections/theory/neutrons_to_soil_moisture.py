@@ -419,3 +419,52 @@ def convert_soil_moisture_to_neutrons_uts(
     ) + np.exp(-p[3] * smt) * (p[4] + p[5] * (h + bio / 5 * 1000))
 
     return N * n0
+
+
+"""
+Examples
+--------
+import pandas
+
+data = pandas.DataFrame()
+data["N"] = [2000, 1900, 1800, 2100]
+data["h"] = [1, 2, 3, 4]
+
+data["sm"] = [
+    convert_neutrons_to_soil_moisture_uts(
+        neutron_count=N,
+        n0=3000,
+        air_humidity=h,
+        bulk_density=1.23,
+        lattice_water=0.01,
+        water_equiv_soil_organic_carbon=0.01,
+        method="Mar21_mcnp_drf",
+    )
+    for (N, h) in data[["N", "h"]]
+]
+
+data["sm"] = data.apply(
+    lambda row: convert_neutrons_to_soil_moisture_uts(
+        neutron_count=row["N"],
+        n0=3000,
+        air_humidity=row["h"],
+        bulk_density=1.23,
+        lattice_water=0.01,
+        water_equiv_soil_organic_carbon=0.01,
+        method="Mar21_mcnp_drf",
+    ),
+    axis=1,
+)
+
+data
+
+soil_moisture_m3m3 = convert_neutrons_to_soil_moisture_uts(
+    neutron_count=2000,
+    n0=3000,
+    air_humidity=5.0,
+    bulk_density=1.23,
+    lattice_water=0.0027,
+    water_equiv_soil_organic_carbon=0.1,
+    method="Mar21_mcnp_drf",
+)
+"""
