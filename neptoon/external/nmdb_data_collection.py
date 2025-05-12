@@ -73,7 +73,7 @@ class NMDBDataAttacher:
     def configure(
         self,
         station: str,
-        reference_value: int = None,
+        reference_value: int | None = None,
         resolution="60",
         nmdb_table="revori",
     ):

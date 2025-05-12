@@ -131,7 +131,26 @@ def convert_neutrons_to_soil_moisture_uts(
     bulk_density: float = 1.0,
     lattice_water: float = 0.0,
     water_equiv_soil_organic_carbon: float = 0.0,
-    method: str = "Mar21_uranos_drf",
+    method: Literal[
+        "Jan23_uranos",
+        "Jan23_mcnpfull",
+        "Mar12_atmprof",
+        "Mar21_mcnp_drf",
+        "Mar21_mcnp_ewin",
+        "Mar21_uranos_drf",
+        "Mar21_uranos_ewin",
+        "Mar22_mcnp_drf_Jan",
+        "Mar22_mcnp_ewin_gd",
+        "Mar22_uranos_drf_gd",
+        "Mar22_uranos_ewin_chi2",
+        "Mar22_uranos_drf_h200m",
+        "Aug08_mcnp_drf",
+        "Aug08_mcnp_ewin",
+        "Aug12_uranos_drf",
+        "Aug12_uranos_ewin",
+        "Aug13_uranos_atmprof",
+        "Aug13_uranos_atmprof2",
+    ] = "Mar21_uranos_drf",
 ):
     """
     Converts corrected neutrons counts into volumetric soil moisture
@@ -189,12 +208,12 @@ def convert_neutrons_to_soil_moisture_uts(
     while t1 - t0 > 0.0001:
         t2 = 0.5 * (t0 + t1)
         n2 = convert_soil_moisture_to_neutrons_uts(
-            t2,
-            h=air_humidity,
+            soil_moisture=t2,
+            air_humidity=air_humidity,
             n0=n0,
             method=method,
-            off=lattice_water + water_equiv_soil_organic_carbon,
-            bd=bulk_density,
+            offset=lattice_water + water_equiv_soil_organic_carbon,
+            bulk_density=bulk_density,
         )
         if neutron_count < n2:
             t0 = t2
@@ -204,7 +223,8 @@ def convert_neutrons_to_soil_moisture_uts(
             # n_i1 = n2
     t2 = 0.5 * (t0 + t1)
 
-    # if t2 <= 0.0001: t2 = np.nan
+    if t2 <= 0.0001:
+        t2 = np.nan
 
     return t2
 
@@ -260,7 +280,6 @@ def convert_soil_moisture_to_neutrons_uts(
         The method to apply. See reference. default Mar21_uranos_drf
     biomass : float
         The biomass at the site kg/m^2
-
 
     """
 
@@ -549,12 +568,12 @@ soil_moisture_m3m3 = convert_neutrons_to_soil_moisture_uts(
 
 
 def compute_n0_uts(
-    soil_moisture,
-    air_humidity,
-    neutron_count,
+    soil_moisture: float,
+    air_humidity: float,
+    neutron_count: float,
     lattice_water=0.0,
     water_equiv_soil_organic_carbon=0.0,
-    bulk_density=1,
+    bulk_density: float = 1,
     method: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
