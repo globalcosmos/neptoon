@@ -1,4 +1,5 @@
 import pandas as pd
+from typing import Literal
 
 from neptoon.columns import ColumnInfo
 from neptoon.corrections import convert_neutrons_to_soil_moisture, Schroen2017
@@ -18,6 +19,7 @@ class NeutronsToSM:
         self,
         crns_data_frame: pd.DataFrame,
         n0: float,
+        conversion_theory: Literal["desilets_2010", "koehli_2021"],
         dry_soil_bulk_density: float = 1.4,
         lattice_water: float = 0,
         soil_organic_carbon: float = 0,
@@ -134,7 +136,6 @@ class NeutronsToSM:
         pass
 
     @staticmethod
-    # @log_key_step() TODO
     def _convert_soc_to_wsom(soc):
         """
         Converts soil organic carbon values into water equivelant soil

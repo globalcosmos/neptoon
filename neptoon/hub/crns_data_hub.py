@@ -54,11 +54,11 @@ class CRNSDataHub:
     def __init__(
         self,
         crns_data_frame: pd.DataFrame,
-        flags_data_frame: pd.DataFrame = None,
-        sensor_info: SensorInfo = None,
-        quality_assessor: DataQualityAssessor = None,
+        flags_data_frame: pd.DataFrame | None = None,
+        sensor_info: SensorInfo | None = None,
+        quality_assessor: DataQualityAssessor | None = None,
         validation: bool = True,
-        calibration_samples_data: pd.DataFrame = None,
+        calibration_samples_data: pd.DataFrame | None = None,
     ):
         """
         Inputs to the CRNSDataHub.
@@ -201,7 +201,7 @@ class CRNSDataHub:
         new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
         resolution="60",
         nmdb_table="revori",
-        reference_value=None,
+        reference_value: int | None = None,
     ):
         """
         Utilises the NMDBDataAttacher class to attach NMDB incoming
@@ -246,7 +246,7 @@ class CRNSDataHub:
 
     def add_quality_flags(
         self,
-        custom_flags: QualityAssessmentFlagBuilder = None,
+        custom_flags: QualityAssessmentFlagBuilder | None = None,
         add_check=None,
     ):
         """
@@ -311,8 +311,8 @@ class CRNSDataHub:
 
     def select_correction(
         self,
-        correction_type: CorrectionType = "empty",
-        correction_theory: CorrectionTheory = None,
+        correction_type: CorrectionType | str = "empty",
+        correction_theory: CorrectionTheory | None = None,
     ):
         """
         Method to select corrections to be applied to data.
@@ -476,10 +476,10 @@ class CRNSDataHub:
     @Magazine.reporting(topic="Soil Moisture")
     def produce_soil_moisture_estimates(
         self,
-        n0: float = None,
-        dry_soil_bulk_density: float = None,
-        lattice_water: float = None,
-        soil_organic_carbon: float = None,
+        n0: float | None = None,
+        dry_soil_bulk_density: float | None = None,
+        lattice_water: float | None = None,
+        soil_organic_carbon: float | None = None,
     ):
         """
         Produces SM estimates with the NeutronsToSM class. If values for
@@ -512,6 +512,7 @@ class CRNSDataHub:
             "dry_soil_bulk_density": self.sensor_info.avg_dry_soil_bulk_density,
             "lattice_water": self.sensor_info.avg_lattice_water,
             "soil_organic_carbon": self.sensor_info.avg_soil_organic_carbon,
+            "conversion_theory": self.process_config,
         }
         provided_params = {
             "n0": n0,
