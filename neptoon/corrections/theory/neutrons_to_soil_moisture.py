@@ -2,7 +2,7 @@ import numpy as np
 from typing import Literal
 
 
-def neutrons_to_grav_sm_desilets(
+def neutrons_to_grav_sm_desilets_etal_2010(
     neutrons,
     n0=1000,
     a0=0.0808,
@@ -10,7 +10,8 @@ def neutrons_to_grav_sm_desilets(
     a2=0.115,
 ):
     """
-    Converts neutrons to gravimetric soil moisture
+    Converts neutrons to gravimetric soil moisture following the
+    Desilets et al., 2010 forumla
 
     Parameters
     ----------
@@ -33,7 +34,7 @@ def neutrons_to_grav_sm_desilets(
     return a0 / (neutrons / n0 - a1) - a2
 
 
-def convert_neutrons_to_soil_moisture(
+def neutrons_to_vol_soil_moisture_desilets_etal_2010(
     neutron_count: float,
     n0: float,
     dry_soil_bulk_density: float,
@@ -45,8 +46,9 @@ def convert_neutrons_to_soil_moisture(
 ):
     """
     Converts corrected neutrons counts into volumetric soil moisture
+    following the Desilets et al., 2010 forumla.
 
-    doi: TODO
+    doi: http://dx.doi.org/10.1029/2009WR008726
 
     Parameters
     ----------
@@ -76,7 +78,7 @@ def convert_neutrons_to_soil_moisture(
     ) * dry_soil_bulk_density
 
 
-def convert_neutrons_to_soil_moisture_kohli(
+def reformulated_neutrons_to_vol_soil_moisture_desilets_2010(
     neutron_count: float,
     n0: float,
     dry_soil_bulk_density: float,
@@ -88,7 +90,8 @@ def convert_neutrons_to_soil_moisture_kohli(
 ):
     """
     Converts corrected neutrons counts into volumetric soil moisture
-    following the method outlined in Köhli et al. 2021
+    following the reforumlated version of the desilets equation outlined
+    in Köhli et al. 2021
 
     https://doi.org/10.3389/frwa.2020.544847
 
@@ -124,7 +127,7 @@ def convert_neutrons_to_soil_moisture_kohli(
     return sm
 
 
-def convert_neutrons_to_soil_moisture_uts(
+def neutrons_to_vol_soil_moisture_koehli_etal_2021(
     neutron_count: float,
     n0: float,
     air_humidity: float,
@@ -154,7 +157,8 @@ def convert_neutrons_to_soil_moisture_uts(
 ):
     """
     Converts corrected neutrons counts into volumetric soil moisture
-    following the method outlined in Köhli et al. 2021
+    following the Universal Transport Solution (UTS) method outlined in
+    Köhli et al. 2021
 
     https://doi.org/10.3389/frwa.2020.544847
 
@@ -207,7 +211,7 @@ def convert_neutrons_to_soil_moisture_uts(
     # )
     while t1 - t0 > 0.0001:
         t2 = 0.5 * (t0 + t1)
-        n2 = convert_soil_moisture_to_neutrons_uts(
+        n2 = neutrons_to_vol_soil_moisture_koehli_etal_2021(
             soil_moisture=t2,
             air_humidity=air_humidity,
             n0=n0,
@@ -229,7 +233,7 @@ def convert_neutrons_to_soil_moisture_uts(
     return t2
 
 
-def convert_soil_moisture_to_neutrons_uts(
+def convert_soil_moisture_to_neutrons_koehli_etal_2021(
     soil_moisture: float,
     air_humidity: float,
     n0: float,
@@ -567,7 +571,7 @@ soil_moisture_m3m3 = convert_neutrons_to_soil_moisture_uts(
 """
 
 
-def compute_n0_uts(
+def compute_n0_koehli_etal_2021(
     soil_moisture: float,
     air_humidity: float,
     neutron_count: float,
@@ -642,7 +646,7 @@ def compute_n0_uts(
     off = lattice_water + water_equiv_soil_organic_carbon
 
     def obj_n0(n0_try):  # objective function to optimize for best n0
-        neutron_estimate = convert_soil_moisture_to_neutrons_uts(
+        neutron_estimate = neutrons_to_vol_soil_moisture_koehli_etal_2021(
             soil_moisture=soil_moisture,
             air_humidity=air_humidity,
             n0=n0_try,
