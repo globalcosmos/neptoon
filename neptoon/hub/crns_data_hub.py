@@ -477,6 +477,9 @@ class CRNSDataHub:
     def produce_soil_moisture_estimates(
         self,
         n0: float | None = None,
+        conversion_theory: Literal[
+            "desilets_2010", "koehli_2021"
+        ] = "desilets_2010",
         dry_soil_bulk_density: float | None = None,
         lattice_water: float | None = None,
         soil_organic_carbon: float | None = None,
@@ -512,7 +515,7 @@ class CRNSDataHub:
             "dry_soil_bulk_density": self.sensor_info.avg_dry_soil_bulk_density,
             "lattice_water": self.sensor_info.avg_lattice_water,
             "soil_organic_carbon": self.sensor_info.avg_soil_organic_carbon,
-            "conversion_theory": self.process_config,
+            "conversion_theory": conversion_theory,
         }
         provided_params = {
             "n0": n0,

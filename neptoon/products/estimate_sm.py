@@ -19,7 +19,6 @@ class NeutronsToSM:
         self,
         crns_data_frame: pd.DataFrame,
         n0: float,
-        conversion_theory: Literal["desilets_2010", "koehli_2021"],
         dry_soil_bulk_density: float = 1.4,
         lattice_water: float = 0,
         soil_organic_carbon: float = 0,
@@ -33,6 +32,9 @@ class NeutronsToSM:
         depth_column_name: str = str(
             ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH
         ),
+        conversion_theory: Literal[
+            "desilets_2010", "koehli_2021"
+        ] = "desilets_2010",
     ):
         """
         Attributes to be added to the class.
@@ -64,23 +66,23 @@ class NeutronsToSM:
             ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH )
         """
         self._crns_data_frame = crns_data_frame
-        self._n0 = n0
-        self._dry_soil_bulk_density = (
+        self.n0 = n0
+        self.dry_soil_bulk_density = (
             dry_soil_bulk_density
             if dry_soil_bulk_density is not None
             else 1.42
         )
-        self._lattice_water = lattice_water if lattice_water is not None else 0
-        self._soil_organic_carbon = (
+        self.lattice_water = lattice_water if lattice_water is not None else 0
+        self.soil_organic_carbon = (
             soil_organic_carbon if soil_organic_carbon is not None else 0
         )
-        self._water_equiv_of_soil_organic_matter = self._convert_soc_to_wsom(
+        self.water_equiv_of_soil_organic_matter = self._convert_soc_to_wsom(
             self._soil_organic_carbon
         )
-        self._corrected_neutrons_col_name = corrected_neutrons_col_name
-        self._smoothed_neutrons_col_name = smoothed_neutrons_col_name
-        self._soil_moisture_col_name = soil_moisture_col_name
-        self._depth_column_name = depth_column_name
+        self.corrected_neutrons_col_name = corrected_neutrons_col_name
+        self.smoothed_neutrons_col_name = smoothed_neutrons_col_name
+        self.soil_moisture_col_name = soil_moisture_col_name
+        self.depth_column_name = depth_column_name
 
     @property
     def crns_data_frame(self):
@@ -90,42 +92,6 @@ class NeutronsToSM:
     def crns_data_frame(self, df):
         # TODO add checks
         self._crns_data_frame = df
-
-    @property
-    def n0(self):
-        return self._n0
-
-    @property
-    def dry_soil_bulk_density(self):
-        return self._dry_soil_bulk_density
-
-    @property
-    def lattice_water(self):
-        return self._lattice_water
-
-    @property
-    def soil_organic_carbon(self):
-        return self._soil_organic_carbon
-
-    @property
-    def water_equiv_of_soil_organic_matter(self):
-        return self._water_equiv_of_soil_organic_matter
-
-    @property
-    def corrected_neutrons_col_name(self):
-        return self._corrected_neutrons_col_name
-
-    @property
-    def soil_moisture_col_name(self):
-        return self._soil_moisture_col_name
-
-    @property
-    def depth_column_name(self):
-        return self._depth_column_name
-
-    @property
-    def smoothed_neutrons_col_name(self):
-        return self._smoothed_neutrons_col_name
 
     def _validate_crns_data_frame(self):
         """
