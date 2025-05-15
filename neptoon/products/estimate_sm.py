@@ -37,8 +37,8 @@ class NeutronsToSM:
             ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH
         ),
         conversion_theory: Literal[
-            "desilets_2010", "koehli_2021"
-        ] = "desilets_2010",
+            "desilets_etal_2010", "koehli_etal_2021"
+        ] = "desilets_etal_2010",
         koehli_method_form: Literal[
             "Jan23_uranos",
             "Jan23_mcnpfull",
@@ -59,6 +59,7 @@ class NeutronsToSM:
             "Aug13_uranos_atmprof",
             "Aug13_uranos_atmprof2",
         ] = "Mar21_uranos_drf",
+        air_humidity_col_name=str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY),
     ):
         """
         Attributes to be added to the class.
@@ -101,7 +102,7 @@ class NeutronsToSM:
         self.soil_organic_carbon = (
             soil_organic_carbon if soil_organic_carbon is not None else 0
         )
-        self.water_equiv_of_soil_organic_matter = self._convert_soc_to_wsom(
+        self.water_equiv_soil_organic_carbon = self._convert_soc_to_wsom(
             self.soil_organic_carbon
         )
         self.corrected_neutrons_col_name = corrected_neutrons_col_name
@@ -110,6 +111,7 @@ class NeutronsToSM:
         self.depth_column_name = depth_column_name
         self.conversion_theory = conversion_theory
         self.koehli_method_form = koehli_method_form
+        self.air_humidity_col_name = air_humidity_col_name
 
     @property
     def crns_data_frame(self):
@@ -209,7 +211,7 @@ class NeutronsToSM:
         corrected and that all necessary parameters (n0, bulk density,
         etc.) have been set.
         """
-        if self.conversion_theory == "desilets_2010":
+        if self.conversion_theory == "desilets_etal_2010":
             self.crns_data_frame[soil_moisture_column_write_name] = (
                 self.crns_data_frame.apply(
                     lambda row: neutrons_to_vol_soil_moisture_desilets_etal_2010(
@@ -217,12 +219,12 @@ class NeutronsToSM:
                         neutron_count=row[neutron_data_column_name],
                         n0=self.n0,
                         lattice_water=self.lattice_water,
-                        water_equiv_soil_organic_matter=self.water_equiv_of_soil_organic_matter,
+                        water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
                     ),
                     axis=1,
                 )
             )
-        elif self.conversion_theory == "koehli_2021":
+        elif self.conversion_theory == "koehli_etal_2021":
             self.check_if_humidity_correction_applied(auto_uncorrect=True)
             self.crns_data_frame[soil_moisture_column_write_name] = (
                 self.crns_data_frame.apply(
@@ -231,7 +233,8 @@ class NeutronsToSM:
                         neutron_count=row[neutron_data_column_name],
                         n0=self.n0,
                         lattice_water=self.lattice_water,
-                        water_equiv_soil_organic_matter=self.water_equiv_of_soil_organic_matter,
+                        air_humidity=self.air_humidity_col_name,
+                        water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
                         method=self.koehli_method_form,
                     ),
                     axis=1,

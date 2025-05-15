@@ -478,11 +478,31 @@ class CRNSDataHub:
         self,
         n0: float | None = None,
         conversion_theory: Literal[
-            "desilets_2010", "koehli_2021"
-        ] = "desilets_2010",
+            "desilets_etal_2010", "koehli_eta_2021"
+        ] = "desilets_etal_2010",
         dry_soil_bulk_density: float | None = None,
         lattice_water: float | None = None,
         soil_organic_carbon: float | None = None,
+        koehli_method_form: Literal[
+            "Jan23_uranos",
+            "Jan23_mcnpfull",
+            "Mar12_atmprof",
+            "Mar21_mcnp_drf",
+            "Mar21_mcnp_ewin",
+            "Mar21_uranos_drf",
+            "Mar21_uranos_ewin",
+            "Mar22_mcnp_drf_Jan",
+            "Mar22_mcnp_ewin_gd",
+            "Mar22_uranos_drf_gd",
+            "Mar22_uranos_ewin_chi2",
+            "Mar22_uranos_drf_h200m",
+            "Aug08_mcnp_drf",
+            "Aug08_mcnp_ewin",
+            "Aug12_uranos_drf",
+            "Aug12_uranos_ewin",
+            "Aug13_uranos_atmprof",
+            "Aug13_uranos_atmprof2",
+        ] = "Mar21_uranos_drf",
     ):
         """
         Produces SM estimates with the NeutronsToSM class. If values for
@@ -515,13 +535,14 @@ class CRNSDataHub:
             "dry_soil_bulk_density": self.sensor_info.avg_dry_soil_bulk_density,
             "lattice_water": self.sensor_info.avg_lattice_water,
             "soil_organic_carbon": self.sensor_info.avg_soil_organic_carbon,
-            "conversion_theory": conversion_theory,
         }
         provided_params = {
             "n0": n0,
             "dry_soil_bulk_density": dry_soil_bulk_density,
             "lattice_water": lattice_water,
             "soil_organic_carbon": soil_organic_carbon,
+            "conversion_theory": conversion_theory,
+            "koehli_method_form": koehli_method_form,
         }
         params = {k: v for k, v in provided_params.items() if v is not None}
         default_params.update(params)
