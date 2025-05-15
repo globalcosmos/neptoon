@@ -112,6 +112,7 @@ class NeutronsToSM:
         self.conversion_theory = conversion_theory
         self.koehli_method_form = koehli_method_form
         self.air_humidity_col_name = air_humidity_col_name
+        self.air_humidity_uncorrected = False
 
     @property
     def crns_data_frame(self):
@@ -160,7 +161,7 @@ class NeutronsToSM:
         if (
             str(ColumnInfo.Name.HUMIDITY_CORRECTION)
             in self.crns_data_frame.columns
-        ):
+        ) and not self.air_humidity_uncorrected:
             if auto_uncorrect:
                 self.crns_data_frame[
                     str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
@@ -172,6 +173,7 @@ class NeutronsToSM:
                         str(ColumnInfo.Name.HUMIDITY_CORRECTION)
                     ]
                 )
+                self.air_humidity_uncorrected = True
                 message = (
                     "Using köhli 2021 UTS method, but humidity correctio already applied.\n"
                     "Humidity correction was removed from corrected counts."
@@ -233,7 +235,7 @@ class NeutronsToSM:
                         neutron_count=row[neutron_data_column_name],
                         n0=self.n0,
                         lattice_water=self.lattice_water,
-                        air_humidity=self.air_humidity_col_name,
+                        air_humidity=row[self.air_humidity_col_name],
                         water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
                         method=self.koehli_method_form,
                     ),
