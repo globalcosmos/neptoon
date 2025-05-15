@@ -39,7 +39,7 @@ def neutrons_to_vol_soil_moisture_desilets_etal_2010(
     n0: float,
     dry_soil_bulk_density: float,
     lattice_water: float,
-    water_equiv_soil_organic_matter: float,
+    water_equiv_soil_organic_carbon: float,
     a0: float = 0.0808,
     a1: float = 0.372,
     a2: float = 0.115,
@@ -74,7 +74,7 @@ def neutrons_to_vol_soil_moisture_desilets_etal_2010(
         ((a0) / ((neutron_count / n0) - a1))
         - (a2)
         - lattice_water
-        - water_equiv_soil_organic_matter
+        - water_equiv_soil_organic_carbon
     ) * dry_soil_bulk_density
 
 
