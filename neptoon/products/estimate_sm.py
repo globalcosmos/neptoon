@@ -2,7 +2,11 @@ import pandas as pd
 from typing import Literal
 
 from neptoon.columns import ColumnInfo
-from neptoon.corrections import convert_neutrons_to_soil_moisture, Schroen2017
+from neptoon.corrections import (
+    neutrons_to_vol_soil_moisture_desilets_etal_2010,
+    neutrons_to_vol_soil_moisture_koehli_etal_2021,
+    Schroen2017,
+)
 from neptoon.logging import get_logger
 from neptoon.data_audit import log_key_step
 
@@ -35,6 +39,26 @@ class NeutronsToSM:
         conversion_theory: Literal[
             "desilets_2010", "koehli_2021"
         ] = "desilets_2010",
+        koehli_method_form: Literal[
+            "Jan23_uranos",
+            "Jan23_mcnpfull",
+            "Mar12_atmprof",
+            "Mar21_mcnp_drf",
+            "Mar21_mcnp_ewin",
+            "Mar21_uranos_drf",
+            "Mar21_uranos_ewin",
+            "Mar22_mcnp_drf_Jan",
+            "Mar22_mcnp_ewin_gd",
+            "Mar22_uranos_drf_gd",
+            "Mar22_uranos_ewin_chi2",
+            "Mar22_uranos_drf_h200m",
+            "Aug08_mcnp_drf",
+            "Aug08_mcnp_ewin",
+            "Aug12_uranos_drf",
+            "Aug12_uranos_ewin",
+            "Aug13_uranos_atmprof",
+            "Aug13_uranos_atmprof2",
+        ] = "Mar21_uranos_drf",
     ):
         """
         Attributes to be added to the class.
@@ -67,6 +91,7 @@ class NeutronsToSM:
         """
         self._crns_data_frame = crns_data_frame
         self.n0 = n0
+        # None could be passed through from CRNSDataHub
         self.dry_soil_bulk_density = (
             dry_soil_bulk_density
             if dry_soil_bulk_density is not None
@@ -77,12 +102,14 @@ class NeutronsToSM:
             soil_organic_carbon if soil_organic_carbon is not None else 0
         )
         self.water_equiv_of_soil_organic_matter = self._convert_soc_to_wsom(
-            self._soil_organic_carbon
+            self.soil_organic_carbon
         )
         self.corrected_neutrons_col_name = corrected_neutrons_col_name
         self.smoothed_neutrons_col_name = smoothed_neutrons_col_name
         self.soil_moisture_col_name = soil_moisture_col_name
         self.depth_column_name = depth_column_name
+        self.conversion_theory = conversion_theory
+        self.koehli_method_form = koehli_method_form
 
     @property
     def crns_data_frame(self):
@@ -111,6 +138,44 @@ class NeutronsToSM:
 
         """
         return soc * 0.556
+
+    def check_if_humidity_correction_applied(
+        self,
+        auto_uncorrect=True,
+    ):
+        """
+        Checks if corrected neutrons have already been corrected for
+        humidity. If they have it, and auto_uncorrect is True, it will
+        uncorrect them. The UTS function corrects for humidity in the
+        conversion to soil moisture.
+
+        Parameters
+        ----------
+        auto_uncorrect : bool, optional
+            Whether to dis-apply the humidity correction, by default
+            True
+        """
+        if (
+            str(ColumnInfo.Name.HUMIDITY_CORRECTION)
+            in self.crns_data_frame.columns
+        ):
+            if auto_uncorrect:
+                self.crns_data_frame[
+                    str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+                ] = (
+                    self.crns_data_frame[
+                        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+                    ]
+                    / self.crns_data_frame[
+                        str(ColumnInfo.Name.HUMIDITY_CORRECTION)
+                    ]
+                )
+                message = (
+                    "Using köhli 2021 UTS method, but humidity correctio already applied.\n"
+                    "Humidity correction was removed from corrected counts."
+                )
+                print(message)
+                core_logger.info(message)
 
     def calculate_sm_estimates(
         self,
@@ -144,19 +209,34 @@ class NeutronsToSM:
         corrected and that all necessary parameters (n0, bulk density,
         etc.) have been set.
         """
-
-        self.crns_data_frame[soil_moisture_column_write_name] = (
-            self.crns_data_frame.apply(
-                lambda row: convert_neutrons_to_soil_moisture(
-                    dry_soil_bulk_density=self.dry_soil_bulk_density,
-                    neutron_count=row[neutron_data_column_name],
-                    n0=self.n0,
-                    lattice_water=self.lattice_water,
-                    water_equiv_soil_organic_matter=self.water_equiv_of_soil_organic_matter,
-                ),
-                axis=1,
+        if self.conversion_theory == "desilets_2010":
+            self.crns_data_frame[soil_moisture_column_write_name] = (
+                self.crns_data_frame.apply(
+                    lambda row: neutrons_to_vol_soil_moisture_desilets_etal_2010(
+                        dry_soil_bulk_density=self.dry_soil_bulk_density,
+                        neutron_count=row[neutron_data_column_name],
+                        n0=self.n0,
+                        lattice_water=self.lattice_water,
+                        water_equiv_soil_organic_matter=self.water_equiv_of_soil_organic_matter,
+                    ),
+                    axis=1,
+                )
             )
-        )
+        elif self.conversion_theory == "koehli_2021":
+            self.check_if_humidity_correction_applied(auto_uncorrect=True)
+            self.crns_data_frame[soil_moisture_column_write_name] = (
+                self.crns_data_frame.apply(
+                    lambda row: neutrons_to_vol_soil_moisture_koehli_etal_2021(
+                        dry_soil_bulk_density=self.dry_soil_bulk_density,
+                        neutron_count=row[neutron_data_column_name],
+                        n0=self.n0,
+                        lattice_water=self.lattice_water,
+                        water_equiv_soil_organic_matter=self.water_equiv_of_soil_organic_matter,
+                        method=self.koehli_method_form,
+                    ),
+                    axis=1,
+                )
+            )
 
     def calculate_uncertainty_of_sm_estimates(self):
         """

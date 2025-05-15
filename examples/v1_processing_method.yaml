@@ -30,6 +30,8 @@ correction_steps:
   above_ground_biomass:
     method:
     biomass_units:
+  soil_moisture_estimation:
+    method: desilets_etal_2010 # or koehli_etal_2021
 
 # Data Smoothing
 data_smoothing:

@@ -400,6 +400,15 @@ class AirPressureCorrection(BaseModel):
     )
 
 
+class SoilMoistureEstimation(BaseModel):
+    """Configuration for the conversion of neutrons to soil moisture"""
+
+    method: Literal["desilets_etal_2010", "koehli_etal_2023"] = Field(
+        description="Soil moisture estimation theory",
+        default="desilets_etal_2010",
+    )
+
+
 class IncomingRadiationCorrection(BaseModel):
     """Configuration for incoming radiation correction parameters."""
 
@@ -438,6 +447,9 @@ class CorrectionSteps(BaseModel):
     above_ground_biomass: Optional[BiomassCorrection] = Field(
         default=None,
         description="Above ground biomass correction configuration",
+    )
+    soil_moisture_estimation: Optional[SoilMoistureEstimation] = Field(
+        default=None, description="Soil Moisture estimation configuration"
     )
 
 

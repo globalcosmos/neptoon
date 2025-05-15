@@ -5,7 +5,10 @@ from datetime import timedelta
 
 # from scipy.optimize import minimize
 from neptoon.columns import ColumnInfo
-from neptoon.corrections import Schroen2017, neutrons_to_grav_sm_desilets
+from neptoon.corrections import (
+    Schroen2017,
+    neutrons_to_grav_sm_desilets_etal_2010,
+)
 
 
 class CalibrationConfiguration:
@@ -903,7 +906,7 @@ class CalibrationWeightsCalculator:
         n0_range = pd.Series(range(int(neutron_mean), int(neutron_mean * 2.5)))
 
         def calculate_sm_and_error(n0):
-            sm_prediction = neutrons_to_grav_sm_desilets(
+            sm_prediction = neutrons_to_grav_sm_desilets_etal_2010(
                 neutrons=neutron_mean, n0=n0
             )
             absolute_error = abs(sm_prediction - gravimetric_sm_on_day)
