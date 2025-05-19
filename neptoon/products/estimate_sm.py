@@ -59,7 +59,7 @@ class NeutronsToSM:
             "Aug13_uranos_atmprof",
             "Aug13_uranos_atmprof2",
         ] = "Mar21_uranos_drf",
-        air_humidity_col_name=str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY),
+        air_humidity_col_name=str(ColumnInfo.Name.HUMIDITY_CORRECTION),
     ):
         """
         Attributes to be added to the class.
@@ -92,7 +92,7 @@ class NeutronsToSM:
         """
         self._crns_data_frame = crns_data_frame
         self.n0 = n0
-        # None could be passed through from CRNSDataHub
+        # None vals can be passed from CRNSDataHub so leave these if else statements
         self.dry_soil_bulk_density = (
             dry_soil_bulk_density
             if dry_soil_bulk_density is not None
