@@ -3,7 +3,6 @@
 # and update metadata files for the release.
 # This job is run only for pre-release tags, starting with "pre"
 prepare-release:
-  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   stage: release
   rules:
     - if: $CI_COMMIT_TAG =~ /^pre/
@@ -49,7 +48,6 @@ prepare-release:
 # Usually, these tags are created in the prepare-release job
 gitlab-release-create:
   stage: release
-  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   rules:
     - if: $CI_COMMIT_TAG =~ /^v/
   before_script:

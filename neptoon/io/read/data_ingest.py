@@ -697,6 +697,12 @@ class NeutronCountUnits(Enum):
     COUNTS_PER_SECOND = auto()
 
 
+class PressureUnits(Enum):
+    PASCALS = auto()
+    HECTOPASCALS = auto()
+    KILOPASCALS = auto()
+
+
 class MergeMethod(Enum):
     MEAN = auto()
     PRIORITY = auto()
@@ -714,23 +720,6 @@ class InputDataFrameFormattingConfig:
     """
     Configuration class storing necessary attributes to format a
     DataFrame using the FormatDataForCRNSDataHub.
-
-    Attributes
-    ----------
-    path_to_config : str | Path
-        The path to the configuration file storing attribute
-        information. This will be the sensor configuration file.
-    time_resolution : str
-        Time resolution in format "<number> <unit>".
-    pressure_merge_method : {'mean', 'priority'}, optional
-        Method for merging pressure data, by default 'priority'.
-    temperature_merge_method : {'mean', 'priority'}, optional
-        Method for merging temperature data, by default 'priority'.
-    relative_humidity_merge_method : {'mean', 'priority'}, optional
-        Method for merging relative humidity data, by default
-        'priority'.
-    neutron_count_units :
-
     """
 
     def __init__(
@@ -744,6 +733,7 @@ class InputDataFrameFormattingConfig:
         align_timestamps: bool = False,
         align_method: str = "time",
         pressure_merge_method: MergeMethod = MergeMethod.PRIORITY,
+        pressure_units: PressureUnits = PressureUnits.HECTOPASCALS,
         temperature_merge_method: MergeMethod = MergeMethod.PRIORITY,
         relative_humidity_merge_method: MergeMethod = MergeMethod.PRIORITY,
         neutron_count_units: NeutronCountUnits = NeutronCountUnits.ABSOLUTE_COUNT,
@@ -763,8 +753,7 @@ class InputDataFrameFormattingConfig:
         Parameters
         ----------
         path_to_config : Union[str, Path], optional
-            path to the sensor configuration file
-            by default None
+            path to the sensor configuration file by default None
         input_resolution : str, optional
             Time resolution in format "<number><unit>, by default
             "1hour"
@@ -792,6 +781,9 @@ class InputDataFrameFormattingConfig:
         pressure_merge_method : MergeMethod, optional
             Method used to merge multiple pressure columns, by default
             MergeMethod.PRIORITY
+        pressure_units : PressureUnits, optional
+            States the units of pressure for input data, will be
+            converted to HECTOPASCALS
         temperature_merge_method : MergeMethod, optional
             Method used to merge multiple temperature columns,, by
             default MergeMethod.PRIORITY
@@ -847,6 +839,7 @@ class InputDataFrameFormattingConfig:
         self.align_timestamps = align_timestamps
         self.align_method = align_method
         self.pressure_merge_method = pressure_merge_method
+        self.pressure_units = pressure_units
         self.temperature_merge_method = temperature_merge_method
         self.relative_humidity_merge_method = relative_humidity_merge_method
         self.neutron_count_units = neutron_count_units
@@ -1389,6 +1382,28 @@ class FormatDataForCRNSDataHub:
         # Convert all the regular columns to numeric and drop any failures
         self.data_frame = self.data_frame.apply(pd.to_numeric, errors="coerce")
 
+    def standardise_units_of_pressure(self):
+        """
+        Standardises units of pressure to hectopascals
+        """
+        pressure_cols = [
+            col
+            for col in self.config.column_data
+            if col.variable_type is InputColumnDataType.PRESSURE
+        ]
+
+        for pressure_col in pressure_cols:
+            if pressure_col.unit == PressureUnits.PASCALS:
+                self.data_frame[pressure_col.initial_name] = (
+                    self.data_frame[pressure_col.initial_name] / 100
+                )
+                pressure_col.unit = PressureUnits.HECTOPASCALS
+            elif pressure_col.unit == PressureUnits.KILOPASCALS:
+                self.data_frame[pressure_col.initial_name] = (
+                    self.data_frame[pressure_col.initial_name] * 10
+                )
+                pressure_col.unit = PressureUnits.HECTOPASCALS
+
     def merge_multiple_meteo_columns(
         self,
         column_data_type: Literal[
@@ -1491,10 +1506,11 @@ class FormatDataForCRNSDataHub:
         Prepares the key columns if all the information has been
         supplied.
         """
-
+        self.standardise_units_of_pressure()
         self.merge_multiple_meteo_columns(
             column_data_type=InputColumnDataType.PRESSURE
         )
+
         self.merge_multiple_meteo_columns(
             column_data_type=InputColumnDataType.TEMPERATURE
         )
