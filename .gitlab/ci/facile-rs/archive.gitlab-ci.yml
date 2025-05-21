@@ -2,7 +2,6 @@
 # This job is run only for release tags, starting with "v"
 archive-radar:
   stage: archive
-  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   rules:
     - if: ($CI_COMMIT_TAG =~ /^v/ && $ENABLE_RADAR == "true")
   before_script:
@@ -16,7 +15,6 @@ archive-radar:
 # This job is run only for release tags, starting with "v"
 archive-zenodo:
   stage: archive
-  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   rules:
     - if: ($CI_COMMIT_TAG =~ /^v/ && $ENABLE_ZENODO == "true")
   before_script:
@@ -29,7 +27,6 @@ archive-zenodo:
 # Create a BagPack archive and upload it to the GitLab registry
 archive-bagpack:
   stage: archive
-  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   dependencies:
     - build-datacite
   rules:
