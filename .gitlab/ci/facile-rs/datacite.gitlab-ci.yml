@@ -2,7 +2,6 @@
 # This job is run on every commit
 build-datacite:
   stage: build
-  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   before_script:
     - uv pip install FACILE-RS==${FACILE_RS_VERSION}
   script:

@@ -1,6 +1,5 @@
 # Generate a CFF (Citation File Format) file and export it as an artifact
 create-cff:
-  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   stage: build
   rules:
     # - if: $CI_COMMIT_TAG =~ /^pre/
