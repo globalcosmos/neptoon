@@ -1,4 +1,4 @@
-image: ghcr.io/astral-sh/uv:python3.11-bookworm
+image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/ghcr.io/astral-sh/uv:python3.11-bookworm
 
 # Define the stages of pipeline
 stages:
