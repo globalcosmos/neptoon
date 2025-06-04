@@ -530,8 +530,90 @@ def test_correction_factory_humidity():
         HumidityCorrectionRosolem2013,
     )
 
-    df = tmp_corr.apply(df)
+    df = tmp_corr.apply(df.copy())
 
-    assert str(ColumnInfo.Name.ACTUAL_VAPOUR_PRESSURE) in df.columns
-    assert str(ColumnInfo.Name.ABSOLUTE_HUMIDITY) in df.columns
-    assert str(ColumnInfo.Name.SATURATION_VAPOUR_PRESSURE) in df.columns
+    actual_vp_col = str(ColumnInfo.Name.ACTUAL_VAPOUR_PRESSURE)
+    sat_vp_col = str(ColumnInfo.Name.SATURATION_VAPOUR_PRESSURE)
+    abs_hum_col = str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
+    corr_col = str(ColumnInfo.Name.HUMIDITY_CORRECTION)
+
+    for col in (actual_vp_col, sat_vp_col, abs_hum_col):
+        assert col in df.columns, f"Expected column '{col}' in output"
+
+    assert corr_col in df.columns
+    for col in (actual_vp_col, sat_vp_col, abs_hum_col, corr_col):
+        assert df[col].notna().any(), f"Column '{col}' is all NaNs"
+    assert pd.api.types.is_float_dtype(df[corr_col])
+
+
+def test_humidity_correction_uniform_input_gives_constant_factor():
+    """
+    If you feed the same (RH, T) in every row, the resulting humidity‐correction
+    factor should be identical (i.e. one unique value).
+    """
+    n = 5
+    df = pd.DataFrame(
+        {
+            str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY): [60] * n,
+            str(ColumnInfo.Name.AIR_TEMPERATURE): [22] * n,
+        }
+    )
+
+    tmp_corr = HumidityCorrectionRosolem2013(
+        reference_absolute_humidity_value=0.0
+    )
+    df_out = tmp_corr.apply(df.copy())
+
+    corr_col = str(ColumnInfo.Name.HUMIDITY_CORRECTION)
+    assert df_out[corr_col].nunique() == 1
+
+
+def test_direct_humidity_correction_with_existing_abs_humidity(monkeypatch):
+    """
+    If a DataFrame already has 'absolute_humidity', then apply(…) should
+    skip recomputing absolute humidity and just run humidity_correction_rosolem2013
+    once per row. Monkey patching the internal humidity_correction_rosolem2013
+    function will confirm it is called with exactly (abs_hum, reference_val).
+    """
+    df = pd.DataFrame(
+        {
+            str(ColumnInfo.Name.ABSOLUTE_HUMIDITY): [5.0, 10.0, 20.0],
+            str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY): [0, 0, 0],
+            str(ColumnInfo.Name.AIR_TEMPERATURE): [0, 0, 0],
+        }
+    )
+
+    # Step 2: instantiate with a non‐zero reference, so we can check args:
+    reference_val = 3.0
+    hc = HumidityCorrectionRosolem2013(
+        reference_absolute_humidity_value=reference_val
+    )
+
+    calls = []
+
+    def fake_hum_corr(abs_hum, ref_val):
+        calls.append((abs_hum, ref_val))
+        return abs_hum * 0.1  # return something deterministic
+
+    module_path = hc.__class__.__module__
+    monkeypatch.setattr(
+        f"{module_path}.humidity_correction_rosolem2013", fake_hum_corr
+    )
+    df_out = hc.apply(df.copy())
+
+    assert list(df_out[str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)]) == [
+        5.0,
+        10.0,
+        20.0,
+    ]
+
+    corr_col = str(ColumnInfo.Name.HUMIDITY_CORRECTION)
+    assert corr_col in df_out.columns
+    assert calls == [
+        (5.0, reference_val),
+        (10.0, reference_val),
+        (20.0, reference_val),
+    ], print(calls)
+
+    expected = [5.0 * 0.1, 10.0 * 0.1, 20.0 * 0.1]
+    assert list(df_out[corr_col]) == expected

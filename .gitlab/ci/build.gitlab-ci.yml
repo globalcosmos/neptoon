@@ -1,6 +1,5 @@
 build:package:
   stage: build
-  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   script:
     - uv build
   rules:

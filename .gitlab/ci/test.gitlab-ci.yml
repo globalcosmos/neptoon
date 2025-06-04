@@ -1,6 +1,5 @@
 test:pytest:
   stage: test
-  image: ghcr.io/astral-sh/uv:python3.11-bookworm
   before_script:
     - uv pip install -e ".[gui]"
   script:
