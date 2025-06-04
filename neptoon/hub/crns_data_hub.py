@@ -29,6 +29,7 @@ from neptoon.quality_control import (
 from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
+from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 from neptoon.columns import ColumnInfo
 from neptoon.logging import get_logger
 from magazine import Magazine
@@ -568,6 +569,20 @@ class CRNSDataHub:
                 continue
             else:
                 self.crns_data_frame[key] = value
+
+    def prepare_additional_columns(self):
+        """
+        Prepares and adds additional columns required for processing.
+
+        Such as:
+           - absolute humidity
+        """
+        abs_hum_creator = AbsoluteHumidityCreator(
+            data_frame=self.crns_data_frame
+        )
+        self.crns_data_frame = (
+            abs_hum_creator.check_and_return_abs_hum_column()
+        )
 
     def create_figures(
         self,

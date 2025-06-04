@@ -6,6 +6,7 @@ from datetime import timedelta
 # from scipy.optimize import minimize
 from neptoon.columns import ColumnInfo
 from neptoon.corrections import Schroen2017, neutrons_to_grav_sm_desilets
+from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 
 
 class CalibrationConfiguration:
@@ -32,8 +33,8 @@ class CalibrationConfiguration:
             ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON
         ),
         lattice_water_column: str = str(ColumnInfo.Name.CALIB_LATTICE_WATER),
-        air_humidity_column_name: str = str(
-            ColumnInfo.Name.AIR_RELATIVE_HUMIDITY
+        abs_air_humidity_column_name: str = str(
+            ColumnInfo.Name.ABSOLUTE_HUMIDITY
         ),
         neutron_column_name: str = str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
@@ -72,9 +73,9 @@ class CalibrationConfiguration:
         lattice_water_column : str, optional
             Name of the column with lattice water values (g/g), by
             default str(ColumnInfo.Name.CALIB_LATTICE_WATER)
-        air_humidity_column_name : str, optional
-            Name of the column with air humidity values (%), by default
-            str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
+        abs_air_humidity_column_name : str, optional
+            Name of the column with absolute air humidity values (g/cm3), by default
+            str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
         neutron_column_name : str, optional
             Name of the column with corrected neutrons in it, by default
             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
@@ -97,7 +98,7 @@ class CalibrationConfiguration:
         )
         self.soil_organic_carbon_column = soil_organic_carbon_column
         self.lattice_water_column = lattice_water_column
-        self.air_humidity_column_name = air_humidity_column_name
+        self.abs_air_humidity_column_name = abs_air_humidity_column_name
         self.neutron_column_name = neutron_column_name
         self.air_pressure_column_name = air_pressure_column_name
 
@@ -510,6 +511,7 @@ class PrepareNeutronCorrectedData:
         self.data_dict = {}
 
         self._ensure_date_time_index()
+        self._ensure_abs_humidity_exists()
 
     def _ensure_date_time_index(self):
         """
@@ -521,7 +523,26 @@ class PrepareNeutronCorrectedData:
             utc=True,
         )
 
+    def _ensure_abs_humidity_exists(self):
+        """
+        Checks to see if absolute humidity exists in the data frame. If
+        it doesn't it will create it.
+        """
+        if (
+            str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
+            not in self.corrected_neutron_data_frame.columns
+        ):
+            abs_humidity_creator = AbsoluteHumidityCreator(
+                self.corrected_neutron_data_frame
+            )
+            self.corrected_neutron_data_frame = (
+                abs_humidity_creator.check_and_return_abs_hum_column()
+            )
+
     def extract_calibration_day_values(self):
+        """
+        Extracts the rows of data for each calibration day.
+        """
         calibration_indicies_dict = self._extract_calibration_day_indices(
             hours_of_data=self.config.hours_of_data_around_calib
         )
@@ -541,6 +562,7 @@ class PrepareNeutronCorrectedData:
         self.data_dict = dict_of_data
 
     def _find_nearest_calib_day_in_indicies(self, day, data_frame):
+
         day = pd.to_datetime(day)
         mask = (data_frame.index >= day - timedelta(hours=1)) & (
             data_frame.index <= day + timedelta(hours=1)
@@ -700,7 +722,7 @@ class CalibrationWeightsCalculator:
 
             # Get average air humidity and air pressure
             average_air_humidity = tmp_data[
-                self.config.air_humidity_column_name
+                self.config.abs_air_humidity_column_name
             ].mean()
             average_air_pressure = tmp_data[
                 self.config.air_pressure_column_name
@@ -735,13 +757,13 @@ class CalibrationWeightsCalculator:
         Parameters
         ----------
         day_list_of_profiles : _type_
-            _description_
+            List of profiles for the calibration day being processed
         initial_sm_estimate : float
-            _description_
+            Initial soil moisture estimate (usually equal average)
         average_air_humidity : float
-            _description_
+            Average absolute air humidity
         average_air_pressure : float
-            _description_
+            Air pressure average during calibration period (hPa)
 
         Returns
         -------

@@ -27,8 +27,6 @@ from magazine import Magazine
 core_logger = get_logger()
 
 
-
-
 class ProcessWithConfig:
     """
     Processes CRNS data according to configuration files.
@@ -539,6 +537,13 @@ class ProcessWithConfig:
             core_logger.error(message)
             raise ValueError(message)
 
+    def _prepare_additional_columns(
+        self,
+        data_hub: CRNSDataHub,
+    ):
+        data_hub.prepare_additional_columns()
+        return data_hub
+
     def run_full_process(
         self,
     ):
@@ -572,7 +577,7 @@ class ProcessWithConfig:
         # Prepare data
         self.data_hub = self._attach_nmdb_data(self.data_hub)
         self.data_hub = self._prepare_static_values(self.data_hub)
-
+        self.data_hub = self._prepare_additional_columns(self.data_hub)
         # First Quality assessment
         ## Raw Neutrons
         self.data_hub = self._apply_quality_assessment(
