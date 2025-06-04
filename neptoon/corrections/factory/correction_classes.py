@@ -19,6 +19,7 @@ from neptoon.corrections import (
     above_ground_biomass_correction_baatz2015,
     above_ground_biomass_correction_morris2024,
 )
+from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 
 core_logger = get_logger()
 
@@ -572,6 +573,43 @@ class HumidityCorrectionRosolem2013(Correction):
         )
         self.relative_humidity_column_name = relative_humidity_column_name
 
+    def _check_if_abs_hum_exists(self, data_frame):
+        """
+        Checks if absolute humidity column exits
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            Data frame with sensor data
+
+        Returns
+        -------
+        Bool
+            True or False if abs hum col exists.
+        """
+        if self.absolute_humidity_column_name in data_frame.columns:
+            return True
+        else:
+            return False
+
+    def _create_abs_hum_data(self, data_frame):
+        """
+        Creates absolute humidity data
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame with CRNS data
+
+        Returns
+        -------
+        pd.DataFrame
+            With additional columns such as absolute humidity
+        """
+        abs_hum_creator = AbsoluteHumidityCreator(data_frame=data_frame)
+        data_frame = abs_hum_creator.check_and_return_abs_hum_column()
+        return data_frame
+
     def apply(self, data_frame):
         """
         Applies the neutron correction
@@ -587,30 +625,9 @@ class HumidityCorrectionRosolem2013(Correction):
             DataFrame now corrected
         """
 
-        # TODO validation here
-
-        data_frame[self.sat_vapour_pressure_column_name] = data_frame.apply(
-            lambda row: calc_saturation_vapour_pressure(
-                row[self.air_temperature_column_name],
-            ),
-            axis=1,
-        )
-
-        data_frame[self.actual_vapour_pressure_column_name] = data_frame.apply(
-            lambda row: calc_actual_vapour_pressure(
-                row[self.sat_vapour_pressure_column_name],
-                row[self.relative_humidity_column_name],
-            ),
-            axis=1,
-        )
-
-        data_frame[self.absolute_humidity_column_name] = data_frame.apply(
-            lambda row: calc_absolute_humidity(
-                row[self.actual_vapour_pressure_column_name],
-                row[self.air_temperature_column_name],
-            ),
-            axis=1,
-        )
+        abs_hum_exists = self._check_if_abs_hum_exists(data_frame=data_frame)
+        if not abs_hum_exists:
+            data_frame = self._create_abs_hum_data(data_frame=data_frame)
 
         data_frame[self.correction_factor_column_name] = data_frame.apply(
             lambda row: humidity_correction_rosolem2013(
@@ -710,7 +727,6 @@ class PressureCorrectionZreda2012(Correction):
                 )
                 core_logger.error(message)
                 raise ValueError(message)
-
             message = (
                 "No reference pressure value given. Calculating average pressure "
                 "using elevation information and using this value"
