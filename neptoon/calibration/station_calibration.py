@@ -722,6 +722,7 @@ class CalibrationWeightsCalculator:
                 "field_average_soil_moisture_volumetric": field_average_sm_vol,
                 "field_average_soil_moisture_gravimetric": field_average_sm_grav,
                 "horizontal_footprint_radius_in_meters": footprint,
+                # WIP "air_humidity": average_air_humidity,
             }
 
             self.output_dictionary[day] = info_dictionary
