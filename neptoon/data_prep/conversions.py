@@ -10,13 +10,13 @@ from neptoon.corrections.theory.air_humidity_corrections import (
 class AbsoluteHumidityCreator:
     """
     Given a DataFrame with at least:
-      - a temperature column (°C)
+      - a temperature column (C)
       - a relative humidity column (in %)
 
     this class will add:
       1) saturation vapour pressure (hPa),
       2) actual vapour pressure,
-      3) absolute humidity (g/m³).
+      3) absolute humidity (g/m3).
     """
 
     def __init__(
@@ -30,7 +30,7 @@ class AbsoluteHumidityCreator:
         actual_vapour_pressure_col_name: str = str(
             ColumnInfo.Name.ACTUAL_VAPOUR_PRESSURE
         ),
-        relative_humidity_col_name: str = str(
+        relative_hum_col_name: str = str(
             ColumnInfo.Name.AIR_RELATIVE_HUMIDITY
         ),
     ):
@@ -39,7 +39,7 @@ class AbsoluteHumidityCreator:
         self.temperature_col_name = temperature_col_name
         self.sat_vapour_col_name = sat_vapour_col_name
         self.actual_vapour_pressure_col_name = actual_vapour_pressure_col_name
-        self.relative_humidity_col_name = relative_humidity_col_name
+        self.relative_hum_col_name = relative_hum_col_name
 
         self.check_required_columns_available()
 
@@ -53,8 +53,8 @@ class AbsoluteHumidityCreator:
             Error when required column not available
         """
         missing = []
-        for col in (self.temperature_col, self.relative_humidity_col):
-            if col not in self.df.columns:
+        for col in (self.temperature_col_name, self.relative_hum_col_name):
+            if col not in self.data_frame.columns:
                 missing.append(col)
         if missing:
             raise KeyError(
@@ -84,7 +84,7 @@ class AbsoluteHumidityCreator:
             self.data_frame.apply(
                 lambda row: calc_actual_vapour_pressure(
                     saturation_vapour_pressure=row[self.sat_vapour_col_name],
-                    relative_humidity=row[self.relative_humidity_col_name],
+                    relative_humidity=row[self.relative_hum_col_name],
                 ),
                 axis=1,
             )
