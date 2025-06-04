@@ -59,7 +59,7 @@ class NeutronsToSM:
             "Aug13_uranos_atmprof",
             "Aug13_uranos_atmprof2",
         ] = "Mar21_uranos_drf",
-        air_humidity_col_name=str(ColumnInfo.Name.HUMIDITY_CORRECTION),
+        air_humidity_col_name=str(ColumnInfo.Name.ABSOLUTE_HUMIDITY),
     ):
         """
         Attributes to be added to the class.
