@@ -7,7 +7,7 @@ from neptoon.corrections.theory.air_humidity_corrections import (
 )
 
 
-class AbsoluteHumidityCreation:
+class AbsoluteHumidityCreator:
     """
     Given a DataFrame with at least:
       - a temperature column (°C)
