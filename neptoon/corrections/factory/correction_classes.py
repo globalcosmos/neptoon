@@ -579,13 +579,13 @@ class HumidityCorrectionRosolem2013(Correction):
 
         Parameters
         ----------
-        data_frame : _type_
-            _description_
+        data_frame : pd.DataFrame
+            Data frame with sensor data
 
         Returns
         -------
-        _type_
-            _description_
+        Bool
+            True or False if abs hum col exists.
         """
         if self.absolute_humidity_column_name in data_frame.columns:
             return True
@@ -727,7 +727,6 @@ class PressureCorrectionZreda2012(Correction):
                 )
                 core_logger.error(message)
                 raise ValueError(message)
-
             message = (
                 "No reference pressure value given. Calculating average pressure "
                 "using elevation information and using this value"
