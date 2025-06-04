@@ -511,6 +511,7 @@ class PrepareNeutronCorrectedData:
         self.data_dict = {}
 
         self._ensure_date_time_index()
+        self._ensure_abs_humidity_exists()
 
     def _ensure_date_time_index(self):
         """
