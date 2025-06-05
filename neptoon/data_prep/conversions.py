@@ -109,7 +109,6 @@ class AbsoluteHumidityCreator:
 
         Returns the whole dataframe with new data attached.
 
-
         Returns
         -------
         pd.DataFrame
