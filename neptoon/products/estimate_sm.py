@@ -7,6 +7,7 @@ from neptoon.corrections import (
     neutrons_to_vol_soil_moisture_koehli_etal_2021,
     Schroen2017,
 )
+from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 from neptoon.logging import get_logger
 from neptoon.data_audit import log_key_step
 
@@ -142,7 +143,7 @@ class NeutronsToSM:
         """
         return soc * 0.556
 
-    def check_if_humidity_correction_applied(
+    def _check_if_humidity_correction_applied(
         self,
         auto_uncorrect=True,
     ):
@@ -180,6 +181,16 @@ class NeutronsToSM:
                 )
                 print(message)
                 core_logger.info(message)
+
+    def _ensure_abs_humidity_available(self):
+        """
+        Ensures that absolute himidity data is available for processing
+        using Koehli et al., 2021.
+        """
+        abs_hum_creator = AbsoluteHumidityCreator(self.crns_data_frame)
+        self.crns_data_frame = (
+            abs_hum_creator.check_and_return_abs_hum_column()
+        )
 
     def calculate_sm_estimates(
         self,
@@ -227,7 +238,10 @@ class NeutronsToSM:
                 )
             )
         elif self.conversion_theory == "koehli_etal_2021":
-            self.check_if_humidity_correction_applied(auto_uncorrect=True)
+
+            self._check_if_humidity_correction_applied(auto_uncorrect=True)
+            self._ensure_abs_humidity_available()
+
             self.crns_data_frame[soil_moisture_column_write_name] = (
                 self.crns_data_frame.apply(
                     lambda row: neutrons_to_vol_soil_moisture_koehli_etal_2021(

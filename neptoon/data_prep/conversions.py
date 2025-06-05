@@ -107,6 +107,8 @@ class AbsoluteHumidityCreator:
         Creates absolute humidity data whilst also creating saturation
         vapour pressure data and actual vapour pressure data.
 
+        Returns the whole dataframe with new data attached.
+
 
         Returns
         -------
