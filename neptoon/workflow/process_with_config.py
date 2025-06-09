@@ -863,8 +863,15 @@ class CorrectionSelectorFromConfig:
         The humidity correction was {tmp.method}.
         """
         tmp = self.process_config.correction_steps.air_humidity
-        if tmp.method is None or str(tmp.method).lower() == "none":
-            return
+        tmp_neutron_to_sm = (
+            self.process_config.correction_steps.soil_moisture_estimation
+        )
+        if (
+            tmp.method is None
+            or str(tmp.method).lower() == "none"
+            or tmp_neutron_to_sm.method == "koehli_etal_2021"
+        ):
+            return  # Don't apply correction
         if tmp.method.lower() == "rosolem_2013":
             self.data_hub.select_correction(
                 correction_type=CorrectionType.HUMIDITY,

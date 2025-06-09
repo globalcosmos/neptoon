@@ -994,66 +994,6 @@ class CalibrationWeightsCalculator:
         )
         return df
 
-    # def _create_n0_ouput_dict_desilets_etal_2010(
-    #     self,
-    #     calib_data_frame,
-    #     row,
-    # ):
-    #     """
-    #     Finds the optimal N0 number for each calibration day based on
-    #     the theory of desilets et al 2010.
-
-    #     Parameters
-    #     ----------
-    #     calib_data_frame : pd.DataFrame
-    #         The dataframe from the calibration date
-    #     row : _type_
-    #         _description_
-    #     """
-
-    #     calib_day = pd.to_datetime(row["calibration_day"])
-    #     calib_data_frame = self.time_series_data_object.data_dict[calib_day]
-    #     neutron_mean = calib_data_frame[self.config.neutron_column_name].mean()
-
-    #     gravimetric_sm_on_day = row["field_average_soil_moisture_gravimetric"]
-
-    #     N0_optimal, absolute_error = (
-    #         self._find_optimal_N0_single_day_desilets_etal_2010(
-    #             gravimetric_sm_on_day=gravimetric_sm_on_day,
-    #             neutron_mean=neutron_mean,
-    #         )
-    #     )
-
-    #     # Update the original dictionary
-    #     self.calib_metrics_dict[calib_day]["optimal_N0"] = N0_optimal
-    #     self.calib_metrics_dict[calib_day]["absolute_error"] = absolute_error
-
-    # def _create_n0_output_dict_koehli_etal_2021(
-    #     self,
-    #     calib_data_frame,
-    #     row,
-    # ):
-    #     calib_day = pd.to_datetime(row["calibration_day"])
-    #     calib_data_frame = self.time_series_data_object.data_dict[calib_day]
-    #     neutron_mean = calib_data_frame[self.config.neutron_column_name].mean()
-    #     gravimetric_sm_on_day = row["field_average_soil_moisture_gravimetric"]
-    #     lattice_water = self.config.value_avg_lattice_water
-
-    #     N0_optimal = (
-    #         self._find_optimal_n0_single_day_koehli_etal_2021(
-    #             gravimetric_sm_on_day=gravimetric_sm_on_day,
-    #             neutron_mean=neutron_mean,
-    #             abs_air_humidity =
-    #             lattice_water = lattice_water,
-    #             water_equiv_soil_organic_carbon =
-    #             bulk_density =
-    #         )
-    #     )
-
-    #     # Update the original dictionary
-    #     self.calib_metrics_dict[calib_day]["optimal_N0"] = N0_optimal
-    #     self.calib_metrics_dict[calib_day]["absolute_error"] = np.nan
-
     def _find_optimal_N0_single_day_desilets_etal_2010(
         self,
         gravimetric_sm_on_day,
