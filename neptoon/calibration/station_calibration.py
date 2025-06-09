@@ -51,7 +51,7 @@ class CalibrationConfiguration:
         value_avg_lattice_water: float = 0,
         value_avg_bulk_density: float = 0,
         value_avg_soil_organic_carbon: float = 0,
-        koehli_etal_2021_method: Literal[
+        koehli_method_form: Literal[
             "Jan23_uranos",
             "Jan23_mcnpfull",
             "Mar12_atmprof",
@@ -157,7 +157,7 @@ class CalibrationConfiguration:
         self.value_avg_lattice_water = value_avg_lattice_water
         self.value_avg_bulk_density = value_avg_bulk_density
         self.value_avg_soil_organic_carbon = value_avg_soil_organic_carbon
-        self.koehli_etal_2021_method = koehli_etal_2021_method
+        self.koehli_method_form = koehli_method_form
 
 
 class CalibrationStation:
@@ -1044,7 +1044,7 @@ class CalibrationWeightsCalculator:
         lattice_water,
         water_equiv_soil_organic_carbon,
         bulk_density,
-        method,
+        koehli_method_form,
     ):
         """
         Finds optimal N0 number when using Koehli etal method
@@ -1063,6 +1063,8 @@ class CalibrationWeightsCalculator:
             water equivelant of soil organic carbon
         bulk_density : float
             Dry soil bulk density of soil
+        koehli_method_form: str
+            The specific method form of Koehli method
 
         Returns
         -------
@@ -1076,7 +1078,7 @@ class CalibrationWeightsCalculator:
             lattice_water=lattice_water,
             water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
             bulk_density=bulk_density,
-            method=method,
+            koehli_method_form=koehli_method_form,
         )
         return n0, "nan"
 
@@ -1117,7 +1119,7 @@ class CalibrationWeightsCalculator:
                         lattice_water=self.config.value_avg_lattice_water,
                         water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon,
                         bulk_density=self.config.value_avg_bulk_density,
-                        method=self.config.koehli_etal_2021_method,
+                        koehli_method_form=self.config.koehli_method_form,
                     )
                 )
 

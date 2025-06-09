@@ -407,7 +407,7 @@ class SoilMoistureEstimation(BaseModel):
         description="Soil moisture estimation theory",
         default="desilets_etal_2010",
     )
-    koehli_method_type: Literal[
+    koehli_method_form: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
         "Mar12_atmprof",

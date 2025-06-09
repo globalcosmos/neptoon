@@ -241,7 +241,6 @@ class NeutronsToSM:
 
             self._check_if_humidity_correction_applied(auto_uncorrect=True)
             self._ensure_abs_humidity_available()
-
             self.crns_data_frame[soil_moisture_column_write_name] = (
                 self.crns_data_frame.apply(
                     lambda row: neutrons_to_vol_soil_moisture_koehli_etal_2021(
@@ -251,7 +250,7 @@ class NeutronsToSM:
                         lattice_water=self.lattice_water,
                         air_humidity=row[self.air_humidity_col_name],
                         water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
-                        method=self.koehli_method_form,
+                        koehli_method_form=self.koehli_method_form,
                     ),
                     axis=1,
                 )

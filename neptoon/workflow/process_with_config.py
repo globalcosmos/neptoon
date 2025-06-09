@@ -296,7 +296,13 @@ class ProcessWithConfig:
         data_hub.create_neutron_uncertainty_bounds()
         return data_hub
 
-    def _produce_soil_moisture_estimates(self, data_hub: CRNSDataHub):
+    def _produce_soil_moisture_estimates(
+        self,
+        data_hub: CRNSDataHub,
+        conversion_theory: Literal[
+            "desilets_etal_2010", "koehli_eta_2021"
+        ] = "desilets_etal_2010",
+    ):
         """
         produces soil moisture estimates
 
@@ -310,7 +316,25 @@ class ProcessWithConfig:
         data_hub
             updated data_hub
         """
-        data_hub.produce_soil_moisture_estimates()
+        conversion_theory = (
+            self.process_config.correction_steps.soil_moisture_estimation.method
+        )
+
+        if conversion_theory == "desilets_etal_2010":
+            data_hub.produce_soil_moisture_estimates()
+        elif conversion_theory == "koehli_etal_2021":
+            koehli_method_form = (
+                self.process_config.correction_steps.soil_moisture_estimation.koehli_method_form
+            )
+            data_hub.produce_soil_moisture_estimates(
+                conversion_theory=conversion_theory,
+                dry_soil_bulk_density=self.sensor_config.sensor_info.avg_dry_soil_bulk_density,
+                lattice_water=self.sensor_config.sensor_info.avg_lattice_water,
+                soil_organic_carbon=self.sensor_config.sensor_info.avg_soil_organic_carbon,
+                koehli_method_form=koehli_method_form,
+            )
+        # else:
+        #     raise ValueError(f"Unknown conversion method: {conversion_theory}")
         return data_hub
 
     def _create_figures(
@@ -453,7 +477,7 @@ class ProcessWithConfig:
                 bulk_density_of_sample_column=sensor_config.calibration.key_column_names.bulk_density_of_sample,
                 soil_organic_carbon_column=sensor_config.calibration.key_column_names.soil_organic_carbon,
                 lattice_water_column=sensor_config.calibration.key_column_names.lattice_water,
-                koehli_etal_2021_method=neutron_conversion.koehli_method_type,
+                koehli_method_form=neutron_conversion.koehli_method_form,
             )
         data_hub.calibrate_station(config=calibration_config)
         sensor_config = self._update_sensor_config_after_calibration(
@@ -650,7 +674,10 @@ class ProcessWithConfig:
 
         # Produce soil moisture estimates
         self.data_hub = self._create_neutron_uncertainty_bounds(self.data_hub)
-        self.data_hub = self._produce_soil_moisture_estimates(self.data_hub)
+        self.data_hub = self._produce_soil_moisture_estimates(
+            self.data_hub,
+            conversion_theory=self.process_config.correction_steps.soil_moisture_estimation.method,
+        )
         if self.process_config.data_smoothing.smooth_soil_moisture:
             self.data_hub = self._smooth_data(
                 data_hub=self.data_hub,
