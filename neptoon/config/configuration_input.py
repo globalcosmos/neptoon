@@ -403,7 +403,7 @@ class AirPressureCorrection(BaseModel):
 class SoilMoistureEstimation(BaseModel):
     """Configuration for the conversion of neutrons to soil moisture"""
 
-    method: Literal["desilets_etal_2010", "koehli_etal_2023"] = Field(
+    method: Literal["desilets_etal_2010", "koehli_etal_2021"] = Field(
         description="Soil moisture estimation theory",
         default="desilets_etal_2010",
     )
