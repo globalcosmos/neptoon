@@ -999,6 +999,21 @@ class CalibrationWeightsCalculator:
         gravimetric_sm_on_day,
         neutron_mean,
     ):
+        """
+        Finds optimal N0 number when using desilets et al., 2010 method
+
+        Parameters
+        ----------
+        gravimetric_sm_on_day : float
+            gravimetric soil moisture (weighted)
+        neutron_mean : float
+            average (corrected) neutron count
+
+        Returns
+        -------
+        float
+            N0
+        """
 
         n0_range = pd.Series(range(int(neutron_mean), int(neutron_mean * 2.5)))
 
@@ -1032,7 +1047,7 @@ class CalibrationWeightsCalculator:
         method,
     ):
         """
-        Uses the
+        Finds optimal N0 number when using Koehli etal method
 
         Parameters
         ----------

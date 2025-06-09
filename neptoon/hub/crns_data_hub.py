@@ -298,7 +298,6 @@ class CRNSDataHub:
             A string representing a default version of flagging, by
             default None
         """
-
         self.quality_assessor.apply_quality_assessment()
 
         self.flags_data_frame = self.quality_assessor.return_flags_data_frame(
@@ -530,6 +529,7 @@ class CRNSDataHub:
         soil organic carbon content of
         {default_params[soil_organic_carbon]}
         """
+        print("Producing soil moisture estimates.")
         # Create attributes for NeutronsToSM
         default_params = {
             "n0": self.sensor_info.N0,
