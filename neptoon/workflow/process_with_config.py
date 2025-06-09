@@ -402,6 +402,7 @@ class ProcessWithConfig:
         self,
         data_hub: CRNSDataHub,
         sensor_config: BaseConfig,
+        process_config: BaseConfig,
     ):
         """
         Calibrates the sensor producing an N0 calibration term
@@ -424,17 +425,36 @@ class ProcessWithConfig:
         )
         calib_df = pd.read_csv(calib_df_path)
         data_hub.calibration_samples_data = calib_df
-        calibration_config = CalibrationConfiguration(
-            calib_data_date_time_column_name=sensor_config.calibration.key_column_names.date_time,
-            calib_data_date_time_format=sensor_config.calibration.date_time_format,
-            profile_id_column=sensor_config.calibration.key_column_names.profile_id,
-            distance_column=sensor_config.calibration.key_column_names.radial_distance_from_sensor,
-            sample_depth_column=sensor_config.calibration.key_column_names.sample_depth,
-            soil_moisture_gravimetric_column=sensor_config.calibration.key_column_names.gravimetric_soil_moisture,
-            bulk_density_of_sample_column=sensor_config.calibration.key_column_names.bulk_density_of_sample,
-            soil_organic_carbon_column=sensor_config.calibration.key_column_names.soil_organic_carbon,
-            lattice_water_column=sensor_config.calibration.key_column_names.lattice_water,
+        neutron_conversion = (
+            process_config.correction_steps.soil_moisture_estimation
         )
+        if neutron_conversion.method == "desilets_etal_2010":
+            calibration_config = CalibrationConfiguration(
+                neutron_conversion_method="desilets_etal_2010",
+                calib_data_date_time_column_name=sensor_config.calibration.key_column_names.date_time,
+                calib_data_date_time_format=sensor_config.calibration.date_time_format,
+                profile_id_column=sensor_config.calibration.key_column_names.profile_id,
+                distance_column=sensor_config.calibration.key_column_names.radial_distance_from_sensor,
+                sample_depth_column=sensor_config.calibration.key_column_names.sample_depth,
+                soil_moisture_gravimetric_column=sensor_config.calibration.key_column_names.gravimetric_soil_moisture,
+                bulk_density_of_sample_column=sensor_config.calibration.key_column_names.bulk_density_of_sample,
+                soil_organic_carbon_column=sensor_config.calibration.key_column_names.soil_organic_carbon,
+                lattice_water_column=sensor_config.calibration.key_column_names.lattice_water,
+            )
+        elif neutron_conversion.method == "koehli_etal_2021":
+            calibration_config = CalibrationConfiguration(
+                neutron_conversion_method="koehli_etal_2021",
+                calib_data_date_time_column_name=sensor_config.calibration.key_column_names.date_time,
+                calib_data_date_time_format=sensor_config.calibration.date_time_format,
+                profile_id_column=sensor_config.calibration.key_column_names.profile_id,
+                distance_column=sensor_config.calibration.key_column_names.radial_distance_from_sensor,
+                sample_depth_column=sensor_config.calibration.key_column_names.sample_depth,
+                soil_moisture_gravimetric_column=sensor_config.calibration.key_column_names.gravimetric_soil_moisture,
+                bulk_density_of_sample_column=sensor_config.calibration.key_column_names.bulk_density_of_sample,
+                soil_organic_carbon_column=sensor_config.calibration.key_column_names.soil_organic_carbon,
+                lattice_water_column=sensor_config.calibration.key_column_names.lattice_water,
+                koehli_etal_2021_method=neutron_conversion.koehli_method_type,
+            )
         data_hub.calibrate_station(config=calibration_config)
         sensor_config = self._update_sensor_config_after_calibration(
             sensor_config, data_hub
@@ -604,9 +624,11 @@ class ProcessWithConfig:
 
         # Calibration
         if self.sensor_config.calibration.calibrate:
+
             self.data_hub, self.sensor_config = self._calibrate_data(
                 data_hub=self.data_hub,
                 sensor_config=self.sensor_config,
+                process_config=self.process_config,
             )
 
         # Second QA and Smoothing
