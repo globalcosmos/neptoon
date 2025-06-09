@@ -41,9 +41,9 @@ class AbsoluteHumidityCreator:
         self.actual_vapour_pressure_col_name = actual_vapour_pressure_col_name
         self.relative_hum_col_name = relative_hum_col_name
 
-        self.check_required_columns_available()
+        # self._check_required_columns_available()
 
-    def check_required_columns_available(self):
+    def _check_required_columns_available(self):
         """
         Ensures that the required columns are available before processing.
 
@@ -114,7 +114,8 @@ class AbsoluteHumidityCreator:
         pd.DataFrame
             DataFrame
         """
-        self.check_if_abs_hum_exists()
+        self.check_if_abs_hum_exists()  # returns if exists
+        self._check_required_columns_available()
         self.create_saturation_vapour_pressure_data()
         self.create_actual_vapour_pressure_data()
         self.create_absolute_humidity_data()
