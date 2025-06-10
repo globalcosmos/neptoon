@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from typing import Literal
 
 
@@ -186,7 +187,7 @@ def neutrons_to_vol_soil_moisture_koehli_etal_2021(
     )
 
     """
-    if np.isnan(neutron_count):
+    if pd.isna(neutron_count) or pd.isna(air_humidity):
         return np.nan
 
     soil_moisture_0 = 0.0

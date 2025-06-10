@@ -238,6 +238,10 @@ class NeutronsToSM:
                 )
             )
         elif self.conversion_theory == "koehli_etal_2021":
+            print(
+                "Using Koehli et al., 2021 method for converting neutrons to soil moisture\n"
+            )
+            print("This takes a little longer... please stand by....")
 
             self._check_if_humidity_correction_applied(auto_uncorrect=True)
             self._ensure_abs_humidity_available()
