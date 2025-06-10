@@ -1,5 +1,8 @@
 from neptoon.products.estimate_sm import NeutronsToSM
 from neptoon.columns import ColumnInfo
+from neptoon.corrections.theory.neutrons_to_soil_moisture import (
+    neutrons_to_vol_soil_moisture_koehli_etal_2021,
+)
 import pytest
 import pandas as pd
 import numpy as np
@@ -29,6 +32,10 @@ def sample_crns_data():
         str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ): np.random.randint(500, 1500, 100),
+        str(ColumnInfo.Name.AIR_TEMPERATURE): np.random.randint(10, 15, 100),
+        str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY): np.random.randint(
+            50, 60, 100
+        ),
     }
     return pd.DataFrame(data)
 
@@ -100,3 +107,114 @@ def test_calculate_sm_estimates(neutrons_to_sm_instance):
         str(ColumnInfo.Name.SOIL_MOISTURE)
         in neutrons_to_sm_instance.crns_data_frame.columns
     )
+
+
+####### TEST KOEHLI
+
+
+@pytest.fixture
+def neutrons_to_sm_instance_koehli_no_hum(sample_crns_data):
+    """
+    Create an instance of NeutronsToSM for testing when using Koehli
+    method
+
+    Parameters
+    ----------
+    sample_crns_data : pd.DataFrame
+        Sample CRNS data.
+
+    Returns
+    -------
+    NeutronsToSM
+        An instance of NeutronsToSM with sample data.
+    """
+    return NeutronsToSM(
+        crns_data_frame=sample_crns_data,
+        n0=1000,
+        dry_soil_bulk_density=1.4,
+        lattice_water=0.05,
+        soil_organic_carbon=0.02,
+        conversion_theory="koehli_etal_2021",
+    )
+
+
+@pytest.fixture
+def neutrons_to_sm_instance_koehli_with_hum(sample_crns_data):
+    """
+    Create an instance of NeutronsToSM for testing when using Koehli
+    method
+
+    Parameters
+    ----------
+    sample_crns_data : pd.DataFrame
+        Sample CRNS data.
+
+    Returns
+    -------
+    NeutronsToSM
+        An instance of NeutronsToSM with sample data.
+    """
+    return NeutronsToSM(
+        crns_data_frame=sample_crns_data,
+        n0=1000,
+        dry_soil_bulk_density=1.4,
+        lattice_water=0.05,
+        soil_organic_carbon=0.02,
+        conversion_theory="koehli_etal_2021",
+    )
+
+
+def test_koehli_method_nans_not_processed():
+    """
+    Tests if the koehli method will process a nan value
+    """
+    nan_neut = neutrons_to_vol_soil_moisture_koehli_etal_2021(
+        neutron_count=np.nan, n0=2000, air_humidity=8
+    )
+    nan_hum = neutrons_to_vol_soil_moisture_koehli_etal_2021(
+        neutron_count=1000, n0=2000, air_humidity=np.nan
+    )
+
+    assert pd.isna(nan_neut)
+    assert pd.isna(nan_hum)
+
+
+def test_koehli_method_no_abs_hum(
+    neutrons_to_sm_instance_koehli_no_hum,
+):
+    """
+    Test koehli method when abs hum and hum data missing
+    """
+    neutrons_to_sm_instance_koehli_no_hum.calculate_sm_estimates(
+        neutron_data_column_name=str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+        ),
+        soil_moisture_column_write_name=str(ColumnInfo.Name.SOIL_MOISTURE),
+    )
+    assert (
+        str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
+        in neutrons_to_sm_instance_koehli_no_hum.crns_data_frame.columns
+    )
+    assert (
+        str(ColumnInfo.Name.SOIL_MOISTURE)
+        in neutrons_to_sm_instance_koehli_no_hum.crns_data_frame.columns
+    )
+
+
+def test_koehli_method_no_abs_hum_missingdata(
+    neutrons_to_sm_instance_koehli_no_hum,
+):
+    """
+    Test koehli method when abs hum and hum data missing
+    """
+    with pytest.raises(KeyError):
+        neutrons_to_sm_instance_koehli_no_hum.crns_data_frame.drop(
+            str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
+        )
+
+        neutrons_to_sm_instance_koehli_no_hum.calculate_sm_estimates(
+            neutron_data_column_name=str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+            ),
+            soil_moisture_column_write_name=str(ColumnInfo.Name.SOIL_MOISTURE),
+        )

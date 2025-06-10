@@ -63,6 +63,14 @@ The process configuration file tells neptoon about the sensor being processed. T
 | method | No | string | `"baatz_2015"` or `"morris_2024"` | Method used for biomass correction |
 | biomass_units | No | string | - | Units for biomass measurements |
 
+### Soil Moisture Estimation
+
+| Parameter | Required | Type | Example | Description |
+|-----------|----------|------|---------|-------------|
+| method | Yes | string | `"desilets_etal_2010"` or `"koehli_etal_2021"` | Method for converting neutrons to soil mositure|
+|koehli_method_form|No|string|`"Jan23_uranos"` or `"Jan23_mcnpfull"` or `"Mar12_atmprof"` or `"Mar21_mcnp_drf"` or `"Mar21_mcnp_ewin"` or `"Mar21_uranos_drf"` or `"Mar21_uranos_ewin"` or `"Mar22_mcnp_drf_Jan"` or `"Mar22_mcnp_ewin_gd"` or `"Mar22_uranos_drf_gd"` or `"Mar22_uranos_ewin_chi2"` or `"Mar22_uranos_drf_h200m"` or `"Aug08_mcnp_drf"` or `"Aug08_mcnp_ewin"` or `"Aug12_uranos_drf"` or `"Aug12_uranos_ewin"` or `"Aug13_uranos_atmprof"` or `"Aug13_uranos_atmprof2"`| Thats a lot of options... just stick with `"Mar21_uranos_drf"` if you want simple. This sets the parameters when using the koehlie et al., 2021 method|
+
+
 ## Data Smoothing
 
 | Parameter | Required | Type | Example | Description |

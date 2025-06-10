@@ -239,7 +239,7 @@ class NeutronsToSM:
             )
         elif self.conversion_theory == "koehli_etal_2021":
             print(
-                "Using Koehli et al., 2021 method for converting neutrons to soil moisture\n"
+                "Using Koehli et al., 2021 method for converting neutrons to soil moisture"
             )
             print("This takes a little longer... please stand by....")
 
@@ -262,7 +262,7 @@ class NeutronsToSM:
 
     def calculate_uncertainty_of_sm_estimates(self):
         """
-        TODO: produce the uncertainty
+        Produces uncertainty estimates of soil mositure.
         """
         self.calculate_sm_estimates(
             neutron_data_column_name=str(
