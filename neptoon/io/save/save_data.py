@@ -38,12 +38,12 @@ class SaveAndArchiveOutputs:
         processed_data_frame: pd.DataFrame,
         flag_data_frame: pd.DataFrame,
         sensor_info: SensorInfo,
-        save_folder_location: Union[str, Path] = None,
+        save_folder_location: str | Path | None = None,
         append_audit_log_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
-        custom_column_names_dict: dict = None,
+        custom_column_names_dict: dict | None = None,
         append_timestamp: bool = True,
-        figure_handler: FigureHandler = None,
+        figure_handler: FigureHandler | None = None,
         calib_df=None,
         magazine_active: bool = False,
     ):
@@ -96,7 +96,7 @@ class SaveAndArchiveOutputs:
 
     def _validate_save_folder(
         self,
-        save_location: Union[str, Path],
+        save_location: str | Path | None,
     ):
         """
         Converts string path to pathlib.Path. If given path is not an
@@ -200,7 +200,7 @@ class SaveAndArchiveOutputs:
 
     def append_hash_to_folder_name(
         self,
-        folder_path: Path,
+        folder_path: Path | None,
     ):
         """
         Appends the first 6 characters of the hash from hash.txt to the
