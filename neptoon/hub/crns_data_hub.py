@@ -430,7 +430,7 @@ class CRNSDataHub:
         Report
         ------
         Calibration was undertaken. The N0 number was calculated as
-        {n0}. From the samples, the average dry soil bulk density is
+        {n0}, using the {config.neutron_conversion_method} method. From the samples, the average dry soil bulk density is
         {avg_dry_soil_bulk_density}, the average soil organic carbon is
         {avg_soil_organic_carbon}, and the average lattice water content
         is {avg_lattice_water}.
