@@ -1,8 +1,9 @@
 import numpy as np
+import pandas as pd
 from typing import Literal
 
 
-def neutrons_to_grav_sm_desilets(
+def neutrons_to_grav_sm_desilets_etal_2010(
     neutrons,
     n0=1000,
     a0=0.0808,
@@ -10,7 +11,8 @@ def neutrons_to_grav_sm_desilets(
     a2=0.115,
 ):
     """
-    Converts neutrons to gravimetric soil moisture
+    Converts neutrons to gravimetric soil moisture following the
+    Desilets et al., 2010 forumla
 
     Parameters
     ----------
@@ -33,20 +35,21 @@ def neutrons_to_grav_sm_desilets(
     return a0 / (neutrons / n0 - a1) - a2
 
 
-def convert_neutrons_to_soil_moisture(
+def neutrons_to_vol_soil_moisture_desilets_etal_2010(
     neutron_count: float,
     n0: float,
     dry_soil_bulk_density: float,
     lattice_water: float,
-    water_equiv_soil_organic_matter: float,
+    water_equiv_soil_organic_carbon: float,
     a0: float = 0.0808,
     a1: float = 0.372,
     a2: float = 0.115,
 ):
     """
     Converts corrected neutrons counts into volumetric soil moisture
+    following the Desilets et al., 2010 forumla.
 
-    doi: TODO
+    doi: http://dx.doi.org/10.1029/2009WR008726
 
     Parameters
     ----------
@@ -72,11 +75,11 @@ def convert_neutrons_to_soil_moisture(
         ((a0) / ((neutron_count / n0) - a1))
         - (a2)
         - lattice_water
-        - water_equiv_soil_organic_matter
+        - water_equiv_soil_organic_carbon
     ) * dry_soil_bulk_density
 
 
-def convert_neutrons_to_soil_moisture_kohli(
+def reformulated_neutrons_to_vol_soil_moisture_desilets_2010(
     neutron_count: float,
     n0: float,
     dry_soil_bulk_density: float,
@@ -88,7 +91,8 @@ def convert_neutrons_to_soil_moisture_kohli(
 ):
     """
     Converts corrected neutrons counts into volumetric soil moisture
-    following the method outlined in Köhli et al. 2021
+    following the reforumlated version of the desilets equation outlined
+    in Köhli et al. 2021
 
     https://doi.org/10.3389/frwa.2020.544847
 
@@ -124,18 +128,38 @@ def convert_neutrons_to_soil_moisture_kohli(
     return sm
 
 
-def convert_neutrons_to_soil_moisture_uts(
+def neutrons_to_vol_soil_moisture_koehli_etal_2021(
     neutron_count: float,
     n0: float,
     air_humidity: float,
-    bulk_density: float = 1.0,
+    dry_soil_bulk_density: float = 1.42,
     lattice_water: float = 0.0,
     water_equiv_soil_organic_carbon: float = 0.0,
-    method: str = "Mar21_uranos_drf",
+    koehli_method_form: Literal[
+        "Jan23_uranos",
+        "Jan23_mcnpfull",
+        "Mar12_atmprof",
+        "Mar21_mcnp_drf",
+        "Mar21_mcnp_ewin",
+        "Mar21_uranos_drf",
+        "Mar21_uranos_ewin",
+        "Mar22_mcnp_drf_Jan",
+        "Mar22_mcnp_ewin_gd",
+        "Mar22_uranos_drf_gd",
+        "Mar22_uranos_ewin_chi2",
+        "Mar22_uranos_drf_h200m",
+        "Aug08_mcnp_drf",
+        "Aug08_mcnp_ewin",
+        "Aug12_uranos_drf",
+        "Aug12_uranos_ewin",
+        "Aug13_uranos_atmprof",
+        "Aug13_uranos_atmprof2",
+    ] = "Mar21_uranos_drf",
 ):
     """
     Converts corrected neutrons counts into volumetric soil moisture
-    following the method outlined in Köhli et al. 2021
+    following the Universal Transport Solution (UTS) method outlined in
+    Köhli et al. 2021
 
     https://doi.org/10.3389/frwa.2020.544847
 
@@ -148,7 +172,7 @@ def convert_neutrons_to_soil_moisture_uts(
         N0 calibration term
     air_humidity : float
          relative air humidity (%)
-    bulk_density : float
+    dry_soil_bulk_density : float
         dry soil bulk density of the soil in grams per cubic centimer
         e.g. 1.4 (g/cm^3)
     lattice_water : float
@@ -163,59 +187,35 @@ def convert_neutrons_to_soil_moisture_uts(
     )
 
     """
-    if np.isnan(neutron_count):
+    if pd.isna(neutron_count) or pd.isna(air_humidity):
         return np.nan
 
-    # neutron_count = neutron_count/n0
-
-    t0 = 0.0
-    t1 = 4.0
-    # n_i0 = convert_soil_moisture_to_neutrons_uts(
-    #     0.0,
-    #     n0=n0,
-    #     h=air_humidity,
-    #     method=method,
-    #     off=lattice_water + water_equiv_soil_organic_carbon,
-    #     bd=bulk_density,
-    # )
-    # n_i1 = convert_soil_moisture_to_neutrons_uts(
-    #     1.0,
-    #     h=air_humidity,
-    #     n0=n0,
-    #     method=method,
-    #     off=lattice_water + water_equiv_soil_organic_carbon,
-    #     bd=bulk_density,
-    # )
-    while t1 - t0 > 0.0001:
-        t2 = 0.5 * (t0 + t1)
-        n2 = convert_soil_moisture_to_neutrons_uts(
-            t2,
-            h=air_humidity,
+    soil_moisture_0 = 0.0
+    soil_moisture_1 = 2.0
+    while soil_moisture_1 - soil_moisture_0 > 0.0001:
+        soil_moisture_2 = (0.5 * soil_moisture_0) + (0.5 * soil_moisture_1)
+        n2 = soil_moisture_to_neutrons_koehli_etal_2021(
+            soil_moisture=soil_moisture_2,
+            air_humidity=air_humidity,
             n0=n0,
-            method=method,
-            off=lattice_water + water_equiv_soil_organic_carbon,
-            bd=bulk_density,
+            koehli_method_form=koehli_method_form,
+            offset=lattice_water + water_equiv_soil_organic_carbon,
+            dry_soil_bulk_density=dry_soil_bulk_density,
         )
         if neutron_count < n2:
-            t0 = t2
-            # n_i0 = n2
+            soil_moisture_0 = soil_moisture_2
         else:
-            t1 = t2
-            # n_i1 = n2
-    t2 = 0.5 * (t0 + t1)
-
-    # if t2 <= 0.0001: t2 = np.nan
-
-    return t2
+            soil_moisture_1 = soil_moisture_2
+    return soil_moisture_2
 
 
-def convert_soil_moisture_to_neutrons_uts(
+def soil_moisture_to_neutrons_koehli_etal_2021(
     soil_moisture: float,
     air_humidity: float,
     n0: float,
     offset: float = 0.0,
-    bulk_density: float = 1.0,
-    method: Literal[
+    dry_soil_bulk_density: float = 1.0,
+    koehli_method_form: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
         "Mar12_atmprof",
@@ -261,16 +261,15 @@ def convert_soil_moisture_to_neutrons_uts(
     biomass : float
         The biomass at the site kg/m^2
 
-
     """
 
     soil_moisture_total = soil_moisture + offset
-    soil_moisture_total *= 1.43 / bulk_density
+    soil_moisture_total *= 1.43 / dry_soil_bulk_density
     if soil_moisture_total == 0.0:
         soil_moisture_total = 0.001
     p = []
 
-    if method == "Jan23_uranos":
+    if koehli_method_form == "Jan23_uranos":
         p = [
             4.2580,
             0.0212,
@@ -282,7 +281,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0003200,
             -0.0000000180,
         ]
-    elif method == "Jan23_mcnpfull":
+    elif koehli_method_form == "Jan23_mcnpfull":
         p = [
             7.0000,
             0.0250,
@@ -294,7 +293,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0004100,
             -0.0000000410,
         ]
-    elif method == "Mar12_atmprof":
+    elif koehli_method_form == "Mar12_atmprof":
         p = [
             4.4775,
             0.0230,
@@ -306,7 +305,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0003100,
             -0.0000000003,
         ]
-    elif method == "Mar21_mcnp_drf":
+    elif koehli_method_form == "Mar21_mcnp_drf":
         p = [
             1.0940,
             0.0280,
@@ -318,7 +317,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0001150,
             0.0000000000,
         ]
-    elif method == "Mar21_mcnp_ewin":
+    elif koehli_method_form == "Mar21_mcnp_ewin":
         p = [
             1.2650,
             0.0259,
@@ -330,7 +329,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0001200,
             0.0000000000,
         ]
-    elif method == "Mar21_uranos_drf":
+    elif koehli_method_form == "Mar21_uranos_drf":
         p = [
             1.0240,
             0.0226,
@@ -342,7 +341,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0000740,
             0.0000000000,
         ]
-    elif method == "Mar21_uranos_ewin":
+    elif koehli_method_form == "Mar21_uranos_ewin":
         p = [
             1.2230,
             0.0185,
@@ -354,7 +353,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0000920,
             0.0000000000,
         ]
-    elif method == "Mar22_mcnp_drf_Jan":
+    elif koehli_method_form == "Mar22_mcnp_drf_Jan":
         p = [
             1.0820,
             0.0250,
@@ -366,7 +365,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0000500,
             0.0000000000,
         ]
-    elif method == "Mar22_mcnp_ewin_gd":
+    elif koehli_method_form == "Mar22_mcnp_ewin_gd":
         p = [
             1.1630,
             0.0244,
@@ -378,7 +377,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0000580,
             0.0000000000,
         ]
-    elif method == "Mar22_uranos_drf_gd":
+    elif koehli_method_form == "Mar22_uranos_drf_gd":
         p = [
             1.1180,
             0.0221,
@@ -390,7 +389,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0000810,
             0.0000000000,
         ]
-    elif method == "Mar22_uranos_ewin_chi2":
+    elif koehli_method_form == "Mar22_uranos_ewin_chi2":
         p = [
             1.0220,
             0.0218,
@@ -402,7 +401,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0000780,
             0.0000000000,
         ]
-    elif method == "Mar22_uranos_drf_h200m":
+    elif koehli_method_form == "Mar22_uranos_drf_h200m":
         p = [
             1.0210,
             0.0222,
@@ -414,7 +413,7 @@ def convert_soil_moisture_to_neutrons_uts(
             0.0000740,
             0.0000000000,
         ]
-    elif method == "Aug08_mcnp_drf":
+    elif koehli_method_form == "Aug08_mcnp_drf":
         p = [
             1.110773444917129,
             0.034319446894963,
@@ -426,7 +425,7 @@ def convert_soil_moisture_to_neutrons_uts(
             5.0316941885e-005,
             0.0000000000,
         ]
-    elif method == "Aug08_mcnp_ewin":
+    elif koehli_method_form == "Aug08_mcnp_ewin":
         p = [
             1.271225645585415,
             0.024790265564895,
@@ -438,7 +437,7 @@ def convert_soil_moisture_to_neutrons_uts(
             6.198559205414182,
             0.0000000000,
         ]
-    elif method == "Aug12_uranos_drf":
+    elif koehli_method_form == "Aug12_uranos_drf":
         p = [
             1.042588152355816,
             0.024362250648228,
@@ -450,7 +449,7 @@ def convert_soil_moisture_to_neutrons_uts(
             6.6412111902e-005,
             0.0000000000,
         ]
-    elif method == "Aug12_uranos_ewin":
+    elif koehli_method_form == "Aug12_uranos_ewin":
         p = [
             1.209060105287452,
             0.021546879683024,
@@ -462,7 +461,7 @@ def convert_soil_moisture_to_neutrons_uts(
             8.8939419535e-005,
             0.0000000000,
         ]
-    elif method == "Aug13_uranos_atmprof":
+    elif koehli_method_form == "Aug13_uranos_atmprof":
         p = [
             1.044276170094123,
             0.024099232055379,
@@ -474,7 +473,7 @@ def convert_soil_moisture_to_neutrons_uts(
             7.3282344356e-005,
             0.0000000000,
         ]
-    elif method == "Aug13_uranos_atmprof2":
+    elif koehli_method_form == "Aug13_uranos_atmprof2":
         p = [
             4.31237,
             0.020765,
@@ -548,14 +547,14 @@ soil_moisture_m3m3 = convert_neutrons_to_soil_moisture_uts(
 """
 
 
-def compute_n0_uts(
-    soil_moisture,
-    air_humidity,
-    neutron_count,
+def compute_n0_koehli_etal_2021(
+    soil_moisture: float,
+    air_humidity: float,
+    neutron_count: float,
     lattice_water=0.0,
     water_equiv_soil_organic_carbon=0.0,
-    bulk_density=1,
-    method: Literal[
+    bulk_density: float = 1,
+    koehli_method_form: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
         "Mar12_atmprof",
@@ -588,9 +587,9 @@ def compute_n0_uts(
     Parameters
     ----------
     soil_moisture : float
-        volumetric water content (cm3/cm3)
+        gravimetric water content (g/cm3)
     air_humidity : float
-        air_humidity (%?)
+        absolute air humidity (g/cm3)
     bulk_density : float
         Dry soil bulk density of the soil in grams per cubic centimeter
         e.g. 1.4 (g/cm^3)
@@ -623,13 +622,13 @@ def compute_n0_uts(
     off = lattice_water + water_equiv_soil_organic_carbon
 
     def obj_n0(n0_try):  # objective function to optimize for best n0
-        neutron_estimate = convert_soil_moisture_to_neutrons_uts(
+        neutron_estimate = soil_moisture_to_neutrons_koehli_etal_2021(
             soil_moisture=soil_moisture,
             air_humidity=air_humidity,
             n0=n0_try,
             offset=off,
-            bulk_density=bulk_density,
-            method=method,
+            dry_soil_bulk_density=bulk_density,
+            koehli_method_form=koehli_method_form,
             biomass=biomass,
         )
         error = np.abs(neutron_count - neutron_estimate)

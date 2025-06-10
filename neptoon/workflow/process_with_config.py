@@ -296,7 +296,13 @@ class ProcessWithConfig:
         data_hub.create_neutron_uncertainty_bounds()
         return data_hub
 
-    def _produce_soil_moisture_estimates(self, data_hub: CRNSDataHub):
+    def _produce_soil_moisture_estimates(
+        self,
+        data_hub: CRNSDataHub,
+        conversion_theory: Literal[
+            "desilets_etal_2010", "koehli_eta_2021"
+        ] = "desilets_etal_2010",
+    ):
         """
         produces soil moisture estimates
 
@@ -310,7 +316,25 @@ class ProcessWithConfig:
         data_hub
             updated data_hub
         """
-        data_hub.produce_soil_moisture_estimates()
+        conversion_theory = (
+            self.process_config.correction_steps.soil_moisture_estimation.method
+        )
+
+        if conversion_theory == "desilets_etal_2010":
+            data_hub.produce_soil_moisture_estimates()
+        elif conversion_theory == "koehli_etal_2021":
+            koehli_method_form = (
+                self.process_config.correction_steps.soil_moisture_estimation.koehli_method_form
+            )
+            data_hub.produce_soil_moisture_estimates(
+                conversion_theory=conversion_theory,
+                dry_soil_bulk_density=self.sensor_config.sensor_info.avg_dry_soil_bulk_density,
+                lattice_water=self.sensor_config.sensor_info.avg_lattice_water,
+                soil_organic_carbon=self.sensor_config.sensor_info.avg_soil_organic_carbon,
+                koehli_method_form=koehli_method_form,
+            )
+        # else:
+        #     raise ValueError(f"Unknown conversion method: {conversion_theory}")
         return data_hub
 
     def _create_figures(
@@ -402,6 +426,7 @@ class ProcessWithConfig:
         self,
         data_hub: CRNSDataHub,
         sensor_config: BaseConfig,
+        process_config: BaseConfig,
     ):
         """
         Calibrates the sensor producing an N0 calibration term
@@ -424,17 +449,36 @@ class ProcessWithConfig:
         )
         calib_df = pd.read_csv(calib_df_path)
         data_hub.calibration_samples_data = calib_df
-        calibration_config = CalibrationConfiguration(
-            calib_data_date_time_column_name=sensor_config.calibration.key_column_names.date_time,
-            calib_data_date_time_format=sensor_config.calibration.date_time_format,
-            profile_id_column=sensor_config.calibration.key_column_names.profile_id,
-            distance_column=sensor_config.calibration.key_column_names.radial_distance_from_sensor,
-            sample_depth_column=sensor_config.calibration.key_column_names.sample_depth,
-            soil_moisture_gravimetric_column=sensor_config.calibration.key_column_names.gravimetric_soil_moisture,
-            bulk_density_of_sample_column=sensor_config.calibration.key_column_names.bulk_density_of_sample,
-            soil_organic_carbon_column=sensor_config.calibration.key_column_names.soil_organic_carbon,
-            lattice_water_column=sensor_config.calibration.key_column_names.lattice_water,
+        neutron_conversion = (
+            process_config.correction_steps.soil_moisture_estimation
         )
+        if neutron_conversion.method == "desilets_etal_2010":
+            calibration_config = CalibrationConfiguration(
+                neutron_conversion_method="desilets_etal_2010",
+                calib_data_date_time_column_name=sensor_config.calibration.key_column_names.date_time,
+                calib_data_date_time_format=sensor_config.calibration.date_time_format,
+                profile_id_column=sensor_config.calibration.key_column_names.profile_id,
+                distance_column=sensor_config.calibration.key_column_names.radial_distance_from_sensor,
+                sample_depth_column=sensor_config.calibration.key_column_names.sample_depth,
+                soil_moisture_gravimetric_column=sensor_config.calibration.key_column_names.gravimetric_soil_moisture,
+                bulk_density_of_sample_column=sensor_config.calibration.key_column_names.bulk_density_of_sample,
+                soil_organic_carbon_column=sensor_config.calibration.key_column_names.soil_organic_carbon,
+                lattice_water_column=sensor_config.calibration.key_column_names.lattice_water,
+            )
+        elif neutron_conversion.method == "koehli_etal_2021":
+            calibration_config = CalibrationConfiguration(
+                neutron_conversion_method="koehli_etal_2021",
+                calib_data_date_time_column_name=sensor_config.calibration.key_column_names.date_time,
+                calib_data_date_time_format=sensor_config.calibration.date_time_format,
+                profile_id_column=sensor_config.calibration.key_column_names.profile_id,
+                distance_column=sensor_config.calibration.key_column_names.radial_distance_from_sensor,
+                sample_depth_column=sensor_config.calibration.key_column_names.sample_depth,
+                soil_moisture_gravimetric_column=sensor_config.calibration.key_column_names.gravimetric_soil_moisture,
+                bulk_density_of_sample_column=sensor_config.calibration.key_column_names.bulk_density_of_sample,
+                soil_organic_carbon_column=sensor_config.calibration.key_column_names.soil_organic_carbon,
+                lattice_water_column=sensor_config.calibration.key_column_names.lattice_water,
+                koehli_method_form=neutron_conversion.koehli_method_form,
+            )
         data_hub.calibrate_station(config=calibration_config)
         sensor_config = self._update_sensor_config_after_calibration(
             sensor_config, data_hub
@@ -571,15 +615,17 @@ class ProcessWithConfig:
         """
         if self.sensor_config.data_storage.create_report:
             Magazine.active = True
-
+        print("Reading in data...")
         self.data_hub = self._create_data_hub(sensor_config=self.sensor_config)
 
         # Prepare data
+        print("Collecting and attaching NMDB.eu data...")
         self.data_hub = self._attach_nmdb_data(self.data_hub)
         self.data_hub = self._prepare_static_values(self.data_hub)
         self.data_hub = self._prepare_additional_columns(self.data_hub)
         # First Quality assessment
         ## Raw Neutrons
+        print("Performing quality assessment...")
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
             sensor_config=self.sensor_config,
@@ -595,6 +641,7 @@ class ProcessWithConfig:
         )
 
         # Corrections
+        print("Correcting neutrons...")
         self.data_hub = self._select_corrections(
             data_hub=self.data_hub,
             process_config=self.process_config,
@@ -604,9 +651,12 @@ class ProcessWithConfig:
 
         # Calibration
         if self.sensor_config.calibration.calibrate:
+            print("Calibrating the sensor...")
+
             self.data_hub, self.sensor_config = self._calibrate_data(
                 data_hub=self.data_hub,
                 sensor_config=self.sensor_config,
+                process_config=self.process_config,
             )
 
         # Second QA and Smoothing
@@ -627,8 +677,12 @@ class ProcessWithConfig:
             )
 
         # Produce soil moisture estimates
+        # NOTE: print statement inside NeutronsToSM in order to state which method used
         self.data_hub = self._create_neutron_uncertainty_bounds(self.data_hub)
-        self.data_hub = self._produce_soil_moisture_estimates(self.data_hub)
+        self.data_hub = self._produce_soil_moisture_estimates(
+            self.data_hub,
+            conversion_theory=self.process_config.correction_steps.soil_moisture_estimation.method,
+        )
         if self.process_config.data_smoothing.smooth_soil_moisture:
             self.data_hub = self._smooth_data(
                 data_hub=self.data_hub,
@@ -643,6 +697,7 @@ class ProcessWithConfig:
         )
 
         # Create figures and save outputs
+        print("Creating figures...")
         self.data_hub = self._create_figures(
             data_hub=self.data_hub,
             sensor_config=self.sensor_config,
@@ -656,6 +711,7 @@ class ProcessWithConfig:
             sensor_config=self.sensor_config,
             process_config=self.process_config,
         )
+        print("Data saved.")
 
 
 class QualityAssessmentFromConfig:
@@ -863,8 +919,15 @@ class CorrectionSelectorFromConfig:
         The humidity correction was {tmp.method}.
         """
         tmp = self.process_config.correction_steps.air_humidity
-        if tmp.method is None or str(tmp.method).lower() == "none":
-            return
+        tmp_neutron_to_sm = (
+            self.process_config.correction_steps.soil_moisture_estimation
+        )
+        if (
+            tmp.method is None
+            or str(tmp.method).lower() == "none"
+            or tmp_neutron_to_sm.method == "koehli_etal_2021"
+        ):
+            return  # Don't apply correction
         if tmp.method.lower() == "rosolem_2013":
             self.data_hub.select_correction(
                 correction_type=CorrectionType.HUMIDITY,

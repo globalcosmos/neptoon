@@ -271,7 +271,7 @@ class DataQualityAssessor:
         self,
         data_frame: pd.DataFrame,
         saqc_scheme: str = "simple",
-        saqc: SaQC = None,
+        saqc: SaQC | None = None,
     ):
         """
         Parameters

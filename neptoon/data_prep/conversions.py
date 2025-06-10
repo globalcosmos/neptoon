@@ -41,9 +41,9 @@ class AbsoluteHumidityCreator:
         self.actual_vapour_pressure_col_name = actual_vapour_pressure_col_name
         self.relative_hum_col_name = relative_hum_col_name
 
-        self.check_required_columns_available()
+        # self._check_required_columns_available()
 
-    def check_required_columns_available(self):
+    def _check_required_columns_available(self):
         """
         Ensures that the required columns are available before processing.
 
@@ -62,10 +62,16 @@ class AbsoluteHumidityCreator:
             )
 
     def check_if_abs_hum_exists(self):
+        """
+        Check if absolute humidity is already in the data frame
+
+        Returns
+        -------
+        bool
+        """
         if self.absolute_hum_col_name in self.data_frame.columns:
-            raise RuntimeError(
-                f"Column {self.absolute_hum_col_name!r} already exists. Aborting to avoid overwriting."
-            )
+            abs_hum_exists = True
+            return abs_hum_exists
 
     def create_saturation_vapour_pressure_data(self):
         """
@@ -107,14 +113,19 @@ class AbsoluteHumidityCreator:
         Creates absolute humidity data whilst also creating saturation
         vapour pressure data and actual vapour pressure data.
 
+        Returns the whole dataframe with new data attached.
 
         Returns
         -------
         pd.DataFrame
             DataFrame
         """
-        self.check_if_abs_hum_exists()
-        self.create_saturation_vapour_pressure_data()
-        self.create_actual_vapour_pressure_data()
-        self.create_absolute_humidity_data()
-        return self.data_frame
+        abs_hum_exists = self.check_if_abs_hum_exists()  # returns if exists
+        if abs_hum_exists:
+            return self.data_frame
+        else:
+            self._check_required_columns_available()
+            self.create_saturation_vapour_pressure_data()
+            self.create_actual_vapour_pressure_data()
+            self.create_absolute_humidity_data()
+            return self.data_frame

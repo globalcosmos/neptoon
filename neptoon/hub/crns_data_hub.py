@@ -55,11 +55,11 @@ class CRNSDataHub:
     def __init__(
         self,
         crns_data_frame: pd.DataFrame,
-        flags_data_frame: pd.DataFrame = None,
-        sensor_info: SensorInfo = None,
-        quality_assessor: DataQualityAssessor = None,
+        flags_data_frame: pd.DataFrame | None = None,
+        sensor_info: SensorInfo | None = None,
+        quality_assessor: DataQualityAssessor | None = None,
         validation: bool = True,
-        calibration_samples_data: pd.DataFrame = None,
+        calibration_samples_data: pd.DataFrame | None = None,
     ):
         """
         Inputs to the CRNSDataHub.
@@ -202,7 +202,7 @@ class CRNSDataHub:
         new_column_name=str(ColumnInfo.Name.INCOMING_NEUTRON_INTENSITY),
         resolution="60",
         nmdb_table="revori",
-        reference_value=None,
+        reference_value: int | None = None,
     ):
         """
         Utilises the NMDBDataAttacher class to attach NMDB incoming
@@ -247,7 +247,7 @@ class CRNSDataHub:
 
     def add_quality_flags(
         self,
-        custom_flags: QualityAssessmentFlagBuilder = None,
+        custom_flags: QualityAssessmentFlagBuilder | None = None,
         add_check=None,
     ):
         """
@@ -298,7 +298,6 @@ class CRNSDataHub:
             A string representing a default version of flagging, by
             default None
         """
-
         self.quality_assessor.apply_quality_assessment()
 
         self.flags_data_frame = self.quality_assessor.return_flags_data_frame(
@@ -312,8 +311,8 @@ class CRNSDataHub:
 
     def select_correction(
         self,
-        correction_type: CorrectionType = "empty",
-        correction_theory: CorrectionTheory = None,
+        correction_type: CorrectionType | str = "empty",
+        correction_theory: CorrectionTheory | None = None,
     ):
         """
         Method to select corrections to be applied to data.
@@ -431,7 +430,7 @@ class CRNSDataHub:
         Report
         ------
         Calibration was undertaken. The N0 number was calculated as
-        {n0}. From the samples, the average dry soil bulk density is
+        {n0}, using the {config.neutron_conversion_method} method. From the samples, the average dry soil bulk density is
         {avg_dry_soil_bulk_density}, the average soil organic carbon is
         {avg_soil_organic_carbon}, and the average lattice water content
         is {avg_lattice_water}.
@@ -477,10 +476,33 @@ class CRNSDataHub:
     @Magazine.reporting(topic="Soil Moisture")
     def produce_soil_moisture_estimates(
         self,
-        n0: float = None,
-        dry_soil_bulk_density: float = None,
-        lattice_water: float = None,
-        soil_organic_carbon: float = None,
+        n0: float | None = None,
+        conversion_theory: Literal[
+            "desilets_etal_2010", "koehli_eta_2021"
+        ] = "desilets_etal_2010",
+        dry_soil_bulk_density: float | None = None,
+        lattice_water: float | None = None,
+        soil_organic_carbon: float | None = None,
+        koehli_method_form: Literal[
+            "Jan23_uranos",
+            "Jan23_mcnpfull",
+            "Mar12_atmprof",
+            "Mar21_mcnp_drf",
+            "Mar21_mcnp_ewin",
+            "Mar21_uranos_drf",
+            "Mar21_uranos_ewin",
+            "Mar22_mcnp_drf_Jan",
+            "Mar22_mcnp_ewin_gd",
+            "Mar22_uranos_drf_gd",
+            "Mar22_uranos_ewin_chi2",
+            "Mar22_uranos_drf_h200m",
+            "Aug08_mcnp_drf",
+            "Aug08_mcnp_ewin",
+            "Aug12_uranos_drf",
+            "Aug12_uranos_ewin",
+            "Aug13_uranos_atmprof",
+            "Aug13_uranos_atmprof2",
+        ] = "Mar21_uranos_drf",
     ):
         """
         Produces SM estimates with the NeutronsToSM class. If values for
@@ -507,6 +529,7 @@ class CRNSDataHub:
         soil organic carbon content of
         {default_params[soil_organic_carbon]}
         """
+        print("Producing soil moisture estimates.")
         # Create attributes for NeutronsToSM
         default_params = {
             "n0": self.sensor_info.N0,
@@ -519,6 +542,8 @@ class CRNSDataHub:
             "dry_soil_bulk_density": dry_soil_bulk_density,
             "lattice_water": lattice_water,
             "soil_organic_carbon": soil_organic_carbon,
+            "conversion_theory": conversion_theory,
+            "koehli_method_form": koehli_method_form,
         }
         params = {k: v for k, v in provided_params.items() if v is not None}
         default_params.update(params)
