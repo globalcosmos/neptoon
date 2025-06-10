@@ -615,15 +615,17 @@ class ProcessWithConfig:
         """
         if self.sensor_config.data_storage.create_report:
             Magazine.active = True
-
+        print("Reading in data...")
         self.data_hub = self._create_data_hub(sensor_config=self.sensor_config)
 
         # Prepare data
+        print("Collecting and attaching NMDB.eu data...")
         self.data_hub = self._attach_nmdb_data(self.data_hub)
         self.data_hub = self._prepare_static_values(self.data_hub)
         self.data_hub = self._prepare_additional_columns(self.data_hub)
         # First Quality assessment
         ## Raw Neutrons
+        print("Performing quality assessment...")
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
             sensor_config=self.sensor_config,
@@ -639,6 +641,7 @@ class ProcessWithConfig:
         )
 
         # Corrections
+        print("Correcting neutrons...")
         self.data_hub = self._select_corrections(
             data_hub=self.data_hub,
             process_config=self.process_config,
@@ -648,6 +651,7 @@ class ProcessWithConfig:
 
         # Calibration
         if self.sensor_config.calibration.calibrate:
+            print("Calibrating the sensor...")
 
             self.data_hub, self.sensor_config = self._calibrate_data(
                 data_hub=self.data_hub,
@@ -673,6 +677,7 @@ class ProcessWithConfig:
             )
 
         # Produce soil moisture estimates
+        # NOTE: print statement inside NeutronsToSM in order to state which method used
         self.data_hub = self._create_neutron_uncertainty_bounds(self.data_hub)
         self.data_hub = self._produce_soil_moisture_estimates(
             self.data_hub,
@@ -692,6 +697,7 @@ class ProcessWithConfig:
         )
 
         # Create figures and save outputs
+        print("Creating figures...")
         self.data_hub = self._create_figures(
             data_hub=self.data_hub,
             sensor_config=self.sensor_config,
@@ -705,6 +711,7 @@ class ProcessWithConfig:
             sensor_config=self.sensor_config,
             process_config=self.process_config,
         )
+        print("Data saved.")
 
 
 class QualityAssessmentFromConfig:
