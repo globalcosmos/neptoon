@@ -15,6 +15,7 @@ from neptoon.logging import get_logger
 
 core_logger = get_logger()
 
+
 def _get_config_section(
     configuration_object: ConfigurationManager,
     wanted_config: Literal["sensor", "process"],
@@ -65,6 +66,7 @@ def _return_config(
         wanted_config=config_to_return,
     )
 
+
 def _return_config(
     path_to_config,
     config_to_return: Literal["sensor", "process"],
@@ -88,6 +90,7 @@ def _return_config(
         configuration_object=configuration_object,
         wanted_config=config_to_return,
     )
+
 
 class DataHubFromConfig:
     """
@@ -316,4 +319,3 @@ class DataHubFromConfig:
             crns_data_frame=self._import_data(),
             sensor_info=self.sensor_config.sensor_info,
         )
-
