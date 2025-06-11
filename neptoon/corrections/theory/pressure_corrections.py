@@ -27,7 +27,7 @@ def calc_pressure_correction_beta_coeff(
     Parameters
     ----------
     current_pressure : float
-        Current atmospheric pressure at the site in pascals (Pa).
+        Current atmospheric pressure at the site in hectopascals (hPa).
     reference_pressure : float
         Reference atmospheric pressure, typically a long-term average at
         the site, in pascals (Pa) to keep correction factors around 1
