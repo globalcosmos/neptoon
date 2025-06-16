@@ -626,6 +626,14 @@ class ProcessWithConfig:
         # First Quality assessment
         ## Raw Neutrons
         print("Performing quality assessment...")
+
+        if hasattr(self.sensor_config, "neutron_quality_assessment"):
+            self.data_hub = self._apply_quality_assessment(
+                data_hub=self.data_hub,
+                sensor_config=self.sensor_config,
+                partial_config=self.sensor_config.neutron_quality_assessment,
+                name_of_target="raw_neutrons",
+            )
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
             sensor_config=self.sensor_config,

@@ -241,6 +241,19 @@ class SpikeUniLOF(BaseConfig):
     )
 
 
+class SpikeZScore(BaseConfig):
+    periods_in_calculation: Optional[int] = 20
+    threshold: Optional[float] = 1.5
+    centered: Optional[bool] = False
+
+
+class SpikeOffset(BaseConfig):
+    tolerance: Optional[float] = None
+    window: Optional[int | str] = "12h"
+    threshold: Optional[float] = None
+    threshold_relative: Optional[float] = None
+
+
 class GreaterThanN0(BaseConfig):
 
     percent_maximum: float = Field(
@@ -269,6 +282,8 @@ class QAColumnConfig(BaseConfig):
     flag_range: Optional[FlagRange] = None
     persistance_check: Optional[PersistenceCheck] = None
     spike_uni_lof: Optional[SpikeUniLOF] = None
+    spike_zscore: Optional[SpikeZScore] = None
+    spike_offset: Optional[SpikeOffset] = None
     greater_than_N0: Optional[GreaterThanN0] = None
     below_N0_factor: Optional[BelowN0Factor] = None
 
@@ -334,11 +349,19 @@ class FiguresConfig(BaseConfig):
     )
 
 
+class NeutronQualityAssessment(BaseConfig):
+    """Quality assessment configuration for Neutrons"""
+
+    raw_neutrons: Optional[QAColumnConfig] = Field(default=None)
+    corrected_neutrons: Optional[QAColumnConfig] = Field(default=None)
+
+
 class SensorConfig(BaseConfig):
     """Top-level configuration."""
 
     sensor_info: SensorInfo
     time_series_data: Optional[TimeSeriesData] = None
+    neutron_quality_assessment: Optional[NeutronQualityAssessment] = None
     input_data_qa: Optional[QAConfig] = None
     soil_moisture_qa: Optional[SoilMoistureQA] = None
     raw_data_parse_options: Optional[RawDataParseConfig] = None
@@ -350,13 +373,6 @@ class SensorConfig(BaseConfig):
 ####################
 ## Process Config ##
 ####################
-
-
-class NeutronQualityAssessment(BaseConfig):
-    """Quality assessment configuration for Neutrons"""
-
-    raw_neutrons: QAColumnConfig
-    corrected_neutrons: QAColumnConfig
 
 
 class ReferenceNeutronMonitor(BaseModel):
