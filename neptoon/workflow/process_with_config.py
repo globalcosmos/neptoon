@@ -965,12 +965,12 @@ class CorrectionSelectorFromConfig:
                 correction_type=CorrectionType.INCOMING_INTENSITY,
                 correction_theory=CorrectionTheory.HAWDON_2014,
             )
-        elif tmp.method.lower() == "zreda_2012:":
+        elif tmp.method.lower() == "zreda_2012":
             self.data_hub.select_correction(
                 correction_type=CorrectionType.INCOMING_INTENSITY,
                 correction_theory=CorrectionTheory.ZREDA_2012,
             )
-        elif tmp.method.lower() == "mcjannet_desilets_2023:":
+        elif tmp.method.lower() == "mcjannet_desilets_2023":
             self.data_hub.select_correction(
                 correction_type=CorrectionType.INCOMING_INTENSITY,
                 correction_theory=CorrectionTheory.MCJANNET_DESILETS_2023,
