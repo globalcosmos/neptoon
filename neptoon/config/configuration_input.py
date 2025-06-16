@@ -454,7 +454,7 @@ class IncomingRadiationCorrection(BaseModel):
     method: Literal[
         "zreda_2012",
         "hawdon_2014",
-        "mcjannet_desilets_2024",
+        "mcjannet_desilets_2023",
     ] = Field(description="Incoming radiation correction method")
 
     reference_neutron_monitor: ReferenceNeutronMonitor = Field(
