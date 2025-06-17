@@ -490,8 +490,8 @@ class SmoothingAlgorithmSettings(BaseModel):
     algorithm: Literal["savitsky_golay", "rolling_mean"] = Field(
         default="savitsky_golay", description="Smoothing algorithm to apply"
     )
-    window: int = Field(
-        default=12, description="Window size for smoothing", gt=0
+    window: str = Field(
+        default="12h", description="Temporal size of window for smoothing"
     )
     poly_order: Optional[int] = Field(
         default=4,

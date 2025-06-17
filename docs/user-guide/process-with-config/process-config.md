@@ -78,8 +78,8 @@ The process configuration file tells neptoon about the sensor being processed. T
 | smooth_corrected_neutrons | Yes | boolean | `true` | Enable smoothing for corrected neutron counts |
 | smooth_soil_moisture | Yes | boolean | `false` | Enable smoothing for soil moisture data |
 | settings.algorithm | Yes | string | `"rolling_mean"` | Smoothing algorithm selection |
-| settings.window | Yes | integer | `12` | Window size for smoothing operation |
-| settings.poly_order | Yes | integer | `4` | Polynomial order for Savitzky-Golay filter |
+| settings.window | Yes | string | `12h` or `12hours` or `1day` or `1d` or `30min` or `30m` | Window size for smoothing operation, provided as a string which neptoon will automatically parse into a timedelta window |
+| settings.poly_order | Yes | integer | `4` | Polynomial order for Savitzky-Golay filter (Currently not used)|
 
 !!! note "Additional Information"
-    - The smoothing algorithm supports only `rolling_mean` until a future update
+    - The smoothing algorithm supports only `rolling_mean` until a future update. 
