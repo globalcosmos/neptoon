@@ -16,6 +16,9 @@ from neptoon.corrections.theory.neutrons_to_soil_moisture import (
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 
 
+def _create_water_equiv_soc(soil_organic_carbon: float):
+            return soil_organic_carbon * 0.555
+
 class CalibrationConfiguration:
     """
     Configuration class for calibration steps
@@ -157,7 +160,10 @@ class CalibrationConfiguration:
         self.value_avg_lattice_water = value_avg_lattice_water
         self.value_avg_bulk_density = value_avg_bulk_density
         self.value_avg_soil_organic_carbon = value_avg_soil_organic_carbon
+        self.value_avg_soil_organic_carbon_water_equiv = _create_water_equiv_soc(value_avg_soil_organic_carbon)
         self.koehli_method_form = koehli_method_form
+
+
 
 
 class CalibrationStation:
@@ -306,15 +312,15 @@ class SampleProfile:
         self.soil_moisture_gravimetric = np.array(soil_moisture_gravimetric)
         self.depth = np.array(depth)
         self.bulk_density = np.array(bulk_density)
-        # self.bulk_density_mean = np.array(bulk_density).mean()
         self.site_avg_bulk_density = site_avg_bulk_density
         self.calibration_day = calibration_day
         self.soil_organic_carbon = (
             np.array(soil_organic_carbon)
-            if soil_organic_carbon is None
+            if soil_organic_carbon is not None
             else np.zeros_like(soil_moisture_gravimetric)
         )
         self.site_avg_organic_carbon = site_avg_organic_carbon
+        self.site_avg_organic_carbon_water_equiv = _create_water_equiv_soc(site_avg_organic_carbon)
         self.lattice_water = self.lattice_water = (
             np.array(lattice_water)
             if lattice_water is not None
@@ -341,11 +347,15 @@ class SampleProfile:
         """
         Calculate total volumetric soil moisture.
         """
+        if np.isnan(self.bulk_density):
+            bulk_density = self.site_avg_bulk_density
+        else:
+            bulk_density = self.bulk_density
         sm_total_vol = (
             self.soil_moisture_gravimetric
             + self.site_avg_lattice_water
-            + self.site_avg_organic_carbon * 0.555
-        ) * self.site_avg_bulk_density
+            + self.site_avg_organic_carbon_water_equiv  
+        ) * bulk_density 
         self.sm_total_vol = sm_total_vol
 
     def _calculate_sm_total_grv(self):
@@ -355,7 +365,7 @@ class SampleProfile:
         sm_total_grv = (
             self.soil_moisture_gravimetric
             + self.site_avg_lattice_water
-            + self.site_avg_organic_carbon * 0.555
+            + self.site_avg_organic_carbon_water_equiv 
         )
         self.sm_total_grv = sm_total_grv
 
@@ -494,12 +504,15 @@ class PrepareCalibrationData:
         bulk_density = profile_data_frame[
             self.config.bulk_density_of_sample_column
         ]
+
         soil_moisture_gravimetric = profile_data_frame[
             self.config.soil_moisture_gravimetric_column
         ]
+
         soil_organic_carbon = profile_data_frame[
             self.config.soil_organic_carbon_column
         ]
+
         lattice_water = profile_data_frame[self.config.lattice_water_column]
         # only need one calibration datetime
         calibration_datetime = profile_data_frame[
@@ -520,25 +533,159 @@ class PrepareCalibrationData:
         )
         return soil_profile
 
+    def _create_site_avg_bulk_density(self):
+        """
+        Produces a average bulk density from provided sample data, if
+        not available uses user provided average, if thats not available
+        raises error
+
+        Returns
+        -------
+        float
+            site average bulk density
+
+        Raises
+        ------
+        ValueError
+            No bulk density provided
+        """
+        if (
+            self.config.bulk_density_of_sample_column
+            not in self.calibration_data_frame.columns
+        ):
+            message = (
+                "There appears to be no bulk density data in the calibration sample dataset. "
+                "Attempting to use the provided site average..."
+            )
+            print(message)
+            if self.config.value_avg_bulk_density is None:
+                message = (
+                    "There is no provided site average bulk density value. Please provide this "
+                    "in sensor configuration files (if using configs), SensorInformation (if using notebooks)"
+                    "or CalibrationConfiguration (if using calibration module directly.)"
+                )
+                raise ValueError(message)
+            else:
+                message = "Using the provided site average bulk density value."
+                print(message)
+
+        else:
+            message = "Calculating site average bulk density from provided sample data."
+            print(message)
+            return self.calibration_data_frame[
+                self.config.bulk_density_of_sample_column
+            ].mean()
+
+    def _create_site_avg_lattice_water(self):
+        """
+        Produces a average lattice water from provided sample data, if
+        not available uses user provided average, if thats not available
+        raises error
+
+        Returns
+        -------
+        float
+            site average lattice water
+
+        Raises
+        ------
+        ValueError
+            No lattice water provided
+        """
+        if (
+            self.config.lattice_water_column
+            not in self.calibration_data_frame.columns
+        ):
+            message = (
+                "There appears to be no lattice water data in the calibration sample dataset. "
+                "Attempting to use the provided site average..."
+            )
+            print(message)
+            if self.config.value_avg_lattice_water is None:
+                message = (
+                    "There is no provided site average lattice water value. Please provide this "
+                    "in sensor configuration files (if using configs), SensorInformation (if using notebooks)"
+                    "or CalibrationConfiguration (if using calibration module directly.)\n"
+                    "NOTE: If you don't know, use 0"
+                )
+                raise ValueError(message)
+            else:
+                message = (
+                    "Using the provided site average lattice water value."
+                )
+                print(message)
+
+        else:
+            message = "Calculating site average lattice water from provided sample data."
+            print(message)
+            return self.calibration_data_frame[
+                self.config.lattice_water_column
+            ].mean()
+
+    def _create_site_avg_soil_organic_carbon(self):
+        """
+        Produces a average soil_organic_carbon from provided sample
+        data, if not available uses user provided average, if thats not
+        available raises error
+
+        Returns
+        -------
+        float
+            site average soil_organic_carbon
+
+        Raises
+        ------
+        ValueError
+            No soil_organic_carbon provided
+        """
+        if (
+            self.config.soil_organic_carbon_column
+            not in self.calibration_data_frame.columns
+        ):
+            message = (
+                "There appears to be no soil_organic_carbon data in the calibration sample dataset. "
+                "Attempting to use the provided site average..."
+            )
+            print(message)
+            if self.config.value_avg_soil_organic_carbon is None:
+                message = (
+                    "There is no provided site average soil_organic_carbon value. Please provide this "
+                    "in sensor configuration files (if using configs), SensorInformation (if using notebooks)"
+                    "or CalibrationConfiguration (if using calibration module directly.)\n"
+                    "NOTE: If you don't know, use 0"
+                )
+                raise ValueError(message)
+            else:
+                message = "Using the provided site average soil_organic_carbon value."
+                print(message)
+
+        else:
+            message = "Calculating site average soil_organic_carbon from provided sample data."
+            print(message)
+
+            soil_organic_carbon = self.calibration_data_frame[
+                self.config.soil_organic_carbon_column
+            ].mean()
+
     def prepare_calibration_data(self):
         """
         Prepares the calibration data into a list of profiles.
         """
-        self.config.value_avg_bulk_density = self.calibration_data_frame[
-            self.config.bulk_density_of_sample_column
-        ].mean()
 
-        self.config.value_avg_lattice_water = self.calibration_data_frame[
-            self.config.lattice_water_column
-        ].mean()
-        if np.isnan(self.config.value_avg_lattice_water):
-            self.config.value_avg_lattice_water = 0
+        self.config.value_avg_bulk_density = (
+            self._create_site_avg_bulk_density()
+        )
+
+        self.config.value_avg_lattice_water = (
+            self._create_site_avg_lattice_water()
+        )
 
         self.config.value_avg_soil_organic_carbon = (
             self.calibration_data_frame[
                 self.config.soil_organic_carbon_column
             ].mean()
         )
+
         if np.isnan(self.config.value_avg_soil_organic_carbon):
             self.config.value_avg_soil_organic_carbon = 0
 
@@ -549,6 +696,7 @@ class PrepareCalibrationData:
                 single_day_data_frame=data_frame,
                 site_avg_bulk_density=self.config.value_avg_bulk_density,
                 site_avg_organic_carbon=self.config.value_avg_soil_organic_carbon,
+                site_avg_organic_carbon_water_equiv
                 site_avg_lattice_water=self.config.value_avg_lattice_water,
             )
             self.list_of_profiles.extend(calibration_day_profiles)
@@ -822,8 +970,8 @@ class CalibrationWeightsCalculator:
     def calculate_weighted_sm_average(
         self,
         profiles: List,
-        initial_sm_estimate: float,
-        average_air_humidity: float,
+        initial_volumetric_sm_estimate: float,
+        average_abs_air_humidity: float,
         average_air_pressure: float,
     ):
         """
@@ -844,7 +992,7 @@ class CalibrationWeightsCalculator:
                 g/g)
         initial_sm_estimate : float
             Initial soil moisture estimate (usually equal average)
-        average_air_humidity : float
+        average_abs_air_humidity : float
             Average absolute air humidity
         average_air_pressure : float
             Air pressure average during calibration period (hPa)
@@ -871,7 +1019,7 @@ class CalibrationWeightsCalculator:
 
         """
 
-        sm_estimate = copy.deepcopy(initial_sm_estimate)
+        volumetric_sm_estimate = copy.deepcopy(initial_volumetric_sm_estimate)
         accuracy = 1
         field_average_sm_volumetric = None
         field_average_sm_gravimetric = None
@@ -886,19 +1034,19 @@ class CalibrationWeightsCalculator:
                 p.rescaled_distance = Schroen2017.rescale_distance(
                     distance=p.rescaled_distance,
                     pressure=average_air_pressure,
-                    soil_moisture=sm_estimate,
+                    volumetric_soil_moisture=volumetric_sm_estimate,
                 )
 
                 p.D86 = Schroen2017.calculate_measurement_depth(
                     distance=p.rescaled_distance,
                     bulk_density=p.site_avg_bulk_density,
-                    soil_moisture=sm_estimate,
+                    volumetric_soil_moisture=volumetric_sm_estimate,
                 )
 
                 p.vertical_weights = Schroen2017.vertical_weighting(
                     p.depth,
                     bulk_density=p.site_avg_bulk_density,
-                    soil_moisture=sm_estimate,
+                    volumetric_soil_moisture=volumetric_sm_estimate,
                 )
 
                 # Calculate weighted sm average
@@ -911,8 +1059,8 @@ class CalibrationWeightsCalculator:
 
                 p.horizontal_weight = Schroen2017.horizontal_weighting(
                     distance=p.rescaled_distance,
-                    soil_moisture=p.sm_total_weighted_avg_vol,
-                    air_humidity=average_air_humidity,
+                    volumetric_soil_moisture=p.sm_total_weighted_avg_vol,
+                    abs_air_humidity=average_abs_air_humidity,
                 )
 
                 # create a list of average sm and horizontal weights
@@ -951,18 +1099,21 @@ class CalibrationWeightsCalculator:
 
             # check convergence accuracy
             accuracy = abs(
-                (field_average_sm_volumetric - sm_estimate) / sm_estimate
+                (field_average_sm_volumetric - volumetric_sm_estimate)
+                / volumetric_sm_estimate
             )
             if accuracy > self.config.converge_accuracy:
 
-                sm_estimate = copy.deepcopy(field_average_sm_volumetric)
+                volumetric_sm_estimate = copy.deepcopy(
+                    field_average_sm_volumetric
+                )
                 profile_sm_averages_volumetric = []
                 profile_sm_averages_gravimetric = []
                 profiles_horizontal_weights = []
 
         footprint_m = Schroen2017.calculate_footprint_radius(
-            soil_moisture=field_average_sm_volumetric,
-            air_humidity=average_air_humidity,
+            volumetric_soil_moisture=field_average_sm_volumetric,
+            abs_air_humidity=average_abs_air_humidity,
             pressure=average_air_pressure,
         )
 
@@ -998,6 +1149,8 @@ class CalibrationWeightsCalculator:
         self,
         gravimetric_sm_on_day,
         neutron_mean,
+        lattice_water: float = 0,
+        water_equiv_soil_organic_carbon: float = 0,
     ):
         """
         Finds optimal N0 number when using desilets et al., 2010 method
@@ -1008,6 +1161,10 @@ class CalibrationWeightsCalculator:
             gravimetric soil moisture (weighted)
         neutron_mean : float
             average (corrected) neutron count
+        lattice_water : float
+            lattice water
+        water_equiv_soil_organic_carbon : float
+            water_equiv_soil_organic_carbon
 
         Returns
         -------
@@ -1019,7 +1176,10 @@ class CalibrationWeightsCalculator:
 
         def calculate_sm_and_error(n0):
             sm_prediction = neutrons_to_grav_sm_desilets_etal_2010(
-                neutrons=neutron_mean, n0=n0
+                neutrons=neutron_mean,
+                n0=n0,
+                lattice_water=lattice_water,
+                water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
             )
             absolute_error = abs(sm_prediction - gravimetric_sm_on_day)
             return pd.Series(
@@ -1072,7 +1232,7 @@ class CalibrationWeightsCalculator:
             The N0 calibration term and absolute error (dummy nan value)
         """
         n0 = compute_n0_koehli_etal_2021(
-            soil_moisture=gravimetric_sm_on_day,
+            gravimetric_sm=gravimetric_sm_on_day,
             neutron_count=neutron_mean,
             air_humidity=abs_air_humidity,
             lattice_water=lattice_water,
@@ -1107,6 +1267,8 @@ class CalibrationWeightsCalculator:
                     self._find_optimal_N0_single_day_desilets_etal_2010(
                         gravimetric_sm_on_day=grav_sm,
                         neutron_mean=neutron_mean,
+                        lattice_water=self.config.value_avg_lattice_water,
+                        water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
                     )
                 )
 
@@ -1117,7 +1279,7 @@ class CalibrationWeightsCalculator:
                         neutron_mean=neutron_mean,
                         abs_air_humidity=metrics["absolute_air_humidity"],
                         lattice_water=self.config.value_avg_lattice_water,
-                        water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon,
+                        water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
                         bulk_density=self.config.value_avg_bulk_density,
                         koehli_method_form=self.config.koehli_method_form,
                     )

@@ -9,6 +9,8 @@ def neutrons_to_grav_sm_desilets_etal_2010(
     a0=0.0808,
     a1=0.372,
     a2=0.115,
+    lattice_water=0,
+    water_equiv_soil_organic_carbon=0,
 ):
     """
     Converts neutrons to gravimetric soil moisture following the
@@ -32,7 +34,12 @@ def neutrons_to_grav_sm_desilets_etal_2010(
     float
         calculated gravimetric soil moisture value g/g
     """
-    return a0 / (neutrons / n0 - a1) - a2
+    return (
+        a0 / (neutrons / n0 - a1)
+        - a2
+        - lattice_water
+        - water_equiv_soil_organic_carbon
+    )
 
 
 def neutrons_to_vol_soil_moisture_desilets_etal_2010(
@@ -116,23 +123,27 @@ def reformulated_neutrons_to_vol_soil_moisture_desilets_2010(
         Lattice water - decimal percent e.g. 0.002
     water_equiv_soil_organic_carbon : float
         Water equivelant soil organic carbon - decimal percent e.g, 0.02
+
+    Returns
+    -------
+    volumetric_sm : float
+        Volumetric soil moisture
     """
     nmax = n0 * ((a0 + (a1 * a2)) / (a2))
     ah0 = -a2
     ah1 = (a1 * a2) / (a0 + (a1 * a2))
-    sm = (
+    volumetric_sm = (
         (ah0 * ((1 - (neutron_count / nmax)) / (ah1 - (neutron_count / nmax))))
         - lattice_water
         - water_equiv_soil_organic_carbon
     ) * dry_soil_bulk_density
-    return sm
+    return volumetric_sm
 
 
-def neutrons_to_vol_soil_moisture_koehli_etal_2021(
+def neutrons_to_grav_soil_moisture_koehli_etal_2021(
     neutron_count: float,
     n0: float,
     air_humidity: float,
-    dry_soil_bulk_density: float = 1.42,
     lattice_water: float = 0.0,
     water_equiv_soil_organic_carbon: float = 0.0,
     koehli_method_form: Literal[
@@ -172,9 +183,6 @@ def neutrons_to_vol_soil_moisture_koehli_etal_2021(
         N0 calibration term
     air_humidity : float
          relative air humidity (%)
-    dry_soil_bulk_density : float
-        dry soil bulk density of the soil in grams per cubic centimer
-        e.g. 1.4 (g/cm^3)
     lattice_water : float
         lattice water - decimal percent e.g. 0.002
     water_equiv_soil_organic_carbon : float
@@ -190,31 +198,31 @@ def neutrons_to_vol_soil_moisture_koehli_etal_2021(
     if pd.isna(neutron_count) or pd.isna(air_humidity):
         return np.nan
 
-    soil_moisture_0 = 0.0
-    soil_moisture_1 = 2.0
-    while soil_moisture_1 - soil_moisture_0 > 0.0001:
-        soil_moisture_2 = (0.5 * soil_moisture_0) + (0.5 * soil_moisture_1)
-        n2 = soil_moisture_to_neutrons_koehli_etal_2021(
-            soil_moisture=soil_moisture_2,
+    gravimetric_soil_moisture_0 = 0.0
+    gravimetric_soil_moisture_1 = 2.0
+    while gravimetric_soil_moisture_1 - gravimetric_soil_moisture_0 > 0.0001:
+        gravimetric_soil_moisture_2 = (0.5 * gravimetric_soil_moisture_0) + (
+            0.5 * gravimetric_soil_moisture_1
+        )
+        n2 = gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
+            gravimetric_sm=gravimetric_soil_moisture_2,
             air_humidity=air_humidity,
             n0=n0,
             koehli_method_form=koehli_method_form,
             offset=lattice_water + water_equiv_soil_organic_carbon,
-            dry_soil_bulk_density=dry_soil_bulk_density,
         )
         if neutron_count < n2:
-            soil_moisture_0 = soil_moisture_2
+            gravimetric_soil_moisture_0 = gravimetric_soil_moisture_2
         else:
-            soil_moisture_1 = soil_moisture_2
-    return soil_moisture_2
+            gravimetric_soil_moisture_1 = gravimetric_soil_moisture_2
+    return gravimetric_soil_moisture_2
 
 
-def soil_moisture_to_neutrons_koehli_etal_2021(
-    soil_moisture: float,
+def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
+    gravimetric_sm: float,
     air_humidity: float,
     n0: float,
     offset: float = 0.0,
-    dry_soil_bulk_density: float = 1.0,
     koehli_method_form: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
@@ -245,8 +253,8 @@ def soil_moisture_to_neutrons_koehli_etal_2021(
 
     Parameters
     ----------
-    soil_moisture : float
-        soil moisture volumetric g/cm^3
+    gravimetric_sm : float
+        soil moisture gravimetric g/g
     air_humidity : float
         air humidity at the site (%) e.g., 50
     n0 : float
@@ -263,8 +271,7 @@ def soil_moisture_to_neutrons_koehli_etal_2021(
 
     """
 
-    soil_moisture_total = soil_moisture + offset
-    soil_moisture_total *= 1.43 / dry_soil_bulk_density
+    soil_moisture_total = gravimetric_sm + offset
     if soil_moisture_total == 0.0:
         soil_moisture_total = 0.001
     p = []
@@ -548,7 +555,7 @@ soil_moisture_m3m3 = convert_neutrons_to_soil_moisture_uts(
 
 
 def compute_n0_koehli_etal_2021(
-    soil_moisture: float,
+    gravimetric_sm: float,
     air_humidity: float,
     neutron_count: float,
     lattice_water=0.0,
@@ -586,7 +593,7 @@ def compute_n0_koehli_etal_2021(
 
     Parameters
     ----------
-    soil_moisture : float
+    gravimetric_sm : float
         gravimetric water content (g/cm3)
     air_humidity : float
         absolute air humidity (g/cm3)
@@ -622,14 +629,16 @@ def compute_n0_koehli_etal_2021(
     off = lattice_water + water_equiv_soil_organic_carbon
 
     def obj_n0(n0_try):  # objective function to optimize for best n0
-        neutron_estimate = soil_moisture_to_neutrons_koehli_etal_2021(
-            soil_moisture=soil_moisture,
-            air_humidity=air_humidity,
-            n0=n0_try,
-            offset=off,
-            dry_soil_bulk_density=bulk_density,
-            koehli_method_form=koehli_method_form,
-            biomass=biomass,
+        neutron_estimate = (
+            gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
+                gravimetric_sm=gravimetric_sm,
+                air_humidity=air_humidity,
+                n0=n0_try,
+                offset=off,
+                dry_soil_bulk_density=bulk_density,
+                koehli_method_form=koehli_method_form,
+                biomass=biomass,
+            )
         )
         error = np.abs(neutron_count - neutron_estimate)
         return np.mean(error)
