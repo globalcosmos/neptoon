@@ -2,8 +2,6 @@ import pandas as pd
 import tarfile
 import tempfile
 import atexit
-import re
-from datetime import timedelta
 from dataclasses import dataclass
 from enum import Enum, auto
 import zipfile
@@ -12,7 +10,10 @@ from pathlib import Path
 from typing import Union, Literal, List, Optional
 
 from neptoon.logging import get_logger
-from neptoon.utils.general_utils import validate_and_convert_file_path
+from neptoon.utils.general_utils import (
+    validate_and_convert_file_path,
+    parse_resolution_to_timedelta,
+)
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import (
     ConfigurationManager,
@@ -828,11 +829,15 @@ class InputDataFrameFormattingConfig:
               columns based on predefined priority.
         """
         self.path_to_config = validate_and_convert_file_path(path_to_config)
-        self._input_resolution = self.parse_resolution(input_resolution)
+        self._input_resolution = parse_resolution_to_timedelta(
+            input_resolution
+        )
         self._conversion_factor_to_counts_per_hour = (
             self.get_conversion_factor()
         )
-        self._output_resolution = self.parse_resolution(output_resolution)
+        self._output_resolution = parse_resolution_to_timedelta(
+            output_resolution
+        )
         self.aggregate_method = aggregate_method
         self.aggregate_func = aggregate_func
         self.aggregate_maxna_fraction = aggregate_maxna_fraction
@@ -867,7 +872,7 @@ class InputDataFrameFormattingConfig:
         value : str
             Time resolution
         """
-        self._input_resolution = self.parse_resolution(value)
+        self._input_resolution = parse_resolution_to_timedelta(value)
         self._conversion_factor_to_counts_per_hour = (
             self.get_conversion_factor()
         )
@@ -886,7 +891,7 @@ class InputDataFrameFormattingConfig:
         value : str
             output resolution e.g., '1hour' or '15mins'
         """
-        self._output_resolution = self.parse_resolution(value)
+        self._output_resolution = parse_resolution_to_timedelta(value)
 
     @property
     def conversion_factor_to_counts_per_hour(self):
@@ -895,62 +900,6 @@ class InputDataFrameFormattingConfig:
     @conversion_factor_to_counts_per_hour.setter
     def conversion_factor_to_counts_per_hour(self, value):
         self._conversion_factor_to_counts_per_hour = value
-
-    def parse_resolution(
-        self,
-        resolution_str: str,
-    ):
-        """
-        Parse a string representation of a time resolution and convert
-        it to a timedelta object.
-
-        This method takes a string describing a time resolution (e.g.,
-        "30 minutes", "2 hours", "1 day") and converts it into a Python
-        timedelta object. It supports minutes, hours, and days as units.
-
-        Parameters
-        ----------
-        resolution_str : str
-            A string representing the time resolution. The format should
-            be "<number> <unit>", where <number> is a positive integer
-            and <unit> is one of the following: - For minutes: "min",
-            "minute", "minutes" - For hours: "hour", "hours", "hr",
-            "hrs" - For days: "day", "days" The parsing is
-            case-insensitive.
-
-        Returns
-        -------
-        datetime.timedelta
-            A timedelta object representing the parsed time resolution.
-
-        Raises
-        ------
-        ValueError
-            If the resolution string format is invalid or cannot be
-            parsed.
-        ValueError
-            If an unsupported time unit is provided.
-        """
-
-        pattern = re.compile(r"(\d+)\s*([a-zA-Z]+)")
-        match = pattern.match(resolution_str.strip())
-
-        if not match:
-            raise ValueError(f"Invalid resolution format: {resolution_str}")
-
-        value, unit = match.groups()
-        value = int(value)
-
-        if unit.lower() in ["min", "mins", "minute", "minutes"]:
-            return timedelta(minutes=value)
-        elif unit.lower() in ["hour", "hours", "hr", "hrs"]:
-            return timedelta(hours=value)
-        elif unit.lower() in ["day", "days"]:
-            return timedelta(days=value)
-        else:
-            message = f"Unsupported time unit: {unit}"
-            core_logger.error(message)
-            raise ValueError(message)
 
     def get_conversion_factor(self):
         """
