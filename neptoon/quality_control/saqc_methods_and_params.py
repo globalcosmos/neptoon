@@ -300,7 +300,6 @@ class QAConfigRegistry:
         "air_relative_humidity": QATarget.RELATIVE_HUMIDITY,
         "air_pressure": QATarget.AIR_PRESSURE,
         "temperature": QATarget.TEMPERATURE,
-        "soil_moisture_volumetric": QATarget.SOIL_MOISTURE_VOL,
         "soil_moisture": QATarget.SOIL_MOISTURE_VOL,
     }
 

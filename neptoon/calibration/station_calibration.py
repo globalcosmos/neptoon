@@ -242,32 +242,6 @@ class SampleProfile:
 
     latest_pid = 0
 
-    __slots__ = [
-        # Input
-        "pid",  # arbitrary profile id
-        "soil_moisture_gravimetric",  # soil moisture values in g/g
-        "sm_total_grv",  # soil moisture values in g/g
-        "sm_total_vol",  # soil moisture values in g/g
-        "depth",  # depth values in cm
-        "bulk_density",  # bulk density
-        "bulk_density_mean",
-        "site_avg_bulk_density",
-        "_distance",  # distance from the CRNS in m
-        "lattice_water",  # lattice water in g/g
-        "site_avg_lattice_water",
-        "soil_organic_carbon",  # soil organic carbon in g/g
-        "site_avg_organic_carbon",
-        "calibration_day",  # the calibration day for the sample - datetime
-        # Calculated
-        "D86",  # penetration depth
-        "horizontal_weight",  # radial weight of this profile
-        "sm_total_weighted_avg_vol",  # vertically weighted average sm
-        "sm_total_weighted_avg_grv",  # vertically weighted average sm
-        "vertical_weights",
-        "rescaled_distance",
-        "data",  # DataFrame
-    ]
-
     def __init__(
         self,
         soil_moisture_gravimetric,
