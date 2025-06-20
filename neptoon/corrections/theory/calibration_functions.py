@@ -316,7 +316,7 @@ class Schroen2017:
 
     @staticmethod
     def rescale_distance(
-        distance_from_sensor_m,
+        distance_from_sensor,
         atmospheric_pressure=1013.25,
         height_veg=0,
         volumetric_soil_moisture=0.1,
@@ -327,7 +327,7 @@ class Schroen2017:
 
         Parameters
         ----------
-        distance : float
+        distance_from_sensor : float
             Distance from the sensor in meters (m)
         pressure : float
             Pressure at the site in hectopascals (hPa)
@@ -346,7 +346,7 @@ class Schroen2017:
         F_veg = 1 - 0.17 * (1 - np.exp(-0.41 * height_veg)) * (
             1 + np.exp(-9.25 * volumetric_soil_moisture)
         )
-        rescaled_distance = distance_from_sensor_m * F_p * F_veg
+        rescaled_distance = distance_from_sensor * F_p * F_veg
         return rescaled_distance
 
     @staticmethod

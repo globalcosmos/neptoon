@@ -1,7 +1,7 @@
 from neptoon.products.estimate_sm import NeutronsToSM
 from neptoon.columns import ColumnInfo
 from neptoon.corrections.theory.neutrons_to_soil_moisture import (
-    neutrons_to_vol_soil_moisture_koehli_etal_2021,
+    neutrons_to_grav_soil_moisture_koehli_etal_2021,
 )
 import pytest
 import pandas as pd
@@ -168,10 +168,10 @@ def test_koehli_method_nans_not_processed():
     """
     Tests if the koehli method will process a nan value
     """
-    nan_neut = neutrons_to_vol_soil_moisture_koehli_etal_2021(
+    nan_neut = neutrons_to_grav_soil_moisture_koehli_etal_2021(
         neutron_count=np.nan, n0=2000, air_humidity=8
     )
-    nan_hum = neutrons_to_vol_soil_moisture_koehli_etal_2021(
+    nan_hum = neutrons_to_grav_soil_moisture_koehli_etal_2021(
         neutron_count=1000, n0=2000, air_humidity=np.nan
     )
 

@@ -5,15 +5,18 @@ from neptoon.corrections import Schroen2017
 
 def test_horizontal_weighting(r=1, sm=0.1, h=5):
     w = Schroen2017.horizontal_weighting(
-        distance=r, soil_moisture=sm, air_humidity=h
+        distance=r,
+        volumetric_soil_moisture=sm,
+        abs_air_humidity=h,
     )
     assert int(w) == 203702
 
     w = Schroen2017.horizontal_weighting(
-        distance=pd.Series([1, 10, 100]), soil_moisture=sm, air_humidity=h
+        distance=pd.Series([1, 10, 100]),
+        volumetric_soil_moisture=sm,
+        abs_air_humidity=h,
     )
     assert len(w) == 3
-    # return w
 
 
 def test_horizontal_weighting_approx(r=1):
@@ -50,12 +53,15 @@ def test_vertical_weighting(
     # return w
 
 
-def test_rescale_distance(distance=1, pressure=1013):
-    w = Schroen2017.rescale_distance(distance, pressure=800)
+def test_rescale_distance():
+    w = Schroen2017.rescale_distance(
+        distance_from_sensor=1, atmospheric_pressure=800
+    )
     assert int(10 * w) == 12
-    w = Schroen2017.rescale_distance(distance=np.array([5, 10, 50]))
+    w = Schroen2017.rescale_distance(
+        distance_from_sensor=np.array([5, 10, 50])
+    )
     assert len(w) == 3
-    # return w
 
 
 def test_calculate_footprint_radius(soil_moisture=0.1, air_humidity=5.0):
