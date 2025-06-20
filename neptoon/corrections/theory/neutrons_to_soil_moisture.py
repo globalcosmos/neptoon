@@ -3,14 +3,14 @@ import pandas as pd
 from typing import Literal
 
 
-def neutrons_to_grav_sm_desilets_etal_2010(
+def neutrons_to_grav_soil_moisture_desilets_etal_2010(
     neutrons,
     n0=1000,
     a0=0.0808,
     a1=0.372,
     a2=0.115,
-    lattice_water=0,
-    water_equiv_soil_organic_carbon=0,
+    # lattice_water=0,
+    # water_equiv_soil_organic_carbon=0,
 ):
     """
     Converts neutrons to gravimetric soil moisture following the
@@ -37,8 +37,8 @@ def neutrons_to_grav_sm_desilets_etal_2010(
     return (
         a0 / (neutrons / n0 - a1)
         - a2
-        - lattice_water
-        - water_equiv_soil_organic_carbon
+        # - lattice_water
+        # - water_equiv_soil_organic_carbon
     )
 
 
@@ -86,10 +86,9 @@ def neutrons_to_vol_soil_moisture_desilets_etal_2010(
     ) * dry_soil_bulk_density
 
 
-def reformulated_neutrons_to_vol_soil_moisture_desilets_2010(
+def reformulated_neutrons_to_grav_soil_moisture_desilets_2010(
     neutron_count: float,
     n0: float,
-    dry_soil_bulk_density: float,
     lattice_water: float,
     water_equiv_soil_organic_carbon: float,
     a0: float = 0.0808,
@@ -97,7 +96,7 @@ def reformulated_neutrons_to_vol_soil_moisture_desilets_2010(
     a2: float = 0.115,
 ):
     """
-    Converts corrected neutrons counts into volumetric soil moisture
+    Converts corrected neutrons counts into gravimetric soil moisture
     following the reforumlated version of the desilets equation outlined
     in Köhli et al. 2021
 
@@ -111,9 +110,6 @@ def reformulated_neutrons_to_vol_soil_moisture_desilets_2010(
         Constant
     a2 : float
         Constant
-    bulk_density : float
-        Dry soil bulk density of the soil in grams per cubic centimer
-        e.g. 1.4 (g/cm^3)
     neutron_count : int
         Neutron count in counts per hour (cph)
     n0 : int

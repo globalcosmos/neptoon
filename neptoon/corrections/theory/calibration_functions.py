@@ -316,8 +316,8 @@ class Schroen2017:
 
     @staticmethod
     def rescale_distance(
-        distance,
-        pressure=1013.25,
+        distance_from_sensor_m,
+        atmospheric_pressure=1013.25,
         height_veg=0,
         volumetric_soil_moisture=0.1,
     ):
@@ -342,18 +342,18 @@ class Schroen2017:
         rescaled_radius: float
             The adjusted radius to use in future calculations.
         """
-        F_p = 0.4922 / (0.86 - np.exp(-pressure / 1013.25))
+        F_p = 0.4922 / (0.86 - np.exp(-atmospheric_pressure / 1013.25))
         F_veg = 1 - 0.17 * (1 - np.exp(-0.41 * height_veg)) * (
             1 + np.exp(-9.25 * volumetric_soil_moisture)
         )
-        rescaled_distance = distance * F_p * F_veg
+        rescaled_distance = distance_from_sensor_m * F_p * F_veg
         return rescaled_distance
 
     @staticmethod
     def calculate_footprint_radius(
         volumetric_soil_moisture: float = 0.1,
         abs_air_humidity: float = 5.0,
-        **kwargs,
+        atmospheric_pressure: float | None = None,
     ):
         """
         Parameters
@@ -364,6 +364,8 @@ class Schroen2017:
         abs_air_humidity : float
             Absolute air humidity from 0.1 to 0.50 in g/m^3.
             Referred to as x in Schroen et al., (2017)
+        atmospheric_pressure : float
+            Atmospheric pressure in hectopascals
 
         Returns
         -------
@@ -385,16 +387,14 @@ class Schroen2017:
             int(round(abs_air_humidity))
         ]
 
-        if "pressure" in kwargs or "height_veg" in kwargs:
+        if atmospheric_pressure is not None:
             R86 = Schroen2017.rescale_distance(
-                distance=R86,
+                distance_from_sensor_m=R86,
                 volumetric_soil_moisture=volumetric_soil_moisture,
-                **kwargs,
+                atmospheric_pressure=atmospheric_pressure,
             )
 
         return R86
-
-    # R86 = calculate_footprint_radius
 
     def calculate_footprint_volume(
         D86_1m, soil_moisture, bulk_density, footprint_radius

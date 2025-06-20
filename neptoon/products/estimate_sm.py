@@ -3,8 +3,8 @@ from typing import Literal
 
 from neptoon.columns import ColumnInfo
 from neptoon.corrections import (
-    neutrons_to_vol_soil_moisture_desilets_etal_2010,
-    neutrons_to_vol_soil_moisture_koehli_etal_2021,
+    neutrons_to_grav_soil_moisture_desilets_etal_2010,
+    neutrons_to_grav_soil_moisture_koehli_etal_2021,
     Schroen2017,
 )
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
@@ -227,7 +227,7 @@ class NeutronsToSM:
         if self.conversion_theory == "desilets_etal_2010":
             self.crns_data_frame[soil_moisture_column_write_name] = (
                 self.crns_data_frame.apply(
-                    lambda row: neutrons_to_vol_soil_moisture_desilets_etal_2010(
+                    lambda row: neutrons_to_grav_soil_moisture_desilets_etal_2010(
                         dry_soil_bulk_density=self.dry_soil_bulk_density,
                         neutron_count=row[neutron_data_column_name],
                         n0=self.n0,
@@ -247,7 +247,7 @@ class NeutronsToSM:
             self._ensure_abs_humidity_available()
             self.crns_data_frame[soil_moisture_column_write_name] = (
                 self.crns_data_frame.apply(
-                    lambda row: neutrons_to_vol_soil_moisture_koehli_etal_2021(
+                    lambda row: neutrons_to_grav_soil_moisture_koehli_etal_2021(
                         dry_soil_bulk_density=self.dry_soil_bulk_density,
                         neutron_count=row[neutron_data_column_name],
                         n0=self.n0,
@@ -259,6 +259,10 @@ class NeutronsToSM:
                     axis=1,
                 )
             )
+
+    def _from_grav_to_vol_sm(self):
+        soil_moisture_column_write_name
+        pass
 
     def calculate_uncertainty_of_sm_estimates(self):
         """

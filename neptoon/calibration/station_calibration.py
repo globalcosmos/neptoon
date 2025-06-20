@@ -8,7 +8,7 @@ from typing import Literal, List
 from neptoon.columns import ColumnInfo
 from neptoon.corrections import (
     Schroen2017,
-    neutrons_to_grav_sm_desilets_etal_2010,
+    neutrons_to_grav_soil_moisture_desilets_etal_2010,
 )
 from neptoon.corrections.theory.neutrons_to_soil_moisture import (
     compute_n0_koehli_etal_2021,
@@ -17,7 +17,8 @@ from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 
 
 def _create_water_equiv_soc(soil_organic_carbon: float):
-            return soil_organic_carbon * 0.555
+    return soil_organic_carbon * 0.555
+
 
 class CalibrationConfiguration:
     """
@@ -160,10 +161,10 @@ class CalibrationConfiguration:
         self.value_avg_lattice_water = value_avg_lattice_water
         self.value_avg_bulk_density = value_avg_bulk_density
         self.value_avg_soil_organic_carbon = value_avg_soil_organic_carbon
-        self.value_avg_soil_organic_carbon_water_equiv = _create_water_equiv_soc(value_avg_soil_organic_carbon)
+        self.value_avg_soil_organic_carbon_water_equiv = (
+            _create_water_equiv_soc(value_avg_soil_organic_carbon)
+        )
         self.koehli_method_form = koehli_method_form
-
-
 
 
 class CalibrationStation:
@@ -320,7 +321,9 @@ class SampleProfile:
             else np.zeros_like(soil_moisture_gravimetric)
         )
         self.site_avg_organic_carbon = site_avg_organic_carbon
-        self.site_avg_organic_carbon_water_equiv = _create_water_equiv_soc(site_avg_organic_carbon)
+        self.site_avg_organic_carbon_water_equiv = _create_water_equiv_soc(
+            site_avg_organic_carbon
+        )
         self.lattice_water = self.lattice_water = (
             np.array(lattice_water)
             if lattice_water is not None
@@ -331,7 +334,6 @@ class SampleProfile:
         self._calculate_sm_total_vol()
         self._calculate_sm_total_grv()
 
-        # Scalar values
         self._distance = distance
         self.rescaled_distance = distance  # initialise as distance first
         self.D86 = np.nan
@@ -353,26 +355,33 @@ class SampleProfile:
             bulk_density = self.bulk_density
         sm_total_vol = (
             self.soil_moisture_gravimetric
-            + self.site_avg_lattice_water
-            + self.site_avg_organic_carbon_water_equiv  
-        ) * bulk_density 
+            # + self.site_avg_lattice_water
+            # + self.site_avg_organic_carbon_water_equiv
+        ) * bulk_density
         self.sm_total_vol = sm_total_vol
 
     def _calculate_sm_total_grv(self):
         """
         Calculate total gravimetric soil moisture.
         """
-        sm_total_grv = (
-            self.soil_moisture_gravimetric
-            + self.site_avg_lattice_water
-            + self.site_avg_organic_carbon_water_equiv 
-        )
-        self.sm_total_grv = sm_total_grv
+        # sm_total_grv = (
+        #     self.soil_moisture_gravimetric
+        #     # + self.site_avg_lattice_water
+        #     # + self.site_avg_organic_carbon_water_equiv
+        # )
+        self.sm_total_grv = self.soil_moisture_gravimetric
 
 
 class PrepareCalibrationData:
     """
-    Prepares the calibration dataframe
+    Prepares the calibration dataframe for processing.
+
+    - ensures datetime index
+    - splits multiple days into individual data frames
+    - for each calibration day, converts data into a list of
+      SampleProfiles
+    - calculates site averages of key information (e.g., bulk density)
+    - gap fills key info with averages when missing
     """
 
     def __init__(
@@ -663,7 +672,7 @@ class PrepareCalibrationData:
             message = "Calculating site average soil_organic_carbon from provided sample data."
             print(message)
 
-            soil_organic_carbon = self.calibration_data_frame[
+            return self.calibration_data_frame[
                 self.config.soil_organic_carbon_column
             ].mean()
 
@@ -696,7 +705,6 @@ class PrepareCalibrationData:
                 single_day_data_frame=data_frame,
                 site_avg_bulk_density=self.config.value_avg_bulk_density,
                 site_avg_organic_carbon=self.config.value_avg_soil_organic_carbon,
-                site_avg_organic_carbon_water_equiv
                 site_avg_lattice_water=self.config.value_avg_lattice_water,
             )
             self.list_of_profiles.extend(calibration_day_profiles)
@@ -905,7 +913,7 @@ class CalibrationWeightsCalculator:
         return self.time_series_data_object.data_dict[day]
 
     @staticmethod
-    def _initial_sm_estimate(profiles: List):
+    def _initial_vol_sm_estimate(profiles: List):
         """
         Gets an initial equal average soil moisture estimate
 
@@ -930,6 +938,10 @@ class CalibrationWeightsCalculator:
         return sm_estimate
 
     def apply_weighting_to_multiple_days(self):
+        """
+        Applies the weighting procedure to multiple calibration days if
+        present.
+        """
 
         for day in self.calib_data_object.unique_calibration_days:
 
@@ -940,8 +952,10 @@ class CalibrationWeightsCalculator:
                 if p.calibration_day == day
             ]
 
-            sm_estimate = self._initial_sm_estimate(profiles=profiles)
-            average_air_humidity = tmp_data[
+            volumetric_sm_estimate = self._initial_vol_sm_estimate(
+                profiles=profiles
+            )
+            average_abs_air_humidity = tmp_data[
                 self.config.abs_air_humidity_column
             ].mean()
             average_air_pressure = tmp_data[
@@ -951,8 +965,8 @@ class CalibrationWeightsCalculator:
             field_average_sm_vol, field_average_sm_grav, footprint = (
                 self.calculate_weighted_sm_average(
                     profiles=profiles,
-                    initial_sm_estimate=sm_estimate,
-                    average_air_humidity=average_air_humidity,
+                    initial_volumetric_sm_estimate=volumetric_sm_estimate,
+                    average_abs_air_humidity=average_abs_air_humidity,
                     average_air_pressure=average_air_pressure,
                 )
             )
@@ -961,7 +975,7 @@ class CalibrationWeightsCalculator:
                 "field_average_soil_moisture_volumetric": field_average_sm_vol,
                 "field_average_soil_moisture_gravimetric": field_average_sm_grav,
                 "horizontal_footprint_radius_in_meters": footprint,
-                "absolute_air_humidity": average_air_humidity,
+                "absolute_air_humidity": average_abs_air_humidity,
                 "atmospheric_pressure": average_air_pressure,
             }
 
@@ -975,19 +989,22 @@ class CalibrationWeightsCalculator:
         average_air_pressure: float,
     ):
         """
-        Calculates the field average and weighted soil moisture average
-        according to Schrön et al., 2017
+        Calculates the field average soil moisture value according to
+        Schrön et al., 2017. Weighting is calculated on volumetric soil
+        moisture volumes (as described in the paper), but a weighted
+        gravimetric value is given for calibration in neptoon.
 
         Parameters
         ----------
         profiles : List[Profile]
             A list of soil‐profile objects collected on the same day.
             Each Profile must have:
-              - `.rescaled_distance` (rescaled distance from sensor, in m)
+              - `.rescaled_distance` (rescaled distance from sensor, in
+                m)
               - `.site_avg_bulk_density` (bulk density, in g/cm3)
               - `.depth` (array of depths, in cm)
               - `.sm_total_vol` (array of volumetric‐moisture values,
-                g/cm3 or m3/m3)
+                cm3/cm3)
               - `.sm_total_grv` (array of gravimetric‐moisture values,
                 g/g)
         initial_sm_estimate : float
@@ -1000,7 +1017,7 @@ class CalibrationWeightsCalculator:
         Returns
         -------
         field_average_sm_volumetric : float
-            Converged volumetric soil moisture (m3/m3).
+            Converged volumetric soil moisture (cm3/cm3).
         field_average_sm_gravimetric : float
             Corresponding converged gravimetric soil moisture (g/g).
         footprint_m : float
@@ -1149,8 +1166,6 @@ class CalibrationWeightsCalculator:
         self,
         gravimetric_sm_on_day,
         neutron_mean,
-        lattice_water: float = 0,
-        water_equiv_soil_organic_carbon: float = 0,
     ):
         """
         Finds optimal N0 number when using desilets et al., 2010 method
@@ -1161,10 +1176,6 @@ class CalibrationWeightsCalculator:
             gravimetric soil moisture (weighted)
         neutron_mean : float
             average (corrected) neutron count
-        lattice_water : float
-            lattice water
-        water_equiv_soil_organic_carbon : float
-            water_equiv_soil_organic_carbon
 
         Returns
         -------
@@ -1175,11 +1186,9 @@ class CalibrationWeightsCalculator:
         n0_range = pd.Series(range(int(neutron_mean), int(neutron_mean * 2.5)))
 
         def calculate_sm_and_error(n0):
-            sm_prediction = neutrons_to_grav_sm_desilets_etal_2010(
+            sm_prediction = neutrons_to_grav_soil_moisture_desilets_etal_2010(
                 neutrons=neutron_mean,
                 n0=n0,
-                lattice_water=lattice_water,
-                water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
             )
             absolute_error = abs(sm_prediction - gravimetric_sm_on_day)
             return pd.Series(
@@ -1198,13 +1207,13 @@ class CalibrationWeightsCalculator:
 
     def _find_optimal_n0_single_day_koehli_etal_2021(
         self,
-        gravimetric_sm_on_day,
-        neutron_mean,
-        abs_air_humidity,
-        lattice_water,
-        water_equiv_soil_organic_carbon,
-        bulk_density,
-        koehli_method_form,
+        gravimetric_sm_on_day: float,
+        neutron_mean: int,
+        abs_air_humidity: float,
+        lattice_water: float,
+        water_equiv_soil_organic_carbon: float,
+        bulk_density: float,
+        koehli_method_form: str,
     ):
         """
         Finds optimal N0 number when using Koehli etal method
@@ -1255,7 +1264,6 @@ class CalibrationWeightsCalculator:
             The optimal n0 across all the supplied calibration days.
         """
 
-        # df = self.return_output_dict_as_dataframe()
         for day, metrics in self.calib_metrics_dict.items():
             neutron_mean = self.time_series_data_object.data_dict[day][
                 self.config.neutron_column_name
@@ -1267,8 +1275,6 @@ class CalibrationWeightsCalculator:
                     self._find_optimal_N0_single_day_desilets_etal_2010(
                         gravimetric_sm_on_day=grav_sm,
                         neutron_mean=neutron_mean,
-                        lattice_water=self.config.value_avg_lattice_water,
-                        water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
                     )
                 )
 
