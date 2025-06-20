@@ -389,7 +389,7 @@ class Schroen2017:
 
         if atmospheric_pressure is not None:
             R86 = Schroen2017.rescale_distance(
-                distance_from_sensor_m=R86,
+                distance_from_sensor=R86,
                 volumetric_soil_moisture=volumetric_soil_moisture,
                 atmospheric_pressure=atmospheric_pressure,
             )

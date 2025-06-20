@@ -323,26 +323,19 @@ class SampleProfile:
         """
         Calculate total volumetric soil moisture.
         """
-        if np.isnan(self.bulk_density):
-            bulk_density = self.site_avg_bulk_density
-        else:
-            bulk_density = self.bulk_density
-        sm_total_vol = (
-            self.soil_moisture_gravimetric
-            # + self.site_avg_lattice_water
-            # + self.site_avg_organic_carbon_water_equiv
-        ) * bulk_density
-        self.sm_total_vol = sm_total_vol
+        # replace nan entries in bulk_density by the site average
+        bd = np.where(
+            np.isnan(self.bulk_density),
+            self.site_avg_bulk_density,
+            self.bulk_density,
+        )
+        self.sm_total_vol = self.soil_moisture_gravimetric * bd
 
     def _calculate_sm_total_grv(self):
         """
         Calculate total gravimetric soil moisture.
         """
-        # sm_total_grv = (
-        #     self.soil_moisture_gravimetric
-        #     # + self.site_avg_lattice_water
-        #     # + self.site_avg_organic_carbon_water_equiv
-        # )
+
         self.sm_total_grv = self.soil_moisture_gravimetric
 
 
@@ -1023,8 +1016,8 @@ class CalibrationWeightsCalculator:
             for p in profiles:
 
                 p.rescaled_distance = Schroen2017.rescale_distance(
-                    distance=p.rescaled_distance,
-                    pressure=average_air_pressure,
+                    distance_from_sensor=p.rescaled_distance,
+                    atmospheric_pressure=average_air_pressure,
                     volumetric_soil_moisture=volumetric_sm_estimate,
                 )
 
@@ -1035,7 +1028,8 @@ class CalibrationWeightsCalculator:
                 )
 
                 p.vertical_weights = Schroen2017.vertical_weighting(
-                    p.depth,
+                    depth=p.depth,
+                    distance=p.rescaled_distance,
                     bulk_density=p.site_avg_bulk_density,
                     volumetric_soil_moisture=volumetric_sm_estimate,
                 )
@@ -1105,7 +1099,7 @@ class CalibrationWeightsCalculator:
         footprint_m = Schroen2017.calculate_footprint_radius(
             volumetric_soil_moisture=field_average_sm_volumetric,
             abs_air_humidity=average_abs_air_humidity,
-            pressure=average_air_pressure,
+            atmospheric_pressure=average_air_pressure,
         )
 
         return (
