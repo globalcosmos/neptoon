@@ -1,10 +1,10 @@
 import pandas as pd
-from typing import Literal
+from typing import Literal, Optional
 
 from neptoon.columns import ColumnInfo
 from neptoon.corrections import (
-    neutrons_to_grav_soil_moisture_desilets_etal_2010,
-    neutrons_to_grav_soil_moisture_koehli_etal_2021,
+    neutrons_to_total_grav_soil_moisture_desilets_etal_2010,
+    neutrons_to_total_grav_soil_moisture_koehli_etal_2021,
     Schroen2017,
 )
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
@@ -33,7 +33,9 @@ class NeutronsToSM:
         smoothed_neutrons_col_name: str = str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ),
-        soil_moisture_col_name: str = str(ColumnInfo.Name.SOIL_MOISTURE),
+        soil_moisture_vol_col_name: str = str(
+            ColumnInfo.Name.SOIL_MOISTURE_VOL
+        ),
         depth_column_name: str = str(
             ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH
         ),
@@ -84,8 +86,8 @@ class NeutronsToSM:
             column name where smoothed corrected neutron counts are
             found , by default str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL )
-        soil_moisture_col_name : str, optional
-            column name where soil moisture should be written, by
+        soil_moisture_vol_col_name : str, optional
+            column name where volumetric soil moisture should be written, by
             default str(ColumnInfo.Name.SOIL_MOISTURE)
         depth_column_name : str, optional
             column name where depth estimates are written, by default str(
@@ -108,7 +110,7 @@ class NeutronsToSM:
         )
         self.corrected_neutrons_col_name = corrected_neutrons_col_name
         self.smoothed_neutrons_col_name = smoothed_neutrons_col_name
-        self.soil_moisture_col_name = soil_moisture_col_name
+        self.soil_moisture_vol_col_name = soil_moisture_vol_col_name
         self.depth_column_name = depth_column_name
         self.conversion_theory = conversion_theory
         self.koehli_method_form = koehli_method_form
@@ -195,7 +197,8 @@ class NeutronsToSM:
     def calculate_sm_estimates(
         self,
         neutron_data_column_name: str,
-        soil_moisture_column_write_name: str,
+        soil_moisture_column_write_name_grav: Optional[str] = None,
+        soil_moisture_column_write_name_vol: Optional[str] = None,
     ):
         """
         Calculates soil moisture estimates and adds them to the
@@ -209,9 +212,12 @@ class NeutronsToSM:
         ----------
         neutron_data_column_name : str
             The name of the column containing neutron count data.
-        soil_moisture_column_write_name : str
-            The name of the new column to store calculated soil moisture
-            values.
+        soil_moisture_column_write_name_grav : str
+            The name of the new column to store calculated gravimetric
+            soil moisture values.
+        soil_moisture_column_write_name_vol : str
+            The name of the new column to store calculated volumetric
+            soil moisture values.
 
         Returns
         -------
@@ -224,19 +230,16 @@ class NeutronsToSM:
         corrected and that all necessary parameters (n0, bulk density,
         etc.) have been set.
         """
+        # Create a series of grav soil moisture (incl. LW and WESOC)
         if self.conversion_theory == "desilets_etal_2010":
-            self.crns_data_frame[soil_moisture_column_write_name] = (
-                self.crns_data_frame.apply(
-                    lambda row: neutrons_to_grav_soil_moisture_desilets_etal_2010(
-                        dry_soil_bulk_density=self.dry_soil_bulk_density,
-                        neutron_count=row[neutron_data_column_name],
-                        n0=self.n0,
-                        lattice_water=self.lattice_water,
-                        water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
-                    ),
-                    axis=1,
-                )
+            raw_grav = self.crns_data_frame.apply(
+                lambda row: neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
+                    neutrons=row[neutron_data_column_name],
+                    n0=self.n0,
+                ),
+                axis=1,
             )
+
         elif self.conversion_theory == "koehli_etal_2021":
             print(
                 "Using Koehli et al., 2021 method for converting neutrons to soil moisture"
@@ -245,24 +248,52 @@ class NeutronsToSM:
 
             self._check_if_humidity_correction_applied(auto_uncorrect=True)
             self._ensure_abs_humidity_available()
-            self.crns_data_frame[soil_moisture_column_write_name] = (
-                self.crns_data_frame.apply(
-                    lambda row: neutrons_to_grav_soil_moisture_koehli_etal_2021(
-                        dry_soil_bulk_density=self.dry_soil_bulk_density,
-                        neutron_count=row[neutron_data_column_name],
-                        n0=self.n0,
-                        lattice_water=self.lattice_water,
-                        air_humidity=row[self.air_humidity_col_name],
-                        water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
-                        koehli_method_form=self.koehli_method_form,
-                    ),
-                    axis=1,
-                )
+
+            raw_grav = self.crns_data_frame.apply(
+                lambda row: neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
+                    neutron_count=row[neutron_data_column_name],
+                    n0=self.n0,
+                    lattice_water=self.lattice_water,
+                    air_humidity=row[self.air_humidity_col_name],
+                    water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
+                    koehli_method_form=self.koehli_method_form,
+                ),
+                axis=1,
             )
 
-    def _from_grav_to_vol_sm(self):
-        soil_moisture_column_write_name
-        pass
+        grav_sm = (
+            raw_grav
+            - self.lattice_water
+            - self.water_equiv_soil_organic_carbon
+        )
+
+        if soil_moisture_column_write_name_grav:
+            self.crns_data_frame[soil_moisture_column_write_name_grav] = (
+                grav_sm
+            )
+        if soil_moisture_column_write_name_vol:
+            self.crns_data_frame[soil_moisture_column_write_name_vol] = (
+                grav_sm * self.dry_soil_bulk_density
+            )
+
+    def _from_grav_to_vol_sm(self, grav_sm, bulk_density):
+        """
+        Converts gravimetric to volumetric soil moisture
+
+        Parameters
+        ----------
+        grav_sm : float
+            Gravimetric soil moisture
+        bulk_density : float
+            Bulk density
+
+        Returns
+        -------
+        float
+            Volumetric Soil moisture
+        """
+
+        return grav_sm * bulk_density
 
     def calculate_uncertainty_of_sm_estimates(self):
         """
@@ -272,16 +303,16 @@ class NeutronsToSM:
             neutron_data_column_name=str(
                 ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
             ),
-            soil_moisture_column_write_name=str(
-                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER
+            soil_moisture_column_write_name_vol=str(
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER
             ),
         )
         self.calculate_sm_estimates(
             neutron_data_column_name=str(
                 ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
             ),
-            soil_moisture_column_write_name=str(
-                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER
+            soil_moisture_column_write_name_vol=str(
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER
             ),
         )
 
@@ -305,7 +336,9 @@ class NeutronsToSM:
                 lambda row: Schroen2017.calculate_measurement_depth(
                     distance=radius,
                     bulk_density=self.dry_soil_bulk_density,
-                    soil_moisture=row[self.soil_moisture_col_name],
+                    volumetric_soil_moisture=row[
+                        self.soil_moisture_vol_col_name
+                    ],
                 ),
                 axis=1,
             )
@@ -327,7 +360,12 @@ class NeutronsToSM:
             neutron_data_column_name=str(
                 ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
             ),
-            soil_moisture_column_write_name=str(ColumnInfo.Name.SOIL_MOISTURE),
+            soil_moisture_column_write_name_grav=str(
+                ColumnInfo.Name.SOIL_MOISTURE_GRAV
+            ),
+            soil_moisture_column_write_name_vol=str(
+                ColumnInfo.Name.SOIL_MOISTURE_VOL
+            ),
         )
         self.calculate_uncertainty_of_sm_estimates()
         self.calculate_depth_of_measurement()

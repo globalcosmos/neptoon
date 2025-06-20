@@ -8,7 +8,7 @@ from typing import Literal, List
 from neptoon.columns import ColumnInfo
 from neptoon.corrections import (
     Schroen2017,
-    neutrons_to_grav_soil_moisture_desilets_etal_2010,
+    neutrons_to_total_grav_soil_moisture_desilets_etal_2010,
 )
 from neptoon.corrections.theory.neutrons_to_soil_moisture import (
     compute_n0_koehli_etal_2021,
@@ -1166,6 +1166,8 @@ class CalibrationWeightsCalculator:
         self,
         gravimetric_sm_on_day,
         neutron_mean,
+        lattice_water=0,
+        water_equiv_soil_organic_carbon=0,
     ):
         """
         Finds optimal N0 number when using desilets et al., 2010 method
@@ -1184,13 +1186,20 @@ class CalibrationWeightsCalculator:
         """
 
         n0_range = pd.Series(range(int(neutron_mean), int(neutron_mean * 2.5)))
+        gravimetric_sm_on_day_total = (
+            gravimetric_sm_on_day
+            + lattice_water
+            + water_equiv_soil_organic_carbon
+        )
 
         def calculate_sm_and_error(n0):
-            sm_prediction = neutrons_to_grav_soil_moisture_desilets_etal_2010(
-                neutrons=neutron_mean,
-                n0=n0,
+            sm_prediction = (
+                neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
+                    neutrons=neutron_mean,
+                    n0=n0,
+                )
             )
-            absolute_error = abs(sm_prediction - gravimetric_sm_on_day)
+            absolute_error = abs(sm_prediction - gravimetric_sm_on_day_total)
             return pd.Series(
                 {
                     "N0": n0,
@@ -1212,7 +1221,6 @@ class CalibrationWeightsCalculator:
         abs_air_humidity: float,
         lattice_water: float,
         water_equiv_soil_organic_carbon: float,
-        bulk_density: float,
         koehli_method_form: str,
     ):
         """
@@ -1230,8 +1238,6 @@ class CalibrationWeightsCalculator:
             Lattice water content of soil
         water_equiv_soil_organic_carbon : float
             water equivelant of soil organic carbon
-        bulk_density : float
-            Dry soil bulk density of soil
         koehli_method_form: str
             The specific method form of Koehli method
 
@@ -1246,7 +1252,6 @@ class CalibrationWeightsCalculator:
             air_humidity=abs_air_humidity,
             lattice_water=lattice_water,
             water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
-            bulk_density=bulk_density,
             koehli_method_form=koehli_method_form,
         )
         return n0, "nan"
@@ -1275,6 +1280,8 @@ class CalibrationWeightsCalculator:
                     self._find_optimal_N0_single_day_desilets_etal_2010(
                         gravimetric_sm_on_day=grav_sm,
                         neutron_mean=neutron_mean,
+                        lattice_water=self.config.value_avg_lattice_water,
+                        water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
                     )
                 )
 
@@ -1286,7 +1293,6 @@ class CalibrationWeightsCalculator:
                         abs_air_humidity=metrics["absolute_air_humidity"],
                         lattice_water=self.config.value_avg_lattice_water,
                         water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
-                        bulk_density=self.config.value_avg_bulk_density,
                         koehli_method_form=self.config.koehli_method_form,
                     )
                 )

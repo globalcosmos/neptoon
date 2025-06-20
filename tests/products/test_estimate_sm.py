@@ -1,7 +1,7 @@
 from neptoon.products.estimate_sm import NeutronsToSM
 from neptoon.columns import ColumnInfo
 from neptoon.corrections.theory.neutrons_to_soil_moisture import (
-    neutrons_to_grav_soil_moisture_koehli_etal_2021,
+    neutrons_to_total_grav_soil_moisture_koehli_etal_2021,
 )
 import pytest
 import pandas as pd
@@ -78,8 +78,8 @@ def test_property_getters(neutrons_to_sm_instance):
     assert neutrons_to_sm_instance.corrected_neutrons_col_name == str(
         ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
     )
-    assert neutrons_to_sm_instance.soil_moisture_col_name == str(
-        ColumnInfo.Name.SOIL_MOISTURE
+    assert neutrons_to_sm_instance.soil_moisture_vol_col_name == str(
+        ColumnInfo.Name.SOIL_MOISTURE_VOL
     )
     assert neutrons_to_sm_instance.depth_column_name == str(
         ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH
@@ -101,10 +101,12 @@ def test_calculate_sm_estimates(neutrons_to_sm_instance):
         neutron_data_column_name=str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ),
-        soil_moisture_column_write_name=str(ColumnInfo.Name.SOIL_MOISTURE),
+        soil_moisture_column_write_name_vol=str(
+            ColumnInfo.Name.SOIL_MOISTURE_VOL
+        ),
     )
     assert (
-        str(ColumnInfo.Name.SOIL_MOISTURE)
+        str(ColumnInfo.Name.SOIL_MOISTURE_VOL)
         in neutrons_to_sm_instance.crns_data_frame.columns
     )
 
@@ -168,10 +170,10 @@ def test_koehli_method_nans_not_processed():
     """
     Tests if the koehli method will process a nan value
     """
-    nan_neut = neutrons_to_grav_soil_moisture_koehli_etal_2021(
+    nan_neut = neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
         neutron_count=np.nan, n0=2000, air_humidity=8
     )
-    nan_hum = neutrons_to_grav_soil_moisture_koehli_etal_2021(
+    nan_hum = neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
         neutron_count=1000, n0=2000, air_humidity=np.nan
     )
 
@@ -189,14 +191,16 @@ def test_koehli_method_no_abs_hum(
         neutron_data_column_name=str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ),
-        soil_moisture_column_write_name=str(ColumnInfo.Name.SOIL_MOISTURE),
+        soil_moisture_column_write_name_vol=str(
+            ColumnInfo.Name.SOIL_MOISTURE_VOL
+        ),
     )
     assert (
         str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
         in neutrons_to_sm_instance_koehli_no_hum.crns_data_frame.columns
     )
     assert (
-        str(ColumnInfo.Name.SOIL_MOISTURE)
+        str(ColumnInfo.Name.SOIL_MOISTURE_VOL)
         in neutrons_to_sm_instance_koehli_no_hum.crns_data_frame.columns
     )
 
@@ -216,5 +220,7 @@ def test_koehli_method_no_abs_hum_missingdata(
             neutron_data_column_name=str(
                 ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
             ),
-            soil_moisture_column_write_name=str(ColumnInfo.Name.SOIL_MOISTURE),
+            soil_moisture_column_write_name=str(
+                ColumnInfo.Name.SOIL_MOISTURE_VOL
+            ),
         )

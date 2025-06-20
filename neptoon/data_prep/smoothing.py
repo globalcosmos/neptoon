@@ -161,8 +161,8 @@ class SmoothData:
     def _update_column_name_config(
         self,
         possible_names=[
-            str(ColumnInfo.Name.SOIL_MOISTURE),
-            str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            str(ColumnInfo.Name.SOIL_MOISTURE_VOL),
+            str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL),
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT),
@@ -202,11 +202,12 @@ class SmoothData:
 
         new_column_name = self.create_new_column_name()
         if self.column_to_smooth in [
-            str(ColumnInfo.Name.SOIL_MOISTURE),
-            str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            str(ColumnInfo.Name.SOIL_MOISTURE_VOL),
+            str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL),
         ]:
             ColumnInfo.relabel(
-                ColumnInfo.Name.SOIL_MOISTURE_FINAL, new_label=new_column_name
+                ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL,
+                new_label=new_column_name,
             )
         elif self.column_to_smooth in [
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),

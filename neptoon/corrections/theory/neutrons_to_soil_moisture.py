@@ -3,18 +3,18 @@ import pandas as pd
 from typing import Literal
 
 
-def neutrons_to_grav_soil_moisture_desilets_etal_2010(
+def neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
     neutrons,
     n0=1000,
     a0=0.0808,
     a1=0.372,
     a2=0.115,
-    # lattice_water=0,
-    # water_equiv_soil_organic_carbon=0,
 ):
     """
-    Converts neutrons to gravimetric soil moisture following the
-    Desilets et al., 2010 forumla
+    Converts neutrons to total gravimetric soil moisture following the
+    Desilets et al., 2010 forumla. When we refer total gravimetric we
+    mean that it's the amount including lattice water and water
+    equivelant soil organic carbon.
 
     Parameters
     ----------
@@ -34,12 +34,7 @@ def neutrons_to_grav_soil_moisture_desilets_etal_2010(
     float
         calculated gravimetric soil moisture value g/g
     """
-    return (
-        a0 / (neutrons / n0 - a1)
-        - a2
-        # - lattice_water
-        # - water_equiv_soil_organic_carbon
-    )
+    return a0 / (neutrons / n0 - a1) - a2
 
 
 def neutrons_to_vol_soil_moisture_desilets_etal_2010(
@@ -136,7 +131,7 @@ def reformulated_neutrons_to_grav_soil_moisture_desilets_2010(
     return volumetric_sm
 
 
-def neutrons_to_grav_soil_moisture_koehli_etal_2021(
+def neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
     neutron_count: float,
     n0: float,
     air_humidity: float,
@@ -556,7 +551,6 @@ def compute_n0_koehli_etal_2021(
     neutron_count: float,
     lattice_water=0.0,
     water_equiv_soil_organic_carbon=0.0,
-    bulk_density: float = 1,
     koehli_method_form: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
@@ -631,7 +625,6 @@ def compute_n0_koehli_etal_2021(
                 air_humidity=air_humidity,
                 n0=n0_try,
                 offset=off,
-                dry_soil_bulk_density=bulk_density,
                 koehli_method_form=koehli_method_form,
                 biomass=biomass,
             )
