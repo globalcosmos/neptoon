@@ -132,7 +132,7 @@ def reformulated_neutrons_to_grav_soil_moisture_desilets_2010(
         (ah0 * ((1 - (neutron_count / nmax)) / (ah1 - (neutron_count / nmax))))
         - lattice_water
         - water_equiv_soil_organic_carbon
-    ) * dry_soil_bulk_density
+    )
     return volumetric_sm
 
 
