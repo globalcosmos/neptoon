@@ -44,7 +44,7 @@ from neptoon.io.read import DataHubFromConfig
 
 sensor_config_path = 'path/to/your/sensor.yaml'
 
-hub_creator = DataHubFromConfig(path_to_sensor_config=station_config_path)
+hub_creator = DataHubFromConfig(path_to_sensor_config=sensor_config_path)
 data_hub = hub_creator.create_data_hub()
 ```
 
