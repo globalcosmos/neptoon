@@ -45,6 +45,9 @@ The following columns are required in the calibration data:
 
 When multiple days of calibration data are available, these should all be supplied in the same file. Neptoon will automatically split them up using the DateTime column and complete calibration on each day separately, before finding an average N0.
 
+!!! important "Soil Moisture Units"
+    To be clear in neptoon we expect _gravimetric_ soil moisture values in the calibration data. In the literature describing the weighting (e.g., Schrön et al., 2017), volumetric units are used. We make this conversion internally.
+
 ## Adding this into the pipeline
 
 Bringing this together - we must read in the sample data as a DataFrame, and create a `CalibrationConfiguration` object. This object lets neptoon know what the different columns are called in the sample data.
