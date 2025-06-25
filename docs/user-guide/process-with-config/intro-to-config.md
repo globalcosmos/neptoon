@@ -4,6 +4,9 @@ It is possible to use configuration files when working in neptoon. These can be 
 
 The configuration files are in the YAML format (**Y**et **A**nother **M**arkup **L**anguage). This type of format a nice balance between being human readable and computer readable. Checkout examples [here](https://codebase.helmholtz.cloud/cosmos/neptoon_examples/-/tree/main/configuration_files?ref_type=heads). When making changes be sure to maintain the indentation you see, and read on below for more specifics on how to fill this out correctly.
 
+!!! warning "A warning on config files before v1.0 release"
+      Until we release v1.0, there are occasions when updates might cause your current configuration files to show errors. For example, if we add a setting that is now considered essential, or receive feedback that a better naming convention is more intuative to new users. We will try to minimise this, however cannot guarentee it. Once v1.0 has been released we promise that no updates (until a v2.0) will cause configuration files to stop working.
+
 
 ## What are the configuration files?
 
