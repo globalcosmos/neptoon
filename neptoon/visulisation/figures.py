@@ -133,12 +133,12 @@ def uncorr_and_corr_neutrons_figure(
 def soil_moisture_figure_uncertainty(
     data_frame: pd.DataFrame,
     station_name: str,
-    soil_moisture_col: str = str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+    soil_moisture_col: str = str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL),
     upper_uncertainty_col: str = str(
-        ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER
+        ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER
     ),
     lower_uncertainty_col: str = str(
-        ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER
+        ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER
     ),
     sm_range: tuple = (
         0,
@@ -252,7 +252,7 @@ def soil_moisture_figure_uncertainty(
 def soil_moisture_coloured_figure(
     data_frame: pd.DataFrame,
     station_name: str,
-    sm_column_name: str = str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+    sm_column_name: str = str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL),
     lower_bound: float = 0,
     save_location: str = None,
 ):

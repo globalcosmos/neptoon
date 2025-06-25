@@ -162,9 +162,9 @@ class FigureHandler:
             description="Soil moisture time series with uncertainty bounds",
             method="_soil_moisture_uncertainty",
             required_columns=[
-                str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
-                str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER),
-                str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER),
+                str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL),
+                str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER),
+                str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER),
             ],
         ),
         # "soil_moisture_coloured": FigureMetadata(
@@ -305,7 +305,7 @@ class FigureHandler:
         )
 
         sm_max = (
-            self.data_frame[str(ColumnInfo.Name.SOIL_MOISTURE_FINAL)].max()
+            self.data_frame[str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL)].max()
         ) * 1.1
         sm_min = 0
         sm_range = (sm_min, sm_max)
@@ -313,12 +313,12 @@ class FigureHandler:
         soil_moisture_figure_uncertainty(
             data_frame=self.data_frame,
             station_name=self.sensor_info.name,
-            soil_moisture_col=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            soil_moisture_col=str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL),
             upper_uncertainty_col=str(
-                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_UPPER
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER
             ),
             lower_uncertainty_col=str(
-                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_LOWER
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER
             ),
             sm_range=sm_range,
             show=self.show_figures,
@@ -333,13 +333,13 @@ class FigureHandler:
         """
         temp_path = self.temp_handler.store_figure(
             name="soil_moisture_colour_fig",
-            topic=FigureTopic.SOIL_MOISTURE,
+            topic=FigureTopic.SOIL_MOISTURE_VOL,
         )
 
         soil_moisture_coloured_figure(
             data_frame=self.data_frame,
             station_name=self.sensor_info.name,
-            sm_column_name=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            sm_column_name=str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL),
             save_location=temp_path,
         )
 

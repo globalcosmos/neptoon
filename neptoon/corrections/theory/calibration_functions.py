@@ -35,8 +35,8 @@ class Schroen2017:
     @staticmethod
     def horizontal_weighting(
         distance=1,
-        soil_moisture: float = 0.1,
-        air_humidity: float = 5.0,
+        volumetric_soil_moisture: float = 0.1,
+        abs_air_humidity: float = 5.0,
         normalize: bool = False,
     ):
         """
@@ -49,10 +49,10 @@ class Schroen2017:
             Rescaled distance from sensor in meters (m).
             Referred to as r in Schroen et al., (2017).
             See: Schroen2017.radius_rescale()
-        soil_moisture : float
+        volumetric_soil_moisture : float
             Soil Moisture from 0.02 to 0.50 in m^3/m^3.
             Referred to as y in Schroen et al., (2017)
-        air_humidity : float
+        abs_air_humidity : float
             Absolute air humidity from 0.1 to 0.50 in g/m^3.
             Referred to as x in Schroen et al., (2017)
         normalze : bool
@@ -67,8 +67,8 @@ class Schroen2017:
 
         # Simplify notation
         r = distance
-        x = air_humidity
-        y = soil_moisture
+        x = abs_air_humidity
+        y = volumetric_soil_moisture
 
         # Parameters
         a00 = 8735
@@ -192,7 +192,7 @@ class Schroen2017:
             Rescaled distance from sensor in meters (m).
             Referred to as r in Schroen et al., (2017).
             See: Schroen2017.radius_rescale()
-        normalze : bool
+        normalize : bool
             Normalize the weights relative to the sum of weights
 
         Returns
@@ -233,7 +233,9 @@ class Schroen2017:
     W_r_approx = horizontal_weighting_approx
 
     @staticmethod
-    def calculate_measurement_depth(distance, bulk_density, soil_moisture):
+    def calculate_measurement_depth(
+        distance, bulk_density, volumetric_soil_moisture
+    ):
         """
         Calculates the depth of sensor measurement (taken as the
         depth from which 86% of neutrons originate)
@@ -246,8 +248,8 @@ class Schroen2017:
             Schroen2017funcs.radius_rescale()
         bulk_density : float
             Dry soil bulk density of the soil (g/cm^3)
-        soil_moisture : float
-            Soil moisture from 0.02 to 0.50 in cubic centimeter per
+        volumetric_soil_moisture : float
+            Volumetric soil moisture from 0.02 to 0.50 in cubic centimeter per
             cubic centimeter (m^3/m^3)
 
         Returns
@@ -263,20 +265,20 @@ class Schroen2017:
                 8.321
                 + 0.14249
                 * (0.96655 + np.exp(-0.01 * distance))
-                * (20 + soil_moisture)
-                / (0.0429 + soil_moisture)
+                * (20 + volumetric_soil_moisture)
+                / (0.0429 + volumetric_soil_moisture)
             )
         )
         return D86
 
-    D86 = calculate_measurement_depth
+    # D86 = calculate_measurement_depth
 
     @staticmethod
     def vertical_weighting(
         depth,
         distance: float = 1.0,
         bulk_density: float = 1.6,
-        soil_moisture: float = 0.1,
+        volumetric_soil_moisture: float = 0.1,
     ):
         """
         Wd Weighting function to be applied on samples to calculate
@@ -292,7 +294,7 @@ class Schroen2017:
             Schroen2017funcs.radius_rescale()
         bulk_density : float
             Dry soil bulk density in grams per cubic centimeter (g/cm^3)
-        soil_moisture : float
+        volumetric_soil_moisture : float
             Soil Moisture from 0.02 to 0.50 in cubic centimeter per
             cubic centimeter (cm^3/cm^3)
 
@@ -302,7 +304,9 @@ class Schroen2017:
             The weight to give the sample.
         """
         D86 = Schroen2017.calculate_measurement_depth(
-            distance, bulk_density, soil_moisture
+            distance=distance,
+            bulk_density=bulk_density,
+            volumetric_soil_moisture=volumetric_soil_moisture,
         )
 
         w = np.exp(-2 * depth / D86)
@@ -312,7 +316,10 @@ class Schroen2017:
 
     @staticmethod
     def rescale_distance(
-        distance, pressure=1013.25, height_veg=0, soil_moisture=0.1
+        distance_from_sensor,
+        atmospheric_pressure=1013.25,
+        height_veg=0,
+        volumetric_soil_moisture=0.1,
     ):
         """
         Rescales the distance to account for influences from atmospheric
@@ -320,41 +327,45 @@ class Schroen2017:
 
         Parameters
         ----------
-        distance : float
+        distance_from_sensor : float
             Distance from the sensor in meters (m)
         pressure : float
             Pressure at the site in hectopascals (hPa)
         height_veg : float
             Height of vegetation during calibration period in meters (m)
-        soil_moisture : float
-            Soil Moisture from 0.02 to 0.50 in cubic centimeters per
-            cubic centimeters (cm^3/cm^3)
+        volumetric_soil_moisture : float
+            Volumetric soil moisture from 0.02 to 0.50 in cubic
+            centimeters per cubic centimeters (cm^3/cm^3)
 
         Returns
         -------
         rescaled_radius: float
             The adjusted radius to use in future calculations.
         """
-        F_p = 0.4922 / (0.86 - np.exp(-pressure / 1013.25))
+        F_p = 0.4922 / (0.86 - np.exp(-atmospheric_pressure / 1013.25))
         F_veg = 1 - 0.17 * (1 - np.exp(-0.41 * height_veg)) * (
-            1 + np.exp(-9.25 * soil_moisture)
+            1 + np.exp(-9.25 * volumetric_soil_moisture)
         )
-        rescaled_distance = distance * F_p * F_veg
+        rescaled_distance = distance_from_sensor * F_p * F_veg
         return rescaled_distance
 
     @staticmethod
     def calculate_footprint_radius(
-        soil_moisture: float = 0.1, air_humidity: float = 5.0, **kwargs
+        volumetric_soil_moisture: float = 0.1,
+        abs_air_humidity: float = 5.0,
+        atmospheric_pressure: float | None = None,
     ):
         """
         Parameters
         ----------
-        soil_moisture : float
+        volumetric_soil_moisture : float
             Soil Moisture from 0.02 to 0.50 in m^3/m^3.
             Referred to as y in Schroen et al., (2017)
-        air_humidity : float
+        abs_air_humidity : float
             Absolute air humidity from 0.1 to 0.50 in g/m^3.
             Referred to as x in Schroen et al., (2017)
+        atmospheric_pressure : float
+            Atmospheric pressure in hectopascals
 
         Returns
         -------
@@ -362,28 +373,28 @@ class Schroen2017:
             Footprint radius in meters
         """
         # Filter input and extend over limits
-        if np.isnan(soil_moisture) or np.isnan(air_humidity):
+        if np.isnan(volumetric_soil_moisture) or np.isnan(abs_air_humidity):
             return np.nan
-        if soil_moisture < 0.01:
-            soil_moisture = 0.01
-        if soil_moisture > 0.49:
-            soil_moisture = 0.49
-        if air_humidity > 29:
-            air_humidity = 29
+        if volumetric_soil_moisture < 0.01:
+            volumetric_soil_moisture = 0.01
+        if volumetric_soil_moisture > 0.49:
+            volumetric_soil_moisture = 0.49
+        if abs_air_humidity > 29:
+            abs_air_humidity = 29
 
         lookup_table = Schroen2017._footprint_lookup
-        R86 = lookup_table[int(round(100 * soil_moisture))][
-            int(round(air_humidity))
+        R86 = lookup_table[int(round(100 * volumetric_soil_moisture))][
+            int(round(abs_air_humidity))
         ]
 
-        if "pressure" in kwargs or "height_veg" in kwargs:
+        if atmospheric_pressure is not None:
             R86 = Schroen2017.rescale_distance(
-                R86, soil_moisture=soil_moisture, **kwargs
+                distance_from_sensor=R86,
+                volumetric_soil_moisture=volumetric_soil_moisture,
+                atmospheric_pressure=atmospheric_pressure,
             )
 
         return R86
-
-    R86 = calculate_footprint_radius
 
     def calculate_footprint_volume(
         D86_1m, soil_moisture, bulk_density, footprint_radius

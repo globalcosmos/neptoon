@@ -45,7 +45,7 @@ class QATarget(Enum):
     RELATIVE_HUMIDITY = str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
     AIR_PRESSURE = str(ColumnInfo.Name.AIR_PRESSURE)
     TEMPERATURE = str(ColumnInfo.Name.AIR_TEMPERATURE)
-    SOIL_MOISTURE = str(ColumnInfo.Name.SOIL_MOISTURE_FINAL)
+    SOIL_MOISTURE_VOL = str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL)
     CUSTOM = "custom"
 
 
@@ -402,7 +402,7 @@ class QAConfigRegistry:
         "air_relative_humidity": QATarget.RELATIVE_HUMIDITY,
         "air_pressure": QATarget.AIR_PRESSURE,
         "temperature": QATarget.TEMPERATURE,
-        "soil_moisture": QATarget.SOIL_MOISTURE,
+        "soil_moisture": QATarget.SOIL_MOISTURE_VOL,
     }
 
     _method_mapping = {
