@@ -23,10 +23,9 @@ from .theory.incoming_intensity_corrections import (
 )
 
 from .theory.neutrons_to_soil_moisture import (
-    neutrons_to_grav_sm_desilets_etal_2010,
-    neutrons_to_vol_soil_moisture_desilets_etal_2010,
-    neutrons_to_vol_soil_moisture_koehli_etal_2021,
-    reformulated_neutrons_to_vol_soil_moisture_desilets_2010,
+    neutrons_to_total_grav_soil_moisture_desilets_etal_2010,
+    neutrons_to_total_grav_soil_moisture_koehli_etal_2021,
+    reformulated_neutrons_to_grav_soil_moisture_desilets_2010,
 )
 
 from .theory.pressure_corrections import (

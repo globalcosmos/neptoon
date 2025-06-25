@@ -58,10 +58,11 @@ class ColumnInfo:
         THERM_NEUTRON_COUNT_RAW = auto()
         THERM_NEUTRON_COUNT_CPH = auto()
         PRECIPITATION = auto()
-        SOIL_MOISTURE = auto()
-        SOIL_MOISTURE_FINAL = auto()
-        SOIL_MOISTURE_UNCERTAINTY_UPPER = auto()
-        SOIL_MOISTURE_UNCERTAINTY_LOWER = auto()
+        SOIL_MOISTURE_GRAV = auto()
+        SOIL_MOISTURE_VOL = auto()
+        SOIL_MOISTURE_VOL_FINAL = auto()
+        SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER = auto()
+        SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER = auto()
         SOIL_MOISTURE_MEASURMENT_DEPTH = auto()
         SOIL_MOISTURE_MEASUREMENT_RADIUS = auto()
         LATITUDE = auto()
@@ -114,10 +115,11 @@ class ColumnInfo:
         Name.THERM_NEUTRON_COUNT_RAW: "thermal_neutron_count_raw",
         Name.THERM_NEUTRON_COUNT_CPH: "thermal_neutron_count_cph",
         Name.PRECIPITATION: "precipitation",
-        Name.SOIL_MOISTURE: "soil_moisture",
-        Name.SOIL_MOISTURE_FINAL: "soil_moisture",  # updated to processed soil moisture
-        Name.SOIL_MOISTURE_UNCERTAINTY_UPPER: "soil_moisture_uncertainty_upper",
-        Name.SOIL_MOISTURE_UNCERTAINTY_LOWER: "soil_moisture_uncertainty_lower",
+        Name.SOIL_MOISTURE_GRAV: "soil_moisture_gravimetric",
+        Name.SOIL_MOISTURE_VOL: "soil_moisture_volumetric",
+        Name.SOIL_MOISTURE_VOL_FINAL: "soil_moisture_volumetric",  # updated to processed soil moisture
+        Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER: "soil_moisture_vol_uncertainty_upper",
+        Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER: "soil_moisture_vol_uncertainty_lower",
         Name.SOIL_MOISTURE_MEASURMENT_DEPTH: "crns_measurement_depth",
         Name.SOIL_MOISTURE_MEASUREMENT_RADIUS: "crns_measurement_radius",
         Name.LATITUDE: "latitude",

@@ -40,5 +40,5 @@ data_smoothing:
   smooth_soil_moisture: False
   settings:
     algorithm: rolling_mean
-    window: 12
+    window: 12h
     poly_order: 4

@@ -22,7 +22,7 @@ def test_import_and_use_strings():
     Test that the way we import in code pulls the string correctly
     """
     test_val1 = str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT)
-    test_val2 = str(ColumnInfo.Name.SOIL_MOISTURE)
+    test_val2 = str(ColumnInfo.Name.SOIL_MOISTURE_VOL)
     assert isinstance(test_val1, str)
     assert isinstance(test_val2, str)
 

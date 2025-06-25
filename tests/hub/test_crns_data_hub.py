@@ -129,7 +129,7 @@ def test_produce_soil_moisture_estimates_default(sample_hub_corrected):
     )
 
     assert (
-        str(ColumnInfo.Name.SOIL_MOISTURE)
+        str(ColumnInfo.Name.SOIL_MOISTURE_VOL)
         in sample_hub_corrected.crns_data_frame.columns
     )
     print(sample_hub_corrected.crns_data_frame)

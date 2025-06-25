@@ -941,7 +941,7 @@ Columns containing temporal information for measurements.
   - Must contain valid datetime information
   - Used for all temporal alignment
   - Critical for data processing
-  - Multiple columns can be merege e.g., `['Date', 'Time']`
+  - Multiple columns can be merged e.g., `['Date', 'Time']`
 
 ---
 #### `date_time_format`

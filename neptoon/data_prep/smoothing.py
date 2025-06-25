@@ -4,6 +4,7 @@ from scipy.signal import savgol_filter
 
 from neptoon.logging import get_logger
 from neptoon.columns import ColumnInfo
+from neptoon.utils import parse_resolution_to_timedelta
 
 core_logger = get_logger()
 
@@ -26,7 +27,8 @@ class SmoothData:
         smooth_method: Literal[
             "rolling_mean", "savitsky_golay"
         ] = "rolling_mean",
-        window: Optional[Union[str, int]] = 12,
+        window: str = "12h",
+        min_proportion_good_data: float = 0.5,
         poly_order: Optional[int] = None,
         auto_update_final_col: bool = True,
     ):
@@ -41,8 +43,13 @@ class SmoothData:
             The column name of the column to be smoothed.
         smooth_method : Literal["rolling_mean", "savitsky_golay"],
             The smooth method to apply, by default "rolling_mean"
-        window : Optional[Union[str, int]], optional
-            The window size for smoothing, by default 12
+        window : str , optional
+            The window size for smoothing. Time based str value e.g.,
+            30m, 1h, 6h, 1d by default 24h. Converted to timedelta for
+            use in smoothing.
+        min_proportion_good_data : float, optional
+            The minimum proportion of available data in the window for a
+            average to be taken, provided as a decimal.
         poly_order : Optional[int], optional
             Poly order to apply (savitsky golay only), by default None
         auto_update_final_col : bool, optional
@@ -53,8 +60,12 @@ class SmoothData:
         self.column_to_smooth = column_to_smooth
         self.smooth_method = smooth_method
         self.window = window
+        self.min_proportion_good_data = min_proportion_good_data
         self.poly_order = poly_order
         self.auto_update_final_col = auto_update_final_col
+
+        # Placeholders
+        self.window_as_timedelta = None
 
         self._validate_inputs()
 
@@ -88,16 +99,40 @@ class SmoothData:
             core_logger.error(message)
             raise ValueError(message)
         if self.smooth_method == "savitsky_golay":
-            self._validate_savitsky_golay_params()
+            self._switch_to_rolling()  # TODO : change this when implementing savitsky_golay
+            # self._validate_savitsky_golay_params()
         if self.smooth_method == "rolling_mean":
             self._validate_rolling_mean_params()
         if isinstance(self.window, str):
-            try:
-                pd.Timedelta(self.window)
-            except ValueError:
-                message = f"Invalid time string for window: {self.window}"
-                core_logger.error(message)
-                raise ValueError(message)
+            self.window_as_timedelta = parse_resolution_to_timedelta(
+                resolution_str=self.window
+            )
+        else:
+            message = (
+                f"Invalid time string for window: {self.window}"
+                "`window` must be a string type denoting the time window for "
+                "smoothing. E.g., 30 minutes = `30m`, 2 hours = `2h`, 1 day = `1d`"
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+    def _validate_rolling_mean_params(self):
+        if not isinstance(self.window, str):
+            message = (
+                "window must be given as a string (e.g., 1h, 1d, 30m). "
+                f"Window was given as {self.window}"
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+    def _switch_to_rolling(self):
+        self.smooth_method = "rolling_mean"
+        message = (
+            "Savitsky-Golay smoothing is coming in a future update."
+            "For this processing pipeline smoothing has been changed to rolling mean."
+        )
+        core_logger.info(message)
+        print(message)
 
     def _validate_savitsky_golay_params(self):
         """
@@ -123,15 +158,11 @@ class SmoothData:
             core_logger.error(message)
             raise ValueError(message)
 
-    def _validate_rolling_mean_params(self):
-        "TODO: could implement time delta selection here?"
-        pass
-
     def _update_column_name_config(
         self,
         possible_names=[
-            str(ColumnInfo.Name.SOIL_MOISTURE),
-            str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            str(ColumnInfo.Name.SOIL_MOISTURE_VOL),
+            str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL),
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_FINAL),
             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT),
@@ -171,11 +202,12 @@ class SmoothData:
 
         new_column_name = self.create_new_column_name()
         if self.column_to_smooth in [
-            str(ColumnInfo.Name.SOIL_MOISTURE),
-            str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+            str(ColumnInfo.Name.SOIL_MOISTURE_VOL),
+            str(ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL),
         ]:
             ColumnInfo.relabel(
-                ColumnInfo.Name.SOIL_MOISTURE_FINAL, new_label=new_column_name
+                ColumnInfo.Name.SOIL_MOISTURE_VOL_FINAL,
+                new_label=new_column_name,
             )
         elif self.column_to_smooth in [
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
@@ -194,33 +226,58 @@ class SmoothData:
                 new_label=new_column_name,
             )
 
-    def _apply_rolling_mean(self, data_to_smooth):
+    def _get_min_obs_for_rolling_mean(
+        self,
+        data_to_smooth: pd.Series,
+        min_proportion_good_data: float = 0.5,
+    ):
+        """
+        Calculates the number of observations that equates to half the
+        timedelta window.
+
+        Necessary as pd.Series.rolling(min_periods) only accepts
+        integers (not timedelta)
+
+        Parameters
+        ----------
+        data_to_smooth : pd.Series
+            data on which smoothing will be done (datetime index)
+
+        Returns
+        -------
+        int
+            The number of observatinos that make up the half the time
+            delta
+        """
+        freq = data_to_smooth.index.to_series().diff().median()
+        min_obs = int(
+            (self.window_as_timedelta * min_proportion_good_data) / freq
+        )
+        return min_obs
+
+    def _apply_rolling_mean(self, data_to_smooth: pd.Series):
         """
         Applies a rolling mean smoothing
 
         Parameters
         ----------
-        data_to_smooth : str
-            The name of the column to smooth
+        data_to_smooth : pd.Series
+            pd.Series of data to smooth
 
         Returns
         -------
         pd.Series
             The smoothed data
         """
-        if isinstance(self.window, int):
-            smoothed = data_to_smooth.rolling(
-                window=self.window,
-                min_periods=int((self.window / 2)),
-                center=False,
-            ).mean()
-        else:
-            # TODO: Need to address min periods using TimeDelta
-            smoothed = data_to_smooth.rolling(
-                window=self.window,
-                min_periods=2,
-                center=False,
-            ).mean()
+        min_obs = self._get_min_obs_for_rolling_mean(
+            data_to_smooth=data_to_smooth
+        )
+
+        smoothed = data_to_smooth.rolling(
+            window=self.window_as_timedelta,
+            min_periods=min_obs,
+            center=False,
+        ).mean()
 
         return smoothed.round()
 

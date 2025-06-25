@@ -1,9 +1,9 @@
-import pandera
+import pandera.pandas as pa
 from pandera.typing import Series, DataFrame  # Index
 from typing import Optional
 
 
-class FormatCheck(pandera.DataFrameModel):
+class FormatCheck(pa.DataFrameModel):
     """
     This is the validation table which is used to check that the time
     series data has been correctly formatted for use in cosmosbase.
@@ -17,17 +17,17 @@ class FormatCheck(pandera.DataFrameModel):
 
     # Essential Columns
     # pandera.Int is a nullable Integer type
-    epithermal_neutrons_cph: float = pandera.Field(nullable=True)
-    air_pressure: float = pandera.Field(nullable=True)
-    air_relative_humidity: float = pandera.Field(
+    epithermal_neutrons_cph: float = pa.Field(nullable=True)
+    air_pressure: float = pa.Field(nullable=True)
+    air_relative_humidity: float = pa.Field(
         nullable=True,
     )
-    air_temperature: float = pandera.Field(nullable=True)
+    air_temperature: float = pa.Field(nullable=True)
 
     # Optional columns
-    precipitation: Optional[float] = pandera.Field(nullable=True)
-    snow_depth: Optional[float] = pandera.Field(nullable=True)
-    thermal_neutrons: Optional[float] = pandera.Field(nullable=True)
+    precipitation: Optional[float] = pa.Field(nullable=True)
+    snow_depth: Optional[float] = pa.Field(nullable=True)
+    thermal_neutrons: Optional[float] = pa.Field(nullable=True)
 
 
 class RawDataSchemaAfterFirstQA(FormatCheck):
@@ -36,17 +36,17 @@ class RawDataSchemaAfterFirstQA(FormatCheck):
     first formatting and validation steps.
     """
 
-    epithermal_neutrons_cph: int = pandera.Field(nullable=True, gt=0)
-    air_pressure: float = pandera.Field(gt=600)
-    air_relative_humidity: float = pandera.Field(
+    epithermal_neutrons_cph: int = pa.Field(nullable=True, gt=0)
+    air_pressure: float = pa.Field(gt=600)
+    air_relative_humidity: float = pa.Field(
         nullable=True,
         ge=0,
         le=100,
     )
 
-    incoming_neutron_intensity: float = pandera.Field(nullable=True)
+    incoming_neutron_intensity: float = pa.Field(nullable=True)
 
-    @pandera.check("air_relative_humidity")
+    @pa.check("air_relative_humidity")
     def relative_humidity_validation(cls, series: Series[float]) -> bool:
         """
         Check to ensure that relative humidity is given a percentage
@@ -61,7 +61,7 @@ class RawDataSchemaAfterFirstQA(FormatCheck):
             return False
         return True
 
-    @pandera.check()
+    @pa.check()
     def check_date_time_removed_and_indexed(cls, df: DataFrame) -> bool:
         """
         Checks that the date_time column has been assigned to index and
