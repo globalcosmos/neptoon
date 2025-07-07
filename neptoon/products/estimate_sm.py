@@ -39,6 +39,9 @@ class NeutronsToSM:
         depth_column_name: str = str(
             ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH
         ),
+        radius_column_name: str = str(
+            ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS
+        ),
         conversion_theory: Literal[
             "desilets_etal_2010", "koehli_etal_2021"
         ] = "desilets_etal_2010",
@@ -62,7 +65,8 @@ class NeutronsToSM:
             "Aug13_uranos_atmprof",
             "Aug13_uranos_atmprof2",
         ] = "Mar21_uranos_drf",
-        air_humidity_col_name=str(ColumnInfo.Name.ABSOLUTE_HUMIDITY),
+        abs_air_humidity_col_name=str(ColumnInfo.Name.ABSOLUTE_HUMIDITY),
+        air_pressure_col_name=str(ColumnInfo.Name.AIR_PRESSURE),
     ):
         """
         Attributes to be added to the class.
@@ -87,11 +91,14 @@ class NeutronsToSM:
             found , by default str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL )
         soil_moisture_vol_col_name : str, optional
-            column name where volumetric soil moisture should be written, by
-            default str(ColumnInfo.Name.SOIL_MOISTURE)
+            column name where volumetric soil moisture should be
+            written, by default str(ColumnInfo.Name.SOIL_MOISTURE)
         depth_column_name : str, optional
-            column name where depth estimates are written, by default str(
-            ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH )
+            column name where depth estimates are written, by default
+            str( ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH )
+        radius_column_name : str, optional
+            column name where radius estimates are written, by default
+            str( ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS )
         """
         self._crns_data_frame = crns_data_frame
         self.n0 = n0
@@ -112,9 +119,11 @@ class NeutronsToSM:
         self.smoothed_neutrons_col_name = smoothed_neutrons_col_name
         self.soil_moisture_vol_col_name = soil_moisture_vol_col_name
         self.depth_column_name = depth_column_name
+        self.radius_column_name = radius_column_name
         self.conversion_theory = conversion_theory
         self.koehli_method_form = koehli_method_form
-        self.air_humidity_col_name = air_humidity_col_name
+        self.abs_air_humidity_col_name = abs_air_humidity_col_name
+        self.air_pressure_col_name = air_pressure_col_name
         self.air_humidity_uncorrected = False
 
     @property
@@ -254,7 +263,7 @@ class NeutronsToSM:
                     neutron_count=row[neutron_data_column_name],
                     n0=self.n0,
                     lattice_water=self.lattice_water,
-                    air_humidity=row[self.air_humidity_col_name],
+                    abs_air_humidity=row[self.abs_air_humidity_col_name],
                     water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
                     koehli_method_form=self.koehli_method_form,
                 ),
@@ -322,9 +331,7 @@ class NeutronsToSM:
         radius: float = 50,
     ):
         """
-        Creates a column with the calculated depth of measurement
-
-        TODO: what radius to set as standard?
+        Creates a column with the calculated depth of measurement (cm)
 
         Parameters
         ----------
@@ -346,9 +353,20 @@ class NeutronsToSM:
 
     def calculate_horizontal_footprint(self):
         """
-        TODO Adds horizontal footprint column
+        Creates a column with the calculated radius of measurement (m).
         """
-        pass
+        self.crns_data_frame[self.radius_column_name] = (
+            self.crns_data_frame.apply(
+                lambda row: Schroen2017.calculate_footprint_radius(
+                    volumetric_soil_moisture=row[
+                        self.soil_moisture_vol_col_name
+                    ],
+                    abs_air_humidity=row[self.abs_air_humidity_col_name],
+                    atmospheric_pressure=row[self.air_pressure_col_name],
+                ),
+                axis=1,
+            )
+        )
 
     def calculate_all_soil_moisture_data(self):
         """
@@ -369,7 +387,7 @@ class NeutronsToSM:
         )
         self.calculate_uncertainty_of_sm_estimates()
         self.calculate_depth_of_measurement()
-        self.calculate_horizontal_footprint()  # TODO
+        self.calculate_horizontal_footprint()
 
     def return_data_frame(self):
         """

@@ -33,9 +33,7 @@ def sample_crns_data():
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ): np.random.randint(500, 1500, 100),
         str(ColumnInfo.Name.AIR_TEMPERATURE): np.random.randint(10, 15, 100),
-        str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY): np.random.randint(
-            50, 60, 100
-        ),
+        str(ColumnInfo.Name.ABSOLUTE_HUMIDITY): np.random.randint(20, 45, 100),
     }
     return pd.DataFrame(data)
 
@@ -171,10 +169,10 @@ def test_koehli_method_nans_not_processed():
     Tests if the koehli method will process a nan value
     """
     nan_neut = neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
-        neutron_count=np.nan, n0=2000, air_humidity=8
+        neutron_count=np.nan, n0=2000, abs_air_humidity=8
     )
     nan_hum = neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
-        neutron_count=1000, n0=2000, air_humidity=np.nan
+        neutron_count=1000, n0=2000, abs_air_humidity=np.nan
     )
 
     assert pd.isna(nan_neut)
