@@ -197,6 +197,7 @@ class FileCollectionConfig:
         if self._data_location.is_dir():
             self._data_source = "folder"
             core_logger.info("Extracting data from a folder")
+            return
 
         try:
             if tarfile.is_tarfile(self._data_location):
