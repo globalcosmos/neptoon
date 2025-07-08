@@ -4,8 +4,8 @@ message: If you use this software, please cite the paper describing it as below.
 type: software
 title: neptoon
 abstract: A Python processing toolbox for Cosmic Ray Neutron Sensors (CRNS)
-doi: 10.5281/zenodo.15837631
-version: v0.10.1
+doi: 10.5281/zenodo.15837792
+version: v0.10.2
 date-released: 2025-07-08
 authors:
 - given-names: Daniel
@@ -21,6 +21,6 @@ authors:
 license: MIT
 repository-code: git+https://codebase.helmholtz.cloud/cosmos/neptoon
 identifiers:
-- description: This is the archived snapshot of version v0.10.1 of neptoon
+- description: This is the archived snapshot of version v0.10.2 of neptoon
   type: doi
-  value: 10.5281/zenodo.15837631
+  value: 10.5281/zenodo.15837792
