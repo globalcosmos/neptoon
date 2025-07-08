@@ -1,6 +1,9 @@
 import pandas as pd
 from typing import Literal, Optional
+import pandera
+import pandera.pandas as pa
 
+###
 from neptoon.columns import ColumnInfo
 from neptoon.corrections import (
     neutrons_to_total_grav_soil_moisture_desilets_etal_2010,
@@ -10,8 +13,126 @@ from neptoon.corrections import (
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 from neptoon.logging import get_logger
 from neptoon.data_audit import log_key_step
+from neptoon.quality_control.utils import _validate_df
 
 core_logger = get_logger()
+
+###
+# Pandera schema for validation
+###
+
+base_input_schema = pa.DataFrameSchema(
+    {
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+        ): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+        ): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+    },
+    index=pa.Index(dtype=pd.DatetimeTZDtype(unit="ns", tz="UTC"), coerce=True),
+    strict=False,
+)
+
+input_schema_koehli = pa.DataFrameSchema(
+    {
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+        ): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+        ): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(ColumnInfo.Name.ABSOLUTE_HUMIDITY): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+    },
+    index=pa.Index(dtype=pd.DatetimeTZDtype(unit="ns", tz="UTC"), coerce=True),
+    strict=False,
+)
+
+output_schema = pa.DataFrameSchema(
+    {
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+        ): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+        ): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER): pa.Column(
+            dtype=float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS): pa.Column(
+            float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH): pa.Column(
+            float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(ColumnInfo.Name.SOIL_MOISTURE_VOL): pa.Column(
+            float,
+            coerce=True,
+            nullable=True,
+        ),
+        str(ColumnInfo.Name.SOIL_MOISTURE_GRAV): pa.Column(
+            float,
+            coerce=True,
+            nullable=True,
+        ),
+    },
+    index=pa.Index(dtype=pd.DatetimeTZDtype(unit="ns", tz="UTC"), coerce=True),
+    strict=False,
+)
 
 
 class NeutronsToSM:
@@ -28,16 +149,19 @@ class NeutronsToSM:
         lattice_water: float = 0,
         soil_organic_carbon: float = 0,
         corrected_neutrons_col_name: str = str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
-        ),
-        smoothed_neutrons_col_name: str = str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ),
         soil_moisture_vol_col_name: str = str(
             ColumnInfo.Name.SOIL_MOISTURE_VOL
         ),
+        soil_moisture_grav_col_name: str = str(
+            ColumnInfo.Name.SOIL_MOISTURE_GRAV
+        ),
         depth_column_name: str = str(
             ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH
+        ),
+        radius_column_name: str = str(
+            ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS
         ),
         conversion_theory: Literal[
             "desilets_etal_2010", "koehli_etal_2021"
@@ -62,7 +186,8 @@ class NeutronsToSM:
             "Aug13_uranos_atmprof",
             "Aug13_uranos_atmprof2",
         ] = "Mar21_uranos_drf",
-        air_humidity_col_name=str(ColumnInfo.Name.ABSOLUTE_HUMIDITY),
+        abs_air_humidity_col_name=str(ColumnInfo.Name.ABSOLUTE_HUMIDITY),
+        air_pressure_col_name=str(ColumnInfo.Name.AIR_PRESSURE),
     ):
         """
         Attributes to be added to the class.
@@ -81,19 +206,21 @@ class NeutronsToSM:
             in decimal percent, by default 0
         corrected_neutrons_col_name : str, optional
             column name where corrected neutrons are to be found, by
-            default str( ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT )
-        smoothed_neutrons_col_name : str, optional
-            column name where smoothed corrected neutron counts are
-            found , by default str(
+            default str(
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL )
         soil_moisture_vol_col_name : str, optional
-            column name where volumetric soil moisture should be written, by
-            default str(ColumnInfo.Name.SOIL_MOISTURE)
+            column name where volumetric soil moisture should be
+            written, by default str(ColumnInfo.Name.SOIL_MOISTURE)
         depth_column_name : str, optional
-            column name where depth estimates are written, by default str(
-            ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH )
+            column name where depth estimates are written, by default
+            str( ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH )
+        radius_column_name : str, optional
+            column name where radius estimates are written, by default
+            str( ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS )
         """
-        self._crns_data_frame = crns_data_frame
+        self._crns_data_frame = _validate_df(
+            crns_data_frame, schema=base_input_schema
+        )
         self.n0 = n0
         # None vals can be passed from CRNSDataHub so leave these if else statements
         self.dry_soil_bulk_density = (
@@ -109,12 +236,14 @@ class NeutronsToSM:
             self.soil_organic_carbon
         )
         self.corrected_neutrons_col_name = corrected_neutrons_col_name
-        self.smoothed_neutrons_col_name = smoothed_neutrons_col_name
+        self.soil_moisture_grav_col_name = soil_moisture_grav_col_name
         self.soil_moisture_vol_col_name = soil_moisture_vol_col_name
         self.depth_column_name = depth_column_name
+        self.radius_column_name = radius_column_name
         self.conversion_theory = conversion_theory
         self.koehli_method_form = koehli_method_form
-        self.air_humidity_col_name = air_humidity_col_name
+        self.abs_air_humidity_col_name = abs_air_humidity_col_name
+        self.air_pressure_col_name = air_pressure_col_name
         self.air_humidity_uncorrected = False
 
     @property
@@ -123,16 +252,7 @@ class NeutronsToSM:
 
     @crns_data_frame.setter
     def crns_data_frame(self, df):
-        # TODO add checks
         self._crns_data_frame = df
-
-    def _validate_crns_data_frame(self):
-        """
-        TODO: Internal method to validate the dataframe can be used:
-            - Column Names
-            - Attributes correctly given etc.
-        """
-        pass
 
     @staticmethod
     def _convert_soc_to_wsom(soc):
@@ -249,12 +369,15 @@ class NeutronsToSM:
             self._check_if_humidity_correction_applied(auto_uncorrect=True)
             self._ensure_abs_humidity_available()
 
+            self.crns_data_frame = _validate_df(
+                self.crns_data_frame, schema=input_schema_koehli
+            )
             raw_grav = self.crns_data_frame.apply(
                 lambda row: neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
                     neutron_count=row[neutron_data_column_name],
                     n0=self.n0,
                     lattice_water=self.lattice_water,
-                    air_humidity=row[self.air_humidity_col_name],
+                    abs_air_humidity=row[self.abs_air_humidity_col_name],
                     water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
                     koehli_method_form=self.koehli_method_form,
                 ),
@@ -271,6 +394,7 @@ class NeutronsToSM:
             self.crns_data_frame[soil_moisture_column_write_name_grav] = (
                 grav_sm
             )
+
         if soil_moisture_column_write_name_vol:
             self.crns_data_frame[soil_moisture_column_write_name_vol] = (
                 grav_sm * self.dry_soil_bulk_density
@@ -322,9 +446,7 @@ class NeutronsToSM:
         radius: float = 50,
     ):
         """
-        Creates a column with the calculated depth of measurement
-
-        TODO: what radius to set as standard?
+        Creates a column with the calculated depth of measurement (cm)
 
         Parameters
         ----------
@@ -346,9 +468,21 @@ class NeutronsToSM:
 
     def calculate_horizontal_footprint(self):
         """
-        TODO Adds horizontal footprint column
+        Creates a column with the calculated radius of measurement (m).
         """
-        pass
+
+        self.crns_data_frame[self.radius_column_name] = (
+            self.crns_data_frame.apply(
+                lambda row: Schroen2017.calculate_footprint_radius(
+                    volumetric_soil_moisture=row[
+                        self.soil_moisture_vol_col_name
+                    ],
+                    abs_air_humidity=row[self.abs_air_humidity_col_name],
+                    atmospheric_pressure=row[self.air_pressure_col_name],
+                ),
+                axis=1,
+            )
+        )
 
     def calculate_all_soil_moisture_data(self):
         """
@@ -357,19 +491,16 @@ class NeutronsToSM:
         """
 
         self.calculate_sm_estimates(
-            neutron_data_column_name=str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
-            ),
-            soil_moisture_column_write_name_grav=str(
-                ColumnInfo.Name.SOIL_MOISTURE_GRAV
-            ),
-            soil_moisture_column_write_name_vol=str(
-                ColumnInfo.Name.SOIL_MOISTURE_VOL
-            ),
+            neutron_data_column_name=self.corrected_neutrons_col_name,
+            soil_moisture_column_write_name_grav=self.soil_moisture_grav_col_name,
+            soil_moisture_column_write_name_vol=self.soil_moisture_vol_col_name,
         )
         self.calculate_uncertainty_of_sm_estimates()
         self.calculate_depth_of_measurement()
-        self.calculate_horizontal_footprint()  # TODO
+        self.calculate_horizontal_footprint()
+        self.crns_data_frame = _validate_df(
+            df=self.crns_data_frame, schema=output_schema
+        )
 
     def return_data_frame(self):
         """

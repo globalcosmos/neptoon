@@ -120,8 +120,8 @@ class ColumnInfo:
         Name.SOIL_MOISTURE_VOL_FINAL: "soil_moisture_volumetric",  # updated to processed soil moisture
         Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER: "soil_moisture_vol_uncertainty_upper",
         Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER: "soil_moisture_vol_uncertainty_lower",
-        Name.SOIL_MOISTURE_MEASURMENT_DEPTH: "crns_measurement_depth",
-        Name.SOIL_MOISTURE_MEASUREMENT_RADIUS: "crns_measurement_radius",
+        Name.SOIL_MOISTURE_MEASURMENT_DEPTH: "crns_measurement_depth_cm",
+        Name.SOIL_MOISTURE_MEASUREMENT_RADIUS: "crns_measurement_radius_m",
         Name.LATITUDE: "latitude",
         Name.LONGITUDE: "longitude",
         Name.ELEVATION: "elevation",
