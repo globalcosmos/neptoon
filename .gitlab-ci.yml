@@ -4,7 +4,7 @@ image: ghcr.io/astral-sh/uv:python3.11-bookworm
 stages:
   - lint
   - test
-  # - build
+  - build
   - docs
   - package_testpypi
   - release
