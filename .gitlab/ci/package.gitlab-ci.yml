@@ -7,8 +7,7 @@ package_testpypi:
   #   - pip install poetry
   script:
     - uv build
-    - uv publish --publish-url https://test.pypi.org/legacy/ \
-      --token "${neptoon_pypi_test_api_key}"
+    - uv publish --publish-url https://test.pypi.org/legacy/ --token "${neptoon_pypi_test_api_key}"
     # - poetry config repositories.testpypi "https://test.pypi.org/legacy/"
     # - poetry publish -r testpypi -u "__token__" -p "${neptoon_pypi_test_api_key}"
   rules:
