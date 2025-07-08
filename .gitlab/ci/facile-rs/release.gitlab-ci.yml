@@ -33,6 +33,8 @@ prepare-release:
       else
           echo "Zenodo skipped, change ENABLE_ZENODO in .gitlab-ci.yml if you want to do a Zenodo release";
       fi
+    # Bump version
+    - sed -ri "s|^VERSION *= *['\"][^'\"]+['\"]|VERSION = '${VERSION}'|" neptoon/__init__.py
     # Generate a CFF file
     - uv run facile-rs cff create --no-sort-authors
     # Commit and push updated metadata files
