@@ -65,6 +65,9 @@ variables:
   RADAR_PATH: ${PROJECT_NAME}-${CI_COMMIT_TAG}
   RADAR_BACKLINK: ${CI_PROJECT_URL}/-/releases
 
+  # Version location
+  VERSION_LOCATION: neptoon/__init__.py
+
   # Notification email configuration
   # Configure and uncomment to activate email notifications when RADAR or Zenodo releases are uploaded
   # SMTP_SERVER: smtp.example.com
