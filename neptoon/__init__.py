@@ -1,9 +1,6 @@
 from .hub import CRNSDataHub
 
 
-from importlib.metadata import version, PackageNotFoundError
+VERSION = "0.10.0"
 
-try:
-    __version__ = version("neptoon")
-except PackageNotFoundError:
-    __version__ = "unknown"
+__version__ = VERSION
