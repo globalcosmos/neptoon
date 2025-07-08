@@ -1,11 +1,12 @@
 package_testpypi:
   stage: package_testpypi
-  needs:
-    - build:package
+  # needs:
+  #   - build:package
   # before_script:
   #   - pip install -U pip
   #   - pip install poetry
   script:
+    - uv build
     - uv publish --publish-url https://test.pypi.org/legacy/ \
       --token "${neptoon_pypi_test_api_key}"
     # - poetry config repositories.testpypi "https://test.pypi.org/legacy/"
@@ -15,13 +16,14 @@ package_testpypi:
 
 package_pypi:
   stage: package_pypi
-  needs:
-    - build:package
+  # needs:
+  #   - build:package
   # before_script:
   #   - pip install -U pip
   #   - pip install poetry
   script:
     # - poetry publish -u "__token__" -p "${neptoon_pypi_api_key_ACTUAL}"
+    - uv build
     - uv publish --token "${neptoon_pypi_api_key_ACTUAL}"
   rules:
     - if: $CI_COMMIT_TAG =~ /^v/
