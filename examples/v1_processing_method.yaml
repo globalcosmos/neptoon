@@ -42,3 +42,11 @@ data_smoothing:
     algorithm: rolling_mean
     window: 12h
     poly_order: 4
+
+temporal_aggregation:
+  output_resolution: 1hour
+  align_timestamps: true
+  alignment_method: time
+  aggregate_method: bagg
+  aggregate_func: mean
+  aggregate_maxna_fraction: 0.3
