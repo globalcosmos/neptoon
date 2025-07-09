@@ -89,19 +89,8 @@ class TimeSeriesColumns(BaseConfig):
     date_time_format: str
 
 
-class Temporal(BaseConfig):
-    input_resolution: str = Field(default="1hour")
-    output_resolution: str = Field(default=None)
-    align_timestamps: bool = Field(default=False)
-    alignment_method: str | None = Field(default="time")
-    aggregate_method: str | None = Field(default="bagg")
-    aggregate_func: str | None = Field(default="mean")
-    aggregate_maxna_fraction: float | None = Field(default=0.5)
-
-
 class TimeSeriesData(BaseConfig):
     path_to_data: Optional[str] = Field(default=None)
-    temporal: Optional[Temporal] = None
     key_column_info: Optional[TimeSeriesColumns] = None
 
 
@@ -532,11 +521,21 @@ class DataSmoothingConfig(BaseModel):
     )
 
 
+class Temporal(BaseConfig):
+    output_resolution: str = Field(default=None)
+    align_timestamps: bool = Field(default=False)
+    alignment_method: str | None = Field(default="time")
+    aggregate_method: str | None = Field(default="bagg")
+    aggregate_func: str | None = Field(default="mean")
+    aggregate_maxna_fraction: float | None = Field(default=0.5)
+
+
 class ProcessConfig(BaseConfig):
 
     neutron_quality_assessment: NeutronQualityAssessment
     correction_steps: CorrectionSteps
     data_smoothing: DataSmoothingConfig
+    temporal: Temporal
 
 
 class ConfigType(Enum):

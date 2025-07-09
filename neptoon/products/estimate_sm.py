@@ -13,7 +13,7 @@ from neptoon.corrections import (
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 from neptoon.logging import get_logger
 from neptoon.data_audit import log_key_step
-from neptoon.quality_control.utils import _validate_df
+from neptoon.utils import validate_df
 
 core_logger = get_logger()
 
@@ -218,7 +218,7 @@ class NeutronsToSM:
             column name where radius estimates are written, by default
             str( ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS )
         """
-        self._crns_data_frame = _validate_df(
+        self._crns_data_frame = validate_df(
             crns_data_frame, schema=base_input_schema
         )
         self.n0 = n0
@@ -369,7 +369,7 @@ class NeutronsToSM:
             self._check_if_humidity_correction_applied(auto_uncorrect=True)
             self._ensure_abs_humidity_available()
 
-            self.crns_data_frame = _validate_df(
+            self.crns_data_frame = validate_df(
                 self.crns_data_frame, schema=input_schema_koehli
             )
             raw_grav = self.crns_data_frame.apply(
@@ -498,7 +498,7 @@ class NeutronsToSM:
         self.calculate_uncertainty_of_sm_estimates()
         self.calculate_depth_of_measurement()
         self.calculate_horizontal_footprint()
-        self.crns_data_frame = _validate_df(
+        self.crns_data_frame = validate_df(
             df=self.crns_data_frame, schema=output_schema
         )
 

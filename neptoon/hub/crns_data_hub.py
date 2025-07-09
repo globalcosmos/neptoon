@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import Literal, Union, Optional
+import datetime
 from pathlib import Path
 from neptoon.external.nmdb_data_collection import (
     NMDBDataAttacher,
@@ -26,10 +27,12 @@ from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
+from neptoon import utils
 from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
+from neptoon.data_prep import TimeStampAggregator, TimeStampAligner
 from neptoon.columns import ColumnInfo
 from neptoon.logging import get_logger
 from magazine import Magazine
@@ -472,6 +475,97 @@ class CRNSDataHub:
         self.sensor_info.avg_lattice_water = avg_lattice_water
         self.sensor_info.avg_soil_organic_carbon = avg_soil_organic_carbon
         print(f"N0 number was calculated as {n0}")
+
+    def align_time_stamps(
+        self,
+        align_method: str = "time",
+    ):
+        """
+        Aligns timestamps to occur on the hour. E.g., 01:00 not 01:05.
+
+        Uses the TimeStampAligner class.
+
+        Parameters
+        ----------
+        method : str, optional
+            method to use for shifting, defaults to shifting to nearest
+            hour, by default "time"
+        """
+        freq = utils._find_temporal_resolution(data_frame=self.crns_data_frame)
+
+        try:
+            timestamp_aligner = TimeStampAligner(self.data_frame)
+        except Exception as e:
+            message = (
+                "Could not align timestamps of dataframe. First the "
+                "dataframe must have a date time index.\n"
+                f"Exception: {e}"
+            )
+            print(message)
+            core_logger.error(message)
+        timestamp_aligner.align_timestamps(
+            freq=freq,
+            method=align_method,
+        )
+        self.data_frame = timestamp_aligner.return_dataframe()
+
+    def aggregate_data_frame(
+        self,
+        output_resolution: str,
+        maxna_fraction: float = 0.3,
+        aggregate_method: str = "bagg",
+        aggregate_function: str = "mean",
+    ):
+        """
+        Aggregates a dataframe to a new sample rate.
+        """
+
+        input_resolution = utils._find_temporal_resolution(
+            data_frame=self.crns_data_frame
+        )
+        input_resolution = datetime.timedelta(seconds=input_resolution)
+
+        adjustment_factor = (
+            pd.to_timedelta(output_resolution) / input_resolution
+        )
+        max_na = adjustment_factor * maxna_fraction
+        try:
+            timestamp_aggregator = TimeStampAggregator(self.data_frame)
+        except Exception as e:
+            message = (
+                "Could not align timestamps of dataframe. First the "
+                "dataframe must have a date time index.\n"
+                f"Exception: {e}"
+            )
+            print(message)
+            core_logger.error(message)
+        timestamp_aggregator.aggregate_data(
+            freq=output_resolution,
+            method=aggregate_method,
+            func=aggregate_function,
+            max_na=max_na,
+        )
+        self.data_frame = timestamp_aggregator.return_dataframe()
+
+        # Convert columns with absolute counts to new aggregation
+        self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)] = (
+            self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
+            * adjustment_factor
+        )
+        try:
+            self.data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)] = (
+                self.data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)]
+                * adjustment_factor
+            )
+        except KeyError:
+            core_logger.info("No thermal neutrons to adjust")
+        try:
+            self.data_frame[str(ColumnInfo.Name.PRECIPITATION)] = (
+                self.data_frame[str(ColumnInfo.Name.PRECIPITATION)]
+                * adjustment_factor
+            )
+        except KeyError:
+            core_logger.info("No precipitation data to adjust")
 
     @Magazine.reporting(topic="Soil Moisture")
     def produce_soil_moisture_estimates(

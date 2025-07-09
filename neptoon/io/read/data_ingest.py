@@ -727,13 +727,6 @@ class InputDataFrameFormattingConfig:
     def __init__(
         self,
         path_to_config: Optional[Union[str, Path]] = None,
-        input_resolution: str = "1hour",
-        output_resolution: str = "1hour",
-        aggregate_method: str = "bagg",
-        aggregate_func: str = "mean",
-        aggregate_maxna_fraction: float = 0.5,
-        align_timestamps: bool = False,
-        align_method: str = "time",
         pressure_merge_method: MergeMethod = MergeMethod.PRIORITY,
         pressure_units: PressureUnits = PressureUnits.HECTOPASCALS,
         temperature_merge_method: MergeMethod = MergeMethod.PRIORITY,
@@ -996,18 +989,6 @@ class InputDataFrameFormattingConfig:
         Assign attributes using the YAML information.
         """
         tmp = self.config_info
-
-        self.input_resolution = tmp.time_series_data.temporal.input_resolution
-        self.output_resolution = (
-            tmp.time_series_data.temporal.output_resolution
-        )
-        self.align_timestamps = tmp.time_series_data.temporal.align_timestamps
-        self.align_method = tmp.time_series_data.temporal.alignment_method
-        self.aggregate_method = tmp.time_series_data.temporal.aggregate_method
-        self.aggregate_func = tmp.time_series_data.temporal.aggregate_func
-        self.aggregate_maxna_fraction = (
-            tmp.time_series_data.temporal.aggregate_maxna_fraction
-        )
         self.neutron_count_units = (
             tmp.time_series_data.key_column_info.neutron_count_units
         )
@@ -1182,10 +1163,8 @@ class FormatDataForCRNSDataHub:
 
     extract_date_time_column
     convert_time_zone
-    align_time_stamps
     date_time_as_index
     data_frame_to_numeric
-    aggregate_data_frame TODO
     merge_multiple_meteo_columns
     prepare_key_columns
     prepare_neutron_count_columns
@@ -1560,100 +1539,6 @@ class FormatDataForCRNSDataHub:
                 self.data_frame[raw_column_name] * period_seconds
             )
 
-    def align_time_stamps(
-        self,
-    ):
-        """
-        Aligns timestamps to occur on the hour. E.g., 01:00 not 01:05.
-
-        Uses the TimeStampAligner class.
-
-        Parameters
-        ----------
-        method : str, optional
-            method to use for shifting, defaults to shifting to nearest
-            hour, by default "time"
-        freq : str, optional
-            Define how regular the timestamps should be, 1 hour by
-            default, by default "1H"
-        """
-        freq = self.config.input_resolution
-        method = self.config.align_method
-
-        try:
-            timestamp_aligner = TimeStampAligner(self.data_frame)
-        except Exception as e:
-            message = (
-                "Could not align timestamps of dataframe. First the "
-                "dataframe must have a date time index.\n"
-                f"Exception: {e}"
-            )
-            print(message)
-            core_logger.error(message)
-        timestamp_aligner.align_timestamps(
-            freq=freq,
-            method=method,
-        )
-        self.data_frame = timestamp_aligner.return_dataframe()
-
-    def aggregate_data_frame(self):
-        """
-        Aggregates a dataframe to a new sample rate.
-        """
-
-        if self.config.input_resolution > self.config.output_resolution:
-            raise ValueError(
-                "Neptoon cannot downscale:"
-                " output_resolution must be larger than"
-                " input_resolution."
-            )
-
-        adjustment_factor = (
-            self.config.output_resolution / self.config.input_resolution
-        )
-        max_na = adjustment_factor * self.config.aggregate_maxna_fraction
-        freq = self.config.output_resolution
-        method = self.config.aggregate_method
-        func = self.config.aggregate_func
-        try:
-            timestamp_aggregator = TimeStampAggregator(self.data_frame)
-        except Exception as e:
-            message = (
-                "Could not align timestamps of dataframe. First the "
-                "dataframe must have a date time index.\n"
-                f"Exception: {e}"
-            )
-            print(message)
-            core_logger.error(message)
-        timestamp_aggregator.aggregate_data(
-            freq=freq,
-            method=method,
-            func=func,
-            max_na=max_na,
-        )
-        data_frame = timestamp_aggregator.return_dataframe()
-
-        # Convert columns with absolute counts to new aggregation
-        data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)] = (
-            data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
-            * adjustment_factor
-        )
-        try:
-            data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)] = (
-                data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)]
-                * adjustment_factor
-            )
-        except KeyError:
-            core_logger.info("No thermal neutrons to adjust")
-        try:
-            data_frame[str(ColumnInfo.Name.PRECIPITATION)] = (
-                data_frame[str(ColumnInfo.Name.PRECIPITATION)]
-                * adjustment_factor
-            )
-        except KeyError:
-            core_logger.info("No precipitation data to adjust")
-        self.data_frame = data_frame
-
     def clean_raw_dataframe(self):
         """
         Cleans raw DataFrame by removing NaT values and duplicated rows.
@@ -1702,13 +1587,6 @@ class FormatDataForCRNSDataHub:
         self.clean_raw_dataframe()
         self.data_frame_to_numeric()
         self.prepare_key_columns()
-        if (
-            self.config.input_resolution != self.config.output_resolution
-            and self.config.output_resolution is not None
-        ):
-            self.aggregate_data_frame()
-        elif self.config.align_timestamps:
-            self.align_time_stamps()
         self.snip_data_frame()
         return self.data_frame
 

@@ -82,7 +82,11 @@ class TimeStampAligner:
             return f"{int(total_seconds)}S"
 
     @log_key_step("method", "freq")
-    def align_timestamps(self, freq: str = "1h", method: str = "time"):
+    def align_timestamps(
+        self,
+        freq: str | datetime.timedelta = "1h",
+        method: str = "time",
+    ):
         """
         Aligns the time stamp of the SaQC feature. Will automatically do
         this for all data columns. For more information on the values
