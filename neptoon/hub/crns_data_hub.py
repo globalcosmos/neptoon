@@ -491,7 +491,10 @@ class CRNSDataHub:
             method to use for shifting, defaults to shifting to nearest
             hour, by default "time"
         """
-        freq = utils._find_temporal_resolution(data_frame=self.crns_data_frame)
+        freq = utils.find_temporal_resolution_seconds(
+            data_frame=self.crns_data_frame
+        )
+        freq = datetime.timedelta(seconds=freq)
 
         try:
             timestamp_aligner = TimeStampAligner(self.data_frame)
@@ -520,7 +523,7 @@ class CRNSDataHub:
         Aggregates a dataframe to a new sample rate.
         """
 
-        input_resolution = utils._find_temporal_resolution(
+        input_resolution = utils.find_temporal_resolution_seconds(
             data_frame=self.crns_data_frame
         )
         input_resolution = datetime.timedelta(seconds=input_resolution)

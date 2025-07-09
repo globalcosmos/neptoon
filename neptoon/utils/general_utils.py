@@ -3,6 +3,8 @@ from typing import Union
 from neptoon.logging import get_logger
 from datetime import timedelta
 import re
+import pandas as pd
+import pandera.pandas as pa
 
 core_logger = get_logger()
 
@@ -114,3 +116,28 @@ def parse_resolution_to_timedelta(
         message = f"Unsupported time unit: {unit}"
         core_logger.error(message)
         raise ValueError(message)
+
+
+def validate_df(df: pd.DataFrame, schema: pa.DataFrameSchema):
+    """
+    Validates a df against a pandera.pandas DataFrameSchema
+
+    NOTES:
+    Keep it lazy to give info of all df issues
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Dataframe to validate
+    schema : pa.DataFrameSchema
+        Pandera Schema to check against
+    """
+    return schema.validate(df, lazy=True)
+
+
+def find_temporal_resolution_seconds(data_frame: pd.DataFrame):
+
+    time_res_seconds = (
+        data_frame.index.to_series().dropna().diff().median().total_seconds()
+    )
+    return time_res_seconds
