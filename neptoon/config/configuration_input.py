@@ -535,7 +535,7 @@ class ProcessConfig(BaseConfig):
     neutron_quality_assessment: NeutronQualityAssessment
     correction_steps: CorrectionSteps
     data_smoothing: DataSmoothingConfig
-    temporal: Temporal
+    temporal_aggregation: Temporal
 
 
 class ConfigType(Enum):
