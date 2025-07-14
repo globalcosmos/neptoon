@@ -122,7 +122,7 @@ def test_create_nmdb_url_config1(monkeypatch):
 
     data_fetcher = DataFetcher(config)
     expected_url = (
-        "http://nest.nmdb.eu/draw_graph.php?wget=1&stations"
+        "https://www.nmdb.eu/nest/draw_graph.php?wget=1&stations"
         "[]=JUNG&tabchoice=revori&dtype=corr_for_efficiency"
         "&tresolution=60&yunits=0&date_choice=bydate"
         "&start_day=10&start_month=10&start_year=2015&start_hour=0"
