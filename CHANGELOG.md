@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `find_temporal_resolution()` to general utils
-
+- CRNSDataHub - functions to aggregate and align data in time
+- new column name for raw neutron uncertainty added to ColumnInfo.Name
 
 ### Changed
 
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - updated NMDB data fetching to use new URL
+- update minimum version for pandera
 
 ### Security
 

@@ -647,6 +647,11 @@ class ConfigurationManager:
         BaseConfig
             The requested config
         """
+        if name not in ["sensor", "process"]:
+            raise ValueError(
+                "Only 'sensor' or 'process' are valid configs: "
+                f"{name} was given"
+            )
         return self._configs[name]
 
     def create_sensor_config(self):
