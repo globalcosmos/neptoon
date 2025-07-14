@@ -573,7 +573,7 @@ class DataFetcher:
 
         nmdb_form = "wget"
         url = (
-            f"http://nest.nmdb.eu/draw_graph.php?{nmdb_form}=1"
+            f"https://www.nmdb.eu/nest/draw_graph.php?{nmdb_form}=1"
             f"&stations[]={self.config.station}"
             f"&tabchoice={self.config.nmdb_table}"
             f"&dtype=corr_for_efficiency"

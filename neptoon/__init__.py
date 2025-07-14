@@ -1,6 +1,6 @@
 from .hub import CRNSDataHub
 
 
-VERSION = "0.10.0"
+VERSION = 'v0.11.0'
 
 __version__ = VERSION
