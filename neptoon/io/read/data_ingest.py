@@ -212,7 +212,7 @@ class FileCollectionConfig:
 
             else:
                 self._data_source = None
-                core_logger.warning("Cannot determine data source type")
+                core_logger.info("Cannot determine data source type")
 
         except (tarfile.TarError, zipfile.BadZipFile) as e:
             self._data_source = None
@@ -221,7 +221,7 @@ class FileCollectionConfig:
 
         else:
             self._data_source = None
-            core_logger.warning("Cannot determine data source type")
+            core_logger.info("Cannot determine data source type")
 
     def dump_tar(self):
         """Create temporary directory and extract"""
