@@ -39,7 +39,10 @@ keywords = [
 
 [project.optional-dependencies]
 gui = ["streamlit>=1.31.0", "typer>=0.15.1", "plotly>=6.0.0"]
-dev = ["black>=24.1.1"]
+dev = [
+    "black>=24.1.1",
+    "pytest-cov>=6.2.1",
+]
 
 [project.urls]
 Homepage = "https://www.neptoon.org"
