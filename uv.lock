@@ -864,7 +864,7 @@ requires-dist = [
     { name = "figurex", specifier = ">=0.2.10" },
     { name = "magazine", specifier = ">=0.3.2" },
     { name = "pandas", specifier = ">=2.2.0" },
-    { name = "pandera", specifier = ">=0.18.0" },
+    { name = "pandera", specifier = ">0.24" },
     { name = "platformdirs", specifier = ">=4.2.0" },
     { name = "plotly", marker = "extra == 'gui'", specifier = ">=6.0.0" },
     { name = "pyaml", specifier = ">=23.12.0" },
@@ -988,19 +988,18 @@ wheels = [
 
 [[package]]
 name = "pandera"
-version = "0.23.1"
+version = "0.25.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy" },
     { name = "packaging" },
-    { name = "pandas" },
     { name = "pydantic" },
     { name = "typeguard" },
+    { name = "typing-extensions" },
     { name = "typing-inspect" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/70/1a/bcb3daa41bf6a46dc7c218cb0558922f1e711176bbb4ce649ed610a35f3f/pandera-0.23.1.tar.gz", hash = "sha256:2afed504ad61bbd2960dc7f85dd6be0b28d230a626f392b8ba05c291b970ae06", size = 513325 }
+sdist = { url = "https://files.pythonhosted.org/packages/13/c1/02f78cd18cd32a009405c847dcf430a97d1a8c162f6e8872acae928c8f20/pandera-0.25.0.tar.gz", hash = "sha256:af3bbaa163672c91b83d59d70715f25c4134dbccfc8bc89a642a2f0e23db951e", size = 555391 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/9e/79bb285d4dbee32f4786b659bfbddb2d56edf3c9bc2b7ed16474903584ed/pandera-0.23.1-py3-none-any.whl", hash = "sha256:37f75cfb5e34db88afc07adf3ea07ba8738bca709f0e67799c8f1b2fc6b9c977", size = 264213 },
+    { url = "https://files.pythonhosted.org/packages/71/e0/234707103c742555e1c23bff51f3f0e496c144cd76fcf5a6b800dfe193f2/pandera-0.25.0-py3-none-any.whl", hash = "sha256:365a555accc46404466641203e297722d424d74a1315f077ab899e1344f82303", size = 293336 },
 ]
 
 [[package]]
