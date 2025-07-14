@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import tarfile
 import tempfile
 import atexit
@@ -14,6 +15,7 @@ from neptoon.utils.general_utils import (
     validate_and_convert_file_path,
     parse_resolution_to_timedelta,
 )
+
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import (
     ConfigurationManager,
@@ -1064,7 +1066,7 @@ class InputDataFrameFormattingConfig:
 
 class FormatDataForCRNSDataHub:
     """
-    Formats a DataFrame into the requred format for work in neptoon.
+    Formats a DataFrame into the required format to work in neptoon.
 
     Key features:
         - Combines multiple datetime columns (e.g., DATE + TIME) into a
@@ -1083,17 +1085,6 @@ class FormatDataForCRNSDataHub:
         Config object with information about the dataframe, which
         supports formatting
 
-    Methods
-    -------
-
-    extract_date_time_column
-    convert_time_zone
-    date_time_as_index
-    data_frame_to_numeric
-    merge_multiple_meteo_columns
-    prepare_key_columns
-    prepare_neutron_count_columns
-    format_data_and_return_data_frame
     """
 
     def __init__(
@@ -1115,6 +1106,7 @@ class FormatDataForCRNSDataHub:
         self._data_frame = data_frame
         self._config = config
         self._timestep_seconds = None
+        self.conversion_factor_to_cph = None
 
     @property
     def data_frame(self):
@@ -1458,10 +1450,6 @@ class FormatDataForCRNSDataHub:
                 inplace=True,
             )
 
-        conversion_factor_to_cph = self.get_conversion_factor_to_cph(
-            self._timestep_seconds
-        )
-
         if epi_neutron_unit == "counts_per_hour":
             self.data_frame[final_column_name] = self.data_frame[
                 raw_column_name
@@ -1473,7 +1461,8 @@ class FormatDataForCRNSDataHub:
 
         elif epi_neutron_unit == "absolute_count":
             self.data_frame[final_column_name] = (
-                self.data_frame[raw_column_name] * conversion_factor_to_cph
+                self.data_frame[raw_column_name]
+                * self.conversion_factor_to_cph
             )
         elif epi_neutron_unit == "counts_per_second":
             self.data_frame[final_column_name] = (
@@ -1505,11 +1494,23 @@ class FormatDataForCRNSDataHub:
 
     def calc_neutron_uncertainty(self):
         """
-        - calculate sqrt(N) on raw column name column
-        - convert to cph based on timestep
+        Creates a column with the statistical uncertainty of the neutron
+        column and converts this value to counts per hour.
         """
 
-        pass
+        self.data_frame[
+            str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY)
+        ] = np.sqrt(
+            self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
+        )
+        self.data_frame[
+            str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY)
+        ] = (
+            self.data_frame[
+                str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY)
+            ]
+            * self.conversion_factor_to_cph
+        )
 
     def snip_data_frame(self):
         """
@@ -1541,8 +1542,11 @@ class FormatDataForCRNSDataHub:
         )
         self.clean_raw_dataframe()
         self.data_frame_to_numeric()
+        self.conversion_factor_to_cph = self.get_conversion_factor_to_cph(
+            self._timestep_seconds
+        )
         self.prepare_key_columns()
-        # TODO self.calc_neutron_uncertainty() ####
+        self.calc_neutron_uncertainty()
         self.snip_data_frame()
         return self.data_frame
 
