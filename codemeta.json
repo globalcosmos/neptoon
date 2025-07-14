@@ -90,19 +90,19 @@
   "programmingLanguage": "Python 3",
   "developmentStatus": "wip",
   "issueTracker": "https://codebase.helmholtz.cloud/cosmos/neptoon/-/issues",
-  "version": "v0.11.0",
-  "dateModified": "2025-07-08",
-  "@id": "https://doi.org/10.5281/zenodo.15838619",
+  "version": "v0.11.1",
+  "dateModified": "2025-07-14",
+  "@id": "https://doi.org/10.5281/zenodo.15878125",
   "identifier": [
     {
       "@type": "PropertyValue",
       "propertyID": "DOI",
-      "value": "10.5281/zenodo.15838619"
+      "value": "10.5281/zenodo.15878125"
     },
     {
       "@type": "PropertyValue",
       "propertyID": "Zenodo",
-      "value": 15838619
+      "value": 15878125
     }
   ]
 }
