@@ -10,8 +10,8 @@ core_logger = get_logger()
 
 
 def validate_and_convert_file_path(
-    file_path: Union[str, Path, None],
-    base: Union[str, Path] = "",
+    file_path: str | Path | None,
+    base: str | Path | None = None,
 ) -> Path:
     """
     Ensures that file paths are correctly parsed into pathlib.Path
@@ -19,12 +19,14 @@ def validate_and_convert_file_path(
 
     Parameters
     ----------
-    file_path : Union[str, Path]
+    file_path : str | Path | None
         The path to the folder or file.
+    base : str | Path | None
+        Base to add to file (e..g, a custom base directory)
 
     Returns
     -------
-    pathlib.Path
+    pathlib.Path | None
         The file_path as a pathlib.Path object.
 
     Raises
@@ -35,31 +37,24 @@ def validate_and_convert_file_path(
 
     if file_path is None:
         return None
-    if isinstance(file_path, str):
-        new_file_path = Path(file_path)
-        if new_file_path.is_absolute():
-            return new_file_path
-        else:
-            if base == "":
-                return Path.cwd() / Path(file_path)
-            else:
-                return base / Path(file_path)
-    elif isinstance(file_path, Path):
-        if file_path.is_absolute():
-            return file_path
-        else:
-            if base == "":
-                return Path.cwd() / Path(file_path)
-            else:
-                return base / file_path
-    else:
+
+    p = Path(file_path)
+
+    if p.is_absolute() and base is not None:
         message = (
-            "data_location must be of type str or pathlib.Path. \n"
-            f"{type(file_path).__name__} provided, "
-            "please change this."
+            f"Your filepath ({file_path}) is an absolute path",
+            " and you've provided a base path to append. If you want to append "
+            "basepath your filepath must be relative (maybe remove the first /?)",
         )
-        core_logger.error(message)
-        raise ValueError(message)
+
+        raise AttributeError(message)
+
+    if p.is_absolute():
+        return p.resolve()
+    if base:
+        p = Path(base) / p
+
+    return p.resolve()
 
 
 def parse_resolution_to_timedelta(
@@ -141,3 +136,6 @@ def find_temporal_resolution_seconds(data_frame: pd.DataFrame):
         data_frame.index.to_series().dropna().diff().median().total_seconds()
     )
     return time_res_seconds
+
+
+validate_and_convert_file_path("tmp/file.csv", base="/test")

@@ -15,7 +15,6 @@ from neptoon.utils.general_utils import (
     validate_and_convert_file_path,
     parse_resolution_to_timedelta,
 )
-
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import (
     ConfigurationManager,
@@ -102,11 +101,11 @@ class FileCollectionConfig:
         )
         self._data_location = validate_and_convert_file_path(
             file_path=data_location,
-            base=(
-                self.path_to_config.parent
-                if self.path_to_config is not None
-                else ""
-            ),
+            # base=(
+            #     self.path_to_config.parent
+            #     if self.path_to_config is not None
+            #     else ""
+            # ),
         )
         self._data_source = None
         self.column_names = column_names
@@ -141,7 +140,7 @@ class FileCollectionConfig:
     @data_location.setter
     def data_location(self, new_location):
         self._data_location = validate_and_convert_file_path(
-            new_location, base=self._path_to_config.parent
+            new_location,
         )
         self._determine_source_type()
 
