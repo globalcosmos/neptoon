@@ -255,6 +255,7 @@ class CorrectNeutrons:
         """
         df = self.create_correction_factors(self.crns_data_frame)
         df = self.create_corrected_neutron_column(df)
+        df = self.create_corrected_neutron_uncertainty_column(df)
 
         return df
 
