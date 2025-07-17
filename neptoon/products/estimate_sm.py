@@ -17,122 +17,162 @@ from neptoon.quality_control.utils import _validate_df
 
 core_logger = get_logger()
 
+
 ###
 # Pandera schema for validation
 ###
+def build_base_input_schema() -> pa.DataFrameSchema:
+    """
+    Builds base input schema - ensuring ColumnInfo vars are up to date.
 
-base_input_schema = pa.DataFrameSchema(
-    {
-        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
+    Returns
+    -------
+    pa.DataFrameSchema
+        input schema
+    """
+    return pa.DataFrameSchema(
+        {
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+            ): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+            ): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+        },
+        index=pa.Index(
+            dtype=pd.DatetimeTZDtype(unit="ns", tz="UTC"), coerce=True
         ),
-        str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
-        ): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
-        ),
-        str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
-        ): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
-        ),
-    },
-    index=pa.Index(dtype=pd.DatetimeTZDtype(unit="ns", tz="UTC"), coerce=True),
-    strict=False,
-)
+        strict=False,
+    )
 
-input_schema_koehli = pa.DataFrameSchema(
-    {
-        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
-        ),
-        str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
-        ): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
-        ),
-        str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
-        ): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
-        ),
-        str(ColumnInfo.Name.ABSOLUTE_HUMIDITY): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
-        ),
-    },
-    index=pa.Index(dtype=pd.DatetimeTZDtype(unit="ns", tz="UTC"), coerce=True),
-    strict=False,
-)
 
-output_schema = pa.DataFrameSchema(
-    {
-        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
+def build_input_schema_koehli() -> pa.DataFrameSchema:
+    """
+    builds the input schema for data when koehli is used
+
+    Returns
+    -------
+    pa.DataFrameSchema
+        input koehli schema
+    """
+    return pa.DataFrameSchema(
+        {
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+            ): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+            ): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(ColumnInfo.Name.ABSOLUTE_HUMIDITY): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+        },
+        index=pa.Index(
+            dtype=pd.DatetimeTZDtype(unit="ns", tz="UTC"), coerce=True
         ),
-        str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
-        ): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
+        strict=False,
+    )
+
+
+def build_output_schema() -> pa.DataFrameSchema:
+    """
+    Builds the output schema at run time - ensures the ColumnInfo.Name
+    vars are up to date.
+
+    Returns
+    -------
+    pa.DataFrameSchema
+        output schema
+    """
+    return pa.DataFrameSchema(
+        {
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+            ): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+            ): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER
+            ): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(
+                ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER
+            ): pa.Column(
+                dtype=float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS): pa.Column(
+                float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH): pa.Column(
+                float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(ColumnInfo.Name.SOIL_MOISTURE_VOL): pa.Column(
+                float,
+                coerce=True,
+                nullable=True,
+            ),
+            str(ColumnInfo.Name.SOIL_MOISTURE_GRAV): pa.Column(
+                float,
+                coerce=True,
+                nullable=True,
+            ),
+        },
+        index=pa.Index(
+            dtype=pd.DatetimeTZDtype(unit="ns", tz="UTC"), coerce=True
         ),
-        str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
-        ): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
-        ),
-        str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
-        ),
-        str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER): pa.Column(
-            dtype=float,
-            coerce=True,
-            nullable=True,
-        ),
-        str(ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS): pa.Column(
-            float,
-            coerce=True,
-            nullable=True,
-        ),
-        str(ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH): pa.Column(
-            float,
-            coerce=True,
-            nullable=True,
-        ),
-        str(ColumnInfo.Name.SOIL_MOISTURE_VOL): pa.Column(
-            float,
-            coerce=True,
-            nullable=True,
-        ),
-        str(ColumnInfo.Name.SOIL_MOISTURE_GRAV): pa.Column(
-            float,
-            coerce=True,
-            nullable=True,
-        ),
-    },
-    index=pa.Index(dtype=pd.DatetimeTZDtype(unit="ns", tz="UTC"), coerce=True),
-    strict=False,
-)
+        strict=False,
+    )
 
 
 class NeutronsToSM:
@@ -148,21 +188,11 @@ class NeutronsToSM:
         dry_soil_bulk_density: float = 1.4,
         lattice_water: float = 0,
         soil_organic_carbon: float = 0,
-        corrected_neutrons_col_name: str = str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
-        ),
-        soil_moisture_vol_col_name: str = str(
-            ColumnInfo.Name.SOIL_MOISTURE_VOL
-        ),
-        soil_moisture_grav_col_name: str = str(
-            ColumnInfo.Name.SOIL_MOISTURE_GRAV
-        ),
-        depth_column_name: str = str(
-            ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH
-        ),
-        radius_column_name: str = str(
-            ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS
-        ),
+        corrected_neutrons_col_name: str | None = None,
+        soil_moisture_vol_col_name: str | None = None,
+        soil_moisture_grav_col_name: str | None = None,
+        depth_column_name: str | None = None,
+        radius_column_name: str = None,
         conversion_theory: Literal[
             "desilets_etal_2010", "koehli_etal_2021"
         ] = "desilets_etal_2010",
@@ -219,7 +249,7 @@ class NeutronsToSM:
             str( ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS )
         """
         self._crns_data_frame = _validate_df(
-            crns_data_frame, schema=base_input_schema
+            crns_data_frame, schema=build_base_input_schema()
         )
         self.n0 = n0
         # None vals can be passed from CRNSDataHub so leave these if else statements
@@ -235,11 +265,31 @@ class NeutronsToSM:
         self.water_equiv_soil_organic_carbon = self._convert_soc_to_wsom(
             self.soil_organic_carbon
         )
-        self.corrected_neutrons_col_name = corrected_neutrons_col_name
-        self.soil_moisture_grav_col_name = soil_moisture_grav_col_name
-        self.soil_moisture_vol_col_name = soil_moisture_vol_col_name
-        self.depth_column_name = depth_column_name
-        self.radius_column_name = radius_column_name
+        self.corrected_neutrons_col_name = (
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            if corrected_neutrons_col_name is None
+            else corrected_neutrons_col_name
+        )
+        self.soil_moisture_vol_col_name = (
+            str(ColumnInfo.Name.SOIL_MOISTURE_VOL)
+            if soil_moisture_vol_col_name is None
+            else soil_moisture_vol_col_name
+        )
+        self.soil_moisture_grav_col_name = (
+            str(ColumnInfo.Name.SOIL_MOISTURE_GRAV)
+            if soil_moisture_grav_col_name is None
+            else soil_moisture_grav_col_name
+        )
+        self.depth_column_name = (
+            str(ColumnInfo.Name.SOIL_MOISTURE_MEASURMENT_DEPTH)
+            if depth_column_name is None
+            else depth_column_name
+        )
+        self.radius_column_name = (
+            str(ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS)
+            if radius_column_name is None
+            else radius_column_name
+        )
         self.conversion_theory = conversion_theory
         self.koehli_method_form = koehli_method_form
         self.abs_air_humidity_col_name = abs_air_humidity_col_name
@@ -370,7 +420,7 @@ class NeutronsToSM:
             self._ensure_abs_humidity_available()
 
             self.crns_data_frame = _validate_df(
-                self.crns_data_frame, schema=input_schema_koehli
+                self.crns_data_frame, schema=build_input_schema_koehli()
             )
             raw_grav = self.crns_data_frame.apply(
                 lambda row: neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
@@ -499,7 +549,7 @@ class NeutronsToSM:
         self.calculate_depth_of_measurement()
         self.calculate_horizontal_footprint()
         self.crns_data_frame = _validate_df(
-            df=self.crns_data_frame, schema=output_schema
+            df=self.crns_data_frame, schema=build_output_schema()
         )
 
     def return_data_frame(self):
