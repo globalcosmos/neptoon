@@ -110,7 +110,7 @@ class ColumnInfo:
         Name.ABOVEGROUND_BIOMASS_CORRECTION: "aboveground_biomass_correction",
         Name.CORRECTED_EPI_NEUTRON_COUNT: "corrected_epithermal_neutrons",
         Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL: "corrected_epithermal_neutrons",
-        Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY: "raw_epithermal_neutrons_uncertainty",
+        Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY: "epithermal_neutrons_uncertainty_cph",
         Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY: "corrected_epithermal_neutrons_uncertainty",
         Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT: "corrected_epithermal_neutrons_upper_count",
         Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT: "corrected_epithermal_neutrons_lower_count",

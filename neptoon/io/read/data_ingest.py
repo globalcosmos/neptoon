@@ -417,9 +417,9 @@ class ManageFileCollection:
             for filename in files_filtered
             if filename.endswith(self.config.suffix)
         ]
-        
-        #raise error when no files are found
-        if len(files_filtered)==0:
+
+        # raise error when no files are found
+        if len(files_filtered) == 0:
             message = (
                 f"No files found in {self.config.data_location} "
                 f"with prefix '{self.config.prefix}' and suffix '{self.config.suffix}'."
@@ -736,13 +736,13 @@ class InputDataFrameFormattingConfig:
 
     def __init__(
         self,
-        path_to_config: Optional[Union[str, Path]] = None,
+        path_to_config: str | Path | None = None,
         pressure_merge_method: MergeMethod = MergeMethod.PRIORITY,
         pressure_units: PressureUnits = PressureUnits.HECTOPASCALS,
         temperature_merge_method: MergeMethod = MergeMethod.PRIORITY,
         relative_humidity_merge_method: MergeMethod = MergeMethod.PRIORITY,
         neutron_count_units: NeutronCountUnits = NeutronCountUnits.ABSOLUTE_COUNT,
-        date_time_columns: Optional[Union[str, List[str]]] = None,
+        date_time_columns: str | List[str] | None = None,
         date_time_format: str = "%Y/%m/%d %H:%M:%S",
         initial_time_zone: str = "utc",
         convert_time_zone_to: str = "utc",
@@ -836,7 +836,11 @@ class InputDataFrameFormattingConfig:
         self.temperature_merge_method = temperature_merge_method
         self.relative_humidity_merge_method = relative_humidity_merge_method
         self.neutron_count_units = neutron_count_units
-        self.date_time_columns = date_time_columns
+        self.date_time_columns = (
+            str(ColumnInfo.Name.DATE_TIME)
+            if date_time_columns is None
+            else date_time_columns
+        )
         self.date_time_format = date_time_format
         self.initial_time_zone = initial_time_zone
         self.convert_time_zone_to = convert_time_zone_to
@@ -1213,7 +1217,7 @@ class FormatDataForCRNSDataHub:
         """
 
         date_time_column = self.extract_date_time_column()
-        #if all values are NaT, raise error
+        # if all values are NaT, raise error
         if date_time_column.isnull().all():
             message = "Could not parse date column(s). Please check date_time_format and date_time_columns."
             core_logger.error(message)

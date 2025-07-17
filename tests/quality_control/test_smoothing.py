@@ -90,26 +90,6 @@ def test_smooth_data_rolling_raise_error_int(
         )
 
 
-# def test_smooth_data_savitsky_golay(data_to_smooth_hourly, og_data_table):
-#     """
-#     Tests to check smoothing using savitsky golay occurs correctly.
-#     """
-#     smoother = SmoothData(
-#         data=data_to_smooth_hourly,
-#         column_to_smooth="epithermal_neutrons",
-#         smooth_method="savitsky_golay",
-#         window=12,
-#         poly_order=4,
-#         auto_update_final_col=False,
-#     )
-#     smoothed_data = smoother.apply_smoothing()
-#     smoothed_col = smoother.create_new_column_name()
-#     assert len(smoothed_data) == len(data_to_smooth_hourly)
-#     assert smoothed_col == "epithermal_neutrons_savgol_12_4"
-#     og_data_table[smoothed_col] = smoothed_data
-#     assert smoothed_col in og_data_table.columns
-
-
 @pytest.mark.reset_columns
 def test_update_col_name_final(data_to_smooth_hourly):
     """

@@ -248,7 +248,7 @@ class NeutronsToSM:
             column name where radius estimates are written, by default
             str( ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS )
         """
-        self._crns_data_frame = _validate_df(
+        self._crns_data_frame = validate_df(
             crns_data_frame, schema=build_base_input_schema()
         )
         self.n0 = n0
@@ -419,7 +419,7 @@ class NeutronsToSM:
             self._check_if_humidity_correction_applied(auto_uncorrect=True)
             self._ensure_abs_humidity_available()
 
-            self.crns_data_frame = _validate_df(
+            self.crns_data_frame = validate_df(
                 self.crns_data_frame, schema=build_input_schema_koehli()
             )
             raw_grav = self.crns_data_frame.apply(
@@ -548,7 +548,7 @@ class NeutronsToSM:
         self.calculate_uncertainty_of_sm_estimates()
         self.calculate_depth_of_measurement()
         self.calculate_horizontal_footprint()
-        self.crns_data_frame = _validate_df(
+        self.crns_data_frame = validate_df(
             df=self.crns_data_frame, schema=build_output_schema()
         )
 

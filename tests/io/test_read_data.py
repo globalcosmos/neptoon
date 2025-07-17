@@ -1,6 +1,7 @@
 # tests/test_pressure_unit_conversion.py
 import pandas as pd
 import pytest
+import datetime
 
 from neptoon.io.read.data_ingest import (
     InputDataFrameFormattingConfig,
@@ -9,12 +10,53 @@ from neptoon.io.read.data_ingest import (
     InputColumnDataType,
     PressureUnits,
 )
+from neptoon.columns import ColumnInfo
 
 
 @pytest.fixture
 def base_config():
     cfg = InputDataFrameFormattingConfig(path_to_config=None)
     return cfg
+
+
+@pytest.fixture
+def base_df():
+    df = pd.DataFrame(
+        {
+            str(ColumnInfo.Name.DATE_TIME): pd.date_range(
+                "2022-01-01", periods=5
+            ),
+        }
+    )
+    return df
+
+
+@pytest.fixture
+def df_formatter(base_df, base_config):
+    df = base_df
+    return FormatDataForCRNSDataHub(data_frame=df, config=base_config)
+
+
+def test_extract_date_time_column(df_formatter):
+    series = df_formatter.extract_date_time_column()
+    assert isinstance(series, pd.Series)
+    assert isinstance(series[0], datetime.datetime)
+
+
+def test_extract_date_time_column(df_formatter):
+    series = df_formatter.extract_date_time_column()
+    assert isinstance(series, pd.Series)
+    assert isinstance(series[0], datetime.datetime)
+
+
+def test_extract_date_time_column_list(df_formatter, base_df):
+    df_formatter.config.date_time_columns = ["date", "time"]
+    df = base_df
+    df["date"] = base_df[str(ColumnInfo.Name.DATE_TIME)].dt.date
+    df["time"] = base_df[str(ColumnInfo.Name.DATE_TIME)].dt.time
+    series = df_formatter.extract_date_time_column()
+    assert isinstance(series, pd.Series)
+    assert isinstance(series[0], datetime.datetime)
 
 
 def test_pascals_to_hectopascals(base_config):
