@@ -1,6 +1,9 @@
 import pytest
 from pathlib import Path
-from neptoon.utils.general_utils import validate_and_convert_file_path
+from neptoon.utils.general_utils import (
+    validate_and_convert_file_path,
+    parse_resolution_to_timedelta,
+)
 
 
 def test_file_path_none():
@@ -38,3 +41,7 @@ def test_abs_file_path_and_base():
             file_path=abs_path,
             base=base,
         )
+
+
+def test_parse_resolution_good():
+    hours = parse_resolution_to_timedelta(resolution_str="1hour")

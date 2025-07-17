@@ -136,6 +136,3 @@ def find_temporal_resolution_seconds(data_frame: pd.DataFrame):
         data_frame.index.to_series().dropna().diff().median().total_seconds()
     )
     return time_res_seconds
-
-
-validate_and_convert_file_path("tmp/file.csv", base="/test")
