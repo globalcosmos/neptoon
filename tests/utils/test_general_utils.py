@@ -9,7 +9,7 @@ from neptoon.utils.general_utils import (
 def test_file_path_none():
     """Test None Path"""
     tmp = validate_and_convert_file_path(file_path=None)
-    assert tmp == None
+    assert tmp is None
 
 
 def test_file_path_str():
