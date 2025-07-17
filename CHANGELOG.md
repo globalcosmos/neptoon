@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - updated NMDB data fetching to use new URL
 - update minimum version for pandera
+- attribute issue in ColumnInfo and NeutronsToSM
 
 ### Security
 
