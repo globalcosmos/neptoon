@@ -16,7 +16,6 @@ from neptoon.corrections.factory.build_corrections import (
     CorrectionType,
     CorrectionTheory,
     CorrectNeutrons,
-    NeutronUncertaintyCalculator,
 )
 from neptoon.config.configuration_input import SensorInfo
 from neptoon.products.estimate_sm import NeutronsToSM
@@ -351,17 +350,6 @@ class CRNSDataHub:
             correction_builder=self.correction_builder,
         )
         self.crns_data_frame = corrector.correct_neutrons()
-
-    def create_neutron_uncertainty_bounds(self):
-        """
-        Create uncertainty bounds for statistical uncertainty of neutron
-        count rates.
-        """
-
-        uncertainty = NeutronUncertaintyCalculator(
-            data_frame=self.crns_data_frame
-        )
-        self.crns_data_frame = uncertainty.add_neutron_uncertainty_columns()
 
     @Magazine.reporting(topic="Data Preparation")
     def smooth_data(

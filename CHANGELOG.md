@@ -17,12 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - *config* - moved temporal sub-section out of sensor config and into process config
 - moved `validate_df()` to general utils
+- corrected neutron count uncertainty created in correct_neutron stage of data hub
 
 ### Depreceated
 
 ### Removed
 
 - utils module in quality control removed
+- NeutronUncertaintyCalculator class removed
+- removed function in CRNSDataHub and ProcessWithConfig to produce uncertainty (integrated to other parts)
 
 ### Fixed
 

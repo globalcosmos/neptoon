@@ -279,23 +279,6 @@ class ProcessWithConfig:
         data_hub.correct_neutrons()
         return data_hub
 
-    def _create_neutron_uncertainty_bounds(self, data_hub: CRNSDataHub):
-        """
-        Creates neutron statistical uncertainty bounds
-
-        Parameters
-        ----------
-        data_hub : CRNSDataHub
-            datahub
-
-        Returns
-        -------
-        data_hub
-            updated data_hub
-        """
-        data_hub.create_neutron_uncertainty_bounds()
-        return data_hub
-
     def _produce_soil_moisture_estimates(
         self,
         data_hub: CRNSDataHub,
@@ -678,7 +661,6 @@ class ProcessWithConfig:
 
         # Produce soil moisture estimates
         # NOTE: print statement inside NeutronsToSM in order to state which method used
-        self.data_hub = self._create_neutron_uncertainty_bounds(self.data_hub)
         self.data_hub = self._produce_soil_moisture_estimates(
             self.data_hub,
             conversion_theory=self.process_config.correction_steps.soil_moisture_estimation.method,
