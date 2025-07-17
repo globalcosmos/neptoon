@@ -33,7 +33,7 @@ flowchart TD
     Calibrator --> ProduceSM[Produce Soil Moisture]
     Calibrate --> |No - already calibrated| ProduceSM
     ProduceSM --> |Optional| Smooth2[Data Smoothing]
-    ProduceSM --> CreateFigs[Create FIgures]
+    ProduceSM --> CreateFigs[Create Figures]
     Smooth2 --> CreateFigs
     CreateFigs --> SaveData[Save Data]
 

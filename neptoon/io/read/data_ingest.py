@@ -416,6 +416,15 @@ class ManageFileCollection:
             for filename in files_filtered
             if filename.endswith(self.config.suffix)
         ]
+        
+        #raise error when no files are found
+        if len(files_filtered)==0:
+            message = (
+                f"No files found in {self.config.data_location} "
+                f"with prefix '{self.config.prefix}' and suffix '{self.config.suffix}'."
+            )
+            core_logger.error(message)
+            raise FileNotFoundError(message)
 
         self.files = files_filtered
 
@@ -1308,6 +1317,11 @@ class FormatDataForCRNSDataHub:
         """
 
         date_time_column = self.extract_date_time_column()
+        #if all values are NaT, raise error
+        if date_time_column.isnull().all():
+            message = "Could not parse date column(s). Please check date_time_format and date_time_columns."
+            core_logger.error(message)
+            raise ValueError(message)
         date_time_column = self.convert_time_zone(date_time_column)
         self.data_frame.index = date_time_column
         self.data_frame.sort_index(inplace=True)
@@ -1700,6 +1714,11 @@ class FormatDataForCRNSDataHub:
         """
         self.date_time_as_index()
         self.clean_raw_dataframe()
+        if self.data_frame.empty:
+            message = f"No data found after parsing from {self._config.config_info.raw_data_parse_options.data_location}. Please check config file and data source. "
+            core_logger.error(message)
+            raise ValueError(message)
+
         self.data_frame_to_numeric()
         self.prepare_key_columns()
         if (
