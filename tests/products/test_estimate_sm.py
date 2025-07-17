@@ -1,8 +1,8 @@
 from neptoon.products.estimate_sm import (
     NeutronsToSM,
-    input_schema_koehli,
-    output_schema,
-    base_input_schema,
+    build_input_schema_koehli,
+    build_output_schema,
+    build_base_input_schema,
 )
 from neptoon.columns import ColumnInfo
 from neptoon.corrections.theory.neutrons_to_soil_moisture import (
@@ -340,24 +340,28 @@ def make_output_df():
 def test_base_input_schema_valid():
     df = make_base_df()  # tz-aware index
     # Should not raise
+    base_input_schema = build_base_input_schema()
     validated = base_input_schema.validate(df)
     assert isinstance(validated, pd.DataFrame)
 
 
 def test_input_schema_koehli_valid():
     df = make_koehli_df(include_humidity=True)
+    input_schema_koehli = build_input_schema_koehli()
     validated = input_schema_koehli.validate(df)
     assert isinstance(validated, pd.DataFrame)
 
 
 def test_input_schema_koehli_missing_humidity():
     df = make_koehli_df(include_humidity=False)
+    input_schema_koehli = build_input_schema_koehli()
     with pytest.raises(SchemaError):
         input_schema_koehli.validate(df)
 
 
 def test_output_schema_valid():
     df = make_output_df()
+    output_schema = build_output_schema()
     validated = output_schema.validate(df)
     assert isinstance(validated, pd.DataFrame)
 
@@ -366,5 +370,23 @@ def test_output_schema_missing_column():
     df = make_output_df().drop(
         columns=[str(ColumnInfo.Name.SOIL_MOISTURE_VOL)]
     )
+    output_schema = build_output_schema()
     with pytest.raises(SchemaError):
         output_schema.validate(df)
+
+
+def test_output_schema_valid_rename(monkeypatch):
+    df = make_output_df()
+    df.rename(
+        columns={
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): "test"
+        },
+        inplace=True,
+    )
+    ColumnInfo.relabel(
+        ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL, "test"
+    )
+    output_schema = build_output_schema()
+    validated = output_schema.validate(df)
+    assert isinstance(validated, pd.DataFrame)
+    ColumnInfo.reset_labels()  # reset labels for remaining tests
