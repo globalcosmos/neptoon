@@ -520,7 +520,7 @@ class CRNSDataHub:
             method=aggregate_method,
             func=aggregate_function,
         )
-        self.data_frame = timestamp_aggregator.return_dataframe()
+        self.crns_data_frame = timestamp_aggregator.return_dataframe()
 
     @Magazine.reporting(topic="Soil Moisture")
     def produce_soil_moisture_estimates(

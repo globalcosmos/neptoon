@@ -58,7 +58,7 @@ class TimeStampAligner:
         validate_timestamp_index(data_frame)
         self.data_frame = data_frame
         self.qc = SaQC(self.data_frame, scheme="simple")
-        self.freq = self.return_frequency_str()
+        self.freq = self.return_frequency_str(self.data_frame)
 
     def return_frequency_str(self, data_frame):
         freq = find_temporal_resolution_seconds(data_frame=data_frame)
@@ -287,7 +287,7 @@ class TimeStampAggregator:
         freq : str, optional
             The frequency of time stamps wanted, by default "1Hour"
         """
-
+        print("start")
         self.qc = self.qc.resample(
             field=self.data_frame.columns,
             freq=self.output_resolution,
@@ -295,6 +295,7 @@ class TimeStampAggregator:
             func=func,
             maxna=self.max_na_int,
         )
+        print("end")
         self.dataframe_aggregated = True
         self.data_frame = self.qc.data.to_pandas()
         self.adjusted_summable_columns()
