@@ -1,7 +1,7 @@
 from typing import List, Optional, Literal, Dict
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pathlib import Path
-from datetime import datetime
+import datetime
 import yaml
 
 from neptoon.logging import get_logger
@@ -41,7 +41,7 @@ class SensorInfo(BaseConfig):
         description="A unique identier",
         examples=["101", "456"],
     )
-    install_date: datetime
+    install_date: datetime.datetime
     latitude: float
     longitude: float
     elevation: float

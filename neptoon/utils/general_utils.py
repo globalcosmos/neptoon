@@ -5,6 +5,7 @@ from datetime import timedelta
 import re
 import pandas as pd
 import pandera.pandas as pa
+import datetime
 
 core_logger = get_logger()
 
@@ -55,6 +56,39 @@ def validate_and_convert_file_path(
         p = Path(base) / p
 
     return p.resolve()
+
+
+def timedelta_to_freq_str(time_delta: datetime.timedelta) -> str:
+    """Convert a timedelta to a pandas frequency string."""
+    total_seconds = time_delta.total_seconds()
+
+    if total_seconds % (86400) == 0:  # Days (86400 = 24 * 60 * 60)
+        return f"{int(total_seconds // 86400)}D"
+    elif total_seconds % 3600 == 0:  # Hours
+        return f"{int(total_seconds // 3600)}h"
+    elif total_seconds % 60 == 0:  # Minutes
+        return f"{int(total_seconds // 60)}min"
+    else:  # Seconds
+        return f"{int(total_seconds)}S"
+
+
+def validate_timestamp_index(data_frame):
+    """
+    Checks that the index of the dataframe is timestamp (essential
+    for aligning the time stamps and using SaQC)
+
+    Parameters
+    ----------
+    data_frame : pd.DataFrame
+        The data frame imported into the TimeStampAligner
+
+    Raises
+    ------
+    ValueError
+        If the index is not datetime type
+    """
+    if not pd.api.types.is_datetime64_any_dtype(data_frame.index):
+        raise ValueError("The DataFrame index must be of datetime type")
 
 
 def parse_resolution_to_timedelta(

@@ -26,7 +26,10 @@ from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
-from neptoon import utils
+from neptoon.utils import (
+    validate_timestamp_index,
+    find_temporal_resolution_seconds,
+)
 from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
@@ -479,84 +482,45 @@ class CRNSDataHub:
             method to use for shifting, defaults to shifting to nearest
             hour, by default "time"
         """
-        freq = utils.find_temporal_resolution_seconds(
-            data_frame=self.crns_data_frame
-        )
-        freq = datetime.timedelta(seconds=freq)
 
-        try:
-            timestamp_aligner = TimeStampAligner(self.data_frame)
-        except Exception as e:
-            message = (
-                "Could not align timestamps of dataframe. First the "
-                "dataframe must have a date time index.\n"
-                f"Exception: {e}"
-            )
-            print(message)
-            core_logger.error(message)
+        timestamp_aligner = TimeStampAligner(self.crns_data_frame)
         timestamp_aligner.align_timestamps(
-            freq=freq,
             method=align_method,
         )
-        self.data_frame = timestamp_aligner.return_dataframe()
+        self.crns_data_frame = timestamp_aligner.return_dataframe()
 
     def aggregate_data_frame(
         self,
         output_resolution: str,
-        maxna_fraction: float = 0.3,
+        max_na_fraction: float = 0.3,
         aggregate_method: str = "bagg",
         aggregate_function: str = "mean",
     ):
         """
-        Aggregates a dataframe to a new sample rate.
+        Aggregate a crns data frame to a new resolution.
+
+        Parameters
+        ----------
+        output_resolution : str
+            Desired output resolution (e.g., '1h' or '1day')
+        max_na_fraction : float, optional
+            fraction of acceptable nan values in aggregation period, by
+            default 0.3
+        aggregate_method : str, optional
+            _description_, by default "bagg"
+        aggregate_function : str, optional
+            _description_, by default "mean"
         """
-
-        input_resolution = utils.find_temporal_resolution_seconds(
-            data_frame=self.crns_data_frame
+        timestamp_aggregator = TimeStampAggregator(
+            data_frame=self.crns_data_frame,
+            output_resolution=output_resolution,
+            max_na_fraction=max_na_fraction,
         )
-        input_resolution = datetime.timedelta(seconds=input_resolution)
-
-        adjustment_factor = (
-            pd.to_timedelta(output_resolution) / input_resolution
-        )
-        max_na = adjustment_factor * maxna_fraction
-        try:
-            timestamp_aggregator = TimeStampAggregator(self.data_frame)
-        except Exception as e:
-            message = (
-                "Could not align timestamps of dataframe. First the "
-                "dataframe must have a date time index.\n"
-                f"Exception: {e}"
-            )
-            print(message)
-            core_logger.error(message)
         timestamp_aggregator.aggregate_data(
-            freq=output_resolution,
             method=aggregate_method,
             func=aggregate_function,
-            max_na=max_na,
         )
         self.data_frame = timestamp_aggregator.return_dataframe()
-
-        # Convert columns with absolute counts to new aggregation
-        self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)] = (
-            self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
-            * adjustment_factor
-        )
-        try:
-            self.data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)] = (
-                self.data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)]
-                * adjustment_factor
-            )
-        except KeyError:
-            core_logger.info("No thermal neutrons to adjust")
-        try:
-            self.data_frame[str(ColumnInfo.Name.PRECIPITATION)] = (
-                self.data_frame[str(ColumnInfo.Name.PRECIPITATION)]
-                * adjustment_factor
-            )
-        except KeyError:
-            core_logger.info("No precipitation data to adjust")
 
     @Magazine.reporting(topic="Soil Moisture")
     def produce_soil_moisture_estimates(
@@ -675,10 +639,27 @@ class CRNSDataHub:
                 core_logger.info(message)
                 continue
             elif value is None:
-                # TODO add skip here
+                core_logger.debug(f"Skipping None value for {key}")
+            elif isinstance(value, (datetime.datetime, datetime.date)):
+                core_logger.debug(
+                    f"Skipping datetime value for {key}: {value}"
+                )
+                continue
+            elif not self._is_numeric_strict(value):
+                core_logger.debug(
+                    f"Skipping non-numeric value for {key}: {value} (type: {type(value)})"
+                )
                 continue
             else:
-                self.crns_data_frame[key] = value
+                try:
+                    numeric_value = pd.to_numeric(value)
+                    self.crns_data_frame[key] = numeric_value
+                except (ValueError, TypeError):
+                    # Skip non-numeric values
+                    core_logger.debug(
+                        f"Skipping non-numeric value for {key}: {value}"
+                    )
+                    continue
 
     def prepare_additional_columns(self):
         """
