@@ -645,11 +645,6 @@ class CRNSDataHub:
                     f"Skipping datetime value for {key}: {value}"
                 )
                 continue
-            elif not self._is_numeric_strict(value):
-                core_logger.debug(
-                    f"Skipping non-numeric value for {key}: {value} (type: {type(value)})"
-                )
-                continue
             else:
                 try:
                     numeric_value = pd.to_numeric(value)
