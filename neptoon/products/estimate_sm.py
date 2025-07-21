@@ -38,14 +38,7 @@ def build_base_input_schema() -> pa.DataFrameSchema:
                 nullable=True,
             ),
             str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
-            ): pa.Column(
-                dtype=float,
-                coerce=True,
-                nullable=True,
-            ),
-            str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY
             ): pa.Column(
                 dtype=float,
                 coerce=True,
@@ -76,14 +69,7 @@ def build_input_schema_koehli() -> pa.DataFrameSchema:
                 nullable=True,
             ),
             str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
-            ): pa.Column(
-                dtype=float,
-                coerce=True,
-                nullable=True,
-            ),
-            str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY
             ): pa.Column(
                 dtype=float,
                 coerce=True,
@@ -120,14 +106,7 @@ def build_output_schema() -> pa.DataFrameSchema:
                 nullable=True,
             ),
             str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
-            ): pa.Column(
-                dtype=float,
-                coerce=True,
-                nullable=True,
-            ),
-            str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY
             ): pa.Column(
                 dtype=float,
                 coerce=True,
@@ -469,10 +448,37 @@ class NeutronsToSM:
 
         return grav_sm * bulk_density
 
+    def create_uncertainty_bounds(self):
+        """
+        Adds the uncertainty to corrected counts to produce upper and
+        lower bounds.
+        """
+        self.crns_data_frame[
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT)
+        ] = (
+            self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            ]
+            - self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
+            ]
+        )
+        self.crns_data_frame[
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT)
+        ] = (
+            self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            ]
+            + self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
+            ]
+        )
+
     def calculate_uncertainty_of_sm_estimates(self):
         """
         Produces uncertainty estimates of soil mositure.
         """
+        self.create_uncertainty_bounds()
         self.calculate_sm_estimates(
             neutron_data_column_name=str(
                 ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT

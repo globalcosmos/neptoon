@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *config* - moved temporal sub-section out of sensor config and into process config
 - moved `validate_df()` to general utils
 - corrected neutron count uncertainty created in correct_neutron stage of data hub
+- neutron uncertainty bounds created in estimate_sm module just before being used (allows for changes due to aggregation)
 
 ### Depreceated
 
