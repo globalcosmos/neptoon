@@ -7,6 +7,7 @@ from neptoon.utils import (
     validate_timestamp_index,
     find_temporal_resolution_seconds,
     timedelta_to_freq_str,
+    recalculate_neutron_uncertainty,
 )
 from neptoon.columns import ColumnInfo
 from neptoon.logging import get_logger
@@ -63,22 +64,8 @@ class TimeStampAligner:
     def return_frequency_str(self, data_frame):
         freq = find_temporal_resolution_seconds(data_frame=data_frame)
         freq = datetime.timedelta(seconds=freq)
-        freq = self.timedelta_to_freq_str(freq)
+        freq = timedelta_to_freq_str(freq)
         return freq
-
-    @staticmethod
-    def timedelta_to_freq_str(time_delta: datetime.timedelta) -> str:
-        """Convert a timedelta to a pandas frequency string."""
-        total_seconds = time_delta.total_seconds()
-
-        if total_seconds % (86400) == 0:  # Days (86400 = 24 * 60 * 60)
-            return f"{int(total_seconds // 86400)}D"
-        elif total_seconds % 3600 == 0:  # Hours
-            return f"{int(total_seconds // 3600)}h"
-        elif total_seconds % 60 == 0:  # Minutes
-            return f"{int(total_seconds // 60)}min"
-        else:  # Seconds
-            return f"{int(total_seconds)}S"
 
     @log_key_step("method", "freq")
     def align_timestamps(
@@ -210,7 +197,7 @@ class TimeStampAggregator:
         temporal_scaling_factor = (
             pd.to_timedelta(self.output_resolution) / self.input_resolution
         )
-        return temporal_scaling_factor
+        return round(temporal_scaling_factor)
 
     def convert_na_fraction_to_int(self, max_na_fraction: float):
         """
@@ -253,18 +240,6 @@ class TimeStampAggregator:
         except KeyError:
             core_logger.info("No precipitation data to adjust")
 
-    def recalculate_neutron_uncertainty(self):
-        """
-        Adjust the statistical uncertainty of neutrons
-        """
-        self.data_frame[
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
-        ] = self.data_frame[
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
-        ] * (
-            1 / np.sqrt(self.temporal_scaling_factor)
-        )
-
     @log_key_step("method", "freq")
     def aggregate_data(
         self,
@@ -299,6 +274,10 @@ class TimeStampAggregator:
         self.dataframe_aggregated = True
         self.data_frame = self.qc.data.to_pandas()
         self.adjusted_summable_columns()
+        self.data_frame = recalculate_neutron_uncertainty(
+            data_frame=self.data_frame,
+            temporal_scaling_factor=self.temporal_scaling_factor,
+        )
 
     def return_dataframe(self):
         """

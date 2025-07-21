@@ -4,8 +4,11 @@ from neptoon.logging import get_logger
 from datetime import timedelta
 import re
 import pandas as pd
+import numpy as np
 import pandera.pandas as pa
 import datetime
+
+from neptoon.columns import ColumnInfo
 
 core_logger = get_logger()
 
@@ -201,3 +204,41 @@ def check_ouput_res_greater_than_input_res(
         return True
     else:
         return False
+
+
+def recalculate_neutron_uncertainty(
+    data_frame: pd.DataFrame,
+    temporal_scaling_factor: int | float,
+    uncertainty_col_name: str | None = None,
+):
+    """
+    Adjust the staistical uncertainty of neutrons value based on the
+    aggregation.
+
+    Parameters
+    ----------
+    data_frame : pd.DataFrame
+        DataFrame with data
+    temporal_scaling_factor : int | float
+        The scaling factor to adjust from original resolution to
+        revised output resolution
+    uncertainty_col_name : str | None, optional
+        Name of the col, if None will use the default supplied in
+        ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY, by
+        default None
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    uncertainty_col_name = (
+        str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
+        if uncertainty_col_name is None
+        else uncertainty_col_name
+    )
+
+    data_frame[uncertainty_col_name] = data_frame[uncertainty_col_name] * (
+        1 / np.sqrt(temporal_scaling_factor)
+    )
+    return data_frame

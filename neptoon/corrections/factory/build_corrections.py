@@ -225,7 +225,7 @@ class CorrectNeutrons:
             )
         return df
 
-    def create_corrected_neutron_uncertainty_column(self, df):
+    def create_corrected_neutron_uncertainty_column(self, df: pd.DataFrame):
         """
         Creates corrected epithermal neutron uncertainty data
 
@@ -234,12 +234,18 @@ class CorrectNeutrons:
         df : pd.DataFrame
             DataFrame
         """
-
+        df[str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)] = df[
+            str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY)
+        ]
         for column_name in self.correction_columns:
             df[
                 str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
             ] = (
-                df[str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY)]
+                df[
+                    str(
+                        ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY
+                    )
+                ]
                 * df[column_name]
             )
         return df
