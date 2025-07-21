@@ -5,6 +5,7 @@ from neptoon.data_prep.timestamp_alignment import (
     TimeStampAligner,
     TimeStampAggregator,
 )
+from neptoon.utils import recalculate_neutron_uncertainty
 from neptoon.columns import ColumnInfo
 
 
@@ -89,14 +90,17 @@ def test_timedelta_to_freq_str(time_stamp_aggregator):
     assert ts_agg.max_na_int == 1
 
 
-def test_rescale_uncertainty(time_stamp_aggregator):
-    ts_agg = time_stamp_aggregator
-    ts_agg.data_frame[
+def test_rescale_uncertainty(correct_df):
+    data_frame = correct_df
+    data_frame[
         str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
     ] = 20
-    ts_agg.recalculate_neutron_uncertainty()
+    recalculate_neutron_uncertainty(
+        data_frame=data_frame,
+        temporal_scaling_factor=4,
+    )
     assert (
-        ts_agg.data_frame[
+        data_frame[
             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
         ].iloc[0]
         == 10
