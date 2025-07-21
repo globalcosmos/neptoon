@@ -170,3 +170,34 @@ def find_temporal_resolution_seconds(data_frame: pd.DataFrame):
         data_frame.index.to_series().dropna().diff().median().total_seconds()
     )
     return time_res_seconds
+
+
+def check_ouput_res_greater_than_input_res(
+    output_res: str | datetime.timedelta,
+    input_res: str | datetime.timedelta,
+):
+    """
+    Returns boolean value stating whether the output resolution is
+    greater than the input resolution
+
+    Parameters
+    ----------
+    output_res : str | datetime.timedelta
+        output resolution to check
+    input_res : str | datetime.timedelta
+        input resolution to check
+
+    Returns
+    -------
+    bool
+        whether the statement is true
+    """
+    if isinstance(output_res, str):
+        output_res = parse_resolution_to_timedelta(output_res)
+    if isinstance(input_res, str):
+        input_res = parse_resolution_to_timedelta(input_res)
+
+    if output_res > input_res:
+        return True
+    else:
+        return False
