@@ -1,10 +1,15 @@
 import pandas as pd
 from typing import Literal, TYPE_CHECKING
 from pathlib import Path
+import datetime
 
 # if TYPE_CHECKING:
 from neptoon.hub import CRNSDataHub
 
+from neptoon.utils import (
+    check_ouput_res_greater_than_input_res,
+    find_temporal_resolution_seconds,
+)
 from neptoon.logging import get_logger
 from neptoon.io.read.data_ingest import (
     validate_and_convert_file_path,
@@ -650,6 +655,22 @@ class ProcessWithConfig:
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="corrected_neutrons",
         )
+
+        if check_ouput_res_greater_than_input_res(
+            output_res=self.process_config.temporal_aggregation.output_resolution,
+            input_res=datetime.timedelta(
+                seconds=find_temporal_resolution_seconds(
+                    data_frame=self.data_hub.crns_data_frame
+                )
+            ),
+        ):
+            self.data_hub.aggregate_data_frame(
+                output_resolution=self.process_config.temporal_aggregation.output_resolution,
+                max_na_fraction=self.process_config.temporal_aggregation.aggregate_maxna_fraction,
+                aggregate_method=self.process_config.temporal_aggregation.aggregate_method,
+                aggregate_function=self.process_config.temporal_aggregation.aggregate_func,
+            )
+
         if self.process_config.data_smoothing.smooth_corrected_neutrons:
             self.data_hub = self._smooth_data(
                 data_hub=self.data_hub,
