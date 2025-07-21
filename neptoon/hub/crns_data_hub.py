@@ -390,17 +390,15 @@ class CRNSDataHub:
         Data smoothing was done on {column_to_smooth}. This was done
         using {smooth_method} with a window of {window}.
         """
-        series_to_smooth = pd.Series(self.crns_data_frame[column_to_smooth])
         smoother = SmoothData(
-            data=series_to_smooth,
+            data=self.crns_data_frame,
             column_to_smooth=column_to_smooth,
             smooth_method=smooth_method,
             window=window,
             poly_order=poly_order,
             auto_update_final_col=auto_update_final_col,
         )
-        col_name = smoother.create_new_column_name()
-        self.crns_data_frame[col_name] = smoother.apply_smoothing()
+        self.crns_data_frame = smoother.apply_smoothing()
 
     @Magazine.reporting(topic="Calibration")
     def calibrate_station(
