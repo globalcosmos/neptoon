@@ -89,6 +89,13 @@ def sample_crns_data_corrected():
                 120,
                 120,
             ],
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY): [
+                100,
+                110,
+                120,
+                110,
+                110,
+            ],
             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT): [
                 100,
                 110,
