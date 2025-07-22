@@ -10,11 +10,14 @@ def data_to_smooth_hourly():
     """
     Dataset used for tests
     """
-    return pd.Series(
+    series1 = pd.Series(
         np.random.randn(100),
         index=pd.date_range(start="2023-01-01", periods=100, freq="h"),
-        name="epithermal_neutrons",
+        name=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
     )
+    df = pd.DataFrame(series1)
+    df["corrected_epithermal_neutrons_uncertainty"] = np.random.randn(100)
+    return df
 
 
 @pytest.fixture
@@ -22,10 +25,11 @@ def data_to_smooth_hourly_bad_index():
     """
     Dataset used for tests with incorrect index type
     """
-    return pd.Series(
+    series = pd.Series(
         np.random.randn(100),
-        name="epithermal_neutrons",
+        name=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
     )
+    return pd.DataFrame(series)
 
 
 @pytest.fixture()
@@ -54,13 +58,13 @@ def og_data_table():
     )
 
 
-def test_smooth_data_rolling(data_to_smooth_hourly, og_data_table):
+def test_smooth_data_rolling(data_to_smooth_hourly):
     """
     Tests to check smoothing using rolling mean occurs correctly.
     """
     smoother = SmoothData(
         data=data_to_smooth_hourly,
-        column_to_smooth="epithermal_neutrons",
+        column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
         smooth_method="rolling_mean",
         window="12h",
         auto_update_final_col=False,
@@ -68,15 +72,11 @@ def test_smooth_data_rolling(data_to_smooth_hourly, og_data_table):
     smoothed_data = smoother.apply_smoothing()
     smoothed_col = smoother.create_new_column_name()
     assert len(smoothed_data) == len(data_to_smooth_hourly)
-    assert smoothed_data.isna().sum() == 5
-    assert smoothed_col == "epithermal_neutrons_rollingmean_12h"
-    og_data_table[smoothed_col] = smoothed_data
-    assert smoothed_col in og_data_table.columns
+    assert smoothed_col == "epithermal_neutrons_cph_rollingmean_12h"
+    assert smoothed_data[smoothed_col].isna().sum() == 5
 
 
-def test_smooth_data_rolling_raise_error_int(
-    data_to_smooth_hourly, og_data_table
-):
+def test_smooth_data_rolling_raise_error_int(data_to_smooth_hourly):
     """
     Tests to check smoothing using rolling mean occurs correctly.
     """
@@ -95,6 +95,9 @@ def test_update_col_name_final(data_to_smooth_hourly):
     """
     Test to check ColumnInfo is auto updated when turned on.
     """
+    data_to_smooth_hourly.rename(
+        {"epithermal_neutrons": "epithermal_neutrons_cph"}, inplace=True
+    )
     smoother = SmoothData(
         data=data_to_smooth_hourly,
         column_to_smooth=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
