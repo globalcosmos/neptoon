@@ -32,32 +32,6 @@ def data_to_smooth_hourly_bad_index():
     return pd.DataFrame(series)
 
 
-@pytest.fixture()
-def reset_column_info():
-    """
-    Automatically resets ColumnInfo labels before runnning test.
-    Important for tests related to ColumnInfo renaming.
-    """
-    ColumnInfo.reset_labels()
-    yield
-    ColumnInfo.reset_labels()
-
-
-# Marker for tests that change ColumnInfo
-pytest.mark.reset_columns = pytest.mark.usefixtures("reset_column_info")
-
-
-@pytest.fixture
-def og_data_table():
-    """
-    Data table for tests to ensure appending works correctly.
-    """
-    return pd.DataFrame(
-        index=pd.date_range(start="2023-01-01", periods=100, freq="h"),
-        columns=["epithermal_neutrons", "air_pressure", "temperature"],
-    )
-
-
 def test_smooth_data_rolling(data_to_smooth_hourly):
     """
     Tests to check smoothing using rolling mean occurs correctly.
@@ -73,7 +47,7 @@ def test_smooth_data_rolling(data_to_smooth_hourly):
     smoothed_col = smoother.create_new_column_name()
     assert len(smoothed_data) == len(data_to_smooth_hourly)
     assert smoothed_col == "epithermal_neutrons_cph_rollingmean_12h"
-    assert smoothed_data[smoothed_col].isna().sum() == 5
+    assert smoothed_data[smoothed_col].isna().sum() == 7
 
 
 def test_smooth_data_rolling_raise_error_int(data_to_smooth_hourly):
@@ -135,8 +109,8 @@ def test_validation_of_attributes_savitsky_golay(data_to_smooth_hourly):
         SmoothData(
             data=data_to_smooth_hourly,
             column_to_smooth="epithermal_neutrons",
-            smooth_method="savitsky_golay",
-            window=12,
+            smooth_method="bad",
+            window="12h",
             # no poly entered
             auto_update_final_col=False,
         )
@@ -151,6 +125,38 @@ def test_validation_of_attributes_datetime_index(
     with pytest.raises(ValueError):
         SmoothData(
             data=data_to_smooth_hourly_bad_index,
+            column_to_smooth="epithermal_neutrons",
+            smooth_method="savitsky_golay",
+            window="12h",
+            # no poly entered
+            auto_update_final_col=False,
+        )
+
+
+@pytest.fixture
+def data_to_smooth_daily():
+    """
+    Dataset used for tests
+    """
+    series1 = pd.Series(
+        np.random.randn(100),
+        index=pd.date_range(start="2023-01-01", periods=100, freq="d"),
+        name=str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH),
+    )
+    df = pd.DataFrame(series1)
+    df["corrected_epithermal_neutrons_uncertainty"] = np.random.randn(100)
+    return df
+
+
+@pytest.mark.reset_columns
+def test_smooth_window_mismatch(data_to_smooth_daily):
+    message = (
+        "The resolution of the data is not fine enough for the "
+        "desired smoothing window. Choose a larger smoothing window."
+    )
+    with pytest.raises(ValueError, match=message):
+        SmoothData(
+            data=data_to_smooth_daily,
             column_to_smooth="epithermal_neutrons",
             smooth_method="savitsky_golay",
             window="12h",

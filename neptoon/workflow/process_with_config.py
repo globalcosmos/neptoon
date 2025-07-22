@@ -7,7 +7,7 @@ import datetime
 from neptoon.hub import CRNSDataHub
 
 from neptoon.utils import (
-    check_ouput_res_greater_than_input_res,
+    is_resolution_greater_than,
     find_temporal_resolution_seconds,
 )
 from neptoon.logging import get_logger
@@ -655,14 +655,17 @@ class ProcessWithConfig:
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="corrected_neutrons",
         )
-
-        if check_ouput_res_greater_than_input_res(
-            output_res=self.process_config.temporal_aggregation.output_resolution,
-            input_res=datetime.timedelta(
-                seconds=find_temporal_resolution_seconds(
-                    data_frame=self.data_hub.crns_data_frame
-                )
-            ),
+        output_resolution = (
+            self.process_config.temporal_aggregation.output_resolution
+        )
+        input_resolution = datetime.timedelta(
+            seconds=find_temporal_resolution_seconds(
+                data_frame=self.data_hub.crns_data_frame
+            )
+        )
+        if is_resolution_greater_than(
+            resolution_a=output_resolution,
+            resolution_b=input_resolution,
         ):
             self.data_hub.aggregate_data_frame(
                 output_resolution=self.process_config.temporal_aggregation.output_resolution,
