@@ -175,32 +175,36 @@ def find_temporal_resolution_seconds(data_frame: pd.DataFrame):
     return time_res_seconds
 
 
-def check_ouput_res_greater_than_input_res(
-    output_res: str | datetime.timedelta,
-    input_res: str | datetime.timedelta,
-):
+def is_resolution_greater_than(
+    resolution_a: str | datetime.timedelta,
+    resolution_b: str | datetime.timedelta,
+) -> bool:
     """
-    Returns boolean value stating whether the output resolution is
-    greater than the input resolution
+    Returns True if resolution_a is greater (coarser) than resolution_b
 
     Parameters
     ----------
-    output_res : str | datetime.timedelta
-        output resolution to check
-    input_res : str | datetime.timedelta
-        input resolution to check
+    resolution_a : str | datetime.timedelta
+        First resolution to compare
+    resolution_b : str | datetime.timedelta
+        Second resolution to compare
 
     Returns
     -------
     bool
-        whether the statement is true
-    """
-    if isinstance(output_res, str):
-        output_res = parse_resolution_to_timedelta(output_res)
-    if isinstance(input_res, str):
-        input_res = parse_resolution_to_timedelta(input_res)
+        True if resolution_a > resolution_b
 
-    if output_res > input_res:
+    Note
+    ----
+    If resolution is str then it should be in a form such as "1h",
+    "6hour" or "1day". It will be auto converted internally to the func
+    """
+    if isinstance(resolution_a, str):
+        resolution_a = parse_resolution_to_timedelta(resolution_a)
+    if isinstance(resolution_b, str):
+        resolution_b = parse_resolution_to_timedelta(resolution_b)
+
+    if resolution_a > resolution_b:
         return True
     else:
         return False

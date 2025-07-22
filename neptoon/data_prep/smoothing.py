@@ -8,7 +8,7 @@ from neptoon.columns import ColumnInfo
 from neptoon.utils import (
     parse_resolution_to_timedelta,
     find_temporal_resolution_seconds,
-    check_ouput_res_greater_than_input_res,
+    is_resolution_greater_than,
     recalculate_neutron_uncertainty,
 )
 
@@ -249,7 +249,7 @@ class SmoothData:
     def _get_min_obs_for_rolling_mean(
         self,
         data_to_smooth: pd.DataFrame,
-        min_proportion_good_data: float = 0.5,
+        min_proportion_good_data: float | None = None,
     ):
         """
         Calculates the number of observations that equates to half the
@@ -269,6 +269,11 @@ class SmoothData:
             The number of observatinos that make up the half the time
             delta
         """
+        min_proportion_good_data = (
+            min_proportion_good_data
+            if min_proportion_good_data is not None
+            else self.min_proportion_good_data
+        )
         freq = data_to_smooth.index.to_series().diff().median()
         min_obs = int(
             (self.window_as_timedelta * min_proportion_good_data) / freq
@@ -356,11 +361,14 @@ class SmoothData:
         Checks if timestep is greater than window. If this is the case
         it cannot smooth at the defined amount.
         """
-        if check_ouput_res_greater_than_input_res(
-            output_res=datetime.timedelta(
-                seconds=find_temporal_resolution_seconds(self.data)
-            ),
-            input_res=self.window_as_timedelta,
+        data_resolution = datetime.timedelta(
+            seconds=find_temporal_resolution_seconds(self.data)
+        )
+        smooth_window = self.window_as_timedelta
+
+        if is_resolution_greater_than(
+            resolution_a=data_resolution,
+            resolution_b=smooth_window,
         ):
             message = (
                 "The resolution of the data is not fine enough for the "
