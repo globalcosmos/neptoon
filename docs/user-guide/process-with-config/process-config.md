@@ -18,12 +18,26 @@ The process configuration file tells neptoon about the sensor being processed. T
 
 ### Raw Neutron Quality Control Parameters
 
+Here we conduct spike detection to account for problems in the raw count rate. 
+
+!!! note "Future Update"
+    - The spike detection algorithm will be changed in a future update so watch this space...
+
+
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | spike_uni_lof.periods_in_calculation | Yes | integer | `12` | Number of time periods used in Local Outlier Factor calculation |
 | spike_uni_lof.threshold | Yes | float | `2.0` | Threshold value for spike detection using LOF algorithm |
 
 ### Corrected Neutron Quality Control Parameters
+
+These are some quality checks we do on corrected neutrons based on the literature. 
+
+N0 is the theoretical maximum count rate at the site so anything above this is considered an error (plus 7.5% as explained in Köhli et al., 2021). 
+
+Below 30% of N0 is equivelant to a body of water - so would also be error. 
+
+It's recommended to not touch this section unless your experimenting.
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
@@ -32,15 +46,27 @@ The process configuration file tells neptoon about the sensor being processed. T
 
 ## Correction Steps
 
+The following section is for applying corrections to the neutron count rate to account for additional influences, besides soil moisture, that influence the count rate. 
+
+If you wish to turn off a particular correction - set the method to `"none"`. 
+
 ### Air Humidity Correction
+
+Air humidity corrections can be left as the example values shown below when being applied as these are based on the literature. 
+
+!!! warning "Köhli et al., 2021 method for neutron conversion"
+    - If you are using the `koehli_etal_2021` method for neutron to soil moisture conversion - set the method to `"none"`. The humidity correction is integrated to this method already. (If you forget neptoon will disapply this correction during neutron conversion, but it's best to not apply it in the first place)
+
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| method | Yes | string | `"rosolem_2013"` | Method used for humidity correction |
-| omega | Yes | float | `0.0054` | Correction coefficient for humidity |
-| humidity_ref | Yes | float | `0` | Reference humidity value for correction |
+| method | No | string | `"rosolem_2013"` | Method used for humidity correction |
+| omega | No | float | `0.0054` | Correction coefficient for humidity |
+| humidity_ref | No | float | `0` | Reference humidity value for correction |
 
 ### Air Pressure Correction
+
+Air pressure correction - very important to leave on as CRNS are very sensitive to atmospheric pressure changes. 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
@@ -48,6 +74,7 @@ The process configuration file tells neptoon about the sensor being processed. T
 | dunai_inclination | No | float | - | Inclination parameter for dunai method |
 
 ### Incoming Intensity Correction
+
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
@@ -65,13 +92,18 @@ The process configuration file tells neptoon about the sensor being processed. T
 
 ### Soil Moisture Estimation
 
+Here we state how we will convert neutrons to soil mositure. If you choose `koehli_etal_2021` then `koehli_method_form` is required.
+
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | method | Yes | string | `"desilets_etal_2010"` or `"koehli_etal_2021"` | Method for converting neutrons to soil mositure|
-|koehli_method_form|No|string|`"Jan23_uranos"` or `"Jan23_mcnpfull"` or `"Mar12_atmprof"` or `"Mar21_mcnp_drf"` or `"Mar21_mcnp_ewin"` or `"Mar21_uranos_drf"` or `"Mar21_uranos_ewin"` or `"Mar22_mcnp_drf_Jan"` or `"Mar22_mcnp_ewin_gd"` or `"Mar22_uranos_drf_gd"` or `"Mar22_uranos_ewin_chi2"` or `"Mar22_uranos_drf_h200m"` or `"Aug08_mcnp_drf"` or `"Aug08_mcnp_ewin"` or `"Aug12_uranos_drf"` or `"Aug12_uranos_ewin"` or `"Aug13_uranos_atmprof"` or `"Aug13_uranos_atmprof2"`| Thats a lot of options... just stick with `"Mar21_uranos_drf"` if you want simple. This sets the parameters when using the koehlie et al., 2021 method|
+|koehli_method_form| No | string |`"Jan23_uranos"` or `"Jan23_mcnpfull"` or `"Mar12_atmprof"` or `"Mar21_mcnp_drf"` or `"Mar21_mcnp_ewin"` or `"Mar21_uranos_drf"` or `"Mar21_uranos_ewin"` or `"Mar22_mcnp_drf_Jan"` or `"Mar22_mcnp_ewin_gd"` or `"Mar22_uranos_drf_gd"` or `"Mar22_uranos_ewin_chi2"` or `"Mar22_uranos_drf_h200m"` or `"Aug08_mcnp_drf"` or `"Aug08_mcnp_ewin"` or `"Aug12_uranos_drf"` or `"Aug12_uranos_ewin"` or `"Aug13_uranos_atmprof"` or `"Aug13_uranos_atmprof2"`| Thats a lot of options... just stick with `"Mar21_uranos_drf"` if you want simple. This sets the parameters when using the koehlie et al., 2021 method|
 
 
 ## Data Smoothing
+
+In this section we state whether to do smoothing on the neutron data, and how to do it. The boolean statement is required. If this is set to `true` then the further options need to be set too, otherwise they can be left blank.
+
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
@@ -79,7 +111,27 @@ The process configuration file tells neptoon about the sensor being processed. T
 | smooth_soil_moisture | Yes | boolean | `false` | Enable smoothing for soil moisture data |
 | settings.algorithm | Yes | string | `"rolling_mean"` | Smoothing algorithm selection |
 | settings.window | Yes | string | `12h` or `12hours` or `1day` or `1d` or `30min` or `30m` | Window size for smoothing operation, provided as a string which neptoon will automatically parse into a timedelta window |
-| settings.poly_order | Yes | integer | `4` | Polynomial order for Savitzky-Golay filter (Currently not used)|
+| settings.poly_order | No | integer | `5` | Polynomial order for Savitzky-Golay filter (Currently not in use until a future update)|
 
 !!! note "Additional Information"
     - The smoothing algorithm supports only `rolling_mean` until a future update. 
+
+## Temporal Aggregation
+
+In this section we state whether to do smoothing on the neutron data, and how to do it. 
+
+The boolean statements are required. If they are set to `true` then the further options need to be set too, otherwise they can be left blank. 
+
+Alignment is used if you want to have your data output on rounded time points, but don't wish to change the resolution of your data (e.g., data at `15:04` realigned to be at `15:00`). 
+
+Aggregation does what it says, converts your data to a new resolution via aggregation. The output_resolution should be larger than original timestep resolution of your data (no downscaling). 
+
+| Parameter | Required | Type | Example | Description |
+|-----------|----------|------|---------|-------------|
+| aggregate_data | Yes | boolean |  `true` or `false` | Whether to aggregate data |
+| output_resolution | No | string | `1hour` or `None` | Desired time step of output data |
+| aggregate_method | No | string | `bagg` | Method for data aggregation |
+| aggregate_func | No | string | `mean` | Function used for aggregation |
+| aggregate_maxna_fraction | No | float | `0.3` | Maximum allowed fraction of NA values in the aggregation period |
+| align_timestamps | Yes | boolean | `true` or `false` | Whether to align timestamps |
+| alignment_method | No | string | `time` | Method for timestamp alignment |

@@ -44,6 +44,7 @@ data_smoothing:
     poly_order: 4
 
 temporal_aggregation:
+  aggregate_data: false
   output_resolution: 1hour
   align_timestamps: true
   alignment_method: time

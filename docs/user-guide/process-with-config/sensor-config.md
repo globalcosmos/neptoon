@@ -72,13 +72,7 @@ The sensor configuration file tells neptoon about the sensor being processed. Th
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | path_to_data | No | string | - | Path to pre-processed data (leave blank if parsing raw data) |
-| input_resolution | Yes | string | `15mins` | Time step of input data |
-| output_resolution | Yes | string | `1hour` or `None` | Desired time step of output data |
-| align_timestamps | Yes | boolean | `true` | Whether to align timestamps |
-| alignment_method | Yes | string | `time` | Method for timestamp alignment |
-| aggregate_method | Yes | string | `bagg` | Method for data aggregation |
-| aggregate_func | Yes | string | `mean` | Function used for aggregation |
-| aggregate_maxna_fraction | Yes | float | `0.3` | Maximum allowed fraction of NA values |
+
 
 ### Key Column Information (Time Series Data)
 
