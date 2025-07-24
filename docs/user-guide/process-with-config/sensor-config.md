@@ -198,14 +198,13 @@ A unique identifier for the monitoring station that will be used in file naming 
 
   - Should be URL-safe (avoid special characters)
   - Used as default folder name for outputs
-  - Case-sensitive
   - No spaces recommended (use underscores)
 
 
 ---
 #### `identifier`
 **Description**  
-The unique hardware identifier for the CRNS unit, typically provided by the manufacturer.
+The unique hardware identifier for the CRNS unit. This can be an additional was to identify the site.
 
 **Specification**
 
@@ -230,6 +229,7 @@ The date when the CRNS was installed at the monitoring site.
 
   - Used as cutoff for data processing
   - Single-digit months/days require leading zeros
+  - Must be in format YYYY-MM-DD to be registered as a date
 
 
 ---
@@ -263,8 +263,7 @@ Height above sea level of the CRNS installation site.
 
 **Technical Details**
 
-  - Used in atmospheric corrections
-  - Affects pressure corrections
+  - Used in atmospheric pressure corrections
   - Important for neutron flux calculations
 
 ---
@@ -304,7 +303,7 @@ The average lattice water content in soil minerals at the monitoring site.
   - Site-specific constant
   - Used in soil moisture conversion
   - If not supplied defaults to 0
-  - Can be automatically calculated if calibration sample data is provided with this in it (a site average is used)
+  - Can be automatically calculated if calibration sample data is available and lattice water content is a provided data.
 ---
 #### `avg_soil_organic_carbon`
 **Description**  
@@ -339,9 +338,9 @@ The average dry soil bulk density across the CRNS footprint. This parameter is e
 
 **Technical Details**
 
-  - Affects neutron-to-moisture conversion
+  - Important for use in converting neutrons to soil moisture (particularly converting gravimetric to volumetric soil moisture)
   - Influences effective measurement depth
-  - Can be automatically calculated if calibration sample data is provided with this in it (a site average is used)
+  - Can be automatically calculated if calibration sample data is provided with this data in it (a site average is used)
 
 
 ---
@@ -358,8 +357,8 @@ Site-specific calibration parameter that converts corrected neutron counts to so
 **Technical Details**
 
   - Determined through field calibration
-  - Used in standard calibration function
   - Can be calibrated with soil sampling data if this option turned on
+  - If no calibration data is availble, you will have to guess it. Although this will mean there is a bias problem in your data.
 
 ---
 #### `beta_coefficient`
@@ -378,7 +377,7 @@ Site-specific coefficient used in the atmospheric pressure correction of neutron
   - Used in pressure correction equations
   - Location and elevation dependent
   - Affects neutron count normalization
-  - Will be automatically calculated in neptoon if not provided using elevation and lat/lon data
+  - Will be automatically calculated in neptoon if not provided using supplied elevation and latitude data
 
 ---
 #### `mean_pressure`
@@ -409,7 +408,7 @@ The time zone offset from UTC for the monitoring site. Essential for proper temp
   - **Type**: string
   - **Required**: Yes
   - **Format**: ±H
-  - **Example**: `"+1"` 
+  - **Example**: `"+1"` or `"-10"` 
 
 
 ## Raw Data Parse Options (`raw_data_parse_options`)

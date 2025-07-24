@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `find_temporal_resolution()` to general utils
-- CRNSDataHub - functions to aggregate and align data in time
+- `find_temporal_resolution()` added to general utils
+- `CRNSDataHub` - added functions to aggregate and align data directly to the CRNSDataHub
 - new column name for raw neutron uncertainty added to ColumnInfo.Name
+
 
 ### Changed
 
@@ -21,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - neutron uncertainty bounds created in estimate_sm module just before being used (allows for changes due to aggregation)
 
 ### Depreceated
+
+- `temporal` section in sensor config is depreceated - moved into process config as `temporal_aggregation` section
 
 ### Removed
 
