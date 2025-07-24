@@ -41,6 +41,7 @@ class SensorInfo(BaseConfig):
     identifier: str = Field(
         description="A unique identier",
         examples=["101", "456"],
+        coerce_numbers_to_str=True,
     )
     install_date: datetime.datetime
     latitude: float
