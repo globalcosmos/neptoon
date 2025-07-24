@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `find_temporal_resolution()` added to general utils
 - `CRNSDataHub` - added functions to aggregate and align data directly to the CRNSDataHub
 - new column name for raw neutron uncertainty added to ColumnInfo.Name
-
+- Depreceation warning if temporal section is found in sensor config when loaded
 
 ### Changed
 

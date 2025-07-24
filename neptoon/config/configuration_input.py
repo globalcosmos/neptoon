@@ -3,13 +3,19 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pathlib import Path
 import datetime
 import yaml
-from warnings import warn
+import warnings
 from enum import Enum
 
 from neptoon.logging import get_logger
 
 
 core_logger = get_logger()
+
+warnings.filterwarnings(
+    "always",
+    category=DeprecationWarning,
+    module=__name__,  # Only for this specific module
+)
 
 
 class BaseConfig(BaseModel):
@@ -646,18 +652,27 @@ class ConfigurationManager:
         """
         config_type = str(ConfigType.SENSOR.value)
         config_obj = SensorConfig(**config_dict)
+
         if hasattr(config_obj.time_series_data, "temporal"):
-            warn(
-                (
-                    "The section in the sensor config called `time_series_data.temporal` "
-                    "is depreciated and will be ignored. This section has moved to the process config file under "
-                    "'temporal_aggregation' section. See the documentation for more information."
-                ),
+            message1 = (
+                "\n"
+                f"\033[1m\033[93mConfiguration needs updating:\033[0m "
+                f"Found 'temporal' settings in sensor config, "
+                f"but these should now be in your process config file under 'temporal_aggregation'.\n"
+                f"The current temporal settings will be ignored until you move them.\n"
+                "see: https://www.neptoon.org/en/latest/user-guide/process-with-config/process-config/"
+            )
+            og_message = (
+                "\nDeprecationWarning: The section in the sensor config called `time_series_data.temporal` "
+                "is deprecated and will be ignored.\nThis section has moved to the process config file under "
+                "'temporal_aggregation' section.\nSee the documentation for more information."
+            )
+            warnings.warn(
+                message1,
                 DeprecationWarning,
                 stacklevel=2,
             )
-
-        self._configs[config_type] = SensorConfig(**config_dict)
+        self._configs[config_type] = config_obj
 
     def get_config(self, name: Literal["sensor", "process"]):
         """
