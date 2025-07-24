@@ -655,6 +655,7 @@ class ProcessWithConfig:
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="corrected_neutrons",
         )
+
         output_resolution = (
             self.process_config.temporal_aggregation.output_resolution
         )

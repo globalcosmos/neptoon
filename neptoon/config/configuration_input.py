@@ -34,11 +34,11 @@ class SensorInfo(BaseConfig):
         description="The name of the site.",
         examples=["Sheepdrove", "Gatton"],
     )
-    country: str = Field(
+    country: Optional[str] = Field(
         description="The country the site is located in.",
         examples=["DEU", "UK", "USA", "KOR"],
     )
-    identifier: str = Field(
+    identifier: Optional[str] = Field(
         description="A unique identier",
         examples=["101", "456"],
         coerce_numbers_to_str=True,
@@ -301,10 +301,6 @@ class CalibrationConfig(BaseConfig):
     """Configuration for calibration data."""
 
     calibrate: bool = Field(default=False)
-
-    data_format: Optional[
-        Literal["custom", "cosmoz", "cosmos-usa", "cosmos-uk"]
-    ] = Field(default="custom")
     location: Optional[Path] = Field(default="")
     key_column_names: Optional[CalibrationColumnNames] = None
 

@@ -8,6 +8,8 @@
 ## Overview
 The sensor configuration file tells neptoon about the sensor being processed. The sections in this file are: config, sensor_info, raw_data_parse_options, time_series_data, input_data_qa, soil_moisture_qa, calibration, data_storage and figures. Below is an example file which you can use a starting point for your own sensor, a quick start guide and a more detailed reference to each possiblility.
 
+Some of the inputs can be left blank initially, and neptoon will calculate the values during processing (e.g., `N0` when calibrating). The output folder when processing is complete will include a file called `sensor_config.yaml`. This is the config file used as input with any additional calculated information included.
+
 ## File Structure
 
 ```yaml
@@ -18,10 +20,20 @@ The sensor configuration file tells neptoon about the sensor being processed. Th
 
 ## Sensor Information
 
+This config section provides information on individual sensor being processed. Some of this information is crucial for data processing, such as elevation or latitude. Others are used in organising the data outputs - like adding the name to save folders.
+
+It is always better to fill this in as best you can.
+
+The `beta_coefficient` and `mean_pressure` can be automatically calculated if left blank. 
+
+Same for the `N0` however this requires the calibration section to be correctly filled (otherwise you'll have to guess). Generally speaking when calibrating it's also possible to automatically generate the values for `avg_lattice_water` and `avg_soil_organic_carbon`, as long as they are available in your calibration dataset.
+
+
+
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | name | Yes | string | `Cunnesdorf_test_site` | Site identifier used for file naming and metadata |
-| country | No | string | `Germany` | Country where sensor is located |
+| country | No | string | `DEU` | Country where sensor is located |
 | identifier | No | string | `A102` | Unique sensor identifier code |
 | install_date | Yes | string | `2016-10-21` | Date sensor was installed (YYYY-MM-DD) |
 | latitude | Yes | float | `51.369597` | Site latitude in decimal degrees |
@@ -38,6 +50,12 @@ The sensor configuration file tells neptoon about the sensor being processed. Th
 
 
 ## Raw Data Parse Options
+
+Raw Data Parsing refers to the required step to take your raw data files (e.g., found on the SD card in the logger) and converting them to a single csv file. No data manipulation is done at this stage. In it's simplest form it will take a list of `.txt` files and order them by date. When things get more complicated (e.g., only files with a certain prefix contain CRNS data), other settings are required.
+
+!!! Warning "Is this step needed?"
+    You can skip this step if your data is already available as a single csv file. Simply set `parse_raw_data` to False and move on to time series data below.
+
 
 !!! tip "Requirements"
     For this section the `Required` column will change if you select `True` for `parse_raw_data`.
@@ -69,6 +87,8 @@ The sensor configuration file tells neptoon about the sensor being processed. Th
 
 ## Time Series Data
 
+The time series data section is interested in how we prepare your CRNS time series data for processing. It imagines that your data is at least in a datetime ordered csv format. You state where that data is with the `path_to_data` setting and it will read it in and begin preperations. If you needed to run the above "Raw Data Parse Options" stage, the path to the data is not really needed, but the remaining settings are!
+
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | path_to_data | No | string | - | Path to pre-processed data (leave blank if parsing raw data) |
@@ -76,6 +96,9 @@ The sensor configuration file tells neptoon about the sensor being processed. Th
 
 ### Key Column Information (Time Series Data)
 
+Here we define settings to prepare the data for processing. For example in neptoon we standardise all neutron counts to counts per hour (cph). So if your data is in another format, state it here and neptoon will take care of the conversion. 
+
+Other things include if you have multiple columns of certain data readings (e.g., multiple pressure sensors). State the names in a list under the specific column section and state how you wish to merge them into a single column. `priority` means it will use the first value in the list and gap fill with the next if missing. `average` means it will take the mean. 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
@@ -99,18 +122,24 @@ The sensor configuration file tells neptoon about the sensor being processed. Th
 
 ## Quality Assessment Settings
 
-See below for more details - this section can be as large or as small as desired
+We include some simple options for quality assessment in neptoon using [SaQC](https://rdm-software.pages.ufz.de/saqc/index.html) as the back-end. More information about how to do this is provided further below on this page (and examples are shown in the example config above). 
+
+We do not plan to expand this further to avoid scope creep. Neptoon is designed to process CRNS data. We provide some options to QA data used directly in this process. To QA any additional co-located sensors, we would recommend using a system designed for QA specifically (e.g., `SaQC`).
+
 
 ## Calibration
+
+Calibration finds your `N0` term. For this we need sample data acquired from the site. When available the following section tells neptoon where the data is and what the format is. 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | calibrate | Yes | boolean | `True` | Toggle for whether calibration will be done |
-| data_format | No | string | `custom` | (WIP) automatic formatting for set styles |
 | location | No | string | `home_dir/example_data/FSCD001_calibration.csv` | Location of the calibration data |
 | date_time_format | No | string | `"%d.%m.%Y %H:%M"` | DateTime format of the calibration data|
 
 ### Key Column Names (Calibration)
+
+These values are required if `calibrate` is set to `true` in the above section.
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
@@ -126,21 +155,28 @@ See below for more details - this section can be as large or as small as desired
 
 ## Data Storage
 
+
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| save_folder | No | string | - | Directory for saving outputs |
-| append_yaml_hash_to_folder_name | No | boolean | `False` |(WIP) Add configuration hash to folder names |
+| save_folder | No | string | - | Directory for saving outputs - if left blank it will use current working directory instead |
+| append_timestamp_to_folder_name | No | boolean | `True` | Whether to append a timestamp to the output folder name. Useful when experimenting to avoid overwriting data. |
+| create_report | No | boolean | `true` | Whether to create a detailed report of your data outputs during the processing run and save it into the output folder |
+
 
 ## Figures
+
+Figures are tightly coupled to the `create_report` feature above. Neptoon will produce some useful figures helping to describe your data for quick visual checks post processing. These can be turned off if not required. Otherwise the figures are saved into a folder in the output folder, and included in the report if this is turned on. 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | create_figures | Yes | boolean | `True` | Generate visualization figures |
-| make_all_figures | Yes | boolean | `True` | Generate all available figure types in figure registry |
+| make_all_figures | No | boolean | `True` | Generate all available figure types in figure registry |
 | custom_list | No | list | `[nmdb_incoming_radiation]` | List of specific figures to generate |
 
 
 # Detailed Configuration Reference
+
+Below is more details on some of the features of sensor config file.
 
 ## Sensor Information (`sensor_info`)
 
