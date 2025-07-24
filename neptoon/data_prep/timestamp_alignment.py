@@ -262,7 +262,6 @@ class TimeStampAggregator:
         freq : str, optional
             The frequency of time stamps wanted, by default "1Hour"
         """
-        print("start")
         self.qc = self.qc.resample(
             field=self.data_frame.columns,
             freq=self.output_resolution,
@@ -270,7 +269,7 @@ class TimeStampAggregator:
             func=func,
             maxna=self.max_na_int,
         )
-        print("end")
+
         self.dataframe_aggregated = True
         self.data_frame = self.qc.data.to_pandas()
         self.adjusted_summable_columns()

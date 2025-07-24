@@ -480,7 +480,7 @@ class CRNSDataHub:
             method to use for shifting, defaults to shifting to nearest
             hour, by default "time"
         """
-
+        print("Aligning timestamps...")
         timestamp_aligner = TimeStampAligner(self.crns_data_frame)
         timestamp_aligner.align_timestamps(
             method=align_method,
@@ -509,6 +509,7 @@ class CRNSDataHub:
         aggregate_function : str, optional
             _description_, by default "mean"
         """
+        print(f"Aggregating data to {output_resolution} resolution")
         timestamp_aggregator = TimeStampAggregator(
             data_frame=self.crns_data_frame,
             output_resolution=output_resolution,
