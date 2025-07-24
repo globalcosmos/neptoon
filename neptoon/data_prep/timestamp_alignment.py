@@ -273,10 +273,14 @@ class TimeStampAggregator:
         self.dataframe_aggregated = True
         self.data_frame = self.qc.data.to_pandas()
         self.adjusted_summable_columns()
-        self.data_frame = recalculate_neutron_uncertainty(
-            data_frame=self.data_frame,
-            temporal_scaling_factor=self.temporal_scaling_factor,
-        )
+        if (
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            in self.data_frame.columns
+        ):
+            self.data_frame = recalculate_neutron_uncertainty(
+                data_frame=self.data_frame,
+                temporal_scaling_factor=self.temporal_scaling_factor,
+            )
 
     def return_dataframe(self):
         """
