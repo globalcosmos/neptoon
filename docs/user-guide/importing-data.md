@@ -64,15 +64,6 @@ In the sensor config file these are included under the `raw_data_parse_options` 
 
 Data formatting is the second stage (or first stage if you have a csv file with all your time series data). In this step we more directly format the data into a format ready for processing.
 
-#### Temporal formatting
-
-We provide some options here which supports organising the time aspect of your data. For example you can aggregate your data up from 15min resolution to 1hour resolution (or even 1day resolution). 
-
-If data is not to be aggregated we still provide methods to align time stamps to happen on consistant points of time. This can be especially important if you integrate your CRNS data with other external data sources. The alignment step uses SaQC as it's backend, by default the time method is used but others are selectable here (see [here](https://rdm-software.pages.ufz.de/saqc/_api/saqc.SaQC.html#saqc.SaQC.align))
-
-!!! important "Calibration time stamp"
-	For calibration it is best to aggregate data to 1hour. The N0 number will be calculated in counts per hour (cph) and so it works best this way. Once you have your N0, and do not need to calibrate again, you can change you aggregation period to whatever you like (e.g., 6hour or 1day)
-
 #### Neutron unit standardisation
 
 Neutrons are given in counts per hour (cph) in neptoon. Some sensors provide data in absolute counts, which might be 15 min resolution, in counts per second, or in counts per hour. The user states what the provided units are and neptoon will convert them to counts per hour automatically.

@@ -662,11 +662,6 @@ class ConfigurationManager:
                 f"The current temporal settings will be ignored until you move them.\n"
                 "see: https://www.neptoon.org/en/latest/user-guide/process-with-config/process-config/"
             )
-            og_message = (
-                "\nDeprecationWarning: The section in the sensor config called `time_series_data.temporal` "
-                "is deprecated and will be ignored.\nThis section has moved to the process config file under "
-                "'temporal_aggregation' section.\nSee the documentation for more information."
-            )
             warnings.warn(
                 message1,
                 DeprecationWarning,
