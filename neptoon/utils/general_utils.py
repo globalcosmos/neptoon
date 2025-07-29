@@ -175,6 +175,23 @@ def find_temporal_resolution_seconds(data_frame: pd.DataFrame):
     return time_res_seconds
 
 
+# def find_median_temporal_resolution_seconds(data_frame: pd.DataFrame):
+
+#     time_res_seconds = (
+#         data_frame.index.to_series().dropna().diff().median().total_seconds()
+#     )
+#     return time_res_seconds
+
+
+def return_df_with_temporal_resolution_seconds(
+    data_frame: pd.DataFrame, column_name=None
+):
+    data_frame["temp"] = (  # TODO
+        data_frame.index.to_series().dropna().diff().total_seconds()
+    )
+    return data_frame
+
+
 def is_resolution_greater_than(
     resolution_a: str | datetime.timedelta,
     resolution_b: str | datetime.timedelta,

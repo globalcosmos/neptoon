@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from saqc import SaQC
 import datetime
+from typing import List
 from neptoon.data_audit import log_key_step
 from neptoon.utils import (
     validate_timestamp_index,
@@ -136,7 +137,9 @@ class TimeStampAggregator:
         self.output_resolution = self.ensure_output_res_is_str(
             output_resolution=output_resolution
         )
-        self.temporal_scaling_factor = self.calc_temporal_scaling_factor()
+        self.avg_temporal_scaling_factor = (
+            self._calc_avg_temporal_scaling_factor()
+        )
         self.max_na_fraction = max_na_fraction
         self.max_na_int = self.convert_na_fraction_to_int(
             max_na_fraction=max_na_fraction
@@ -174,7 +177,28 @@ class TimeStampAggregator:
                 f", received: {type(output_resolution)}"
             )
 
-    def calc_temporal_scaling_factor(self):
+    def _return_summable_col_list(self, columns: List | None = None):
+        """
+        Creates a list of the available columns that require summing
+        aggregation.
+
+        Parameters
+        ----------
+        columns : List, optional
+            _description_, by default None
+        """
+        if columns is None:
+            columns = [
+                str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW),
+                str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW),
+                str(ColumnInfo.Name.PRECIPITATION),
+            ]
+        existing_columns = [
+            col for col in self.data_frame.columns if col in columns
+        ]
+        return existing_columns
+
+    def _calc_avg_temporal_scaling_factor(self):
         """
         Calculates the temporal scaling factor needed to convert input
         data to the desired output data resolution when data should be
@@ -215,36 +239,49 @@ class TimeStampAggregator:
         int
             max nan vals
         """
-        return round(max_na_fraction * self.temporal_scaling_factor)
+        return round(max_na_fraction * self.avg_temporal_scaling_factor)
 
     def adjusted_summable_columns(self):
         """
-        Converts columns of data that should be summed into summed data.
+         Converts columns of data that should be summed into summed data.
+
+
+        !!! Make series of these using SUM and add to dataframe after aggregation !!!
         """
-        self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)] = (
-            self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
-            * self.temporal_scaling_factor
+        # self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)] = (
+        #     self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
+        #     * self.avg_temporal_scaling_factor
+        # )
+        # try:
+        #     self.data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)] = (
+        #         self.data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)]
+        #         * self.avg_temporal_scaling_factor
+        #     )
+        # except KeyError:
+        #     core_logger.info("No thermal neutrons to adjust")
+        # try:
+        #     self.data_frame[str(ColumnInfo.Name.PRECIPITATION)] = (
+        #         self.data_frame[str(ColumnInfo.Name.PRECIPITATION)]
+        #         * self.avg_temporal_scaling_factor
+        #     )
+        # except KeyError:
+        #     core_logger.info("No precipitation data to adjust")
+
+    def _pre_align_dataframe(
+        self,
+        method="time",
+    ):
+        self.qc = self.qc.align(
+            field=self.data_frame.columns,
+            freq=timedelta_to_freq_str(self.input_resolution),
+            method=method,
         )
-        try:
-            self.data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)] = (
-                self.data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)]
-                * self.temporal_scaling_factor
-            )
-        except KeyError:
-            core_logger.info("No thermal neutrons to adjust")
-        try:
-            self.data_frame[str(ColumnInfo.Name.PRECIPITATION)] = (
-                self.data_frame[str(ColumnInfo.Name.PRECIPITATION)]
-                * self.temporal_scaling_factor
-            )
-        except KeyError:
-            core_logger.info("No precipitation data to adjust")
 
     @log_key_step("method", "freq")
     def aggregate_data(
         self,
         method: str = "bagg",
-        func: str = "mean",
+        # func: str = "mean",
     ):
         """
         Aggregates the data of the SaQC feature. Will automatically do
@@ -262,24 +299,39 @@ class TimeStampAggregator:
         freq : str, optional
             The frequency of time stamps wanted, by default "1Hour"
         """
+        self._pre_align_dataframe()
+        # Columns for summing
+        sum_column_list = self._return_summable_col_list()
         self.qc = self.qc.resample(
-            field=self.data_frame.columns,
+            field=sum_column_list,
             freq=self.output_resolution,
             method=method,
-            func=func,
+            func="sum",
+            maxna=0,  # Must set to 0 as cannot sum with less than complete data
+        )
+
+        # Columns for mean
+        remaining_column_list = [
+            col for col in self.data_frame if col not in sum_column_list
+        ]
+        self.qc = self.qc.resample(
+            field=remaining_column_list,
+            freq=self.output_resolution,
+            method=method,
+            func="mean",
             maxna=self.max_na_int,
         )
 
         self.dataframe_aggregated = True
         self.data_frame = self.qc.data.to_pandas()
-        self.adjusted_summable_columns()
+        self.adjusted_summable_columns()  # TODO maybe don't need this here
         if (
             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
             in self.data_frame.columns
         ):
             self.data_frame = recalculate_neutron_uncertainty(
                 data_frame=self.data_frame,
-                temporal_scaling_factor=self.temporal_scaling_factor,
+                temporal_scaling_factor=self.avg_temporal_scaling_factor,
             )
 
     def return_dataframe(self):

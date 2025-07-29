@@ -73,6 +73,7 @@ time_series_data:
     date_time_format: "%Y/%m/%d %H:%M:%S"
     initial_time_zone: utc
     convert_time_zone_to: utc
+    temporal_diff_col_name: none # Leave as none is you don't have a diff col
 
 input_data_qa:
   air_relative_humidity:
