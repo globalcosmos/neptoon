@@ -60,7 +60,7 @@ Air humidity corrections can be left as the example values shown below when bein
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| method | No | string | `"rosolem_2013"` | Method used for humidity correction |
+| method | No | string | `"rosolem_2013"` or `"none"` | Method used for humidity correction |
 | omega | No | float | `0.0054` | Correction coefficient for humidity |
 | humidity_ref | No | float | `0` | Reference humidity value for correction |
 
@@ -70,7 +70,7 @@ Air pressure correction - very important to leave on as CRNS are very sensitive 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| method | Yes | string | `"zreda_2012"` | Method used for pressure correction |
+| method | Yes | string | `"zreda_2012"` or `"none"` | Method used for pressure correction |
 | dunai_inclination | No | float | - | Inclination parameter for dunai method |
 
 ### Incoming Intensity Correction
@@ -78,7 +78,7 @@ Air pressure correction - very important to leave on as CRNS are very sensitive 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| method | Yes | string | `"hawdon_2014"` or<br> `"zreda_2012"` or `"mcjannet_desilets_2023"` | Method used for incoming intensity correction |
+| method | Yes | string | `"hawdon_2014"` or<br> `"zreda_2012"` or<br> `"mcjannet_desilets_2023"` or<br> `"none"` | Method used for incoming intensity correction |
 | reference_neutron_monitor.station | Yes | string | `"JUNG"` or<br> `"SOPO"` or<br> `"OULU"` or<br> `"PSNM"` or<br> `"MXCO"` or<br> `"AATA"` or<br> `"INVK"` or<br> `"KIEL"` | Reference neutron monitor station |
 | reference_neutron_monitor.resolution | Yes | integer | `60` | Time resolution in minutes |
 | reference_neutron_monitor.nmdb_table | Yes | string | `"revori"` or `"ori"`| NMDB table name (revori recommended) |
@@ -87,7 +87,7 @@ Air pressure correction - very important to leave on as CRNS are very sensitive 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| method | No | string | `"baatz_2015"` or `"morris_2024"` | Method used for biomass correction |
+| method | No | string | `"baatz_2015"` or `"morris_2024"` or `"none"` | Method used for biomass correction |
 | biomass_units | No | string | - | Units for biomass measurements |
 
 ### Soil Moisture Estimation
@@ -96,7 +96,7 @@ Here we state how we will convert neutrons to soil mositure. If you choose `koeh
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| method | Yes | string | `"desilets_etal_2010"` or `"koehli_etal_2021"` | Method for converting neutrons to soil mositure|
+| method | Yes | string | `"desilets_etal_2010"` or `"koehli_etal_2021"` or `"none"` | Method for converting neutrons to soil mositure|
 |koehli_method_form| No | string |`"Jan23_uranos"` or `"Jan23_mcnpfull"` or `"Mar12_atmprof"` or `"Mar21_mcnp_drf"` or `"Mar21_mcnp_ewin"` or `"Mar21_uranos_drf"` or `"Mar21_uranos_ewin"` or `"Mar22_mcnp_drf_Jan"` or `"Mar22_mcnp_ewin_gd"` or `"Mar22_uranos_drf_gd"` or `"Mar22_uranos_ewin_chi2"` or `"Mar22_uranos_drf_h200m"` or `"Aug08_mcnp_drf"` or `"Aug08_mcnp_ewin"` or `"Aug12_uranos_drf"` or `"Aug12_uranos_ewin"` or `"Aug13_uranos_atmprof"` or `"Aug13_uranos_atmprof2"`| Thats a lot of options... just stick with `"Mar21_uranos_drf"` if you want simple. This sets the parameters when using the koehlie et al., 2021 method|
 
 
