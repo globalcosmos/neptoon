@@ -648,6 +648,7 @@ class ProcessWithConfig:
             )
 
         # Second QA and Smoothing
+
         self._check_n0_available(sensor_config=self.sensor_config)
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
@@ -686,22 +687,34 @@ class ProcessWithConfig:
 
         # Produce soil moisture estimates
         # NOTE: print statement inside NeutronsToSM in order to state which method used
-        self.data_hub = self._produce_soil_moisture_estimates(
-            self.data_hub,
-            conversion_theory=self.process_config.correction_steps.soil_moisture_estimation.method,
-        )
-        if self.process_config.data_smoothing.smooth_soil_moisture:
-            self.data_hub = self._smooth_data(
-                data_hub=self.data_hub,
-                process_config=self.process_config,
-                column_to_smooth=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+        if (
+            self.process_config.correction_steps.soil_moisture_estimation.method
+            == "none"
+        ):
+            message = (
+                "Soil moisture estimation method is set to none. "
+                "Skipping converting neutrons to soil moisture"
             )
-        self.data_hub = self._apply_quality_assessment(
-            data_hub=self.data_hub,
-            sensor_config=self.sensor_config,
-            partial_config=self.sensor_config.soil_moisture_qa,
-            name_of_target=None,
-        )
+            core_logger.info(message)
+            print(message)
+            pass
+        else:
+            self.data_hub = self._produce_soil_moisture_estimates(
+                self.data_hub,
+                conversion_theory=self.process_config.correction_steps.soil_moisture_estimation.method,
+            )
+            if self.process_config.data_smoothing.smooth_soil_moisture:
+                self.data_hub = self._smooth_data(
+                    data_hub=self.data_hub,
+                    process_config=self.process_config,
+                    column_to_smooth=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+                )
+            self.data_hub = self._apply_quality_assessment(
+                data_hub=self.data_hub,
+                sensor_config=self.sensor_config,
+                partial_config=self.sensor_config.soil_moisture_qa,
+                name_of_target=None,
+            )
 
         # Create figures and save outputs
         print("Creating figures...")

@@ -369,8 +369,9 @@ class ReferenceNeutronMonitor(BaseModel):
 class AirHumidityCorrection(BaseModel):
     """Configuration for air humidity correction parameters."""
 
-    method: Optional[Literal["rosolem_2013"]] = Field(
-        description="Air humidity correction method"
+    method: Optional[Literal["rosolem_2013", "none"]] = Field(
+        description="Air humidity correction method",
+        default="none",
     )
     omega: Optional[float] = Field(
         default=0.0054,
@@ -385,8 +386,9 @@ class AirHumidityCorrection(BaseModel):
 class AirPressureCorrection(BaseModel):
     """Configuration for air pressure correction parameters."""
 
-    method: Optional[Literal["zreda_2012"]] = Field(
-        description="Air pressure correction method"
+    method: Optional[Literal["zreda_2012", "none"]] = Field(
+        description="Air pressure correction method",
+        default="none",
     )
     dunai_inclination: Optional[float] = Field(
         default=None, description="Dunai inclination parameter"
@@ -396,7 +398,7 @@ class AirPressureCorrection(BaseModel):
 class SoilMoistureEstimation(BaseModel):
     """Configuration for the conversion of neutrons to soil moisture"""
 
-    method: Literal["desilets_etal_2010", "koehli_etal_2021"] = Field(
+    method: Literal["desilets_etal_2010", "koehli_etal_2021", "none"] = Field(
         description="Soil moisture estimation theory",
         default="desilets_etal_2010",
     )
@@ -435,8 +437,12 @@ class IncomingRadiationCorrection(BaseModel):
             "zreda_2012",
             "hawdon_2014",
             "mcjannet_desilets_2023",
+            "none",
         ]
-    ] = Field(description="Incoming radiation correction method")
+    ] = Field(
+        description="Incoming radiation correction method",
+        default="none",
+    )
 
     reference_neutron_monitor: Optional[ReferenceNeutronMonitor] = Field(
         default_factory=ReferenceNeutronMonitor,
@@ -447,8 +453,8 @@ class IncomingRadiationCorrection(BaseModel):
 class BiomassCorrection(BaseModel):
     """Configuration for above ground biomass correction parameters."""
 
-    method: Optional[str] = Field(
-        default=None, description="Above ground biomass correction method"
+    method: Optional[Literal["baatz_2015", "morris_2024", "none"]] = Field(
+        default="none", description="Above ground biomass correction method"
     )
 
 

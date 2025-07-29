@@ -28,7 +28,7 @@ correction_steps:
       resolution: 60 # minutes
       nmdb_table: revori # recommend revori
   above_ground_biomass:
-    method:
+    method: none
     biomass_units:
   soil_moisture_estimation:
     method: desilets_etal_2010 # or koehli_etal_2021
