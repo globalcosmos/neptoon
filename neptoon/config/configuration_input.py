@@ -373,7 +373,7 @@ class AirHumidityCorrection(BaseModel):
         description="Air humidity correction method",
         default="none",
     )
-    omega: Optional[float] = Field(
+    coefficient: Optional[float] = Field(
         default=0.0054,
         description="Omega coefficient for humidity correction",
         gt=0,
@@ -402,7 +402,7 @@ class SoilMoistureEstimation(BaseModel):
         description="Soil moisture estimation theory",
         default="desilets_etal_2010",
     )
-    koehli_method_form: Optional[
+    koehli_etal_2021_parameterset: Optional[
         Literal[
             "Jan23_uranos",
             "Jan23_mcnpfull",
@@ -673,7 +673,26 @@ class ConfigurationManager:
                 DeprecationWarning,
                 stacklevel=2,
             )
+
         self._configs[config_type] = config_obj
+
+    def _load_process_config(self, config_dict: dict):
+        config_type = str(ConfigType.PROCESS.value)
+        config_obj = SensorConfig(**config_dict)
+        if hasattr(config_obj.correction_steps.air_humidity, "omega"):
+            message1 = (
+                "\n"
+                f"\033[1m\033[93mProcess config needs updating:\033[0m "
+                f"Found 'omega' in air humidity settings "
+                f"which has been changed to `coefficient`.\n"
+                f"Change `omega` to `coefficient` and this will work\n"
+                "see: https://www.neptoon.org/en/latest/user-guide/process-with-config/process-config/"
+            )
+            warnings.warn(
+                message1,
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
     def get_config(self, name: Literal["sensor", "process"]):
         """

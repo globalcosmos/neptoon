@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - corrected neutron count uncertainty created in correct_neutron stage of data hub
 - neutron uncertainty bounds created in estimate_sm module just before being used (allows for changes due to aggregation)
 - when aggregating data, the data needs to be aligned prior to aggregation to account for missing rows
+- renamed humidity correction `omega` in process config file to `coefficient` (breaking)
+- pressure correction now uses fixed reference of `1013.25` hPa (based on upcoming cosmos standard)
+- renamed `koehli_method_form` to `koehli_etal_2021_parameterset` in process config (breaking)
 
 ### Depreceated
 

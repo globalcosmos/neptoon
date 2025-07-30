@@ -16,7 +16,7 @@ neutron_quality_assessment:
 correction_steps:
   air_humidity:
     method: rosolem_2013
-    omega: 0.0054
+    coefficient: 0.0054
     humidity_ref: 0
   air_pressure:
     method: zreda_2012
@@ -32,7 +32,7 @@ correction_steps:
     biomass_units:
   soil_moisture_estimation:
     method: desilets_etal_2010 # or koehli_etal_2021
-    koehli_method_form: Mar21_uranos_drf
+    koehli_etal_2021_parameterset: Mar21_uranos_drf
 
 # Data Smoothing
 data_smoothing:

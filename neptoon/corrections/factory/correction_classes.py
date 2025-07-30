@@ -650,47 +650,52 @@ class PressureCorrectionZreda2012(Correction):
 
     def __init__(
         self,
-        site_elevation: str = str(ColumnInfo.Name.ELEVATION),
-        reference_pressure_value: str = str(ColumnInfo.Name.MEAN_PRESSURE),
+        site_elevation_col_name: str = str(ColumnInfo.Name.ELEVATION),
+        site_mean_pressure_col_name: str = str(ColumnInfo.Name.MEAN_PRESSURE),
+        beta_coefficient_col_name: str = str(ColumnInfo.Name.BETA_COEFFICIENT),
+        latitude_col_name: str = str(ColumnInfo.Name.LATITUDE),
+        site_cutoff_rigidity_col_name: str = str(
+            ColumnInfo.Name.SITE_CUTOFF_RIGIDITY
+        ),
         correction_type: str = CorrectionType.PRESSURE,
         correction_factor_column_name: str = str(
             ColumnInfo.Name.PRESSURE_CORRECTION
         ),
-        beta_coefficient: str = str(ColumnInfo.Name.BETA_COEFFICIENT),
-        latitude: str = str(ColumnInfo.Name.LATITUDE),
-        site_cutoff_rigidity: str = str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY),
+        reference_pressure_value: float = 1013.25,
     ):
         """
         Required attributes for creation.
 
         Parameters
         ----------
-        site_elevation : float, optional
-            site elevation in m, by default None
-        reference_pressure_value : float, optional
-            reference pressure for correction (recommended to be average
-            site pressure). - hPa , by default None
+        site_elevation_col_name : str, optional
+            column containing elevation, by default None
+        site_mean_pressure_col_name : str, optional
+            column containing site mean pressure value
         correction_type : str, optional
             correction type, by default CorrectionType.PRESSURE
         correction_factor_column_name : str, optional
             Name of column to store correction factors, by default str(
             ColumnInfo.Name.PRESSURE_CORRECTION )
-        beta_coefficient : float, optional
+        beta_coefficient_col_name : float, optional
             beta_coefficient for processing, by default None
-        latitude : float, optional
+        latitude_col_name : float, optional
             latitude of site in degrees, by default None
-        site_cutoff_rigidity : _type_, optional
+        site_cutoff_rigidity_col_name : _type_, optional
             cut-off rigidity at the site, by default None
+        reference_pressure_value : float, optional
+            reference pressure for correction in hPa , by default 1013.25
         """
         super().__init__(
             correction_type=correction_type,
             correction_factor_column_name=correction_factor_column_name,
         )
+        self.site_mean_pressure_col_name = site_mean_pressure_col_name
+        self.beta_coefficient_col_name = beta_coefficient_col_name
+        self.site_elevation_col_name = site_elevation_col_name
+        self.latitude_col_name = latitude_col_name
+        self.site_cutoff_rigidity_col_name = site_cutoff_rigidity_col_name
         self.reference_pressure_value = reference_pressure_value
-        self.beta_coefficient = beta_coefficient
-        self.site_elevation = site_elevation
-        self.latitude = latitude
-        self.site_cutoff_rigidity = site_cutoff_rigidity
 
     def _prepare_for_correction(self, data_frame):
         """
@@ -700,42 +705,7 @@ class PressureCorrectionZreda2012(Correction):
         calculate the beta_coefficient.
         """
 
-        self._ensure_reference_pressure_available(data_frame)
         self._check_coefficient_available(data_frame)
-
-    def _ensure_reference_pressure_available(self, data_frame):
-        """
-        Checks for reference pressure.
-
-        NOTE: Important to note that changing reference pressure from
-        the value used during calibration will impact the results.
-        If reference pressure is changed for processing the site must be
-        re-calibrated so that the N0 has the same reference pressure.
-
-        Raises
-        ------
-        ValueError
-            If no reference pressure and no elevation it cannot work.
-            Raises error.
-        """
-        column_name_press = self.reference_pressure_value
-        column_name_elev = self.site_elevation
-        if is_column_missing_or_empty(data_frame, column_name_press):
-            if is_column_missing_or_empty(data_frame, column_name_elev):
-                message = (
-                    "You must supply a reference pressure or a site elevation"
-                )
-                core_logger.error(message)
-                raise ValueError(message)
-            message = (
-                "No reference pressure value given. Calculating average pressure "
-                "using elevation information and using this value"
-            )
-            core_logger.info(message)
-            data_frame[self.reference_pressure_value] = data_frame.apply(
-                lambda row: calc_mean_pressure(row[self.site_elevation]),
-                axis=1,
-            )
 
     def _check_coefficient_available(self, data_frame):
         """
@@ -743,7 +713,7 @@ class PressureCorrectionZreda2012(Correction):
         calculate it using latitude, site elevation and site cutoff
         rigidity.
         """
-        column_name_beta = self.beta_coefficient
+        column_name_beta = self.beta_coefficient_col_name
 
         if is_column_missing_or_empty(data_frame, column_name_beta):
             message = (
@@ -751,12 +721,11 @@ class PressureCorrectionZreda2012(Correction):
                 "Calculating beta coefficient."
             )
             core_logger.info(message)
-            data_frame[self.beta_coefficient] = data_frame.apply(
+            data_frame[self.beta_coefficient_col_name] = data_frame.apply(
                 lambda row: calc_beta_coefficient(
-                    row[self.reference_pressure_value],
-                    row[self.latitude],
-                    row[self.site_elevation],
-                    row[self.site_cutoff_rigidity],
+                    latitude=row[self.latitude_col_name],
+                    elevation=row[self.site_elevation_col_name],
+                    cutoff_rigidity=row[self.site_cutoff_rigidity_col_name],
                 ),
                 axis=1,
             )
@@ -793,8 +762,8 @@ class PressureCorrectionZreda2012(Correction):
             data_frame[self.correction_factor_column_name] = data_frame.apply(
                 lambda row: calc_pressure_correction_beta_coeff(
                     row[str(ColumnInfo.Name.AIR_PRESSURE)],
-                    row[self.reference_pressure_value],
-                    row[self.beta_coefficient],
+                    self.reference_pressure_value,
+                    row[self.beta_coefficient_col_name],
                 ),
                 axis=1,
             )
