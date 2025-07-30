@@ -24,7 +24,7 @@ This config section provides information on individual sensor being processed. S
 
 It is always better to fill this in as best you can.
 
-The `beta_coefficient` and `mean_pressure` can be automatically calculated if left blank. 
+The `beta_coefficient` can be automatically calculated if left blank using `elevation` and `latitude`
 
 Same for the `N0` however this requires the calibration section to be correctly filled (otherwise you'll have to guess). Generally speaking when calibrating it's also possible to automatically generate the values for `avg_lattice_water` and `avg_soil_organic_carbon`, as long as they are available in your calibration dataset.
 

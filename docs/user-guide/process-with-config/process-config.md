@@ -33,10 +33,6 @@ Here we conduct spike detection to account for problems in the raw count rate.
 
 These are some quality checks we do on corrected neutrons based on the literature. 
 
-N0 is the theoretical maximum count rate at the site so anything above this is considered an error (plus 7.5% as explained in Köhli et al., 2021). 
-
-Below 30% of N0 is equivelant to a body of water - so would also be error. 
-
 It's recommended to not touch this section unless your experimenting.
 
 | Parameter | Required | Type | Example | Description |
