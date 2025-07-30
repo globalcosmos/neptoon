@@ -36,6 +36,7 @@ class ColumnInfo:
         """
 
         DATE_TIME = auto()
+        TIME_STEP_SECONDS = auto()
         EPI_NEUTRON_COUNT_RAW = auto()
         EPI_NEUTRON_COUNT_CPH = auto()
         EPI_NEUTRON_COUNT_FINAL = auto()
@@ -94,6 +95,7 @@ class ColumnInfo:
 
     _default_representation: dict["ColumnInfo.Name", str] = {
         Name.DATE_TIME: "date_time",
+        Name.TIME_STEP_SECONDS: "time_step_seconds",
         Name.EPI_NEUTRON_COUNT_RAW: "epithermal_neutrons_raw",
         Name.EPI_NEUTRON_COUNT_CPH: "epithermal_neutrons_cph",
         Name.EPI_NEUTRON_COUNT_FINAL: "epithermal_neutrons_cph",

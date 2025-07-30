@@ -241,32 +241,6 @@ class TimeStampAggregator:
         """
         return round(max_na_fraction * self.avg_temporal_scaling_factor)
 
-    def adjusted_summable_columns(self):
-        """
-         Converts columns of data that should be summed into summed data.
-
-
-        !!! Make series of these using SUM and add to dataframe after aggregation !!!
-        """
-        # self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)] = (
-        #     self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
-        #     * self.avg_temporal_scaling_factor
-        # )
-        # try:
-        #     self.data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)] = (
-        #         self.data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)]
-        #         * self.avg_temporal_scaling_factor
-        #     )
-        # except KeyError:
-        #     core_logger.info("No thermal neutrons to adjust")
-        # try:
-        #     self.data_frame[str(ColumnInfo.Name.PRECIPITATION)] = (
-        #         self.data_frame[str(ColumnInfo.Name.PRECIPITATION)]
-        #         * self.avg_temporal_scaling_factor
-        #     )
-        # except KeyError:
-        #     core_logger.info("No precipitation data to adjust")
-
     def _pre_align_dataframe(
         self,
         method="time",
@@ -281,7 +255,6 @@ class TimeStampAggregator:
     def aggregate_data(
         self,
         method: str = "bagg",
-        # func: str = "mean",
     ):
         """
         Aggregates the data of the SaQC feature. Will automatically do

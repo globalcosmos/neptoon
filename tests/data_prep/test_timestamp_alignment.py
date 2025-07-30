@@ -86,7 +86,7 @@ def time_stamp_aggregator(correct_df):
 ## Correct df has 15 min resolution
 def test_timedelta_to_freq_str(time_stamp_aggregator):
     ts_agg = time_stamp_aggregator
-    assert ts_agg.temporal_scaling_factor == 4
+    assert ts_agg.avg_temporal_scaling_factor == 4
     assert ts_agg.max_na_int == 1
 
 

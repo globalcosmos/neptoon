@@ -1118,7 +1118,7 @@ class FormatDataForCRNSDataHub:
         self._data_frame = data_frame
         self._config = config
         self._timestep_seconds = None
-        self.conversion_factor_to_cph = None
+        # self.conversion_factor_to_cph = None
 
     @property
     def data_frame(self):
@@ -1410,6 +1410,119 @@ class FormatDataForCRNSDataHub:
             message = f"Could not process thermal_neutron_counts. {e}"
             core_logger.info(message)
 
+    def _calc_timestep_diff(self, data_frame: pd.DataFrame):
+        """
+        Infer timestep in seconds
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame
+
+        Returns
+        -------
+        data_frame
+            DataFrame with timestep column
+        """
+        # infer from timestamp difference
+        data_frame[str(ColumnInfo.Name.TIME_STEP_SECONDS)] = (
+            data_frame.index.to_series().diff()
+        )
+        data_frame[str(ColumnInfo.Name.TIME_STEP_SECONDS)] = data_frame[
+            str(ColumnInfo.Name.TIME_STEP_SECONDS)
+        ].dt.seconds
+        return data_frame
+
+    def _merge_multiple_neutron_cols(
+        self,
+        neutron_column_type: Literal[
+            InputColumnDataType.EPI_NEUTRON_COUNT,
+            InputColumnDataType.THERM_NEUTRON_COUNT,
+        ],
+        raw_column_name: str,
+    ):
+        """
+        Merges multiple neutron columns (either epithermal or thermal)
+        into a single column by summing the values
+
+        Parameters
+        ----------
+        neutron_column_type : Literal[
+        InputColumnDataType.EPI_NEUTRON_COUNT,
+        InputColumnDataType.THERM_NEUTRON_COUNT, ]
+            Neutron Column type as Enum
+        raw_column_name : str
+            The name of the column where raw data will be stored.
+        """
+        neutron_cols = [
+            col
+            for col in self.config.column_data
+            if col.variable_type is neutron_column_type
+        ]
+
+        if len(neutron_cols) > 1:
+            epi_col_names = [name.initial_name for name in neutron_cols]
+
+            self.data_frame[raw_column_name] = self.data_frame[
+                epi_col_names
+            ].sum(axis=1)
+        else:
+            neutron_col_name = neutron_cols[0].initial_name
+            self.data_frame.rename(
+                columns={neutron_col_name: raw_column_name},
+                inplace=True,
+            )
+
+    def _convert_neutron_units_to_cph(
+        self,
+        neutron_column_type: Literal[
+            InputColumnDataType.EPI_NEUTRON_COUNT,
+            InputColumnDataType.THERM_NEUTRON_COUNT,
+        ],
+        raw_column_name: str,
+        final_column_name: str,
+    ):
+        epi_neutron_unit = next(
+            col.unit
+            for col in self.config.column_data
+            if col.variable_type is neutron_column_type
+        )
+
+        if epi_neutron_unit == "counts_per_hour":
+            self.data_frame[final_column_name] = self.data_frame[
+                raw_column_name
+            ]
+            self.data_frame["hours_fraction"] = (
+                self.data_frame[str(ColumnInfo.Name.TIME_STEP_SECONDS)] / 3600
+            )
+            self.data_frame[raw_column_name] = (
+                self.data_frame[raw_column_name]
+                * self.data_frame["hours_fraction"]
+            )
+            self.data_frame.drop("hours_fraction", axis=1, inplace=True)
+
+        elif epi_neutron_unit == "absolute_count":
+            self.data_frame["factor_to_cph"] = self.data_frame.apply(
+                lambda row: self.get_conversion_factor_to_cph(
+                    row[str(ColumnInfo.Name.TIME_STEP_SECONDS)]
+                ),
+                axis=1,
+            )
+
+            self.data_frame[final_column_name] = (
+                self.data_frame[raw_column_name]
+                * self.data_frame["factor_to_cph"]
+            )
+
+        elif epi_neutron_unit == "counts_per_second":
+            self.data_frame[final_column_name] = (
+                self.data_frame[raw_column_name] * 3600
+            )
+            self.data_frame[raw_column_name] = (
+                self.data_frame[raw_column_name]
+                * self.data_frame[str(ColumnInfo.Name.TIME_STEP_SECONDS)]
+            )
+
     def prepare_neutron_count_columns(
         self,
         neutron_column_type: Literal[
@@ -1435,6 +1548,8 @@ class FormatDataForCRNSDataHub:
                             ]
             The type of neutron data being processed
         """
+        self.data_frame = self._calc_timestep_diff(data_frame=self.data_frame)
+
         if neutron_column_type == InputColumnDataType.EPI_NEUTRON_COUNT:
             raw_column_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)
             final_column_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)
@@ -1442,52 +1557,16 @@ class FormatDataForCRNSDataHub:
             raw_column_name = str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)
             final_column_name = str(ColumnInfo.Name.THERM_NEUTRON_COUNT_CPH)
 
-        epi_neutron_cols = [
-            col
-            for col in self.config.column_data
-            if col.variable_type is neutron_column_type
-        ]
-
-        epi_neutron_unit = next(
-            col.unit
-            for col in self.config.column_data
-            if col.variable_type is neutron_column_type
+        self._merge_multiple_neutron_cols(
+            neutron_column_type=neutron_column_type,
+            raw_column_name=raw_column_name,
         )
 
-        if len(epi_neutron_cols) > 1:
-            epi_col_names = [name.initial_name for name in epi_neutron_cols]
-
-            self.data_frame[raw_column_name] = self.data_frame[
-                epi_col_names
-            ].sum(axis=1)
-        else:
-            epi_col_name = epi_neutron_cols[0].initial_name
-            self.data_frame.rename(
-                columns={epi_col_name: raw_column_name},
-                inplace=True,
-            )
-
-        if epi_neutron_unit == "counts_per_hour":
-            self.data_frame[final_column_name] = self.data_frame[
-                raw_column_name
-            ]
-            hours_fraction = self._timestep_seconds / 3600
-            self.data_frame[raw_column_name] = (
-                self.data_frame[raw_column_name] * hours_fraction
-            )
-
-        elif epi_neutron_unit == "absolute_count":
-            self.data_frame[final_column_name] = (
-                self.data_frame[raw_column_name]
-                * self.conversion_factor_to_cph
-            )
-        elif epi_neutron_unit == "counts_per_second":
-            self.data_frame[final_column_name] = (
-                self.data_frame[raw_column_name] * 3600
-            )
-            self.data_frame[raw_column_name] = (
-                self.data_frame[raw_column_name] * self._timestep_seconds
-            )
+        self._convert_neutron_units_to_cph(
+            neutron_column_type=neutron_column_type,
+            raw_column_name=raw_column_name,
+            final_column_name=final_column_name,
+        )
 
     def clean_raw_dataframe(self):
         """
@@ -1514,6 +1593,12 @@ class FormatDataForCRNSDataHub:
         Creates a column with the statistical uncertainty of the neutron
         column and converts this value to counts per hour.
         """
+        self.data_frame["factor_to_cph"] = self.data_frame.apply(
+            lambda row: self.get_conversion_factor_to_cph(
+                row[str(ColumnInfo.Name.TIME_STEP_SECONDS)]
+            ),
+            axis=1,
+        )
 
         self.data_frame[
             str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY)
@@ -1526,7 +1611,7 @@ class FormatDataForCRNSDataHub:
             self.data_frame[
                 str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY)
             ]
-            * self.conversion_factor_to_cph
+            * self.data_frame["factor_to_cph"]
         )
 
     def snip_data_frame(self):
