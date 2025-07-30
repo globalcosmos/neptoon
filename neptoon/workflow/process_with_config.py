@@ -657,24 +657,18 @@ class ProcessWithConfig:
             name_of_target="corrected_neutrons",
         )
 
-        output_resolution = (
-            self.process_config.temporal_aggregation.output_resolution
-        )
-        input_resolution = datetime.timedelta(
-            seconds=find_temporal_resolution_seconds(
-                data_frame=self.data_hub.crns_data_frame
-            )
-        )
-        if is_resolution_greater_than(
-            resolution_a=output_resolution,
-            resolution_b=input_resolution,
-        ):
+        if self.process_config.temporal_aggregation.aggregate_data:
             self.data_hub.aggregate_data_frame(
                 output_resolution=self.process_config.temporal_aggregation.output_resolution,
                 max_na_fraction=self.process_config.temporal_aggregation.aggregate_maxna_fraction,
                 aggregate_method=self.process_config.temporal_aggregation.aggregate_method,
-                aggregate_function=self.process_config.temporal_aggregation.aggregate_func,
             )
+        elif self.process_config.temporal_aggregation.align_timestamps:
+            self.data_hub.align_time_stamps(
+                align_method=self.process_config.temporal_aggregation.alignment_method
+            )
+        else:
+            pass
 
         if self.process_config.data_smoothing.smooth_corrected_neutrons:
             self.data_hub = self._smooth_data(

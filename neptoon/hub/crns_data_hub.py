@@ -492,7 +492,6 @@ class CRNSDataHub:
         output_resolution: str,
         max_na_fraction: float = 0.3,
         aggregate_method: str = "bagg",
-        aggregate_function: str = "mean",
     ):
         """
         Aggregate a crns data frame to a new resolution.
@@ -506,8 +505,6 @@ class CRNSDataHub:
             default 0.3
         aggregate_method : str, optional
             _description_, by default "bagg"
-        aggregate_function : str, optional
-            _description_, by default "mean"
         """
         print(f"Aggregating data to {output_resolution} resolution")
         timestamp_aggregator = TimeStampAggregator(
@@ -517,7 +514,6 @@ class CRNSDataHub:
         )
         timestamp_aggregator.aggregate_data(
             method=aggregate_method,
-            func=aggregate_function,
         )
         self.crns_data_frame = timestamp_aggregator.return_dataframe()
 

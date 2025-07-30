@@ -297,7 +297,6 @@ class TimeStampAggregator:
 
         self.dataframe_aggregated = True
         self.data_frame = self.qc.data.to_pandas()
-        self.adjusted_summable_columns()  # TODO maybe don't need this here
         if (
             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
             in self.data_frame.columns
