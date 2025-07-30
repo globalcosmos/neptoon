@@ -114,3 +114,15 @@ def parse_resolution_to_timedelta(
         message = f"Unsupported time unit: {unit}"
         core_logger.error(message)
         raise ValueError(message)
+
+
+def is_running_in_docker():
+    """
+    Checks whether the current kernel is running in a docker container.
+
+    Returns
+    -------
+    bool
+        Whether in docker container
+    """
+    return Path("/.dockerenv").exists()
