@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - utils module in quality control removed
 - NeutronUncertaintyCalculator class removed
 - removed function in CRNSDataHub and ProcessWithConfig to produce uncertainty (integrated to other parts) e.g., `data_hub.create_neutron_uncertainty_bounds()` 
+- polyorder setting in process config - reintroduce when it can be used in SG filter
 
 ### Fixed
 
