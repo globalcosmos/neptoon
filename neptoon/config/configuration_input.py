@@ -490,11 +490,15 @@ class SmoothingAlgorithmSettings(BaseModel):
         - Polynomial order must be less than window size
     """
 
-    algorithm: Literal["savitsky_golay", "rolling_mean"] = Field(
+    algorithm: Optional[Literal["savitsky_golay", "rolling_mean"]] = Field(
         default="rolling_mean", description="Smoothing algorithm to apply"
     )
-    window: str = Field(
+    window: Optional[str] = Field(
         default="12h", description="Temporal size of window for smoothing"
+    )
+    min_proportion_good_data: Optional[str] = Field(
+        default=0.7,
+        description="The minimum proportion of data available in the smoothing window to succeed",
     )
     poly_order: Optional[int] = Field(
         default=5,

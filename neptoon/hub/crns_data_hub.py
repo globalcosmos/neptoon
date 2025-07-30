@@ -362,6 +362,7 @@ class CRNSDataHub:
             "rolling_mean", "savitsky_golay"
         ] = "rolling_mean",
         window: Optional[Union[int, str]] = 12,
+        min_proportion_good_data: float = 0.7,
         poly_order: int = 4,
         auto_update_final_col: bool = True,
     ):
@@ -396,6 +397,7 @@ class CRNSDataHub:
             column_to_smooth=column_to_smooth,
             smooth_method=smooth_method,
             window=window,
+            min_proportion_good_data=min_proportion_good_data,
             poly_order=poly_order,
             auto_update_final_col=auto_update_final_col,
         )

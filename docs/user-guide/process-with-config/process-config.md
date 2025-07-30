@@ -105,8 +105,9 @@ In this section we state whether to do smoothing on the neutron data, and how to
 |-----------|----------|------|---------|-------------|
 | smooth_corrected_neutrons | Yes | boolean | `true` | Enable smoothing for corrected neutron counts |
 | smooth_soil_moisture | Yes | boolean | `false` | Enable smoothing for soil moisture data |
-| settings.algorithm | Yes | string | `"rolling_mean"` | Smoothing algorithm selection |
-| settings.window | Yes | string | `12h` or `12hours` or `1day` or `1d` or `30min` or `30m` | Window size for smoothing operation, provided as a string which neptoon will automatically parse into a timedelta window |
+| settings.algorithm | No | string | `"rolling_mean"` | Smoothing algorithm selection |
+| settings.window | No | string | `12h` or `12hours` or `1day` or `1d` or `30min` or `30m` | Window size for smoothing operation, provided as a string which neptoon will automatically parse into a timedelta window |
+| settings.min_proportion_good_data | No | float | `0.7` | The minimum proportion of available data for the smoothing window to succeed. If less than this is available in the window the observation is `nan` |
 | settings.poly_order | No | integer | `5` | Polynomial order for Savitzky-Golay filter (Currently not in use until a future update)|
 
 !!! note "Additional Information"

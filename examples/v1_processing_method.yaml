@@ -41,6 +41,7 @@ data_smoothing:
   settings:
     algorithm: rolling_mean
     window: 12h
+    min_proportion_good_data: 0.7
     poly_order: 4
 
 temporal_aggregation:

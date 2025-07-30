@@ -1,15 +1,16 @@
 import pandas as pd
 from typing import Literal, TYPE_CHECKING
 from pathlib import Path
-import datetime
+
+# import datetime
 
 # if TYPE_CHECKING:
 from neptoon.hub import CRNSDataHub
 
-from neptoon.utils import (
-    is_resolution_greater_than,
-    find_temporal_resolution_seconds,
-)
+# from neptoon.utils import (
+#     is_resolution_greater_than,
+#     find_temporal_resolution_seconds,
+# )
 from neptoon.logging import get_logger
 from neptoon.io.read.data_ingest import (
     validate_and_convert_file_path,
@@ -543,10 +544,14 @@ class ProcessWithConfig:
         smooth_method = process_config.data_smoothing.settings.algorithm
         window = process_config.data_smoothing.settings.window
         poly_order = process_config.data_smoothing.settings.poly_order
+        min_proportion_good_data = (
+            process_config.data_smoothing.settings.min_proportion_good_data
+        )
         data_hub.smooth_data(
             column_to_smooth=column_to_smooth,
             smooth_method=smooth_method,
             window=window,
+            min_proportion_good_data=min_proportion_good_data,
             poly_order=poly_order,
         )
         return data_hub
