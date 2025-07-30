@@ -390,6 +390,7 @@ class CRNSDataHub:
         Data smoothing was done on {column_to_smooth}. This was done
         using {smooth_method} with a window of {window}.
         """
+        print(f"Smoothing data with a smoothing window of {window}")
         smoother = SmoothData(
             data=self.crns_data_frame,
             column_to_smooth=column_to_smooth,
@@ -480,7 +481,7 @@ class CRNSDataHub:
             method to use for shifting, defaults to shifting to nearest
             hour, by default "time"
         """
-        print("Aligning timestamps...")
+        print("Aligning timestamps to regular intervals...")
         timestamp_aligner = TimeStampAligner(self.crns_data_frame)
         timestamp_aligner.align_timestamps(
             method=align_method,
