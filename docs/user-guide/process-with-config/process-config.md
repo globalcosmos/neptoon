@@ -108,7 +108,6 @@ In this section we state whether to do smoothing on the neutron data, and how to
 | settings.algorithm | No | string | `"rolling_mean"` | Smoothing algorithm selection |
 | settings.window | No | string | `12h` or `12hours` or `1day` or `1d` or `30min` or `30m` | Window size for smoothing operation, provided as a string which neptoon will automatically parse into a timedelta window |
 | settings.min_proportion_good_data | No | float | `0.7` | The minimum proportion of available data for the smoothing window to succeed. If less than this is available in the window the observation is `nan` |
-| settings.poly_order | No | integer | `5` | Polynomial order for Savitzky-Golay filter (Currently not in use until a future update)|
 
 !!! note "Additional Information"
     - The smoothing algorithm supports only `rolling_mean` until a future update. 
@@ -122,6 +121,8 @@ The boolean statements are required. If they are set to `true` then the further 
 Alignment is used if you want to have your data output on rounded time points, but don't wish to change the resolution of your data (e.g., data at `15:04` realigned to be at `15:00`). 
 
 Aggregation does what it says, converts your data to a new resolution via aggregation. The output_resolution should be larger than original timestep resolution of your data (no downscaling). 
+
+More info on this found [here](https://rdm-software.pages.ufz.de/saqc/_api/saqc.SaQC.html#saqc.SaQC.resample)
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|

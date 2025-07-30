@@ -500,11 +500,6 @@ class SmoothingAlgorithmSettings(BaseModel):
         default=0.7,
         description="The minimum proportion of data available in the smoothing window to succeed",
     )
-    poly_order: Optional[int] = Field(
-        default=5,
-        description="Polynomial order for Savitzky_Golay filter",
-        ge=0,
-    )
 
     @model_validator(mode="after")
     def validate_poly_order(self) -> "SmoothingAlgorithmSettings":
