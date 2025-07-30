@@ -454,7 +454,7 @@ class NeutronsToSM:
         lower bounds.
         """
         self.crns_data_frame[
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT)
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER)
         ] = (
             self.crns_data_frame[
                 str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
@@ -464,7 +464,7 @@ class NeutronsToSM:
             ]
         )
         self.crns_data_frame[
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT)
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER)
         ] = (
             self.crns_data_frame[
                 str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
@@ -481,7 +481,7 @@ class NeutronsToSM:
         self.create_uncertainty_bounds()
         self.calculate_sm_estimates(
             neutron_data_column_name=str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER
             ),
             soil_moisture_column_write_name_vol=str(
                 ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER
@@ -489,7 +489,7 @@ class NeutronsToSM:
         )
         self.calculate_sm_estimates(
             neutron_data_column_name=str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER
             ),
             soil_moisture_column_write_name_vol=str(
                 ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER
