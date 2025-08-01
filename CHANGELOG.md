@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Depreceated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.12.0] - 01/08/2025
+
+
+### Added
+
 - `find_temporal_resolution()` added to general utils
 - `CRNSDataHub` - added functions to aggregate and align data directly to the CRNSDataHub
 - new column name for raw neutron uncertainty added to ColumnInfo.Name

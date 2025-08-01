@@ -10,8 +10,8 @@ stages:
   - package_testpypi
   - release
   - archive
-  - docker
   - package_pypi
+  - docker
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
