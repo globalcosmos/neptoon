@@ -5,6 +5,8 @@ variables:
 docker-test-image-gui:
   stage: docker
   image: docker:24.0.5
+  tags:
+    - dind
   services:
     - name: docker:24.0.5-dind
   variables:
@@ -23,6 +25,8 @@ docker-test-image-gui:
 docker-test-image-cli:
   stage: docker
   image: docker:24.0.5
+  tags:
+    - dind
   services:
     - name: docker:24.0.5-dind
   variables:
@@ -42,6 +46,8 @@ docker-test-image-cli:
 docker-build-image-gui:
   stage: docker
   image: docker:24.0.5
+  tags:
+    - dind
   services:
     - name: docker:24.0.5-dind
   variables:
@@ -61,6 +67,8 @@ docker-build-image-gui:
 docker-build-image-cli:
   stage: docker
   image: docker:24.0.5
+  tags:
+    - dind
   services:
     - name: docker:24.0.5-dind
   variables:
