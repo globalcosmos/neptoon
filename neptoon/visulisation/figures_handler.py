@@ -17,6 +17,13 @@ from pathlib import Path
 import tempfile
 import atexit
 import shutil
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    message=".*FigureCanvasAgg is non-interactive.*",
+    category=UserWarning,
+)
 
 
 class FigureTopic(Enum):

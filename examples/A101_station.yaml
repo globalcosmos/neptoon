@@ -17,16 +17,36 @@ sensor_info:
   beta_coefficient:
   mean_pressure:
 
+##################################################################
+#    The below section is optional and is only necessary         #
+#    when you are processing data which has been taken from      #
+#    a logger directly. E.g., An SD card from your CRNS.         #
+#                                                                #
+#    If you already have your data in a single csv file set      #
+#    parse_raw_data to False and go to the next section.         #
+##################################################################
+
+raw_data_parse_options:
+  parse_raw_data: True
+  data_location: ../example_data/CRNS-station_data-Hydroinnova-A.zip
+  column_names:
+  prefix: ""
+  suffix: ""
+  encoding: "cp850"
+  skip_lines: 0
+  separator: ","
+  decimal: "."
+  skip_initial_space: True
+  parser_kw: # leave blank
+    strip_left: True
+    digit_first: True
+  starts_with: ""
+  multi_header: False
+  strip_names: True
+  remove_prefix: "//"
+
 time_series_data:
   path_to_data: # blank if parsing raw data
-  temporal:
-    input_resolution: 15mins
-    output_resolution: 1hour
-    align_timestamps: true
-    alignment_method: time
-    aggregate_method: bagg
-    aggregate_func: mean
-    aggregate_maxna_fraction: 0.3
   key_column_info:
     epithermal_neutron_columns:
       - N2Cts
@@ -53,25 +73,7 @@ time_series_data:
     date_time_format: "%Y/%m/%d %H:%M:%S"
     initial_time_zone: utc
     convert_time_zone_to: utc
-
-raw_data_parse_options:
-  parse_raw_data: True
-  data_location: ../example_data/CRNS-station_data-Hydroinnova-A.zip
-  column_names:
-  prefix: ""
-  suffix: ""
-  encoding: "cp850"
-  skip_lines: 0
-  separator: ","
-  decimal: "."
-  skip_initial_space: True
-  parser_kw: # leave blank
-    strip_left: True
-    digit_first: True
-  starts_with: ""
-  multi_header: False
-  strip_names: True
-  remove_prefix: "//"
+    temporal_diff_col_name: none # Leave as none is you don't have a diff col
 
 input_data_qa:
   air_relative_humidity:

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import Literal, Union, Optional
+import datetime
 from pathlib import Path
 from neptoon.external.nmdb_data_collection import (
     NMDBDataAttacher,
@@ -15,7 +16,6 @@ from neptoon.corrections.factory.build_corrections import (
     CorrectionType,
     CorrectionTheory,
     CorrectNeutrons,
-    NeutronUncertaintyCalculator,
 )
 from neptoon.config.configuration_input import SensorInfo
 from neptoon.products.estimate_sm import NeutronsToSM
@@ -26,10 +26,15 @@ from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
+from neptoon.utils import (
+    validate_timestamp_index,
+    find_temporal_resolution_seconds,
+)
 from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
+from neptoon.data_prep import TimeStampAggregator, TimeStampAligner
 from neptoon.columns import ColumnInfo
 from neptoon.logging import get_logger
 from magazine import Magazine
@@ -349,17 +354,6 @@ class CRNSDataHub:
         )
         self.crns_data_frame = corrector.correct_neutrons()
 
-    def create_neutron_uncertainty_bounds(self):
-        """
-        Create uncertainty bounds for statistical uncertainty of neutron
-        count rates.
-        """
-
-        uncertainty = NeutronUncertaintyCalculator(
-            data_frame=self.crns_data_frame
-        )
-        self.crns_data_frame = uncertainty.add_neutron_uncertainty_columns()
-
     @Magazine.reporting(topic="Data Preparation")
     def smooth_data(
         self,
@@ -368,6 +362,7 @@ class CRNSDataHub:
             "rolling_mean", "savitsky_golay"
         ] = "rolling_mean",
         window: Optional[Union[int, str]] = 12,
+        min_proportion_good_data: float = 0.7,
         poly_order: int = 4,
         auto_update_final_col: bool = True,
     ):
@@ -396,17 +391,17 @@ class CRNSDataHub:
         Data smoothing was done on {column_to_smooth}. This was done
         using {smooth_method} with a window of {window}.
         """
-        series_to_smooth = pd.Series(self.crns_data_frame[column_to_smooth])
+        print(f"Smoothing data with a smoothing window of {window}")
         smoother = SmoothData(
-            data=series_to_smooth,
+            data=self.crns_data_frame,
             column_to_smooth=column_to_smooth,
             smooth_method=smooth_method,
             window=window,
+            min_proportion_good_data=min_proportion_good_data,
             poly_order=poly_order,
             auto_update_final_col=auto_update_final_col,
         )
-        col_name = smoother.create_new_column_name()
-        self.crns_data_frame[col_name] = smoother.apply_smoothing()
+        self.crns_data_frame = smoother.apply_smoothing()
 
     @Magazine.reporting(topic="Calibration")
     def calibrate_station(
@@ -472,6 +467,58 @@ class CRNSDataHub:
         self.sensor_info.avg_lattice_water = avg_lattice_water
         self.sensor_info.avg_soil_organic_carbon = avg_soil_organic_carbon
         print(f"N0 number was calculated as {n0}")
+
+    def align_time_stamps(
+        self,
+        align_method: str = "time",
+    ):
+        """
+        Aligns timestamps to occur on the hour. E.g., 01:00 not 01:05.
+
+        Uses the TimeStampAligner class.
+
+        Parameters
+        ----------
+        method : str, optional
+            method to use for shifting, defaults to shifting to nearest
+            hour, by default "time"
+        """
+        print("Aligning timestamps to regular intervals...")
+        timestamp_aligner = TimeStampAligner(self.crns_data_frame)
+        timestamp_aligner.align_timestamps(
+            method=align_method,
+        )
+        self.crns_data_frame = timestamp_aligner.return_dataframe()
+
+    def aggregate_data_frame(
+        self,
+        output_resolution: str,
+        max_na_fraction: float = 0.3,
+        aggregate_method: str = "bagg",
+    ):
+        """
+        Aggregate a crns data frame to a new resolution.
+
+        Parameters
+        ----------
+        output_resolution : str
+            Desired output resolution (e.g., '1h' or '1day')
+        max_na_fraction : float, optional
+            fraction of acceptable nan values in aggregation period, by
+            default 0.3
+        aggregate_method : str, optional
+            _description_, by default "bagg"
+        """
+        print(f"Aggregating data to {output_resolution} resolution")
+        timestamp_aggregator = TimeStampAggregator(
+            data_frame=self.crns_data_frame,
+            output_resolution=output_resolution,
+            max_na_fraction=max_na_fraction,
+        )
+        timestamp_aggregator.aggregate_data(
+            method=aggregate_method,
+        )
+        self.crns_data_frame = timestamp_aggregator.return_dataframe()
 
     @Magazine.reporting(topic="Soil Moisture")
     def produce_soil_moisture_estimates(
@@ -590,10 +637,22 @@ class CRNSDataHub:
                 core_logger.info(message)
                 continue
             elif value is None:
-                # TODO add skip here
+                core_logger.debug(f"Skipping None value for {key}")
+            elif isinstance(value, (datetime.datetime, datetime.date)):
+                core_logger.debug(
+                    f"Skipping datetime value for {key}: {value}"
+                )
                 continue
             else:
-                self.crns_data_frame[key] = value
+                try:
+                    numeric_value = pd.to_numeric(value)
+                    self.crns_data_frame[key] = numeric_value
+                except (ValueError, TypeError):
+                    # Skip non-numeric values
+                    core_logger.debug(
+                        f"Skipping non-numeric value for {key}: {value}"
+                    )
+                    continue
 
     def prepare_additional_columns(self):
         """

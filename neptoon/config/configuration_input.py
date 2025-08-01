@@ -1,14 +1,21 @@
 from typing import List, Optional, Literal, Dict
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pathlib import Path
-from datetime import datetime
+import datetime
 import yaml
-
-from neptoon.logging import get_logger
+import warnings
 from enum import Enum
 
+from neptoon.logging import get_logger
+from neptoon.utils.docker_utils import return_file_path_with_suffix
 
 core_logger = get_logger()
+
+warnings.filterwarnings(
+    "always",
+    category=DeprecationWarning,
+    module=__name__,  # Only for this specific module
+)
 
 
 class BaseConfig(BaseModel):
@@ -33,15 +40,16 @@ class SensorInfo(BaseConfig):
         description="The name of the site.",
         examples=["Sheepdrove", "Gatton"],
     )
-    country: str = Field(
+    country: Optional[str] = Field(
         description="The country the site is located in.",
         examples=["DEU", "UK", "USA", "KOR"],
     )
-    identifier: str = Field(
+    identifier: Optional[str] = Field(
         description="A unique identier",
         examples=["101", "456"],
+        coerce_numbers_to_str=True,
     )
-    install_date: datetime
+    install_date: datetime.datetime
     latitude: float
     longitude: float
     elevation: float
@@ -89,19 +97,8 @@ class TimeSeriesColumns(BaseConfig):
     date_time_format: str
 
 
-class Temporal(BaseConfig):
-    input_resolution: str = Field(default="1hour")
-    output_resolution: str = Field(default=None)
-    align_timestamps: bool = Field(default=False)
-    alignment_method: str | None = Field(default="time")
-    aggregate_method: str | None = Field(default="bagg")
-    aggregate_func: str | None = Field(default="mean")
-    aggregate_maxna_fraction: float | None = Field(default=0.5)
-
-
 class TimeSeriesData(BaseConfig):
     path_to_data: Optional[str] = Field(default=None)
-    temporal: Optional[Temporal] = None
     key_column_info: Optional[TimeSeriesColumns] = None
 
 
@@ -310,10 +307,6 @@ class CalibrationConfig(BaseConfig):
     """Configuration for calibration data."""
 
     calibrate: bool = Field(default=False)
-
-    data_format: Optional[
-        Literal["custom", "cosmoz", "cosmos-usa", "cosmos-uk"]
-    ] = Field(default="custom")
     location: Optional[Path] = Field(default="")
     key_column_names: Optional[CalibrationColumnNames] = None
 
@@ -327,7 +320,7 @@ class DataStorageConfig(BaseConfig):
 
 class FiguresConfig(BaseConfig):
     create_figures: bool = Field(default=True)
-    make_all_figures: bool = Field(default=True)
+    make_all_figures: Optional[bool] = Field(default=True)
     custom_list: Optional[List[str]] = Field(
         default=None,
         description="A list of the figures to process",
@@ -362,13 +355,13 @@ class NeutronQualityAssessment(BaseConfig):
 class ReferenceNeutronMonitor(BaseModel):
     """Configuration for reference neutron monitor settings."""
 
-    station: str = Field(
+    station: Optional[str] = Field(
         default="JUNG", description="Station identifier for neutron monitoring"
     )
-    resolution: int = Field(
+    resolution: Optional[int] = Field(
         default=60, description="Time resolution in minutes", ge=1
     )
-    nmdb_table: str = Field(
+    nmdb_table: Optional[str] = Field(
         default="revori", description="NMDB table name to query"
     )
 
@@ -376,15 +369,16 @@ class ReferenceNeutronMonitor(BaseModel):
 class AirHumidityCorrection(BaseModel):
     """Configuration for air humidity correction parameters."""
 
-    method: Literal["rosolem_2013"] = Field(
-        description="Air humidity correction method"
+    method: Optional[Literal["rosolem_2013", "none"]] = Field(
+        description="Air humidity correction method",
+        default="none",
     )
-    omega: float = Field(
+    coefficient: Optional[float] = Field(
         default=0.0054,
         description="Omega coefficient for humidity correction",
         gt=0,
     )
-    humidity_ref: float = Field(
+    humidity_ref: Optional[float] = Field(
         default=0, description="Reference humidity value"
     )
 
@@ -392,8 +386,9 @@ class AirHumidityCorrection(BaseModel):
 class AirPressureCorrection(BaseModel):
     """Configuration for air pressure correction parameters."""
 
-    method: Literal["zreda_2012"] = Field(
-        description="Air pressure correction method"
+    method: Optional[Literal["zreda_2012", "none"]] = Field(
+        description="Air pressure correction method",
+        default="none",
     )
     dunai_inclination: Optional[float] = Field(
         default=None, description="Dunai inclination parameter"
@@ -403,29 +398,31 @@ class AirPressureCorrection(BaseModel):
 class SoilMoistureEstimation(BaseModel):
     """Configuration for the conversion of neutrons to soil moisture"""
 
-    method: Literal["desilets_etal_2010", "koehli_etal_2021"] = Field(
+    method: Literal["desilets_etal_2010", "koehli_etal_2021", "none"] = Field(
         description="Soil moisture estimation theory",
         default="desilets_etal_2010",
     )
-    koehli_method_form: Literal[
-        "Jan23_uranos",
-        "Jan23_mcnpfull",
-        "Mar12_atmprof",
-        "Mar21_mcnp_drf",
-        "Mar21_mcnp_ewin",
-        "Mar21_uranos_drf",
-        "Mar21_uranos_ewin",
-        "Mar22_mcnp_drf_Jan",
-        "Mar22_mcnp_ewin_gd",
-        "Mar22_uranos_drf_gd",
-        "Mar22_uranos_ewin_chi2",
-        "Mar22_uranos_drf_h200m",
-        "Aug08_mcnp_drf",
-        "Aug08_mcnp_ewin",
-        "Aug12_uranos_drf",
-        "Aug12_uranos_ewin",
-        "Aug13_uranos_atmprof",
-        "Aug13_uranos_atmprof2",
+    koehli_etal_2021_parameterset: Optional[
+        Literal[
+            "Jan23_uranos",
+            "Jan23_mcnpfull",
+            "Mar12_atmprof",
+            "Mar21_mcnp_drf",
+            "Mar21_mcnp_ewin",
+            "Mar21_uranos_drf",
+            "Mar21_uranos_ewin",
+            "Mar22_mcnp_drf_Jan",
+            "Mar22_mcnp_ewin_gd",
+            "Mar22_uranos_drf_gd",
+            "Mar22_uranos_ewin_chi2",
+            "Mar22_uranos_drf_h200m",
+            "Aug08_mcnp_drf",
+            "Aug08_mcnp_ewin",
+            "Aug12_uranos_drf",
+            "Aug12_uranos_ewin",
+            "Aug13_uranos_atmprof",
+            "Aug13_uranos_atmprof2",
+        ]
     ] = Field(
         description="Koehli specific method for converting neutrons",
         default="Mar21_uranos_drf",
@@ -435,13 +432,19 @@ class SoilMoistureEstimation(BaseModel):
 class IncomingRadiationCorrection(BaseModel):
     """Configuration for incoming radiation correction parameters."""
 
-    method: Literal[
-        "zreda_2012",
-        "hawdon_2014",
-        "mcjannet_desilets_2023",
-    ] = Field(description="Incoming radiation correction method")
+    method: Optional[
+        Literal[
+            "zreda_2012",
+            "hawdon_2014",
+            "mcjannet_desilets_2023",
+            "none",
+        ]
+    ] = Field(
+        description="Incoming radiation correction method",
+        default="none",
+    )
 
-    reference_neutron_monitor: ReferenceNeutronMonitor = Field(
+    reference_neutron_monitor: Optional[ReferenceNeutronMonitor] = Field(
         default_factory=ReferenceNeutronMonitor,
         description="Reference neutron monitor configuration",
     )
@@ -450,8 +453,8 @@ class IncomingRadiationCorrection(BaseModel):
 class BiomassCorrection(BaseModel):
     """Configuration for above ground biomass correction parameters."""
 
-    method: Optional[str] = Field(
-        default=None, description="Above ground biomass correction method"
+    method: Optional[Literal["baatz_2015", "morris_2024", "none"]] = Field(
+        default="none", description="Above ground biomass correction method"
     )
 
 
@@ -471,7 +474,7 @@ class CorrectionSteps(BaseModel):
         default=None,
         description="Above ground biomass correction configuration",
     )
-    soil_moisture_estimation: Optional[SoilMoistureEstimation] = Field(
+    soil_moisture_estimation: SoilMoistureEstimation = Field(
         default=None, description="Soil Moisture estimation configuration"
     )
 
@@ -487,16 +490,15 @@ class SmoothingAlgorithmSettings(BaseModel):
         - Polynomial order must be less than window size
     """
 
-    algorithm: Literal["savitsky_golay", "rolling_mean"] = Field(
-        default="savitsky_golay", description="Smoothing algorithm to apply"
+    algorithm: Optional[Literal["savitsky_golay", "rolling_mean"]] = Field(
+        default="rolling_mean", description="Smoothing algorithm to apply"
     )
-    window: str = Field(
+    window: Optional[str] = Field(
         default="12h", description="Temporal size of window for smoothing"
     )
-    poly_order: Optional[int] = Field(
-        default=4,
-        description="Polynomial order for Savitzky_Golay filter",
-        ge=0,
+    min_proportion_good_data: Optional[float] = Field(
+        default=0.7,
+        description="The minimum proportion of data available in the smoothing window to succeed",
     )
 
     @model_validator(mode="after")
@@ -532,11 +534,22 @@ class DataSmoothingConfig(BaseModel):
     )
 
 
+class Temporal(BaseConfig):
+    aggregate_data: bool = Field(default=False)
+    output_resolution: Optional[str | None] = Field(default=None)
+    aggregate_method: Optional[str | None] = Field(default="bagg")
+    aggregate_func: Optional[str | None] = Field(default="mean")
+    aggregate_maxna_fraction: Optional[float | None] = Field(default=0.5)
+    align_timestamps: bool = Field(default=False)
+    alignment_method: Optional[str | None] = Field(default="time")
+
+
 class ProcessConfig(BaseConfig):
 
     neutron_quality_assessment: NeutronQualityAssessment
     correction_steps: CorrectionSteps
     data_smoothing: DataSmoothingConfig
+    temporal_aggregation: Temporal
 
 
 class ConfigType(Enum):
@@ -547,7 +560,16 @@ class ConfigType(Enum):
 class ConfigurationManager:
     """Manages loading and access of nested configurations."""
 
-    def __init__(self):
+    def __init__(self, running_in_docker: bool = False):
+        """Init
+
+        Parameters
+        ----------
+        running_in_docker : bool, optional
+            Whether neptoon is being run in docker (automatically
+            applied when true in CLI process), by default False
+        """
+        self.running_in_docker = running_in_docker
         self._configs: Dict[str, BaseConfig] = {}
 
     def _get_working_directory(
@@ -628,11 +650,67 @@ class ConfigurationManager:
         config_dict = self._resolve_paths(config_dict, config_path)
 
         if config_dict["config"] == "sensor":
-            config_type = str(ConfigType.SENSOR.value)
-            self._configs[config_type] = SensorConfig(**config_dict)
+            self._load_sensor_config(config_dict=config_dict)
         elif config_dict["config"] == "process":
-            config_type = str(ConfigType.PROCESS.value)
-            self._configs[config_type] = ProcessConfig(**config_dict)
+            self._load_process_config(config_dict=config_dict)
+
+    def _load_sensor_config(self, config_dict: dict):
+        """
+        Loads the sensor config file
+
+        Parameters
+        ----------
+        config_dict : dict
+            _description_
+        """
+        config_type = str(ConfigType.SENSOR.value)
+        config_obj = SensorConfig(**config_dict)
+        if self.running_in_docker:
+            config_obj.raw_data_parse_options.data_location = (
+                return_file_path_with_suffix(base_path="/workingdir/inputs")
+            )
+            config_obj.time_series_data.path_to_data = (
+                return_file_path_with_suffix(base_path="/workingdir/inputs")
+            )
+            config_obj.calibration.location = return_file_path_with_suffix(
+                base_path="/workingdir/calibration"
+            )
+            config_obj.data_storage.save_folder = "/workingdir/outputs"
+        if hasattr(config_obj.time_series_data, "temporal"):
+            message1 = (
+                "\n"
+                f"\033[1m\033[93mConfiguration needs updating:\033[0m "
+                f"Found 'temporal' settings in sensor config, "
+                f"but these should now be in your process config file under 'temporal_aggregation'.\n"
+                f"The current temporal settings will be ignored until you move them.\n"
+                "see: https://www.neptoon.org/en/latest/user-guide/process-with-config/process-config/"
+            )
+            warnings.warn(
+                message1,
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        self._configs[config_type] = config_obj
+
+    def _load_process_config(self, config_dict: dict):
+        config_type = str(ConfigType.PROCESS.value)
+        config_obj = ProcessConfig(**config_dict)
+        if hasattr(config_obj.correction_steps.air_humidity, "omega"):
+            message1 = (
+                "\n"
+                f"\033[1m\033[93mProcess config needs updating:\033[0m "
+                f"Found 'omega' in air humidity settings "
+                f"which has been changed to `coefficient`.\n"
+                f"Change `omega` to `coefficient` and this will work\n"
+                "see: https://www.neptoon.org/en/latest/user-guide/process-with-config/process-config/"
+            )
+            warnings.warn(
+                message1,
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        self._configs[config_type] = config_obj
 
     def get_config(self, name: Literal["sensor", "process"]):
         """
@@ -648,6 +726,11 @@ class ConfigurationManager:
         BaseConfig
             The requested config
         """
+        if name not in ["sensor", "process"]:
+            raise ValueError(
+                "Only 'sensor' or 'process' are valid configs: "
+                f"{name} was given"
+            )
         return self._configs[name]
 
     def create_sensor_config(self):

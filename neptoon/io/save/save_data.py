@@ -14,7 +14,7 @@ from neptoon.config.configuration_input import (
     SensorConfig,
     ProcessConfig,
 )
-from neptoon.utils.general_utils import validate_and_convert_file_path
+from neptoon.utils import validate_and_convert_file_path
 from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.columns import ColumnInfo
 

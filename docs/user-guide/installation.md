@@ -137,3 +137,11 @@ pip install git+https://codebase.helmholtz.cloud/cosmos/neptoon.git@development
 
 !!! warning "Warning"
     We provide this as an option but would not recommend this for production ready data processing. The development branch is always in flux and so bugs might be present!
+
+
+## Using Docker for the GUI (recommended)
+
+1. Install Docker ()
+2. run this command: `docker run -p 8501:8501 dpower101/neptoon-gui:latest`
+3. Terminal will provide some links - open the one called `http://localhost:8501` in your browser
+4. Happy processing

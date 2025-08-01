@@ -8,6 +8,8 @@
 ## Overview
 The sensor configuration file tells neptoon about the sensor being processed. The sections in this file are: config, sensor_info, raw_data_parse_options, time_series_data, input_data_qa, soil_moisture_qa, calibration, data_storage and figures. Below is an example file which you can use a starting point for your own sensor, a quick start guide and a more detailed reference to each possiblility.
 
+Some of the inputs can be left blank initially, and neptoon will calculate the values during processing (e.g., `N0` when calibrating). The output folder when processing is complete will include a file called `sensor_config.yaml`. This is the config file used as input with any additional calculated information included.
+
 ## File Structure
 
 ```yaml
@@ -18,10 +20,20 @@ The sensor configuration file tells neptoon about the sensor being processed. Th
 
 ## Sensor Information
 
+This config section provides information on individual sensor being processed. Some of this information is crucial for data processing, such as elevation or latitude. Others are used in organising the data outputs - like adding the name to save folders.
+
+It is always better to fill this in as best you can.
+
+The `beta_coefficient` can be automatically calculated if left blank using `elevation` and `latitude`
+
+Same for the `N0` however this requires the calibration section to be correctly filled (otherwise you'll have to guess). Generally speaking when calibrating it's also possible to automatically generate the values for `avg_lattice_water` and `avg_soil_organic_carbon`, as long as they are available in your calibration dataset.
+
+
+
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | name | Yes | string | `Cunnesdorf_test_site` | Site identifier used for file naming and metadata |
-| country | No | string | `Germany` | Country where sensor is located |
+| country | No | string | `DEU` | Country where sensor is located |
 | identifier | No | string | `A102` | Unique sensor identifier code |
 | install_date | Yes | string | `2016-10-21` | Date sensor was installed (YYYY-MM-DD) |
 | latitude | Yes | float | `51.369597` | Site latitude in decimal degrees |
@@ -38,6 +50,12 @@ The sensor configuration file tells neptoon about the sensor being processed. Th
 
 
 ## Raw Data Parse Options
+
+Raw Data Parsing refers to the required step to take your raw data files (e.g., found on the SD card in the logger) and converting them to a single csv file. No data manipulation is done at this stage. In it's simplest form it will take a list of `.txt` files and order them by date. When things get more complicated (e.g., only files with a certain prefix contain CRNS data), other settings are required.
+
+!!! Warning "Is this step needed?"
+    You can skip this step if your data is already available as a single csv file. Simply set `parse_raw_data` to False and move on to time series data below.
+
 
 !!! tip "Requirements"
     For this section the `Required` column will change if you select `True` for `parse_raw_data`.
@@ -69,19 +87,18 @@ The sensor configuration file tells neptoon about the sensor being processed. Th
 
 ## Time Series Data
 
+The time series data section is interested in how we prepare your CRNS time series data for processing. It imagines that your data is at least in a datetime ordered csv format. You state where that data is with the `path_to_data` setting and it will read it in and begin preperations. If you needed to run the above "Raw Data Parse Options" stage, the path to the data is not really needed, but the remaining settings are!
+
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | path_to_data | No | string | - | Path to pre-processed data (leave blank if parsing raw data) |
-| input_resolution | Yes | string | `15mins` | Time step of input data |
-| output_resolution | Yes | string | `1hour` or `None` | Desired time step of output data |
-| align_timestamps | Yes | boolean | `true` | Whether to align timestamps |
-| alignment_method | Yes | string | `time` | Method for timestamp alignment |
-| aggregate_method | Yes | string | `bagg` | Method for data aggregation |
-| aggregate_func | Yes | string | `mean` | Function used for aggregation |
-| aggregate_maxna_fraction | Yes | float | `0.3` | Maximum allowed fraction of NA values |
+
 
 ### Key Column Information (Time Series Data)
 
+Here we define settings to prepare the data for processing. For example in neptoon we standardise all neutron counts to counts per hour (cph). So if your data is in another format, state it here and neptoon will take care of the conversion. 
+
+Other things include if you have multiple columns of certain data readings (e.g., multiple pressure sensors). State the names in a list under the specific column section and state how you wish to merge them into a single column. `priority` means it will use the first value in the list and gap fill with the next if missing. `average` means it will take the mean. 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
@@ -105,18 +122,24 @@ The sensor configuration file tells neptoon about the sensor being processed. Th
 
 ## Quality Assessment Settings
 
-See below for more details - this section can be as large or as small as desired
+We include some simple options for quality assessment in neptoon using [SaQC](https://rdm-software.pages.ufz.de/saqc/index.html) as the back-end. More information about how to do this is provided further below on this page (and examples are shown in the example config above). 
+
+We do not plan to expand this further to avoid scope creep. Neptoon is designed to process CRNS data. We provide some options to QA data used directly in this process. To QA any additional co-located sensors, we would recommend using a system designed for QA specifically (e.g., `SaQC`).
+
 
 ## Calibration
+
+Calibration finds your `N0` term. For this we need sample data acquired from the site. When available the following section tells neptoon where the data is and what the format is. 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | calibrate | Yes | boolean | `True` | Toggle for whether calibration will be done |
-| data_format | No | string | `custom` | (WIP) automatic formatting for set styles |
 | location | No | string | `home_dir/example_data/FSCD001_calibration.csv` | Location of the calibration data |
 | date_time_format | No | string | `"%d.%m.%Y %H:%M"` | DateTime format of the calibration data|
 
 ### Key Column Names (Calibration)
+
+These values are required if `calibrate` is set to `true` in the above section.
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
@@ -132,21 +155,28 @@ See below for more details - this section can be as large or as small as desired
 
 ## Data Storage
 
+
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| save_folder | No | string | - | Directory for saving outputs |
-| append_yaml_hash_to_folder_name | No | boolean | `False` |(WIP) Add configuration hash to folder names |
+| save_folder | No | string | - | Directory for saving outputs - if left blank it will use current working directory instead |
+| append_timestamp_to_folder_name | No | boolean | `True` | Whether to append a timestamp to the output folder name. Useful when experimenting to avoid overwriting data. |
+| create_report | No | boolean | `true` | Whether to create a detailed report of your data outputs during the processing run and save it into the output folder |
+
 
 ## Figures
+
+Figures are tightly coupled to the `create_report` feature above. Neptoon will produce some useful figures helping to describe your data for quick visual checks post processing. These can be turned off if not required. Otherwise the figures are saved into a folder in the output folder, and included in the report if this is turned on. 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | create_figures | Yes | boolean | `True` | Generate visualization figures |
-| make_all_figures | Yes | boolean | `True` | Generate all available figure types in figure registry |
+| make_all_figures | No | boolean | `True` | Generate all available figure types in figure registry |
 | custom_list | No | list | `[nmdb_incoming_radiation]` | List of specific figures to generate |
 
 
 # Detailed Configuration Reference
+
+Below is more details on some of the features of sensor config file.
 
 ## Sensor Information (`sensor_info`)
 
@@ -168,14 +198,13 @@ A unique identifier for the monitoring station that will be used in file naming 
 
   - Should be URL-safe (avoid special characters)
   - Used as default folder name for outputs
-  - Case-sensitive
   - No spaces recommended (use underscores)
 
 
 ---
 #### `identifier`
 **Description**  
-The unique hardware identifier for the CRNS unit, typically provided by the manufacturer.
+The unique hardware identifier for the CRNS unit. This can be an additional was to identify the site.
 
 **Specification**
 
@@ -200,6 +229,7 @@ The date when the CRNS was installed at the monitoring site.
 
   - Used as cutoff for data processing
   - Single-digit months/days require leading zeros
+  - Must be in format YYYY-MM-DD to be registered as a date
 
 
 ---
@@ -233,8 +263,7 @@ Height above sea level of the CRNS installation site.
 
 **Technical Details**
 
-  - Used in atmospheric corrections
-  - Affects pressure corrections
+  - Used in atmospheric pressure corrections
   - Important for neutron flux calculations
 
 ---
@@ -274,7 +303,7 @@ The average lattice water content in soil minerals at the monitoring site.
   - Site-specific constant
   - Used in soil moisture conversion
   - If not supplied defaults to 0
-  - Can be automatically calculated if calibration sample data is provided with this in it (a site average is used)
+  - Can be automatically calculated if calibration sample data is available and lattice water content is a provided data.
 ---
 #### `avg_soil_organic_carbon`
 **Description**  
@@ -309,9 +338,9 @@ The average dry soil bulk density across the CRNS footprint. This parameter is e
 
 **Technical Details**
 
-  - Affects neutron-to-moisture conversion
+  - Important for use in converting neutrons to soil moisture (particularly converting gravimetric to volumetric soil moisture)
   - Influences effective measurement depth
-  - Can be automatically calculated if calibration sample data is provided with this in it (a site average is used)
+  - Can be automatically calculated if calibration sample data is provided with this data in it (a site average is used)
 
 
 ---
@@ -328,8 +357,8 @@ Site-specific calibration parameter that converts corrected neutron counts to so
 **Technical Details**
 
   - Determined through field calibration
-  - Used in standard calibration function
   - Can be calibrated with soil sampling data if this option turned on
+  - If no calibration data is availble, you will have to guess it. Although this will mean there is a bias problem in your data.
 
 ---
 #### `beta_coefficient`
@@ -348,7 +377,7 @@ Site-specific coefficient used in the atmospheric pressure correction of neutron
   - Used in pressure correction equations
   - Location and elevation dependent
   - Affects neutron count normalization
-  - Will be automatically calculated in neptoon if not provided using elevation and lat/lon data
+  - Will be automatically calculated in neptoon if not provided using supplied elevation and latitude data
 
 ---
 #### `mean_pressure`
@@ -379,7 +408,7 @@ The time zone offset from UTC for the monitoring site. Essential for proper temp
   - **Type**: string
   - **Required**: Yes
   - **Format**: ±H
-  - **Example**: `"+1"` 
+  - **Example**: `"+1"` or `"-10"` 
 
 
 ## Raw Data Parse Options (`raw_data_parse_options`)

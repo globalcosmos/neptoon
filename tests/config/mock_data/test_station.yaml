@@ -21,11 +21,6 @@ sensor_info:
 
 time_series_data:
   path_to_data: ../example_data/FSC001_time_series.csv
-  temporal:
-    input_resolution: 1hour
-    output_resolution: 1hour
-    align_timestamps: False
-    alignment_method: "time"
   key_column_info:
     date_time_columns:
       - DateTime_utc
