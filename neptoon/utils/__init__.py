@@ -7,5 +7,4 @@ from .general_utils import (
     timedelta_to_freq_str,
     is_resolution_greater_than,
     recalculate_neutron_uncertainty,
-    is_running_in_docker,
 )

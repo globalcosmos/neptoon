@@ -22,19 +22,18 @@ COPY pyproject.toml uv.lock* ./
 # Create virtual environment and install dependencies only (not the workspace package)
 RUN uv venv /app/.venv
 RUN uv sync --frozen --no-dev --no-install-workspace
-RUN uv pip install streamlit
 # Copy source code and install the package
 COPY . .
-RUN uv pip install --no-deps ".[gui]"
+RUN uv pip install --no-deps .
 ######################
 # -- runtime stage --
 ######################
+
 FROM python:3.12-slim AS runtime
-LABEL org.opencontainers.image.title="neptoon-gui"
+LABEL org.opencontainers.image.title="neptoon-cli"
 
 ENV PYTHONUNBUFFERED=1 \
-    PATH="/app/.venv/bin:$PATH" \
-    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+    PATH="/app/.venv/bin:$PATH" 
 
 # Copy the virtual environment from builder stage
 COPY --from=builder /app/.venv /app/.venv
@@ -42,7 +41,7 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy the application code
 COPY --from=builder /app /app
 
-WORKDIR /work
+WORKDIR /workingdir
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -51,4 +50,4 @@ RUN apt-get update && \
 
 EXPOSE 8501
 
-CMD ["neptoon-gui"]
+ENTRYPOINT ["neptoon", "-p", "/workingdir/processconfig.yaml", "-s", "/workingdir/sensorconfig.yaml"]

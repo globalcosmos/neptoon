@@ -263,15 +263,3 @@ def recalculate_neutron_uncertainty(
         1 / np.sqrt(temporal_scaling_factor)
     )
     return data_frame
-
-
-def is_running_in_docker():
-    """
-    Checks whether the current kernel is running in a docker container.
-
-    Returns
-    -------
-    bool
-        Whether in docker container
-    """
-    return Path("/.dockerenv").exists()

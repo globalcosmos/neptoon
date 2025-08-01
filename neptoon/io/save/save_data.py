@@ -14,7 +14,7 @@ from neptoon.config.configuration_input import (
     SensorConfig,
     ProcessConfig,
 )
-from neptoon.utils import validate_and_convert_file_path, is_running_in_docker
+from neptoon.utils import validate_and_convert_file_path
 from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.columns import ColumnInfo
 
@@ -117,8 +117,6 @@ class SaveAndArchiveOutputs:
         save_path = validate_and_convert_file_path(file_path=save_location)
         if save_path is None:
             save_path = validate_and_convert_file_path(file_path=Path.cwd())
-        if is_running_in_docker:
-            pass  # TODO prepend "/working_dir/" to path
         return save_path
 
     def create_save_folder(
