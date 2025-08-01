@@ -22,9 +22,6 @@ def main(
         "-s",
         help="Path to the sensor configuration YAML file",
     ),
-    verbose: bool = typer.Option(
-        False, "--verbose", "-v", help="Enable verbose output"
-    ),
 ):
     """
     Process CRNS data using configuration files.
@@ -40,7 +37,7 @@ def main(
         typer.secho(
             "Processing the sensor data...", fg=typer.colors.GREEN, bold=True
         )
-        process_data(processing_config, sensor_config, verbose)
+        process_data(processing_config, sensor_config)
     elif processing_config or sensor_config:
         typer.echo(
             typer.style("Error:", fg=typer.colors.RED, bold=True)
@@ -55,7 +52,7 @@ def main(
         )
 
 
-def process_data(processing_config: str, sensor_config: str, verbose: bool):
+def process_data(processing_config: str, sensor_config: str):
     """
     Process the data using the supplied config file locations.
     """
@@ -84,14 +81,12 @@ def process_data(processing_config: str, sensor_config: str, verbose: bool):
 
         config_processor = ProcessWithConfig(configuration_object=config)
         config_processor.run_full_process()  # Add verbose into run full process later TODO
-        if verbose:
-            typer.echo("Processing completed successfully.")
+        typer.echo("Processing completed successfully.")
     except Exception as e:
         typer.echo(f"Error during processing: {str(e)}")
-        if verbose:
-            import traceback
+        import traceback
 
-            traceback.print_exc()
+        traceback.print_exc()
         raise typer.Exit(code=1)
 
 
