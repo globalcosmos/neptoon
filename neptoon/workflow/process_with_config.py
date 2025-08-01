@@ -543,7 +543,6 @@ class ProcessWithConfig:
         """
         smooth_method = process_config.data_smoothing.settings.algorithm
         window = process_config.data_smoothing.settings.window
-        poly_order = process_config.data_smoothing.settings.poly_order
         min_proportion_good_data = (
             process_config.data_smoothing.settings.min_proportion_good_data
         )
@@ -552,7 +551,6 @@ class ProcessWithConfig:
             smooth_method=smooth_method,
             window=window,
             min_proportion_good_data=min_proportion_good_data,
-            poly_order=poly_order,
         )
         return data_hub
 

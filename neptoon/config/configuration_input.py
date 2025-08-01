@@ -496,7 +496,7 @@ class SmoothingAlgorithmSettings(BaseModel):
     window: Optional[str] = Field(
         default="12h", description="Temporal size of window for smoothing"
     )
-    min_proportion_good_data: Optional[str] = Field(
+    min_proportion_good_data: Optional[float] = Field(
         default=0.7,
         description="The minimum proportion of data available in the smoothing window to succeed",
     )
