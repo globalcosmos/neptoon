@@ -92,17 +92,17 @@
   "issueTracker": "https://codebase.helmholtz.cloud/cosmos/neptoon/-/issues",
   "version": "v0.12.0",
   "dateModified": "2025-08-01",
-  "@id": "https://doi.org/10.5281/zenodo.16688735",
+  "@id": "https://doi.org/10.5281/zenodo.16689981",
   "identifier": [
     {
       "@type": "PropertyValue",
       "propertyID": "DOI",
-      "value": "10.5281/zenodo.16688735"
+      "value": "10.5281/zenodo.16689981"
     },
     {
       "@type": "PropertyValue",
       "propertyID": "Zenodo",
-      "value": 16688735
+      "value": 16689981
     }
   ]
 }
