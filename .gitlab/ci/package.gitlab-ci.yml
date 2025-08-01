@@ -1,3 +1,6 @@
+variables:
+  UV_LINK_MODE: copy
+
 package_testpypi:
   stage: package_testpypi
   # needs:
