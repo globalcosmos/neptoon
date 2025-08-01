@@ -10,7 +10,7 @@ stages:
   - package_testpypi
   - release
   - archive
-  - docker-build
+  - docker
   - package_pypi
 
 variables:
