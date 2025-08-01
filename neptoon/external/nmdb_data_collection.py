@@ -131,9 +131,6 @@ class NMDBDataAttacher:
             str(ColumnInfo.Name.REFERENCE_INCOMING_NEUTRON_VALUE)
         ] = self.config.reference_value
 
-        self.data_frame[str(ColumnInfo.Name.NMDB_REFERENCE_STATION)] = (
-            self.config.station
-        )
         self.data_frame[
             str(ColumnInfo.Name.REFERENCE_MONITOR_CUTOFF_RIGIDITY)
         ] = NMDB_CUTOFF_RIGIDITIES[self.config.station]

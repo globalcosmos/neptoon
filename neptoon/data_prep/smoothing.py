@@ -1,10 +1,16 @@
 import pandas as pd
-from typing import Literal, Optional, Union
+from typing import Literal, Optional
 from scipy.signal import savgol_filter
+import datetime
 
 from neptoon.logging import get_logger
 from neptoon.columns import ColumnInfo
-from neptoon.utils import parse_resolution_to_timedelta
+from neptoon.utils import (
+    parse_resolution_to_timedelta,
+    find_temporal_resolution_seconds,
+    is_resolution_greater_than,
+    recalculate_neutron_uncertainty,
+)
 
 core_logger = get_logger()
 
@@ -22,13 +28,13 @@ class SmoothData:
 
     def __init__(
         self,
-        data: pd.Series,
+        data: pd.DataFrame,
         column_to_smooth: str,
         smooth_method: Literal[
             "rolling_mean", "savitsky_golay"
         ] = "rolling_mean",
         window: str = "12h",
-        min_proportion_good_data: float = 0.5,
+        min_proportion_good_data: float = 0.7,
         poly_order: Optional[int] = None,
         auto_update_final_col: bool = True,
     ):
@@ -37,7 +43,7 @@ class SmoothData:
 
         Parameters
         ----------
-        data : pd.Series
+        data : pd.DataFrame
             Data to be smoothed - must be time indexed
         column_to_smooth : str
             The column name of the column to be smoothed.
@@ -65,7 +71,7 @@ class SmoothData:
         self.auto_update_final_col = auto_update_final_col
 
         # Placeholders
-        self.window_as_timedelta = None
+        self.window_as_timedelta = self._convert_window_str_to_timedelta()
 
         self._validate_inputs()
 
@@ -100,13 +106,27 @@ class SmoothData:
             raise ValueError(message)
         if self.smooth_method == "savitsky_golay":
             self._switch_to_rolling()  # TODO : change this when implementing savitsky_golay
-            # self._validate_savitsky_golay_params()
         if self.smooth_method == "rolling_mean":
             self._validate_rolling_mean_params()
+        self._error_if_timestep_greater_than_window()
+
+    def _convert_window_str_to_timedelta(self):
+        """
+        Converts the string reprsentation of the window to a timedelta
+
+        Returns
+        -------
+        datetime.timedelta
+            timedelta equivelant to the string value
+
+        Raises
+        ------
+        ValueError
+            When none string value given.
+        """
+
         if isinstance(self.window, str):
-            self.window_as_timedelta = parse_resolution_to_timedelta(
-                resolution_str=self.window
-            )
+            return parse_resolution_to_timedelta(resolution_str=self.window)
         else:
             message = (
                 f"Invalid time string for window: {self.window}"
@@ -228,8 +248,8 @@ class SmoothData:
 
     def _get_min_obs_for_rolling_mean(
         self,
-        data_to_smooth: pd.Series,
-        min_proportion_good_data: float = 0.5,
+        data_to_smooth: pd.DataFrame,
+        min_proportion_good_data: float | None = None,
     ):
         """
         Calculates the number of observations that equates to half the
@@ -240,8 +260,8 @@ class SmoothData:
 
         Parameters
         ----------
-        data_to_smooth : pd.Series
-            data on which smoothing will be done (datetime index)
+        data_to_smooth : pd.DataFrame
+            dataframe on which smoothing will be done (datetime index)
 
         Returns
         -------
@@ -249,37 +269,45 @@ class SmoothData:
             The number of observatinos that make up the half the time
             delta
         """
+        min_proportion_good_data = (
+            min_proportion_good_data
+            if min_proportion_good_data is not None
+            else self.min_proportion_good_data
+        )
         freq = data_to_smooth.index.to_series().diff().median()
         min_obs = int(
             (self.window_as_timedelta * min_proportion_good_data) / freq
         )
         return min_obs
 
-    def _apply_rolling_mean(self, data_to_smooth: pd.Series):
+    def _apply_rolling_mean(self, data_frame: pd.DataFrame):
         """
         Applies a rolling mean smoothing
 
         Parameters
         ----------
-        data_to_smooth : pd.Series
-            pd.Series of data to smooth
+        data_frame : pd.DataFrame
+            pd.DataFrame of data to smooth
 
         Returns
         -------
-        pd.Series
-            The smoothed data
+        pd.DataFrame
+            The smoothed data in the DataFrame
         """
-        min_obs = self._get_min_obs_for_rolling_mean(
-            data_to_smooth=data_to_smooth
+        min_obs = self._get_min_obs_for_rolling_mean(data_to_smooth=data_frame)
+
+        data_frame[self.new_col_name] = (
+            data_frame[self.column_to_smooth]
+            .rolling(
+                window=self.window_as_timedelta,
+                min_periods=min_obs,
+                center=False,
+            )
+            .mean()
         )
+        data_frame[self.new_col_name] = data_frame[self.new_col_name].round()
 
-        smoothed = data_to_smooth.rolling(
-            window=self.window_as_timedelta,
-            min_periods=min_obs,
-            center=False,
-        ).mean()
-
-        return smoothed.round()
+        return data_frame
 
     def _apply_savitsky_golay(self, data_to_smooth):
         """
@@ -295,8 +323,10 @@ class SmoothData:
         pd.Series
             smoothed series
 
-        #TODO
-        THIS DOESN'T WORK WHEN NAN VALUES ARE IN WINDOW.
+        #TODO THIS DOESN'T WORK WHEN NAN VALUES ARE IN WINDOW.
+
+        Fix when implementing SG filter that it takes whole DF (see
+        _apply_rolling_mean)
 
         """
 
@@ -326,6 +356,46 @@ class SmoothData:
 
         return og_column_name + add_on
 
+    def _error_if_timestep_greater_than_window(self):
+        """
+        Checks if timestep is greater than window. If this is the case
+        it cannot smooth at the defined amount.
+        """
+        data_resolution = datetime.timedelta(
+            seconds=find_temporal_resolution_seconds(self.data)
+        )
+        smooth_window = self.window_as_timedelta
+
+        if is_resolution_greater_than(
+            resolution_a=data_resolution,
+            resolution_b=smooth_window,
+        ):
+            message = (
+                "The resolution of the data is not fine enough for the "
+                "desired smoothing window. Choose a larger smoothing window."
+            )
+            core_logger.error(message)
+            raise ValueError(message)
+
+    def _adjust_neutron_uncertainty(self):
+        """
+        Adjusts the neutron uncertainty to account for the smoothing
+        algorithm.
+        """
+        input_resolution = find_temporal_resolution_seconds(
+            data_frame=self.data
+        )
+        input_resolution = datetime.timedelta(seconds=input_resolution)
+        temporal_scaling_factor = (
+            pd.to_timedelta(self.window_as_timedelta) / input_resolution
+        )
+        temporal_scaling_factor = round(temporal_scaling_factor)
+
+        self.data = recalculate_neutron_uncertainty(
+            data_frame=self.data,
+            temporal_scaling_factor=temporal_scaling_factor,
+        )
+
     def apply_smoothing(self):
         """
         Function to apply smoothing to a Series of data. It is presumed
@@ -336,9 +406,12 @@ class SmoothData:
         pd.Series
             The smoothed Series
         """
+        self.new_col_name = self.create_new_column_name()
+        self._update_column_name_config()
         if self.smooth_method == "rolling_mean":
-            self._update_column_name_config()
-            return self._apply_rolling_mean(self.data)
+            self.data = self._apply_rolling_mean(self.data)
+            self._adjust_neutron_uncertainty()
+            return self.data
+
         elif self.smooth_method == "savitsky_golay":
-            self._update_column_name_config()
             return self._apply_savitsky_golay(self.data)

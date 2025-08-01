@@ -41,10 +41,13 @@ def sample_crns_data():
             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
         ): np.random.randint(500, 1500, 100),
         str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY
         ): np.random.randint(500, 1500, 100),
         str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER
+        ): np.random.randint(500, 1500, 100),
+        str(
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER
         ): np.random.randint(500, 1500, 100),
         str(ColumnInfo.Name.AIR_TEMPERATURE): np.random.randint(10, 15, 100),
         str(ColumnInfo.Name.ABSOLUTE_HUMIDITY): np.random.randint(20, 45, 100),
@@ -254,19 +257,12 @@ def make_base_df(tz_aware=True):
                 10,
                 10,
             ],
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT): [
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY): [
                 12,
                 12,
                 12,
                 12,
                 12,
-            ],
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT): [
-                8,
-                8,
-                8,
-                8,
-                8,
             ],
         },
         index=dates,
@@ -296,15 +292,10 @@ def make_output_df():
                 10.2,
                 10.3,
             ],
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT): [
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY): [
                 12.1,
                 12.2,
                 12.3,
-            ],
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT): [
-                8.1,
-                8.2,
-                8.3,
             ],
             str(ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER): [
                 0.02,

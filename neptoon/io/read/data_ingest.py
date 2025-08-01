@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import tarfile
 import tempfile
 import atexit
@@ -18,7 +19,7 @@ from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import (
     ConfigurationManager,
 )
-from neptoon.data_prep import TimeStampAligner, TimeStampAggregator
+from neptoon.utils import find_temporal_resolution_seconds
 
 core_logger = get_logger()
 
@@ -100,11 +101,11 @@ class FileCollectionConfig:
         )
         self._data_location = validate_and_convert_file_path(
             file_path=data_location,
-            base=(
-                self.path_to_config.parent
-                if self.path_to_config is not None
-                else ""
-            ),
+            # base=(
+            #     self.path_to_config.parent
+            #     if self.path_to_config is not None
+            #     else ""
+            # ),
         )
         self._data_source = None
         self.column_names = column_names
@@ -139,7 +140,7 @@ class FileCollectionConfig:
     @data_location.setter
     def data_location(self, new_location):
         self._data_location = validate_and_convert_file_path(
-            new_location, base=self._path_to_config.parent
+            new_location,
         )
         self._determine_source_type()
 
@@ -416,9 +417,9 @@ class ManageFileCollection:
             for filename in files_filtered
             if filename.endswith(self.config.suffix)
         ]
-        
-        #raise error when no files are found
-        if len(files_filtered)==0:
+
+        # raise error when no files are found
+        if len(files_filtered) == 0:
             message = (
                 f"No files found in {self.config.data_location} "
                 f"with prefix '{self.config.prefix}' and suffix '{self.config.suffix}'."
@@ -735,20 +736,13 @@ class InputDataFrameFormattingConfig:
 
     def __init__(
         self,
-        path_to_config: Optional[Union[str, Path]] = None,
-        input_resolution: str = "1hour",
-        output_resolution: str = "1hour",
-        aggregate_method: str = "bagg",
-        aggregate_func: str = "mean",
-        aggregate_maxna_fraction: float = 0.5,
-        align_timestamps: bool = False,
-        align_method: str = "time",
+        path_to_config: str | Path | None = None,
         pressure_merge_method: MergeMethod = MergeMethod.PRIORITY,
         pressure_units: PressureUnits = PressureUnits.HECTOPASCALS,
         temperature_merge_method: MergeMethod = MergeMethod.PRIORITY,
         relative_humidity_merge_method: MergeMethod = MergeMethod.PRIORITY,
         neutron_count_units: NeutronCountUnits = NeutronCountUnits.ABSOLUTE_COUNT,
-        date_time_columns: Optional[Union[str, List[str]]] = None,
+        date_time_columns: str | List[str] | None = None,
         date_time_format: str = "%Y/%m/%d %H:%M:%S",
         initial_time_zone: str = "utc",
         convert_time_zone_to: str = "utc",
@@ -765,9 +759,7 @@ class InputDataFrameFormattingConfig:
         ----------
         path_to_config : Union[str, Path], optional
             path to the sensor configuration file by default None
-        input_resolution : str, optional
-            Time resolution in format "<number><unit>, by default
-            "1hour"
+
         output_resolution : str, optional
             The desired time resolution of the dataframe to aggregate
             to. If None no time aggregation is done. Otherwise in format
@@ -839,26 +831,16 @@ class InputDataFrameFormattingConfig:
               columns based on predefined priority.
         """
         self.path_to_config = validate_and_convert_file_path(path_to_config)
-        self._input_resolution = parse_resolution_to_timedelta(
-            input_resolution
-        )
-        self._conversion_factor_to_counts_per_hour = (
-            self.get_conversion_factor()
-        )
-        self._output_resolution = parse_resolution_to_timedelta(
-            output_resolution
-        )
-        self.aggregate_method = aggregate_method
-        self.aggregate_func = aggregate_func
-        self.aggregate_maxna_fraction = aggregate_maxna_fraction
-        self.align_timestamps = align_timestamps
-        self.align_method = align_method
         self.pressure_merge_method = pressure_merge_method
         self.pressure_units = pressure_units
         self.temperature_merge_method = temperature_merge_method
         self.relative_humidity_merge_method = relative_humidity_merge_method
         self.neutron_count_units = neutron_count_units
-        self.date_time_columns = date_time_columns
+        self.date_time_columns = (
+            str(ColumnInfo.Name.DATE_TIME)
+            if date_time_columns is None
+            else date_time_columns
+        )
         self.date_time_format = date_time_format
         self.initial_time_zone = initial_time_zone
         self.convert_time_zone_to = convert_time_zone_to
@@ -866,65 +848,6 @@ class InputDataFrameFormattingConfig:
         self.decimal = decimal
         self.start_date_of_data = start_date_of_data
         self.column_data: List[InputColumnMetaData] = []
-
-    @property
-    def input_resolution(self):
-        return self._input_resolution
-
-    @input_resolution.setter
-    def input_resolution(self, value):
-        """
-        When setting the input_resolution this method ensures the
-        conversion factor is updated.
-
-        Parameters
-        ----------
-        value : str
-            Time resolution
-        """
-        self._input_resolution = parse_resolution_to_timedelta(value)
-        self._conversion_factor_to_counts_per_hour = (
-            self.get_conversion_factor()
-        )
-
-    @property
-    def output_resolution(self):
-        return self._output_resolution
-
-    @output_resolution.setter
-    def output_resolution(self, value):
-        """
-        Ensures output resolutions remains time delta internally.
-
-        Parameters
-        ----------
-        value : str
-            output resolution e.g., '1hour' or '15mins'
-        """
-        self._output_resolution = parse_resolution_to_timedelta(value)
-
-    @property
-    def conversion_factor_to_counts_per_hour(self):
-        return self._conversion_factor_to_counts_per_hour
-
-    @conversion_factor_to_counts_per_hour.setter
-    def conversion_factor_to_counts_per_hour(self, value):
-        self._conversion_factor_to_counts_per_hour = value
-
-    def get_conversion_factor(self):
-        """
-        Figures out the factor needed to multiply a count rate by to
-        convert it to counts per hour. Uses the time_resolution
-        attribute for this calculation.
-
-        Returns
-        -------
-        float
-            The factor to convert to counts per hour
-        """
-
-        hours = self.input_resolution.total_seconds() / 3600
-        return 1 / hours
 
     def add_column_meta_data(
         self,
@@ -1005,18 +928,6 @@ class InputDataFrameFormattingConfig:
         Assign attributes using the YAML information.
         """
         tmp = self.config_info
-
-        self.input_resolution = tmp.time_series_data.temporal.input_resolution
-        self.output_resolution = (
-            tmp.time_series_data.temporal.output_resolution
-        )
-        self.align_timestamps = tmp.time_series_data.temporal.align_timestamps
-        self.align_method = tmp.time_series_data.temporal.alignment_method
-        self.aggregate_method = tmp.time_series_data.temporal.aggregate_method
-        self.aggregate_func = tmp.time_series_data.temporal.aggregate_func
-        self.aggregate_maxna_fraction = (
-            tmp.time_series_data.temporal.aggregate_maxna_fraction
-        )
         self.neutron_count_units = (
             tmp.time_series_data.key_column_info.neutron_count_units
         )
@@ -1167,7 +1078,7 @@ class InputDataFrameFormattingConfig:
 
 class FormatDataForCRNSDataHub:
     """
-    Formats a DataFrame into the requred format for work in neptoon.
+    Formats a DataFrame into the required format to work in neptoon.
 
     Key features:
         - Combines multiple datetime columns (e.g., DATE + TIME) into a
@@ -1186,19 +1097,6 @@ class FormatDataForCRNSDataHub:
         Config object with information about the dataframe, which
         supports formatting
 
-    Methods
-    -------
-
-    extract_date_time_column
-    convert_time_zone
-    align_time_stamps
-    date_time_as_index
-    data_frame_to_numeric
-    aggregate_data_frame TODO
-    merge_multiple_meteo_columns
-    prepare_key_columns
-    prepare_neutron_count_columns
-    format_data_and_return_data_frame
     """
 
     def __init__(
@@ -1219,6 +1117,8 @@ class FormatDataForCRNSDataHub:
         """
         self._data_frame = data_frame
         self._config = config
+        self._timestep_seconds = None
+        # self.conversion_factor_to_cph = None
 
     @property
     def data_frame(self):
@@ -1317,7 +1217,7 @@ class FormatDataForCRNSDataHub:
         """
 
         date_time_column = self.extract_date_time_column()
-        #if all values are NaT, raise error
+        # if all values are NaT, raise error
         if date_time_column.isnull().all():
             message = "Could not parse date column(s). Please check date_time_format and date_time_columns."
             core_logger.error(message)
@@ -1345,6 +1245,24 @@ class FormatDataForCRNSDataHub:
 
         # Convert all the regular columns to numeric and drop any failures
         self.data_frame = self.data_frame.apply(pd.to_numeric, errors="coerce")
+
+    def get_conversion_factor_to_cph(
+        self,
+        timestep_seconds: int,
+    ):
+        """
+        Figures out the factor needed to multiply a count rate by to
+        convert it to counts per hour. Uses the time_resolution
+        attribute for this calculation.
+
+        Returns
+        -------
+        float
+            The factor to convert to counts per hour
+        """
+
+        hours = timestep_seconds / 3600
+        return 1 / hours
 
     def standardise_units_of_pressure(self):
         """
@@ -1492,6 +1410,119 @@ class FormatDataForCRNSDataHub:
             message = f"Could not process thermal_neutron_counts. {e}"
             core_logger.info(message)
 
+    def _calc_timestep_diff(self, data_frame: pd.DataFrame):
+        """
+        Infer timestep in seconds
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame
+
+        Returns
+        -------
+        data_frame
+            DataFrame with timestep column
+        """
+        # infer from timestamp difference
+        data_frame[str(ColumnInfo.Name.TIME_STEP_SECONDS)] = (
+            data_frame.index.to_series().diff()
+        )
+        data_frame[str(ColumnInfo.Name.TIME_STEP_SECONDS)] = data_frame[
+            str(ColumnInfo.Name.TIME_STEP_SECONDS)
+        ].dt.seconds
+        return data_frame
+
+    def _merge_multiple_neutron_cols(
+        self,
+        neutron_column_type: Literal[
+            InputColumnDataType.EPI_NEUTRON_COUNT,
+            InputColumnDataType.THERM_NEUTRON_COUNT,
+        ],
+        raw_column_name: str,
+    ):
+        """
+        Merges multiple neutron columns (either epithermal or thermal)
+        into a single column by summing the values
+
+        Parameters
+        ----------
+        neutron_column_type : Literal[
+        InputColumnDataType.EPI_NEUTRON_COUNT,
+        InputColumnDataType.THERM_NEUTRON_COUNT, ]
+            Neutron Column type as Enum
+        raw_column_name : str
+            The name of the column where raw data will be stored.
+        """
+        neutron_cols = [
+            col
+            for col in self.config.column_data
+            if col.variable_type is neutron_column_type
+        ]
+
+        if len(neutron_cols) > 1:
+            epi_col_names = [name.initial_name for name in neutron_cols]
+
+            self.data_frame[raw_column_name] = self.data_frame[
+                epi_col_names
+            ].sum(axis=1)
+        else:
+            neutron_col_name = neutron_cols[0].initial_name
+            self.data_frame.rename(
+                columns={neutron_col_name: raw_column_name},
+                inplace=True,
+            )
+
+    def _convert_neutron_units_to_cph(
+        self,
+        neutron_column_type: Literal[
+            InputColumnDataType.EPI_NEUTRON_COUNT,
+            InputColumnDataType.THERM_NEUTRON_COUNT,
+        ],
+        raw_column_name: str,
+        final_column_name: str,
+    ):
+        epi_neutron_unit = next(
+            col.unit
+            for col in self.config.column_data
+            if col.variable_type is neutron_column_type
+        )
+
+        if epi_neutron_unit == "counts_per_hour":
+            self.data_frame[final_column_name] = self.data_frame[
+                raw_column_name
+            ]
+            self.data_frame["hours_fraction"] = (
+                self.data_frame[str(ColumnInfo.Name.TIME_STEP_SECONDS)] / 3600
+            )
+            self.data_frame[raw_column_name] = (
+                self.data_frame[raw_column_name]
+                * self.data_frame["hours_fraction"]
+            )
+            self.data_frame.drop("hours_fraction", axis=1, inplace=True)
+
+        elif epi_neutron_unit == "absolute_count":
+            self.data_frame["factor_to_cph"] = self.data_frame.apply(
+                lambda row: self.get_conversion_factor_to_cph(
+                    row[str(ColumnInfo.Name.TIME_STEP_SECONDS)]
+                ),
+                axis=1,
+            )
+
+            self.data_frame[final_column_name] = (
+                self.data_frame[raw_column_name]
+                * self.data_frame["factor_to_cph"]
+            )
+
+        elif epi_neutron_unit == "counts_per_second":
+            self.data_frame[final_column_name] = (
+                self.data_frame[raw_column_name] * 3600
+            )
+            self.data_frame[raw_column_name] = (
+                self.data_frame[raw_column_name]
+                * self.data_frame[str(ColumnInfo.Name.TIME_STEP_SECONDS)]
+            )
+
     def prepare_neutron_count_columns(
         self,
         neutron_column_type: Literal[
@@ -1517,6 +1548,8 @@ class FormatDataForCRNSDataHub:
                             ]
             The type of neutron data being processed
         """
+        self.data_frame = self._calc_timestep_diff(data_frame=self.data_frame)
+
         if neutron_column_type == InputColumnDataType.EPI_NEUTRON_COUNT:
             raw_column_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)
             final_column_name = str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH)
@@ -1524,149 +1557,16 @@ class FormatDataForCRNSDataHub:
             raw_column_name = str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)
             final_column_name = str(ColumnInfo.Name.THERM_NEUTRON_COUNT_CPH)
 
-        epi_neutron_cols = [
-            col
-            for col in self.config.column_data
-            if col.variable_type is neutron_column_type
-        ]
-
-        epi_neutron_unit = next(
-            col.unit
-            for col in self.config.column_data
-            if col.variable_type is neutron_column_type
+        self._merge_multiple_neutron_cols(
+            neutron_column_type=neutron_column_type,
+            raw_column_name=raw_column_name,
         )
 
-        if len(epi_neutron_cols) > 1:
-            epi_col_names = [name.initial_name for name in epi_neutron_cols]
-
-            self.data_frame[raw_column_name] = self.data_frame[
-                epi_col_names
-            ].sum(axis=1)
-        else:
-            epi_col_name = epi_neutron_cols[0].initial_name
-            self.data_frame.rename(
-                columns={epi_col_name: raw_column_name},
-                inplace=True,
-            )
-
-        if epi_neutron_unit == "counts_per_hour":
-            self.data_frame[final_column_name] = self.data_frame[
-                raw_column_name
-            ]
-            hours_fraction = (
-                self.config.input_resolution.total_seconds() / 3600
-            )
-            self.data_frame[raw_column_name] = (
-                self.data_frame[raw_column_name] * hours_fraction
-            )
-
-        elif epi_neutron_unit == "absolute_count":
-            self.data_frame[final_column_name] = (
-                self.data_frame[raw_column_name]
-                * self.config.conversion_factor_to_counts_per_hour
-            )
-        elif epi_neutron_unit == "counts_per_second":
-            period_seconds = self.config.input_resolution.total_seconds()
-            self.data_frame[final_column_name] = (
-                self.data_frame[raw_column_name] * 3600
-            )
-            self.data_frame[raw_column_name] = (
-                self.data_frame[raw_column_name] * period_seconds
-            )
-
-    def align_time_stamps(
-        self,
-    ):
-        """
-        Aligns timestamps to occur on the hour. E.g., 01:00 not 01:05.
-
-        Uses the TimeStampAligner class.
-
-        Parameters
-        ----------
-        method : str, optional
-            method to use for shifting, defaults to shifting to nearest
-            hour, by default "time"
-        freq : str, optional
-            Define how regular the timestamps should be, 1 hour by
-            default, by default "1H"
-        """
-        freq = self.config.input_resolution
-        method = self.config.align_method
-
-        try:
-            timestamp_aligner = TimeStampAligner(self.data_frame)
-        except Exception as e:
-            message = (
-                "Could not align timestamps of dataframe. First the "
-                "dataframe must have a date time index.\n"
-                f"Exception: {e}"
-            )
-            print(message)
-            core_logger.error(message)
-        timestamp_aligner.align_timestamps(
-            freq=freq,
-            method=method,
+        self._convert_neutron_units_to_cph(
+            neutron_column_type=neutron_column_type,
+            raw_column_name=raw_column_name,
+            final_column_name=final_column_name,
         )
-        self.data_frame = timestamp_aligner.return_dataframe()
-
-    def aggregate_data_frame(self):
-        """
-        Aggregates a dataframe to a new sample rate.
-        """
-
-        if self.config.input_resolution > self.config.output_resolution:
-            raise ValueError(
-                "Neptoon cannot downscale:"
-                " output_resolution must be larger than"
-                " input_resolution."
-            )
-
-        adjustment_factor = (
-            self.config.output_resolution / self.config.input_resolution
-        )
-        max_na = adjustment_factor * self.config.aggregate_maxna_fraction
-        freq = self.config.output_resolution
-        method = self.config.aggregate_method
-        func = self.config.aggregate_func
-        try:
-            timestamp_aggregator = TimeStampAggregator(self.data_frame)
-        except Exception as e:
-            message = (
-                "Could not align timestamps of dataframe. First the "
-                "dataframe must have a date time index.\n"
-                f"Exception: {e}"
-            )
-            print(message)
-            core_logger.error(message)
-        timestamp_aggregator.aggregate_data(
-            freq=freq,
-            method=method,
-            func=func,
-            max_na=max_na,
-        )
-        data_frame = timestamp_aggregator.return_dataframe()
-
-        # Convert columns with absolute counts to new aggregation
-        data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)] = (
-            data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
-            * adjustment_factor
-        )
-        try:
-            data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)] = (
-                data_frame[str(ColumnInfo.Name.THERM_NEUTRON_COUNT_RAW)]
-                * adjustment_factor
-            )
-        except KeyError:
-            core_logger.info("No thermal neutrons to adjust")
-        try:
-            data_frame[str(ColumnInfo.Name.PRECIPITATION)] = (
-                data_frame[str(ColumnInfo.Name.PRECIPITATION)]
-                * adjustment_factor
-            )
-        except KeyError:
-            core_logger.info("No precipitation data to adjust")
-        self.data_frame = data_frame
 
     def clean_raw_dataframe(self):
         """
@@ -1687,6 +1587,32 @@ class FormatDataForCRNSDataHub:
                 ~self.data_frame.index.duplicated(keep="first")
             ]
             core_logger.info(f"Removed {duplicate_count} duplicate rows")
+
+    def calc_neutron_uncertainty(self):
+        """
+        Creates a column with the statistical uncertainty of the neutron
+        column and converts this value to counts per hour.
+        """
+        self.data_frame["factor_to_cph"] = self.data_frame.apply(
+            lambda row: self.get_conversion_factor_to_cph(
+                row[str(ColumnInfo.Name.TIME_STEP_SECONDS)]
+            ),
+            axis=1,
+        )
+
+        self.data_frame[
+            str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY)
+        ] = np.sqrt(
+            self.data_frame[str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW)]
+        )
+        self.data_frame[
+            str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY)
+        ] = (
+            self.data_frame[
+                str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY)
+            ]
+            * self.data_frame["factor_to_cph"]
+        )
 
     def snip_data_frame(self):
         """
@@ -1713,6 +1639,9 @@ class FormatDataForCRNSDataHub:
             DataFrame
         """
         self.date_time_as_index()
+        self._timestep_seconds = find_temporal_resolution_seconds(
+            self.data_frame
+        )
         self.clean_raw_dataframe()
         if self.data_frame.empty:
             message = f"No data found after parsing from {self._config.config_info.raw_data_parse_options.data_location}. Please check config file and data source. "
@@ -1720,14 +1649,11 @@ class FormatDataForCRNSDataHub:
             raise ValueError(message)
 
         self.data_frame_to_numeric()
+        self.conversion_factor_to_cph = self.get_conversion_factor_to_cph(
+            self._timestep_seconds
+        )
         self.prepare_key_columns()
-        if (
-            self.config.input_resolution != self.config.output_resolution
-            and self.config.output_resolution is not None
-        ):
-            self.aggregate_data_frame()
-        elif self.config.align_timestamps:
-            self.align_time_stamps()
+        self.calc_neutron_uncertainty()
         self.snip_data_frame()
         return self.data_frame
 
