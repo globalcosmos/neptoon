@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CRNSDataHub` - added functions to aggregate and align data directly to the CRNSDataHub
 - new column name for raw neutron uncertainty added to ColumnInfo.Name
 - Depreceation warning if temporal section is found in sensor config when loaded
+- Docker builds for cli and gui interface
 
 ### Changed
 

@@ -51,4 +51,4 @@ RUN apt-get update && \
 
 EXPOSE 8501
 
-CMD ["neptoon-gui"]
+ENTRYPOINT ["neptoon-gui"]
