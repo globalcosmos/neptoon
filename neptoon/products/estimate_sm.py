@@ -13,7 +13,7 @@ from neptoon.corrections import (
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 from neptoon.logging import get_logger
 from neptoon.data_audit import log_key_step
-from neptoon.quality_control.utils import _validate_df
+from neptoon.utils import validate_df
 
 core_logger = get_logger()
 
@@ -38,14 +38,7 @@ def build_base_input_schema() -> pa.DataFrameSchema:
                 nullable=True,
             ),
             str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
-            ): pa.Column(
-                dtype=float,
-                coerce=True,
-                nullable=True,
-            ),
-            str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY
             ): pa.Column(
                 dtype=float,
                 coerce=True,
@@ -76,14 +69,7 @@ def build_input_schema_koehli() -> pa.DataFrameSchema:
                 nullable=True,
             ),
             str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
-            ): pa.Column(
-                dtype=float,
-                coerce=True,
-                nullable=True,
-            ),
-            str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY
             ): pa.Column(
                 dtype=float,
                 coerce=True,
@@ -120,14 +106,7 @@ def build_output_schema() -> pa.DataFrameSchema:
                 nullable=True,
             ),
             str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
-            ): pa.Column(
-                dtype=float,
-                coerce=True,
-                nullable=True,
-            ),
-            str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY
             ): pa.Column(
                 dtype=float,
                 coerce=True,
@@ -248,7 +227,7 @@ class NeutronsToSM:
             column name where radius estimates are written, by default
             str( ColumnInfo.Name.SOIL_MOISTURE_MEASUREMENT_RADIUS )
         """
-        self._crns_data_frame = _validate_df(
+        self._crns_data_frame = validate_df(
             crns_data_frame, schema=build_base_input_schema()
         )
         self.n0 = n0
@@ -419,7 +398,7 @@ class NeutronsToSM:
             self._check_if_humidity_correction_applied(auto_uncorrect=True)
             self._ensure_abs_humidity_available()
 
-            self.crns_data_frame = _validate_df(
+            self.crns_data_frame = validate_df(
                 self.crns_data_frame, schema=build_input_schema_koehli()
             )
             raw_grav = self.crns_data_frame.apply(
@@ -469,13 +448,40 @@ class NeutronsToSM:
 
         return grav_sm * bulk_density
 
+    def create_uncertainty_bounds(self):
+        """
+        Adds the uncertainty to corrected counts to produce upper and
+        lower bounds.
+        """
+        self.crns_data_frame[
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER)
+        ] = (
+            self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            ]
+            - self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
+            ]
+        )
+        self.crns_data_frame[
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER)
+        ] = (
+            self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            ]
+            + self.crns_data_frame[
+                str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY)
+            ]
+        )
+
     def calculate_uncertainty_of_sm_estimates(self):
         """
         Produces uncertainty estimates of soil mositure.
         """
+        self.create_uncertainty_bounds()
         self.calculate_sm_estimates(
             neutron_data_column_name=str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER
             ),
             soil_moisture_column_write_name_vol=str(
                 ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER
@@ -483,7 +489,7 @@ class NeutronsToSM:
         )
         self.calculate_sm_estimates(
             neutron_data_column_name=str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER
             ),
             soil_moisture_column_write_name_vol=str(
                 ColumnInfo.Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER
@@ -548,7 +554,7 @@ class NeutronsToSM:
         self.calculate_uncertainty_of_sm_estimates()
         self.calculate_depth_of_measurement()
         self.calculate_horizontal_footprint()
-        self.crns_data_frame = _validate_df(
+        self.crns_data_frame = validate_df(
             df=self.crns_data_frame, schema=build_output_schema()
         )
 

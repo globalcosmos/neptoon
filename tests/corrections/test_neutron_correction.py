@@ -144,6 +144,11 @@ def sample_df():
         {
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_CPH): [100, 200, 300],
             str(ColumnInfo.Name.EPI_NEUTRON_COUNT_RAW): [100, 200, 300],
+            str(ColumnInfo.Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY): [
+                10,
+                20,
+                10,
+            ],
         }
     )
 

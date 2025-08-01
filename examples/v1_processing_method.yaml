@@ -16,7 +16,7 @@ neutron_quality_assessment:
 correction_steps:
   air_humidity:
     method: rosolem_2013
-    omega: 0.0054
+    coefficient: 0.0054
     humidity_ref: 0
   air_pressure:
     method: zreda_2012
@@ -28,11 +28,11 @@ correction_steps:
       resolution: 60 # minutes
       nmdb_table: revori # recommend revori
   above_ground_biomass:
-    method:
+    method: none
     biomass_units:
   soil_moisture_estimation:
     method: desilets_etal_2010 # or koehli_etal_2021
-    koehli_method_form: Mar21_uranos_drf
+    koehli_etal_2021_parameterset: Mar21_uranos_drf
 
 # Data Smoothing
 data_smoothing:
@@ -41,4 +41,13 @@ data_smoothing:
   settings:
     algorithm: rolling_mean
     window: 12h
-    poly_order: 4
+    min_proportion_good_data: 0.7
+
+temporal_aggregation:
+  aggregate_data: false
+  output_resolution: 1hour
+  align_timestamps: true
+  alignment_method: time
+  aggregate_method: bagg
+  aggregate_func: mean
+  aggregate_maxna_fraction: 0.3

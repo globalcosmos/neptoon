@@ -26,11 +26,6 @@ sensor_info:
 
 time_series_data:
   path_to_data:
-  temporal:
-    input_resolution: 1hour
-    output_resolution: 1hour
-    align_timestamps: False
-    alignment_method: "time"
   key_column_info:
     epithermal_neutron_columns:
       - N1Cts

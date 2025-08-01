@@ -74,7 +74,7 @@ def calc_mean_pressure(elevation: float):
     return mean_pressure
 
 
-def calc_beta_coefficient(mean_pressure, latitude, elevation, cutoff_rigidity):
+def calc_beta_coefficient(latitude, elevation, cutoff_rigidity):
     """
     Calculate the beta coefficient necessary for the
     pressure_correction_beta_coeff() function. This coefficient
@@ -82,8 +82,7 @@ def calc_beta_coefficient(mean_pressure, latitude, elevation, cutoff_rigidity):
 
     Parameters
     ----------
-    mean_pressure : float
-        Mean atmospheric pressure in millibars (hPa).
+
     latitude : float
         Geographic latitude of the site in degrees.
     elevation : float
