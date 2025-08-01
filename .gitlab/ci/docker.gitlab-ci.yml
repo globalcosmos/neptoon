@@ -1,5 +1,6 @@
 variables:
   REGISTRY_BASE: "registry.hzdr.de/cosmos/neptoon"
+  PLATFORMS: "linux/amd64,linux/arm64"
 
 # Test Builds
 docker-test-image-gui:
@@ -9,16 +10,28 @@ docker-test-image-gui:
     - dind
   services:
     - name: docker:24.0.5-dind
+      command: ["--experimental"]
   variables:
     DOCKER_TLS_CERTDIR: "/certs"
     DOCKER_DRIVER: overlay2
+    DOCKER_CLI_EXPERIMENTAL: enabled
   before_script:
     - echo "$CI_JOB_TOKEN" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
     - docker info
+    - docker buildx create --name mybuilder --driver docker-container --bootstrap
+    - docker buildx use mybuilder
+    - docker buildx inspect --bootstrap
   script:
-    - docker build -f .dock-gui.Dockerfile -t "$REGISTRY_BASE/neptoon-gui:test-$CI_COMMIT_SHORT_SHA" .
-    - docker push "$REGISTRY_BASE/neptoon-gui:test-$CI_COMMIT_SHORT_SHA"
-    - echo "✅ Test image pushed - registry.hzdr.de/cosmos/neptoon/neptoon-gui:test-$CI_COMMIT_SHORT_SHA"
+    - |
+      docker buildx build \
+        --platform $PLATFORMS \
+        --file .dock-gui.Dockerfile \
+        --tag "$REGISTRY_BASE/neptoon-gui:test-$CI_COMMIT_SHORT_SHA" \
+        --push \
+        .
+    - echo "Test image pushed - registry.hzdr.de/cosmos/neptoon/neptoon-gui:test-$CI_COMMIT_SHORT_SHA"
+  after_script:
+    - docker buildx rm mybuilder || true
   rules:
     - if: $CI_COMMIT_TAG == "docker-test"
 
@@ -29,16 +42,28 @@ docker-test-image-cli:
     - dind
   services:
     - name: docker:24.0.5-dind
+      command: ["--experimental"]
   variables:
     DOCKER_TLS_CERTDIR: "/certs"
     DOCKER_DRIVER: overlay2
+    DOCKER_CLI_EXPERIMENTAL: enabled
   before_script:
     - echo "$CI_JOB_TOKEN" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
     - docker info
+    - docker buildx create --name mybuilder --driver docker-container --bootstrap
+    - docker buildx use mybuilder
+    - docker buildx inspect --bootstrap
   script:
-    - docker build -f .dock-cli.Dockerfile -t "$REGISTRY_BASE/neptoon-cli:test-$CI_COMMIT_SHORT_SHA" .
-    - docker push "$REGISTRY_BASE/neptoon-cli:test-$CI_COMMIT_SHORT_SHA"
-    - echo "✅ Test image pushed - registry.hzdr.de/cosmos/neptoon/neptoon-cli:test-$CI_COMMIT_SHORT_SHA"
+    - |
+      docker buildx build \
+        --platform $PLATFORMS \
+        --file .dock-cli.Dockerfile \
+        --tag "$REGISTRY_BASE/neptoon-cli:test-$CI_COMMIT_SHORT_SHA" \
+        --push \
+        .
+    - echo "✅ Multi-platform test image pushed - registry.hzdr.de/cosmos/neptoon/neptoon-cli:test-$CI_COMMIT_SHORT_SHA"
+  after_script:
+    - docker buildx rm mybuilder || true
   rules:
     - if: $CI_COMMIT_TAG == "docker-test"
 
