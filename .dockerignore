@@ -1,0 +1,8 @@
+.git
+tests
+examples
+docs
+.vscode
+.devcontainer
+.venv
+Dockerfile

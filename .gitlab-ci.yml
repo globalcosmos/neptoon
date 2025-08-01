@@ -11,6 +11,7 @@ stages:
   - release
   - archive
   - package_pypi
+  - docker
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -76,7 +77,7 @@ variables:
 
 # Include CI/CD configuration files
 include:
-  # - local: .gitlab/ci/build.gitlab-ci.yml
+  - local: .gitlab/ci/docker.gitlab-ci.yml
   - local: .gitlab/ci/test.gitlab-ci.yml
   - local: .gitlab/ci/package.gitlab-ci.yml
   - local: .gitlab/ci/lint.gitlab-ci.yml

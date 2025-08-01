@@ -7,7 +7,7 @@ import warnings
 from enum import Enum
 
 from neptoon.logging import get_logger
-
+from neptoon.utils.docker_utils import return_file_path_with_suffix
 
 core_logger = get_logger()
 
@@ -560,7 +560,16 @@ class ConfigType(Enum):
 class ConfigurationManager:
     """Manages loading and access of nested configurations."""
 
-    def __init__(self):
+    def __init__(self, running_in_docker: bool = False):
+        """Init
+
+        Parameters
+        ----------
+        running_in_docker : bool, optional
+            Whether neptoon is being run in docker (automatically
+            applied when true in CLI process), by default False
+        """
+        self.running_in_docker = running_in_docker
         self._configs: Dict[str, BaseConfig] = {}
 
     def _get_working_directory(
@@ -643,8 +652,7 @@ class ConfigurationManager:
         if config_dict["config"] == "sensor":
             self._load_sensor_config(config_dict=config_dict)
         elif config_dict["config"] == "process":
-            config_type = str(ConfigType.PROCESS.value)
-            self._configs[config_type] = ProcessConfig(**config_dict)
+            self._load_process_config(config_dict=config_dict)
 
     def _load_sensor_config(self, config_dict: dict):
         """
@@ -657,7 +665,17 @@ class ConfigurationManager:
         """
         config_type = str(ConfigType.SENSOR.value)
         config_obj = SensorConfig(**config_dict)
-
+        if self.running_in_docker:
+            config_obj.raw_data_parse_options.data_location = (
+                return_file_path_with_suffix(base_path="/workingdir/inputs")
+            )
+            config_obj.time_series_data.path_to_data = (
+                return_file_path_with_suffix(base_path="/workingdir/inputs")
+            )
+            config_obj.calibration.location = return_file_path_with_suffix(
+                base_path="/workingdir/calibration"
+            )
+            config_obj.data_storage.save_folder = "/workingdir/outputs"
         if hasattr(config_obj.time_series_data, "temporal"):
             message1 = (
                 "\n"
@@ -677,7 +695,7 @@ class ConfigurationManager:
 
     def _load_process_config(self, config_dict: dict):
         config_type = str(ConfigType.PROCESS.value)
-        config_obj = SensorConfig(**config_dict)
+        config_obj = ProcessConfig(**config_dict)
         if hasattr(config_obj.correction_steps.air_humidity, "omega"):
             message1 = (
                 "\n"
@@ -692,6 +710,7 @@ class ConfigurationManager:
                 DeprecationWarning,
                 stacklevel=2,
             )
+        self._configs[config_type] = config_obj
 
     def get_config(self, name: Literal["sensor", "process"]):
         """
