@@ -1,0 +1,9 @@
+testuv-uv-build:
+  stage: build
+  script:
+    - export UV_LINK_MODE=copy
+    # - export UV_NO_CACHE=1
+    - export UV_PROJECT_ENVIRONMENT=.venv
+    - uv build --no-cache
+  rules:
+    - if: $CI_COMMIT_BRANCH == "development"
