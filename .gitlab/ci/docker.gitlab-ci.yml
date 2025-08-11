@@ -26,15 +26,15 @@ docker-test-image-gui:
       docker buildx build \
         --platform $PLATFORMS \
         --file .dock-gui.Dockerfile \
-        --tag "$REGISTRY_BASE/neptoon-gui:test-$CI_COMMIT_SHORT_SHA" \
+        --tag "$REGISTRY_BASE/neptoon-gui-test:$CI_COMMIT_SHORT_SHA" \
         --push \
         .
-    - echo "Test image pushed - registry.hzdr.de/cosmos/neptoon/neptoon-gui:test-$CI_COMMIT_SHORT_SHA"
+    - echo "Test image pushed - registry.hzdr.de/cosmos/neptoon/neptoon-gui-test:$CI_COMMIT_SHORT_SHA"
   after_script:
     - docker buildx rm multiarch-builder || true
     - docker context rm tls-environment || true
   rules:
-    - if: $CI_COMMIT_TAG == "docker-test"
+    - if: $CI_COMMIT_TAG =~ /^docker-test/
 
 docker-test-image-cli:
   stage: docker
@@ -59,15 +59,15 @@ docker-test-image-cli:
       docker buildx build \
         --platform $PLATFORMS \
         --file .dock-cli.Dockerfile \
-        --tag "$REGISTRY_BASE/neptoon-cli:test-$CI_COMMIT_SHORT_SHA" \
+        --tag "$REGISTRY_BASE/neptoon-cli-test:$CI_COMMIT_SHORT_SHA" \
         --push \
         .
-    - echo "✅ Multi-platform test image pushed - registry.hzdr.de/cosmos/neptoon/neptoon-cli:test-$CI_COMMIT_SHORT_SHA"
+    - echo "✅ Multi-platform test image pushed - registry.hzdr.de/cosmos/neptoon/neptoon-cli-test:$CI_COMMIT_SHORT_SHA"
   after_script:
     - docker buildx rm multiarch-builder || true
     - docker context rm tls-environment || true
   rules:
-    - if: $CI_COMMIT_TAG == "docker-test"
+    - if: $CI_COMMIT_TAG =~ /^docker-test/
 
 # Production build
 docker-build-image-gui:

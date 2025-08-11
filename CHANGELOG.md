@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- broken links in documentation homepage (with thanks to Louis Trinkle)
+
 ### Security
 
 ## [0.12.0] - 01/08/2025
