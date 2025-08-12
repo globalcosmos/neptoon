@@ -67,31 +67,6 @@ def _return_config(
     )
 
 
-def _return_config(
-    path_to_config,
-    config_to_return: Literal["sensor", "process"],
-):
-    """
-    Loads the config file into a ConfigurationManager and returns the
-    sensor config part
-
-    Parameters
-    ----------
-    path_to_config : str | Path
-        Path to config file (in yaml format)
-    config_to_return: Literal["sensor", "process"]
-        name of config to return
-    """
-    configuration_object = ConfigurationManager()
-    configuration_object.load_configuration(
-        file_path=path_to_config,
-    )
-    return _get_config_section(
-        configuration_object=configuration_object,
-        wanted_config=config_to_return,
-    )
-
-
 class DataHubFromConfig:
     """
     Creates a DataHub instance using a configuration file.

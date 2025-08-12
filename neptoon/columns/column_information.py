@@ -36,6 +36,7 @@ class ColumnInfo:
         """
 
         DATE_TIME = auto()
+        TIME_STEP_SECONDS = auto()
         EPI_NEUTRON_COUNT_RAW = auto()
         EPI_NEUTRON_COUNT_CPH = auto()
         EPI_NEUTRON_COUNT_FINAL = auto()
@@ -52,9 +53,10 @@ class ColumnInfo:
         ABOVEGROUND_BIOMASS_CORRECTION = auto()
         CORRECTED_EPI_NEUTRON_COUNT = auto()
         CORRECTED_EPI_NEUTRON_COUNT_FINAL = auto()
+        RAW_EPI_NEUTRON_COUNT_UNCERTAINTY = auto()
         CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY = auto()
-        CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT = auto()
-        CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT = auto()
+        CORRECTED_EPI_NEUTRON_COUNT_UPPER = auto()
+        CORRECTED_EPI_NEUTRON_COUNT_LOWER = auto()
         THERM_NEUTRON_COUNT_RAW = auto()
         THERM_NEUTRON_COUNT_CPH = auto()
         PRECIPITATION = auto()
@@ -93,6 +95,7 @@ class ColumnInfo:
 
     _default_representation: dict["ColumnInfo.Name", str] = {
         Name.DATE_TIME: "date_time",
+        Name.TIME_STEP_SECONDS: "time_step_seconds",
         Name.EPI_NEUTRON_COUNT_RAW: "epithermal_neutrons_raw",
         Name.EPI_NEUTRON_COUNT_CPH: "epithermal_neutrons_cph",
         Name.EPI_NEUTRON_COUNT_FINAL: "epithermal_neutrons_cph",
@@ -109,9 +112,10 @@ class ColumnInfo:
         Name.ABOVEGROUND_BIOMASS_CORRECTION: "aboveground_biomass_correction",
         Name.CORRECTED_EPI_NEUTRON_COUNT: "corrected_epithermal_neutrons",
         Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL: "corrected_epithermal_neutrons",
+        Name.RAW_EPI_NEUTRON_COUNT_UNCERTAINTY: "epithermal_neutrons_uncertainty_cph",
         Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY: "corrected_epithermal_neutrons_uncertainty",
-        Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT: "corrected_epithermal_neutrons_upper_count",
-        Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT: "corrected_epithermal_neutrons_lower_count",
+        Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER: "corrected_epithermal_neutrons_upper",
+        Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER: "corrected_epithermal_neutrons_lower",
         Name.THERM_NEUTRON_COUNT_RAW: "thermal_neutron_count_raw",
         Name.THERM_NEUTRON_COUNT_CPH: "thermal_neutron_count_cph",
         Name.PRECIPITATION: "precipitation",
@@ -120,8 +124,8 @@ class ColumnInfo:
         Name.SOIL_MOISTURE_VOL_FINAL: "soil_moisture_volumetric",  # updated to processed soil moisture
         Name.SOIL_MOISTURE_UNCERTAINTY_VOL_UPPER: "soil_moisture_vol_uncertainty_upper",
         Name.SOIL_MOISTURE_UNCERTAINTY_VOL_LOWER: "soil_moisture_vol_uncertainty_lower",
-        Name.SOIL_MOISTURE_MEASURMENT_DEPTH: "crns_measurement_depth",
-        Name.SOIL_MOISTURE_MEASUREMENT_RADIUS: "crns_measurement_radius",
+        Name.SOIL_MOISTURE_MEASURMENT_DEPTH: "crns_measurement_depth_cm",
+        Name.SOIL_MOISTURE_MEASUREMENT_RADIUS: "crns_measurement_radius_m",
         Name.LATITUDE: "latitude",
         Name.LONGITUDE: "longitude",
         Name.ELEVATION: "elevation",

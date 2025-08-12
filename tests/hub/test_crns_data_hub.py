@@ -80,7 +80,7 @@ def sample_crns_data_corrected():
                 108,
             ],
             str(ColumnInfo.Name.AIR_PRESSURE): [1000, 1005, 1002, 998, 1001],
-            str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY): [80, 75, 76, 65, 89],
+            str(ColumnInfo.Name.ABSOLUTE_HUMIDITY): [10, 15, 15, 20, 10],
             str(ColumnInfo.Name.AIR_TEMPERATURE): [23, 24, 25, 23, 20],
             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL): [
                 110,
@@ -89,14 +89,21 @@ def sample_crns_data_corrected():
                 120,
                 120,
             ],
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER_COUNT): [
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UNCERTAINTY): [
                 100,
                 110,
                 120,
                 110,
                 110,
             ],
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER_COUNT): [
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_LOWER): [
+                100,
+                110,
+                120,
+                110,
+                110,
+            ],
+            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_UPPER): [
                 120,
                 130,
                 140,

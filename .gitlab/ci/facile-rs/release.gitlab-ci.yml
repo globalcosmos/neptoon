@@ -33,10 +33,12 @@ prepare-release:
       else
           echo "Zenodo skipped, change ENABLE_ZENODO in .gitlab-ci.yml if you want to do a Zenodo release";
       fi
+    # Bump version
+    - sed -ri "s|^VERSION *= *['\"][^'\"]+['\"]|VERSION = '${VERSION}'|" ${VERSION_LOCATION}
     # Generate a CFF file
     - uv run facile-rs cff create --no-sort-authors
     # Commit and push updated metadata files
-    - git add ${CODEMETA_LOCATION} ${CFF_PATH}
+    - git add ${CODEMETA_LOCATION} ${CFF_PATH} ${VERSION_LOCATION}
     - git commit -m "Release ${VERSION}"
     - git push "https://PUSH_TOKEN:${PRIVATE_TOKEN}@${CI_REPOSITORY_URL#*@}" "HEAD:${RELEASE_BRANCH}"
     # Create a release tag to trigger the release pipeline

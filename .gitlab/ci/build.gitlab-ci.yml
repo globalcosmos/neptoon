@@ -1,18 +1,9 @@
-build:package:
+testuv-uv-build:
   stage: build
   script:
-    - uv build
+    - export UV_LINK_MODE=copy
+    # - export UV_NO_CACHE=1
+    - export UV_PROJECT_ENVIRONMENT=.venv
+    - uv build --no-cache
   rules:
-    - if: $CI_COMMIT_TAG =~ /^v/
-  artifacts:
-    paths:
-      - dist/
-  cache:
-    paths:
-      - "$UV_CACHE_DIR"
-      - .cache/pip
-      - .venv/
-    key:
-      files:
-        - pyproject.toml
-      prefix: ${CI_JOB_NAME}
+    - if: $CI_COMMIT_BRANCH == "development"

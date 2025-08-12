@@ -1,6 +1,7 @@
 [project]
 name = "neptoon"
-version = "0.9.1"
+# version = ["version"]
+dynamic = ['version']
 description = "The neptoon package makes CRNS processing and research simple."
 readme = "README.md"
 license = "MIT"
@@ -16,7 +17,7 @@ dependencies = [
     "pyarrow>=18.0.0",
     "pyaml>=23.12.0",
     "pydantic>=2.6.1",
-    "pandera>=0.18.0",
+    "pandera>0.24",
     "saqc>=2.6.0",
     "magazine>=0.3.2",
     "figurex>=0.2.10",
@@ -38,7 +39,7 @@ keywords = [
 
 [project.optional-dependencies]
 gui = ["streamlit>=1.31.0", "typer>=0.15.1", "plotly>=6.0.0"]
-dev = ["black>=24.1.1"]
+dev = ["black>=24.1.1", "pytest-cov>=6.2.1"]
 
 [project.urls]
 Homepage = "https://www.neptoon.org"
@@ -55,6 +56,9 @@ line-length = 79
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "neptoon/__init__.py"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
@@ -110,3 +114,6 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
+
+[tool.setuptools.dynamic]
+version = { attr = "neptoon.VERSION" }

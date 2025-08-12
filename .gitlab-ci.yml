@@ -1,4 +1,5 @@
 image: ghcr.io/astral-sh/uv:python3.11-bookworm
+# image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/astral/uv:python3.11-bookworm
 
 # Define the stages of pipeline
 stages:
@@ -10,6 +11,7 @@ stages:
   - release
   - archive
   - package_pypi
+  - docker
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -65,6 +67,9 @@ variables:
   RADAR_PATH: ${PROJECT_NAME}-${CI_COMMIT_TAG}
   RADAR_BACKLINK: ${CI_PROJECT_URL}/-/releases
 
+  # Version location
+  VERSION_LOCATION: neptoon/__init__.py
+
   # Notification email configuration
   # Configure and uncomment to activate email notifications when RADAR or Zenodo releases are uploaded
   # SMTP_SERVER: smtp.example.com
@@ -72,10 +77,11 @@ variables:
 
 # Include CI/CD configuration files
 include:
-  - local: .gitlab/ci/build.gitlab-ci.yml
+  - local: .gitlab/ci/docker.gitlab-ci.yml
   - local: .gitlab/ci/test.gitlab-ci.yml
   - local: .gitlab/ci/package.gitlab-ci.yml
   - local: .gitlab/ci/lint.gitlab-ci.yml
+  - local: .gitlab/ci/build.gitlab-ci.yml
   ###### FACILE-RS includes ######
   - local: .gitlab/ci/facile-rs/cff.gitlab-ci.yml
   - local: .gitlab/ci/facile-rs/datacite.gitlab-ci.yml

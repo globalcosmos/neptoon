@@ -2,9 +2,15 @@ import pandas as pd
 from typing import Literal, TYPE_CHECKING
 from pathlib import Path
 
+# import datetime
+
 # if TYPE_CHECKING:
 from neptoon.hub import CRNSDataHub
 
+# from neptoon.utils import (
+#     is_resolution_greater_than,
+#     find_temporal_resolution_seconds,
+# )
 from neptoon.logging import get_logger
 from neptoon.io.read.data_ingest import (
     validate_and_convert_file_path,
@@ -279,23 +285,6 @@ class ProcessWithConfig:
         data_hub.correct_neutrons()
         return data_hub
 
-    def _create_neutron_uncertainty_bounds(self, data_hub: CRNSDataHub):
-        """
-        Creates neutron statistical uncertainty bounds
-
-        Parameters
-        ----------
-        data_hub : CRNSDataHub
-            datahub
-
-        Returns
-        -------
-        data_hub
-            updated data_hub
-        """
-        data_hub.create_neutron_uncertainty_bounds()
-        return data_hub
-
     def _produce_soil_moisture_estimates(
         self,
         data_hub: CRNSDataHub,
@@ -554,12 +543,14 @@ class ProcessWithConfig:
         """
         smooth_method = process_config.data_smoothing.settings.algorithm
         window = process_config.data_smoothing.settings.window
-        poly_order = process_config.data_smoothing.settings.poly_order
+        min_proportion_good_data = (
+            process_config.data_smoothing.settings.min_proportion_good_data
+        )
         data_hub.smooth_data(
             column_to_smooth=column_to_smooth,
             smooth_method=smooth_method,
             window=window,
-            poly_order=poly_order,
+            min_proportion_good_data=min_proportion_good_data,
         )
         return data_hub
 
@@ -668,6 +659,7 @@ class ProcessWithConfig:
             )
 
         # Second QA and Smoothing
+
         self._check_n0_available(sensor_config=self.sensor_config)
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
@@ -675,6 +667,20 @@ class ProcessWithConfig:
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="corrected_neutrons",
         )
+
+        if self.process_config.temporal_aggregation.aggregate_data:
+            self.data_hub.aggregate_data_frame(
+                output_resolution=self.process_config.temporal_aggregation.output_resolution,
+                max_na_fraction=self.process_config.temporal_aggregation.aggregate_maxna_fraction,
+                aggregate_method=self.process_config.temporal_aggregation.aggregate_method,
+            )
+        elif self.process_config.temporal_aggregation.align_timestamps:
+            self.data_hub.align_time_stamps(
+                align_method=self.process_config.temporal_aggregation.alignment_method
+            )
+        else:
+            pass
+
         if self.process_config.data_smoothing.smooth_corrected_neutrons:
             self.data_hub = self._smooth_data(
                 data_hub=self.data_hub,
@@ -686,23 +692,34 @@ class ProcessWithConfig:
 
         # Produce soil moisture estimates
         # NOTE: print statement inside NeutronsToSM in order to state which method used
-        self.data_hub = self._create_neutron_uncertainty_bounds(self.data_hub)
-        self.data_hub = self._produce_soil_moisture_estimates(
-            self.data_hub,
-            conversion_theory=self.process_config.correction_steps.soil_moisture_estimation.method,
-        )
-        if self.process_config.data_smoothing.smooth_soil_moisture:
-            self.data_hub = self._smooth_data(
-                data_hub=self.data_hub,
-                process_config=self.process_config,
-                column_to_smooth=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+        if (
+            self.process_config.correction_steps.soil_moisture_estimation.method
+            == "none"
+        ):
+            message = (
+                "Soil moisture estimation method is set to none. "
+                "Skipping converting neutrons to soil moisture"
             )
-        self.data_hub = self._apply_quality_assessment(
-            data_hub=self.data_hub,
-            sensor_config=self.sensor_config,
-            partial_config=self.sensor_config.soil_moisture_qa,
-            name_of_target=None,
-        )
+            core_logger.info(message)
+            print(message)
+            pass
+        else:
+            self.data_hub = self._produce_soil_moisture_estimates(
+                self.data_hub,
+                conversion_theory=self.process_config.correction_steps.soil_moisture_estimation.method,
+            )
+            if self.process_config.data_smoothing.smooth_soil_moisture:
+                self.data_hub = self._smooth_data(
+                    data_hub=self.data_hub,
+                    process_config=self.process_config,
+                    column_to_smooth=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+                )
+            self.data_hub = self._apply_quality_assessment(
+                data_hub=self.data_hub,
+                sensor_config=self.sensor_config,
+                partial_config=self.sensor_config.soil_moisture_qa,
+                name_of_target=None,
+            )
 
         # Create figures and save outputs
         print("Creating figures...")
