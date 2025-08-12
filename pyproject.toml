@@ -18,7 +18,8 @@ dependencies = [
     "pyaml>=23.12.0",
     "pydantic>=2.6.1",
     "pandera>0.24",
-    "saqc>=2.6.0",
+    # "saqc>=2.6.0",
+    "saqc @ git+https://git.ufz.de/power/saqc.git@develop",
     "magazine>=0.3.2",
     "figurex>=0.2.10",
     "seaborn>=0.13.2",
@@ -59,6 +60,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 path = "neptoon/__init__.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
