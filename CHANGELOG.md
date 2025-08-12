@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.12.1] - 12/08/2025
+
+### Fix
+
+- Fix bug when calling biomass functions
+
 ## [0.12.0] - 01/08/2025
 
 
