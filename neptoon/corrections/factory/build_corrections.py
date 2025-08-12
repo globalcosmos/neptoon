@@ -377,11 +377,11 @@ class CorrectionFactory:
             Above Ground Biomass correction with values filled in.
         """
         if correction_theory is None:
-            return AboveGroundBiomassCorrectionMorris2024
+            return AboveGroundBiomassCorrectionMorris2024()
         elif correction_theory == CorrectionTheory.BAATZ_2015:
-            return AboveGroundBiomassCorrectionBaatz2015
+            return AboveGroundBiomassCorrectionBaatz2015()
         elif correction_theory == CorrectionTheory.MORRIS_2024:
-            return AboveGroundBiomassCorrectionMorris2024
+            return AboveGroundBiomassCorrectionMorris2024()
 
     def create_pressure_correction(self, correction_theory: CorrectionTheory):
         """
