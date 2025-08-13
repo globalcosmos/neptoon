@@ -15,9 +15,10 @@ class QAMethod(Enum):
     """
 
     RANGE_CHECK = ("flagRange", None)
+    SPIKE_SIGMA = ("flagSpikeSigma", None)
     SPIKE_UNILOF = ("flagUniLOF", None)
     SPIKE_ZSCORE = ("flagZScore", None)
-    SPIKE_OFFSET = ("flagOffset", None)
+    SPIKE_OFFSET = ("flagOffsetRelative", None)
     CONSTANT = ("flagConstants", None)
     ABOVE_N0 = ("flagRange", "above_n0")
     BELOW_N0_FACTOR = ("flagRange", "below_n0")
@@ -234,51 +235,36 @@ class SpikeZScoreParameters(MethodParameters):
 
 
 class SpikeOffsetParameters(MethodParameters):
-    saqc_web = "https://rdm-software.pages.ufz.de/saqc/_api/saqc.SaQC.html#saqc.SaQC.flagOffset"
+    saqc_web = "TBC"
 
     essential_params = {
         ParameterSpec(
-            name="tolerance",
+            name="thresh_relative",
             description=str(
-                "Maximum difference allowed between the value, directly preceding and the "
-                "value directly succeeding an offset to trigger flagging of the offsetting values."
+                "Maximum precentage difference allowed between the value directly preceding and the "
+                "values succeeding an offset to trigger flagging of the offsetting values."
             ),
             units="float",
             default=None,
-            saqc_name="tolerance",
+            saqc_name="thresh_relative",
         ),
         ParameterSpec(
             name="window",
             description=str(
-                "Maximum difference allowed between the value, directly preceding and the "
-                "value directly succeeding an offset to trigger flagging of the offsetting values."
+                "Maximum length of the plateau allowed for flagging multiple values as spikes"
             ),
             units="float",
             default=None,
             saqc_name="window",
         ),
-    }
-
-    optional_params = {
         ParameterSpec(
-            name="threshold",
+            name="bidirectional",
             description=str(
-                "Minimum difference between a value and its successors, to consider the "
-                "successors an anomalous offset group."
+                "Whether to check in both the rising and falling direction of data spikes"
             ),
-            units="float",
-            default=None,
-            saqc_name="thresh",
-        ),
-        ParameterSpec(
-            name="threshold_relative",
-            description=str(
-                "Minimum relative change between a value and its successors, to consider "
-                "the successors an anomalous offset group."
-            ),
-            units="float",
-            default=None,
-            saqc_name="thresh_relative",
+            units="bool",
+            default=True,
+            saqc_name="bidirectional",
         ),
     }
 
