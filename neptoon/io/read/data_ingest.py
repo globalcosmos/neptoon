@@ -1426,11 +1426,8 @@ class FormatDataForCRNSDataHub:
         """
         # infer from timestamp difference
         data_frame[str(ColumnInfo.Name.TIME_STEP_SECONDS)] = (
-            data_frame.index.to_series().diff()
+            data_frame.index.to_series().diff().dt.total_seconds()
         )
-        data_frame[str(ColumnInfo.Name.TIME_STEP_SECONDS)] = data_frame[
-            str(ColumnInfo.Name.TIME_STEP_SECONDS)
-        ].dt.seconds
         return data_frame
 
     def _merge_multiple_neutron_cols(
