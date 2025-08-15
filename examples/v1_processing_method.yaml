@@ -3,9 +3,10 @@ config: process
 # Neutron QA
 neutron_quality_assessment:
   raw_neutrons:
-    spike_uni_lof:
-      periods_in_calculation: 12
-      threshold: 1.5
+    spike_offset:
+      threshold_relative: 0.2 # 20%
+      window: 12h
+      bidirectional: true # always set to true
   corrected_neutrons:
     greater_than_N0:
       percent_maximum: 1.075 # Köhli 2021
@@ -45,7 +46,7 @@ data_smoothing:
 
 temporal_aggregation:
   aggregate_data: false
-  output_resolution: 1hour
+  output_resolution: 1h
   align_timestamps: true
   alignment_method: time
   aggregate_method: bagg

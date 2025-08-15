@@ -224,20 +224,80 @@ def test_quality_assessment_multi(test_df):
     ), f"Expected {expected_flags2}, but got {actual_flag2}"
 
 
-# def test_data_quality_assessor_scheme_change():
-#     df = pd.DataFrame(
-#         {"A": [1, 2, 3]}, index=pd.date_range("2023-01-01", periods=3)
-#     )
-#     dqa = DataQualityAssessor(data_frame=df)
+def test_spike_offset_detects_plateau_above_20_percent_only_on_rising_edge():
+    # 1) build a DataFrame with datetime index and a plateau spike
+    idx = pd.date_range(start="2025-06-25", periods=8, freq="h")
+    values = [100, 110, 100, 150, 150, 150, 119, 120]
+    df = pd.DataFrame({str(ColumnInfo.Name.AIR_PRESSURE): values}, index=idx)
 
-#     # Test default SaQC scheme
-#     assert dqa.saqc_scheme == "simple"
+    # 2) set up the assessor and register a single SPIKE_OFFSET check
+    assessor = DataQualityAssessor(df)
+    spike_check = QualityCheck(
+        target=QATarget.AIR_PRESSURE,
+        method=QAMethod.SPIKE_OFFSET,
+        parameters={
+            # essential params for offset detection
+            "window": "12h",  # compare one step before & after
+            "threshold_relative": 0.2,
+            "bidirectional": True,
+        },
+    )
+    assessor.add_quality_check(spike_check)
 
-#     dqa.change_saqc_scheme("float")
+    # 3) run QC, extract the flags
+    assessor.apply_quality_assessment()
+    flags = assessor.return_flags_data_frame()
+    print(flags)
 
-#     # Test changing scheme
-#     assert dqa.saqc_scheme == "float"
+    result_df = assessor.return_flags_data_frame()
+    expected_flags = [
+        "UNFLAGGED",
+        "UNFLAGGED",
+        "UNFLAGGED",
+        "BAD",
+        "BAD",
+        "BAD",
+        "UNFLAGGED",
+        "UNFLAGGED",
+    ]
+    actual_flags = result_df[str(ColumnInfo.Name.AIR_PRESSURE)].tolist()
+    assert actual_flags == expected_flags
 
-#     # Test wrong scheme given
-#     with pytest.raises(TypeError):
-#         dqa.change_saqc_scheme("wrong_scheme")
+
+def test_spike_offset_detects_plateau_above_20_percent_on_lower():
+    # 1) build a DataFrame with datetime index and a plateau spike
+    idx = pd.date_range(start="2025-06-25", periods=8, freq="h")
+    values = [100, 110, 100, 50, 50, 50, 85, 85]
+    df = pd.DataFrame({str(ColumnInfo.Name.AIR_PRESSURE): values}, index=idx)
+
+    # 2) set up the assessor and register a single SPIKE_OFFSET check
+    assessor = DataQualityAssessor(df)
+    spike_check = QualityCheck(
+        target=QATarget.AIR_PRESSURE,
+        method=QAMethod.SPIKE_OFFSET,
+        parameters={
+            # essential params for offset detection
+            "threshold_relative": 0.2,
+            "window": "12h",
+            "bidirectional": True,
+        },
+    )
+    assessor.add_quality_check(spike_check)
+
+    assessor.apply_quality_assessment()
+    flags = assessor.return_flags_data_frame()
+    print(flags)
+
+    result_df = assessor.return_flags_data_frame()
+    expected_flags = [
+        "UNFLAGGED",
+        "UNFLAGGED",
+        "UNFLAGGED",
+        "BAD",
+        "BAD",
+        "BAD",
+        "UNFLAGGED",
+        "UNFLAGGED",
+    ]
+    actual_flags = result_df[str(ColumnInfo.Name.AIR_PRESSURE)].tolist()
+    assert actual_flags == expected_flags

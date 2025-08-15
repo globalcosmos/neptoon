@@ -771,12 +771,29 @@ class PressureCorrectionZreda2012(Correction):
 
 
 class AboveGroundBiomassCorrectionBaatz2015(Correction):
+    """
+    Required attributes for creation.
+
+    Parameters
+    ----------
+    correction_type : CorrectionType, optional
+        The correction type, by default
+        CorrectionType.ABOVE_GROUND_BIOMASS
+    correction_factor_column_name : str, optional
+        Name of column corrections will be written to, by default
+        ColumnInfo.Name.ABOVEGROUND_BIOMASS_CORRECTION
+    above_ground_biomass_column_name : str, optional
+        Name of column in the dataframe with above ground biomass
+        values, by default "above_ground_biomass"
+    """
 
     def __init__(
         self,
-        correction_type: CorrectionType,
-        correction_factor_column_name: str,
-        above_ground_biomass_column_name: str,
+        correction_type: CorrectionType = CorrectionType.ABOVE_GROUND_BIOMASS,
+        correction_factor_column_name: str = str(
+            ColumnInfo.Name.ABOVEGROUND_BIOMASS_CORRECTION
+        ),
+        above_ground_biomass_column_name: str = "above_ground_biomass",
     ):
         super().__init__(
             correction_type=correction_type,

@@ -875,7 +875,7 @@ requires-dist = [
     { name = "python-dateutil", specifier = ">=2.8.2" },
     { name = "pyyaml", specifier = ">=6.0.1" },
     { name = "requests", specifier = ">=2.31.0" },
-    { name = "saqc", specifier = ">=2.6.0" },
+    { name = "saqc", git = "https://git.ufz.de/power/saqc.git?rev=neptoon-temp-branch" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "streamlit", marker = "extra == 'gui'", specifier = ">=1.31.0" },
     { name = "typer", specifier = ">=0.15.2" },
@@ -1523,8 +1523,8 @@ wheels = [
 
 [[package]]
 name = "saqc"
-version = "2.6.0"
-source = { registry = "https://pypi.org/simple" }
+version = "2.6.0.post0.dev35"
+source = { git = "https://git.ufz.de/power/saqc.git?rev=neptoon-temp-branch#97bd2b82e2d13ad49870ee231cb254b8f9eb2270" }
 dependencies = [
     { name = "click" },
     { name = "docstring-parser" },
@@ -1538,10 +1538,6 @@ dependencies = [
     { name = "scikit-learn" },
     { name = "scipy" },
     { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6c/20/c6f70de90e83dd75c59bb2fed3cb16f7ccf972e1407774557cacd01cd863/saqc-2.6.0.tar.gz", hash = "sha256:ffc3aaab539c778df5bfcf34f4395ac69e51654cc5386035a61ce65f96cff8a8", size = 175679 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/26/15/53b5dd2110d3efb09224bebf85471eaa74f25e8416d7d1d90e66c054772b/saqc-2.6.0-py3-none-any.whl", hash = "sha256:198d09bf5050d43049e97dc7cf5150cb398f19bedb5197ce4267a3612e788309", size = 216354 },
 ]
 
 [[package]]
