@@ -15,7 +15,10 @@ class QAMethod(Enum):
     """
 
     RANGE_CHECK = ("flagRange", None)
+    SPIKE_SIGMA = ("flagSpikeSigma", None)
     SPIKE_UNILOF = ("flagUniLOF", None)
+    SPIKE_ZSCORE = ("flagZScore", None)
+    SPIKE_OFFSET = ("flagOffsetRelative", None)
     CONSTANT = ("flagConstants", None)
     ABOVE_N0 = ("flagRange", "above_n0")
     BELOW_N0_FACTOR = ("flagRange", "below_n0")
@@ -146,7 +149,9 @@ class RangeCheckParameters(MethodParameters):
 
 
 class UniLOFParameters(MethodParameters):
-    """Parameter specifications for range check method."""
+    """
+    Parameter specifications for range check method.
+    """
 
     saqc_web = "https://rdm-software.pages.ufz.de/saqc/_api/saqc.SaQC.html#saqc.SaQC.flagUniLOF"
 
@@ -179,6 +184,87 @@ class UniLOFParameters(MethodParameters):
             units="Literal",
             default="ball_tree",
             saqc_name="algorithm",
+        ),
+    }
+
+
+class SpikeZScoreParameters(MethodParameters):
+    saqc_web = "https://rdm-software.pages.ufz.de/saqc/_api/saqc.SaQC.html#saqc.SaQC.flagZScore"
+
+    essential_params = {}
+
+    optional_params = {
+        ParameterSpec(
+            name="periods_in_calculation",
+            description=str(
+                "Number of periods to be included into the Z score calculation"
+            ),
+            units="time steps",
+            default=None,
+            saqc_name="window",
+        ),
+        ParameterSpec(
+            name="threshold",
+            description=str(
+                "Cutoff level for the Zscores, above which associated points are marked as outliers"
+            ),
+            units="float",
+            default=3,
+            saqc_name="thresh",
+        ),
+        ParameterSpec(
+            name="min_residual",
+            description=str(
+                "Minimum residual value points must have to be considered outliers. "
+            ),
+            units="float",
+            default=0.2,
+            saqc_name="min_residuals",
+        ),
+        ParameterSpec(
+            name="centered",
+            description=str(
+                "Whether or not to center the target value in the scoring window. "
+                "If False, the target value is the last value in the window."
+            ),
+            units="bool",
+            default=False,
+            saqc_name="center",
+        ),
+    }
+
+
+class SpikeOffsetParameters(MethodParameters):
+    saqc_web = "TBC"
+
+    essential_params = {
+        ParameterSpec(
+            name="threshold_relative",
+            description=str(
+                "Maximum precentage difference allowed between the value directly preceding and the "
+                "values succeeding an offset to trigger flagging of the offsetting values."
+            ),
+            units="float",
+            default=None,
+            saqc_name="thresh_relative",
+        ),
+        ParameterSpec(
+            name="window",
+            description=str(
+                "Maximum length of the plateau allowed for flagging multiple values as spikes"
+            ),
+            units="float",
+            default=None,
+            saqc_name="window",
+        ),
+        ParameterSpec(
+            name="bidirectional",
+            description=str(
+                "Whether to check in both the rising and falling direction of data spikes"
+            ),
+            units="bool",
+            default=True,
+            saqc_name="bidirectional",
         ),
     }
 
@@ -259,6 +345,8 @@ class ParameterRegistry:
         QAMethod.ABOVE_N0: AboveN0Parameters,
         QAMethod.BELOW_N0_FACTOR: BelowFactorofN0Parameters,
         QAMethod.SPIKE_UNILOF: UniLOFParameters,
+        QAMethod.SPIKE_ZSCORE: SpikeZScoreParameters,
+        QAMethod.SPIKE_OFFSET: SpikeOffsetParameters,
     }
 
     @classmethod
@@ -306,6 +394,8 @@ class QAConfigRegistry:
     _method_mapping = {
         "flag_range": QAMethod.RANGE_CHECK,
         "spike_uni_lof": QAMethod.SPIKE_UNILOF,
+        "spike_zscore": QAMethod.SPIKE_ZSCORE,
+        "spike_offset": QAMethod.SPIKE_OFFSET,
         "constant": QAMethod.CONSTANT,
         "greater_than_N0": QAMethod.ABOVE_N0,
         "below_N0_factor": QAMethod.BELOW_N0_FACTOR,

@@ -18,16 +18,13 @@ The process configuration file tells neptoon about the sensor being processed. T
 
 ### Raw Neutron Quality Control Parameters
 
-Here we conduct spike detection to account for problems in the raw count rate. 
-
-!!! note "Future Update"
-    - The spike detection algorithm will be changed in a future update so watch this space...
-
+Here we conduct spike detection to account for problems in the raw count rate. There are a few algorithms to choose from, however we currently recommend using `spike_offset` with the defaults set to what you cna see in the above yaml file. This follows the current literature by identifying spikes as anything >20% of previous value.
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| spike_uni_lof.periods_in_calculation | Yes | integer | `12` | Number of time periods used in Local Outlier Factor calculation |
-| spike_uni_lof.threshold | Yes | float | `2.0` | Threshold value for spike detection using LOF algorithm |
+| spike_offset.threshold_relative | Yes | float | `0.2` | Maximum percent (as decimal) that an observation can jump, before being designated a spike |
+| spike_offset.window | Yes | integer | `12h` | The window to use to identify whether a spike as returned back to base line after a plateau of spikes |
+| spike_offset.bidirectional | Yes | bool | True | This should always be set to True so that spikes are detected in both the positive and negative directions|
 
 ### Corrected Neutron Quality Control Parameters
 
@@ -127,7 +124,7 @@ More info on this found [here](https://rdm-software.pages.ufz.de/saqc/_api/saqc.
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | aggregate_data | Yes | boolean |  `true` or `false` | Whether to aggregate data |
-| output_resolution | No | string | `1hour` or `None` | Desired time step of output data |
+| output_resolution | No | string | `1h` or `None` | Desired time step of output data. Should be pandas style FreqStr (e.g., `1h`, `1m`) |
 | aggregate_method | No | string | `bagg` | Method for data aggregation |
 | aggregate_func | No | string | `mean` | Function used for aggregation |
 | aggregate_maxna_fraction | No | float | `0.3` | Maximum allowed fraction of NA values in the aggregation period |

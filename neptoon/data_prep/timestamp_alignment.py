@@ -89,12 +89,12 @@ class TimeStampAligner:
         freq : str, optional
             The frequency of time stamps wanted, by default "1Hour"
         """
-
-        self.qc = self.qc.align(
-            field=self.data_frame.columns,
-            freq=self.freq,
-            method=method,
-        )
+        for field in self.data_frame.columns:
+            self.qc = self.qc.align(
+                field=field,
+                freq=self.freq,
+                method=method,
+            )
 
     def return_dataframe(self):
         """
@@ -275,25 +275,28 @@ class TimeStampAggregator:
         self._pre_align_dataframe()
         # Columns for summing
         sum_column_list = self._return_summable_col_list()
-        self.qc = self.qc.resample(
-            field=sum_column_list,
-            freq=self.output_resolution,
-            method=method,
-            func="sum",
-            maxna=0,  # Must set to 0 as cannot sum with less than complete data
-        )
+
+        for field in sum_column_list:
+            self.qc = self.qc.resample(
+                field=field,
+                freq=self.output_resolution,
+                method=method,
+                func="sum",
+                maxna=0,  # Must set to 0 as cannot sum with less than complete data
+            )
 
         # Columns for mean
         remaining_column_list = [
             col for col in self.data_frame if col not in sum_column_list
         ]
-        self.qc = self.qc.resample(
-            field=remaining_column_list,
-            freq=self.output_resolution,
-            method=method,
-            func="mean",
-            maxna=self.max_na_int,
-        )
+        for field in remaining_column_list:
+            self.qc = self.qc.resample(
+                field=field,
+                freq=self.output_resolution,
+                method=method,
+                func="mean",
+                maxna=self.max_na_int,
+            )
 
         self.dataframe_aggregated = True
         self.data_frame = self.qc.data.to_pandas()

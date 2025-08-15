@@ -151,7 +151,8 @@ class QualityCheck:
 
     def _validate_essential_params_present(self):
         """
-        Checks if essential parameter are supplied.
+        Checks if essential parameter are supplied. When not it will use
+        the default value.
 
         Raises
         ------

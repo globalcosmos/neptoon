@@ -617,6 +617,7 @@ class ProcessWithConfig:
         # First Quality assessment
         ## Raw Neutrons
         print("Performing quality assessment...")
+
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
             sensor_config=self.sensor_config,
