@@ -624,6 +624,22 @@ class ProcessWithConfig:
             partial_config=self.process_config.neutron_quality_assessment,
             name_of_target="raw_neutrons",
         )
+        if (
+            hasattr(self.sensor_config, "neutron_quality_assessment")
+            and self.sensor_config.neutron_quality_assessment is not None
+        ):
+            try:
+                self.data_hub = self._apply_quality_assessment(
+                    data_hub=self.data_hub,
+                    sensor_config=self.sensor_config,
+                    partial_config=self.sensor_config.neutron_quality_assessment,
+                    name_of_target="raw_neutrons",
+                )
+            except Exception as e:
+                print(
+                    "Could not apply neutron QA from sensor config file. "
+                    f"Exception: {e}"
+                )
         ## Meteo Variables
         self.data_hub = self._apply_quality_assessment(
             data_hub=self.data_hub,
