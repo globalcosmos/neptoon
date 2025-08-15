@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- spike detection using simple offset rule 
+
 ### Changed
 
 ### Depreceated
@@ -18,18 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - broken links in documentation homepage (with thanks to Louis Trinkle)
+- Fix Time Step calculation of `_calc_timestep_diff()`
+    - now possible to load also daily data
+- Add Parameters to `AboveGroundBiomassCorrectionBaatz2015()`
+    - fixed parameter error for Biomass Correction
 
 ### Security
 
-## [0.12.2] - 12/08/2025
-
-## Fix
-
-- Fix Time Step calculation of `_calc_timestep_diff()`
-    - now possible to load also daily data
-
-- Add Parameters to `AboveGroundBiomassCorrectionBaatz2015()`
-    - fixed parameter error for Biomass Correction
 
 ## [0.12.1] - 12/08/2025
 

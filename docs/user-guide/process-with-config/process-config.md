@@ -18,16 +18,13 @@ The process configuration file tells neptoon about the sensor being processed. T
 
 ### Raw Neutron Quality Control Parameters
 
-Here we conduct spike detection to account for problems in the raw count rate. 
-
-!!! note "Future Update"
-    - The spike detection algorithm will be changed in a future update so watch this space...
-
+Here we conduct spike detection to account for problems in the raw count rate. There are a few algorithms to choose from, however we currently recommend using `spike_offset` with the defaults set to what you cna see in the above yaml file. This follows the current literature by identifying spikes as anything >20% of previous value.
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| spike_uni_lof.periods_in_calculation | Yes | integer | `12` | Number of time periods used in Local Outlier Factor calculation |
-| spike_uni_lof.threshold | Yes | float | `2.0` | Threshold value for spike detection using LOF algorithm |
+| spike_offset.threshold_relative | Yes | float | `0.2` | Maximum percent (as decimal) that an observation can jump, before being designated a spike |
+| spike_offset.window | Yes | integer | `12h` | The window to use to identify whether a spike as returned back to base line after a plateau of spikes |
+| spike_offset.bidirectional | Yes | bool | True | This should always be set to True so that spikes are detected in both the positive and negative directions|
 
 ### Corrected Neutron Quality Control Parameters
 
