@@ -127,7 +127,7 @@ More info on this found [here](https://rdm-software.pages.ufz.de/saqc/_api/saqc.
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | aggregate_data | Yes | boolean |  `true` or `false` | Whether to aggregate data |
-| output_resolution | No | string | `1hour` or `None` | Desired time step of output data |
+| output_resolution | No | string | `1h` or `None` | Desired time step of output data. Should be pandas style FreqStr (e.g., `1h`, `1m`) |
 | aggregate_method | No | string | `bagg` | Method for data aggregation |
 | aggregate_func | No | string | `mean` | Function used for aggregation |
 | aggregate_maxna_fraction | No | float | `0.3` | Maximum allowed fraction of NA values in the aggregation period |

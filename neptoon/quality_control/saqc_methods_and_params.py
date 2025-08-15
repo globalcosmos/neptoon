@@ -239,7 +239,7 @@ class SpikeOffsetParameters(MethodParameters):
 
     essential_params = {
         ParameterSpec(
-            name="thresh_relative",
+            name="threshold_relative",
             description=str(
                 "Maximum precentage difference allowed between the value directly preceding and the "
                 "values succeeding an offset to trigger flagging of the offsetting values."

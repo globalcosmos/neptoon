@@ -245,10 +245,8 @@ class SpikeZScore(BaseConfig):
 
 
 class SpikeOffset(BaseConfig):
-    tolerance: Optional[float] = None
-    window: Optional[int | str] = "12h"
-    threshold: Optional[float] = None
     threshold_relative: Optional[float] = None
+    window: Optional[str] = "12h"
 
 
 class GreaterThanN0(BaseConfig):
