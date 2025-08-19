@@ -242,17 +242,15 @@ class FileCollectionConfig:
 
     def dump_zip(self):
         """Create temporary directory and extract"""
-
         self._temp_dir_obj = tempfile.TemporaryDirectory()
         temp_dir = Path(self._temp_dir_obj.name)
-        zip_dirname = Path(self._data_location).stem
 
         with zipfile.ZipFile(self._data_location) as zip_ref:
             zip_ref.extractall(temp_dir)
 
         extracted_items = list(temp_dir.iterdir())
         if extracted_items and extracted_items[0].is_dir():
-            self._data_location = temp_dir / zip_dirname
+            self._data_location = extracted_items[0]
         else:
             self._data_location = temp_dir
 
