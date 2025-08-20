@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Parameters to `AboveGroundBiomassCorrectionBaatz2015()`
     - fixed parameter error for Biomass Correction
 - Fixed issue where pressure units were not converted
+- Magazine cleared after saving pdf - preventing problem with bad reports
 
 ### Security
 
