@@ -366,6 +366,7 @@ class SaveAndArchiveOutputs:
                 pdf.add_figure("Calibration")
                 pdf.add_topic("Data Preparation")
                 pdf.add_figure("Data Preparation")
+            Magazine.clean()
 
     def save_data_frames(self, file_name):
         """

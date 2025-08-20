@@ -702,15 +702,15 @@ class InputColumnDataType(Enum):
 
 
 class NeutronCountUnits(Enum):
-    ABSOLUTE_COUNT = auto()
-    COUNTS_PER_HOUR = auto()
-    COUNTS_PER_SECOND = auto()
+    ABSOLUTE_COUNT = "absolute_count"
+    COUNTS_PER_HOUR = "counts_per_hour"
+    COUNTS_PER_SECOND = "counts_per_second"
 
 
 class PressureUnits(Enum):
-    PASCALS = auto()
-    HECTOPASCALS = auto()
-    KILOPASCALS = auto()
+    PASCALS = "pascals"
+    HECTOPASCALS = "hectopascals"
+    KILOPASCALS = "kilopascals"
 
 
 class MergeMethod(Enum):
@@ -1273,16 +1273,16 @@ class FormatDataForCRNSDataHub:
         ]
 
         for pressure_col in pressure_cols:
-            if pressure_col.unit == PressureUnits.PASCALS:
+            if pressure_col.unit == PressureUnits.PASCALS.value:
                 self.data_frame[pressure_col.initial_name] = (
                     self.data_frame[pressure_col.initial_name] / 100
                 )
-                pressure_col.unit = PressureUnits.HECTOPASCALS
-            elif pressure_col.unit == PressureUnits.KILOPASCALS:
+                pressure_col.unit = PressureUnits.HECTOPASCALS.value
+            elif pressure_col.unit == PressureUnits.KILOPASCALS.value:
                 self.data_frame[pressure_col.initial_name] = (
                     self.data_frame[pressure_col.initial_name] * 10
                 )
-                pressure_col.unit = PressureUnits.HECTOPASCALS
+                pressure_col.unit = PressureUnits.HECTOPASCALS.value
 
     def merge_multiple_meteo_columns(
         self,
