@@ -17,6 +17,7 @@ from pathlib import Path
 import tempfile
 import atexit
 import shutil
+import secrets
 import warnings
 
 warnings.filterwarnings(
@@ -79,8 +80,13 @@ class TempFigureHandler:
 
     def __init__(
         self,
+        site_id: str,
     ):
-        self._temp_dir = Path(tempfile.mkdtemp(prefix="neptoon_figures_"))
+        self.site_id = site_id
+        self._temp_dir = Path(
+            tempfile.mkdtemp(prefix="neptoon_figures_"),
+            self.site_id,
+        )
         self.figures: List[TempFigure] = []
         atexit.register(self.cleanup)
 
@@ -206,7 +212,8 @@ class FigureHandler:
 
         self.data_frame = data_frame
         self.sensor_info = sensor_info
-        self.temp_handler = TempFigureHandler()
+        self.site_id = secrets.token_hex(3)
+        self.temp_handler = TempFigureHandler(site_id=self.site_id)
         self.create_all = create_all
         self.ignore_sections = (
             ignore_sections if ignore_sections is not None else []
