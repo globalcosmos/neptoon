@@ -8,7 +8,8 @@ from typing import List, Tuple, Optional
 from figurex import Figure
 from neptoon.columns import ColumnInfo
 import matplotlib.pyplot as plt
-import seaborn as sns
+# import seaborn as sns
+import matplotlib.colors as mcolors
 import math
 
 
@@ -280,9 +281,13 @@ def soil_moisture_coloured_figure(
 
     # produce colour pallete
     nsteps = 50
-    colrange = sns.diverging_palette(
-        29, 255, 85, 47, n=nsteps, sep=1, center="light"
-    )
+    # colrange = sns.diverging_palette(
+    #     29, 255, 85, 47, n=nsteps, sep=1, center="light"
+    # )
+    cmap = plt.cm.Spectral  # or try RdBu_r, 
+    colrange = [mcolors.to_hex(cmap(i/(nsteps-1))) for i in range(nsteps)]
+
+
     prcnt35 = math.ceil(
         len(colrange) * 0.30
     )  # Apply to allow changes to n bins
