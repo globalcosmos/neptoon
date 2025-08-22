@@ -322,6 +322,12 @@ class CalibrationConfig(BaseConfig):
     calibrate: bool = Field(default=False)
     location: Optional[Path] = Field(default="")
     key_column_names: Optional[CalibrationColumnNames] = None
+    horizontal_weighting_method: Optional[str] = Field(
+        default="schroen_etal_2017"
+    )
+    vertical_weighting_method: Optional[str] = Field(
+        default="schroen_etal_2017"
+    )
 
 
 class DataStorageConfig(BaseConfig):

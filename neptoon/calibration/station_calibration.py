@@ -55,6 +55,12 @@ class CalibrationConfiguration:
         value_avg_lattice_water: float = 0,
         value_avg_bulk_density: float = 0,
         value_avg_soil_organic_carbon: float = 0,
+        horizontal_weight_method: Literal[
+            "schroen_etal_2017", "equal"
+        ] = "schroen_etal_2017",
+        vertical_weight_method: Literal[
+            "schroen_etal_2017", "equal"
+        ] = "schroen_etal_2017",
         koehli_method_form: Literal[
             "Jan23_uranos",
             "Jan23_mcnpfull",
@@ -164,6 +170,8 @@ class CalibrationConfiguration:
         self.value_avg_soil_organic_carbon_water_equiv = (
             _create_water_equiv_soc(value_avg_soil_organic_carbon)
         )
+        self.horizontal_weight_method = horizontal_weight_method
+        self.vertical_weight_method = vertical_weight_method
         self.koehli_method_form = koehli_method_form
 
 
@@ -1027,12 +1035,15 @@ class CalibrationWeightsCalculator:
                     volumetric_soil_moisture=volumetric_sm_estimate,
                 )
 
-                p.vertical_weights = Schroen2017.vertical_weighting(
-                    depth=p.depth,
-                    distance=p.rescaled_distance,
-                    bulk_density=p.site_avg_bulk_density,
-                    volumetric_soil_moisture=volumetric_sm_estimate,
-                )
+                if self.config.vertical_weighting_method == "equal":
+                    p.vertical_weights = np.ones(len(p.rescaled_distance))
+                else:
+                    p.vertical_weights = Schroen2017.vertical_weighting(
+                        depth=p.depth,
+                        distance=p.rescaled_distance,
+                        bulk_density=p.site_avg_bulk_density,
+                        volumetric_soil_moisture=volumetric_sm_estimate,
+                    )
 
                 # Calculate weighted sm average
                 p.sm_total_weighted_avg_vol = np.average(
@@ -1041,12 +1052,14 @@ class CalibrationWeightsCalculator:
                 p.sm_total_weighted_avg_grv = np.average(
                     p.sm_total_grv, weights=p.vertical_weights
                 )
-
-                p.horizontal_weight = Schroen2017.horizontal_weighting(
-                    distance=p.rescaled_distance,
-                    volumetric_soil_moisture=p.sm_total_weighted_avg_vol,
-                    abs_air_humidity=average_abs_air_humidity,
-                )
+                if self.config.horizontal_weight_method == "equal":
+                    p.horizontal_weight = np.ones(len(p.rescaled_distance))
+                else:
+                    p.horizontal_weight = Schroen2017.horizontal_weighting(
+                        distance=p.rescaled_distance,
+                        volumetric_soil_moisture=p.sm_total_weighted_avg_vol,
+                        abs_air_humidity=average_abs_air_humidity,
+                    )
 
                 # create a list of average sm and horizontal weights
                 profile_sm_averages_volumetric.append(
@@ -1083,10 +1096,18 @@ class CalibrationWeightsCalculator:
             )
 
             # check convergence accuracy
-            accuracy = abs(
-                (field_average_sm_volumetric - volumetric_sm_estimate)
-                / volumetric_sm_estimate
-            )
+            if (
+                self.config.vertical_weight_method == "schroen_etal_2017"
+                and self.config.horizontal_weight_method == "schroen_etal_2017"
+            ):
+                accuracy = abs(
+                    (field_average_sm_volumetric - volumetric_sm_estimate)
+                    / volumetric_sm_estimate
+                )
+            else:
+                # Stop convergence if any weighting left as equal
+                accuracy = self.congfig.converge_accuracy
+
             if accuracy > self.config.converge_accuracy:
 
                 volumetric_sm_estimate = copy.deepcopy(
