@@ -81,6 +81,12 @@ It's possible to calibrate your site more directly, without a data hub. For this
 
 Checkout the [examples](neptoon-examples.md). The example demonstrating this is found under `jupyter_notebooks>calibration>example_calibration.ipynb`
 
+!!! warning "Koehli et al., (2021) method"
+    If you are supplying your own dataframe, with neutrons already corrected, be sure that the neutrons are corrected appropriately. Humidity correction is done as a standard using the Desilets et al. (2010) method. With the Koehli et al., (2021) method humidity is corrected for in the conversion from neutrons to soil moisture. Given this, when using the Koehli et al., (2021) method, humidity correction using the Rosolem et al., (2013) method should _not_ be applied to corrected neutrons, otherwise double humidity correction occurs. 
+
+    If you are using neptoon to do the full pipeline - this will be automatically addressed. 
+    
+
 
 ## References
 

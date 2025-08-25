@@ -9,6 +9,7 @@ from neptoon.columns import ColumnInfo
 from neptoon.corrections import (
     Schroen2017,
     neutrons_to_total_grav_soil_moisture_desilets_etal_2010,
+    neutrons_to_total_grav_soil_moisture_koehli_etal_2021,
 )
 from neptoon.corrections.theory.neutrons_to_soil_moisture import (
     compute_n0_koehli_etal_2021,
@@ -32,26 +33,18 @@ class CalibrationConfiguration:
         neutron_conversion_method: Literal[
             "desilets_etal_2010", "koehli_etal_2021"
         ] = "desilets_etal_2010",
-        calib_data_date_time_column_name: str = str(ColumnInfo.Name.DATE_TIME),
+        calib_data_date_time_column_name: str | None = None,
         calib_data_date_time_format: str = "%Y-%m-%d %H:%M",
-        sample_depth_column: str = str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE),
-        distance_column: str = str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR),
-        bulk_density_of_sample_column: str = str(
-            ColumnInfo.Name.CALIB_BULK_DENSITY
-        ),
-        profile_id_column: str = str(ColumnInfo.Name.CALIB_PROFILE_ID),
-        soil_moisture_gravimetric_column: str = str(
-            ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC
-        ),
-        soil_organic_carbon_column: str = str(
-            ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON
-        ),
-        lattice_water_column: str = str(ColumnInfo.Name.CALIB_LATTICE_WATER),
-        abs_air_humidity_column: str = str(ColumnInfo.Name.ABSOLUTE_HUMIDITY),
-        neutron_column_name: str = str(
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
-        ),
-        air_pressure_column_name: str = str(ColumnInfo.Name.AIR_PRESSURE),
+        sample_depth_column: str = None,
+        distance_column: str = None,
+        bulk_density_of_sample_column: str = None,
+        profile_id_column: str = None,
+        soil_moisture_gravimetric_column: str = None,
+        soil_organic_carbon_column: str = None,
+        lattice_water_column: str = None,
+        abs_air_humidity_column: str = None,
+        neutron_column_name: str = None,
+        air_pressure_column_name: str = None,
         value_avg_lattice_water: float = 0,
         value_avg_bulk_density: float = 0,
         value_avg_soil_organic_carbon: float = 0,
@@ -103,41 +96,47 @@ class CalibrationConfiguration:
             "desilets_etal_2010".
         calib_data_date_time_column_name : str, optional
             The name of the column containing date‐time information for
-            each calibration day. By default, this is set to
-            str(ColumnInfo.Name.DATE_TIME).
+            each calibration day. If None, defaults to the current value
+            from ColumnInfo.Name.DATE_TIME.
         sample_depth_column : str, optional
-            The name of the column with sample depth values (cm), by
-            default str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE)
+            The name of the column with sample depth values (cm). If
+            None, defaults to the current value from
+            ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE.
         distance_column : str, optional
             The name of the column stating the distance of the sample
-            from the sensor (meters), by default
-            str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR)
+            from the sensor (meters). If None, defaults to the current
+            value from ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR.
         bulk_density_of_sample_column : str, optional
             The name of the column with bulk density values of the
-            samples (g/cm^3), by default str(
-            ColumnInfo.Name.CALIB_BULK_DENSITY )
+            samples (g/cm^3). If None, defaults to the current value
+            from ColumnInfo.Name.CALIB_BULK_DENSITY.
         profile_id_column : str, optional
-            Name of the column with profile IDs, by default
-            str(ColumnInfo.Name.CALIB_PROFILE_ID)
+            Name of the column with profile IDs. If None, defaults to
+            the current value from ColumnInfo.Name.CALIB_PROFILE_ID.
         soil_moisture_gravimetric_column : str, optional
             Name of the column with gravimetric soil moisture values
-            (g/g), by default str(
-            ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC )
+            (g/g). If None, defaults to the current value from
+            ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC.
         soil_organic_carbon_column : str, optional
-            Name of the column with soil organic carbon values (g/g), by
-            default str( ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON )
+            Name of the column with soil organic carbon values (g/g). If
+            None, defaults to the current value from
+            ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON.
         lattice_water_column : str, optional
-            Name of the column with lattice water values (g/g), by
-            default str(ColumnInfo.Name.CALIB_LATTICE_WATER)
+            Name of the column with lattice water values (g/g). If None,
+            defaults to the current value from
+            ColumnInfo.Name.CALIB_LATTICE_WATER.
         abs_air_humidity_column : str, optional
             Name of the column with absolute air humidity values
-            (g/cm3), by default str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
+            (g/cm3). If None, defaults to the current value from
+            ColumnInfo.Name.ABSOLUTE_HUMIDITY.
         neutron_column_name : str, optional
-            Name of the column with corrected neutrons in it, by default
-            str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+            Name of the column with corrected neutrons in it. If None,
+            defaults to the current value from
+            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL.
         air_pressure_column_name : str, optional
-            Name of the column with air pressure vlaues in it, by
-            default str(ColumnInfo.Name.AIR_PRESSURE)
+            Name of the column with air pressure values in it. If None,
+            defaults to the current value from
+            ColumnInfo.Name.AIR_PRESSURE.
         value_avg_lattice_water: float, optional
             The actual site average lattice water value
         value_avg_bulk_density: float, optional
@@ -147,32 +146,231 @@ class CalibrationConfiguration:
         """
         self.hours_of_data_around_calib = hours_of_data_around_calib
         self.converge_accuracy = converge_accuracy
-        self.calib_data_date_time_column_name = (
-            calib_data_date_time_column_name
-        )
         self.neutron_conversion_method = neutron_conversion_method
         self.calib_data_date_time_format = calib_data_date_time_format
-        self.sample_depth_column = sample_depth_column
-        self.distance_column = distance_column
-        self.bulk_density_of_sample_column = bulk_density_of_sample_column
-        self.profile_id_column = profile_id_column
-        self.soil_moisture_gravimetric_column = (
-            soil_moisture_gravimetric_column
-        )
-        self.soil_organic_carbon_column = soil_organic_carbon_column
-        self.lattice_water_column = lattice_water_column
-        self.abs_air_humidity_column = abs_air_humidity_column
-        self.neutron_column_name = neutron_column_name
-        self.air_pressure_column_name = air_pressure_column_name
         self.value_avg_lattice_water = value_avg_lattice_water
         self.value_avg_bulk_density = value_avg_bulk_density
         self.value_avg_soil_organic_carbon = value_avg_soil_organic_carbon
-        self.value_avg_soil_organic_carbon_water_equiv = (
-            _create_water_equiv_soc(value_avg_soil_organic_carbon)
-        )
         self.horizontal_weight_method = horizontal_weight_method
         self.vertical_weight_method = vertical_weight_method
         self.koehli_method_form = koehli_method_form
+
+        # Set column names with runtime evaluation of ColumnInfo.Name
+        if calib_data_date_time_column_name is None:
+            calib_data_date_time_column_name = str(ColumnInfo.Name.DATE_TIME)
+        self.calib_data_date_time_column_name = (
+            calib_data_date_time_column_name
+        )
+
+        if sample_depth_column is None:
+            sample_depth_column = str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE)
+        self.sample_depth_column = sample_depth_column
+
+        if distance_column is None:
+            distance_column = str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR)
+        self.distance_column = distance_column
+
+        if bulk_density_of_sample_column is None:
+            bulk_density_of_sample_column = str(
+                ColumnInfo.Name.CALIB_BULK_DENSITY
+            )
+        self.bulk_density_of_sample_column = bulk_density_of_sample_column
+
+        if profile_id_column is None:
+            profile_id_column = str(ColumnInfo.Name.CALIB_PROFILE_ID)
+        self.profile_id_column = profile_id_column
+
+        if soil_moisture_gravimetric_column is None:
+            soil_moisture_gravimetric_column = str(
+                ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC
+            )
+        self.soil_moisture_gravimetric_column = (
+            soil_moisture_gravimetric_column
+        )
+
+        if soil_organic_carbon_column is None:
+            soil_organic_carbon_column = str(
+                ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON
+            )
+        self.soil_organic_carbon_column = soil_organic_carbon_column
+
+        if lattice_water_column is None:
+            lattice_water_column = str(ColumnInfo.Name.CALIB_LATTICE_WATER)
+        self.lattice_water_column = lattice_water_column
+
+        if abs_air_humidity_column is None:
+            abs_air_humidity_column = str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
+        self.abs_air_humidity_column = abs_air_humidity_column
+
+        if neutron_column_name is None:
+            neutron_column_name = str(
+                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+            )
+        self.neutron_column_name = neutron_column_name
+
+        if air_pressure_column_name is None:
+            air_pressure_column_name = str(ColumnInfo.Name.AIR_PRESSURE)
+        self.air_pressure_column_name = air_pressure_column_name
+
+        # Calculate water equivalent soil organic carbon
+        self.value_avg_soil_organic_carbon_water_equiv = (
+            _create_water_equiv_soc(value_avg_soil_organic_carbon)
+        )
+
+
+# class CalibrationConfiguration:
+#     """
+#     Configuration class for calibration steps
+#     """
+
+#     def __init__(
+#         self,
+#         hours_of_data_around_calib: int = 6,
+#         converge_accuracy: float = 0.01,
+#         neutron_conversion_method: Literal[
+#             "desilets_etal_2010", "koehli_etal_2021"
+#         ] = "desilets_etal_2010",
+#         calib_data_date_time_column_name: str = str(ColumnInfo.Name.DATE_TIME),
+#         calib_data_date_time_format: str = "%Y-%m-%d %H:%M",
+#         sample_depth_column: str = str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE),
+#         distance_column: str = str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR),
+#         bulk_density_of_sample_column: str = str(
+#             ColumnInfo.Name.CALIB_BULK_DENSITY
+#         ),
+#         profile_id_column: str = str(ColumnInfo.Name.CALIB_PROFILE_ID),
+#         soil_moisture_gravimetric_column: str = str(
+#             ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC
+#         ),
+#         soil_organic_carbon_column: str = str(
+#             ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON
+#         ),
+#         lattice_water_column: str = str(ColumnInfo.Name.CALIB_LATTICE_WATER),
+#         abs_air_humidity_column: str = str(ColumnInfo.Name.ABSOLUTE_HUMIDITY),
+#         neutron_column_name: str = str(
+#             ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
+#         ),
+#         air_pressure_column_name: str = str(ColumnInfo.Name.AIR_PRESSURE),
+#         value_avg_lattice_water: float = 0,
+#         value_avg_bulk_density: float = 0,
+#         value_avg_soil_organic_carbon: float = 0,
+#         horizontal_weight_method: Literal[
+#             "schroen_etal_2017", "equal"
+#         ] = "schroen_etal_2017",
+#         vertical_weight_method: Literal[
+#             "schroen_etal_2017", "equal"
+#         ] = "schroen_etal_2017",
+#         koehli_method_form: Literal[
+#             "Jan23_uranos",
+#             "Jan23_mcnpfull",
+#             "Mar12_atmprof",
+#             "Mar21_mcnp_drf",
+#             "Mar21_mcnp_ewin",
+#             "Mar21_uranos_drf",
+#             "Mar21_uranos_ewin",
+#             "Mar22_mcnp_drf_Jan",
+#             "Mar22_mcnp_ewin_gd",
+#             "Mar22_uranos_drf_gd",
+#             "Mar22_uranos_ewin_chi2",
+#             "Mar22_uranos_drf_h200m",
+#             "Aug08_mcnp_drf",
+#             "Aug08_mcnp_ewin",
+#             "Aug12_uranos_drf",
+#             "Aug12_uranos_ewin",
+#             "Aug13_uranos_atmprof",
+#             "Aug13_uranos_atmprof2",
+#         ] = "Mar21_uranos_drf",
+#     ):
+#         """
+#         Attributes.
+
+#         Parameters
+#         ----------
+#         hours_of_data_around_calib : int, optional
+#             Number of hours of neutron count data to include around the
+#             datetime stamp for calibration. This window is used to
+#             gather measurements from sensors during the calibration
+#             period. Default is 6.
+#         converge_accuracy : float, optional
+#             The convergence threshold for when finding n0. Default is
+#             0.01.
+#         neutron_conversion_method : {"desilets_etal_2010",
+#         "koehli_etal_2021"}, optional
+#             The conversion method used to translate raw neutron counts
+#             into soil moisture estimates. Options are
+#             "desilets_etal_2010" or "koehli_etal_2021". Default is
+#             "desilets_etal_2010".
+#         calib_data_date_time_column_name : str, optional
+#             The name of the column containing date‐time information for
+#             each calibration day. By default, this is set to
+#             str(ColumnInfo.Name.DATE_TIME).
+#         sample_depth_column : str, optional
+#             The name of the column with sample depth values (cm), by
+#             default str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE)
+#         distance_column : str, optional
+#             The name of the column stating the distance of the sample
+#             from the sensor (meters), by default
+#             str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR)
+#         bulk_density_of_sample_column : str, optional
+#             The name of the column with bulk density values of the
+#             samples (g/cm^3), by default str(
+#             ColumnInfo.Name.CALIB_BULK_DENSITY )
+#         profile_id_column : str, optional
+#             Name of the column with profile IDs, by default
+#             str(ColumnInfo.Name.CALIB_PROFILE_ID)
+#         soil_moisture_gravimetric_column : str, optional
+#             Name of the column with gravimetric soil moisture values
+#             (g/g), by default str(
+#             ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC )
+#         soil_organic_carbon_column : str, optional
+#             Name of the column with soil organic carbon values (g/g), by
+#             default str( ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON )
+#         lattice_water_column : str, optional
+#             Name of the column with lattice water values (g/g), by
+#             default str(ColumnInfo.Name.CALIB_LATTICE_WATER)
+#         abs_air_humidity_column : str, optional
+#             Name of the column with absolute air humidity values
+#             (g/cm3), by default str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
+#         neutron_column_name : str, optional
+#             Name of the column with corrected neutrons in it, by default
+#             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+#         air_pressure_column_name : str, optional
+#             Name of the column with air pressure vlaues in it, by
+#             default str(ColumnInfo.Name.AIR_PRESSURE)
+#         value_avg_lattice_water: float, optional
+#             The actual site average lattice water value
+#         value_avg_bulk_density: float, optional
+#             The actual site average dry soil bulk density
+#         value_avg_soil_organic_carbon: float, optional
+#             The actual site average soil organic carbon
+#         """
+#         self.hours_of_data_around_calib = hours_of_data_around_calib
+#         self.converge_accuracy = converge_accuracy
+#         self.calib_data_date_time_column_name = (
+#             calib_data_date_time_column_name
+#         )
+#         self.neutron_conversion_method = neutron_conversion_method
+#         self.calib_data_date_time_format = calib_data_date_time_format
+#         self.sample_depth_column = sample_depth_column
+#         self.distance_column = distance_column
+#         self.bulk_density_of_sample_column = bulk_density_of_sample_column
+#         self.profile_id_column = profile_id_column
+#         self.soil_moisture_gravimetric_column = (
+#             soil_moisture_gravimetric_column
+#         )
+#         self.soil_organic_carbon_column = soil_organic_carbon_column
+#         self.lattice_water_column = lattice_water_column
+#         self.abs_air_humidity_column = abs_air_humidity_column
+#         self.neutron_column_name = neutron_column_name
+#         self.air_pressure_column_name = air_pressure_column_name
+#         self.value_avg_lattice_water = value_avg_lattice_water
+#         self.value_avg_bulk_density = value_avg_bulk_density
+#         self.value_avg_soil_organic_carbon = value_avg_soil_organic_carbon
+#         self.value_avg_soil_organic_carbon_water_equiv = (
+#             _create_water_equiv_soc(value_avg_soil_organic_carbon)
+#         )
+#         self.horizontal_weight_method = horizontal_weight_method
+#         self.vertical_weight_method = vertical_weight_method
+#         self.koehli_method_form = koehli_method_form
 
 
 class CalibrationStation:
@@ -191,7 +389,9 @@ class CalibrationStation:
         config: CalibrationConfiguration,
     ):
         self.calibration_data = calibration_data
-        self.time_series_data = time_series_data
+        self.time_series_data = (
+            time_series_data.copy()
+        )  # copy time series to avoid side effects
         self.config = config
         # place holders
         self.calib_prepper = None
@@ -700,6 +900,7 @@ class PrepareNeutronCorrectedData:
 
         self._ensure_date_time_index()
         self._ensure_abs_humidity_exists()
+        self._uncorrect_humidity_for_koehli()
 
     def _ensure_date_time_index(self):
         """
@@ -726,6 +927,27 @@ class PrepareNeutronCorrectedData:
             self.corrected_neutron_data_frame = (
                 abs_humidity_creator.check_and_return_abs_hum_column()
             )
+
+    def _uncorrect_humidity_for_koehli(self):
+        """
+        Uncorrects humidity from corrected neutrons if this was done and
+        the koehli method is selected.
+
+        NOTE: This occurs on a copy of the crns_data_frame (i.e., the
+        changes are not maintained outside of the calibration stage).
+        It will be uncorrected a second time later when the conversion
+        to soil moisture happens, if required.
+        """
+        if (
+            self.config.neutron_conversion_method == "koehli_etal_2021"
+            and str(ColumnInfo.Name.HUMIDITY_CORRECTION)
+            in self.corrected_neutron_data_frame.columns
+        ):
+            self.corrected_neutron_data_frame[
+                self.config.neutron_column_name
+            ] /= self.corrected_neutron_data_frame[
+                str(ColumnInfo.Name.HUMIDITY_CORRECTION)
+            ]
 
     def extract_calibration_day_values(self):
         """
@@ -1151,10 +1373,11 @@ class CalibrationWeightsCalculator:
         )
         return df
 
-    def _find_optimal_N0_single_day_desilets_etal_2010(
+    def _find_optimal_n0_single_day_desilets_etal_2010(
         self,
         gravimetric_sm_on_day,
         neutron_mean,
+        n0_range: pd.Series,
         lattice_water=0,
         water_equiv_soil_organic_carbon=0,
     ):
@@ -1174,41 +1397,39 @@ class CalibrationWeightsCalculator:
             N0
         """
 
-        n0_range = pd.Series(range(int(neutron_mean), int(neutron_mean * 2.5)))
         gravimetric_sm_on_day_total = (
             gravimetric_sm_on_day
             + lattice_water
             + water_equiv_soil_organic_carbon
         )
 
-        def calculate_sm_and_error(n0):
+        def calculate_sm_and_error_desilets(n0):
             sm_prediction = (
                 neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
                     neutrons=neutron_mean,
                     n0=n0,
                 )
             )
-            absolute_error = abs(sm_prediction - gravimetric_sm_on_day_total)
+            rel_error = (
+                abs(sm_prediction - gravimetric_sm_on_day_total)
+            ) / gravimetric_sm_on_day_total
+
             return pd.Series(
                 {
                     "N0": n0,
                     "soil_moisture_prediction": sm_prediction,
-                    "absolute_error": absolute_error,
+                    "relative_error": rel_error,
                 }
             )
 
-        results_df = n0_range.apply(calculate_sm_and_error)
-        print(results_df)
+        results_df = n0_range.apply(calculate_sm_and_error_desilets)
         return results_df
-        # min_error_idx = results_df["absolute_error"].idxmin()
-        # n0_optimal = results_df.loc[min_error_idx, "N0"]
-        # minimum_error = results_df.loc[min_error_idx, "absolute_error"]
-        # return n0_optimal, minimum_error
 
     def _find_optimal_n0_single_day_koehli_etal_2021(
         self,
         gravimetric_sm_on_day: float,
         neutron_mean: int,
+        n0_range: pd.Series,
         abs_air_humidity: float,
         lattice_water: float,
         water_equiv_soil_organic_carbon: float,
@@ -1237,15 +1458,36 @@ class CalibrationWeightsCalculator:
         Tuple
             The N0 calibration term and absolute error (dummy nan value)
         """
-        n0 = compute_n0_koehli_etal_2021(
-            gravimetric_sm=gravimetric_sm_on_day,
-            neutron_count=neutron_mean,
-            air_humidity=abs_air_humidity,
-            lattice_water=lattice_water,
-            water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
-            koehli_method_form=koehli_method_form,
+        gravimetric_sm_on_day_total = (
+            gravimetric_sm_on_day
+            + lattice_water
+            + water_equiv_soil_organic_carbon
         )
-        return n0, "nan"
+
+        def calculate_sm_and_error_koehli(n0):
+
+            sm_prediction = neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
+                neutron_count=neutron_mean,
+                n0=n0,
+                abs_air_humidity=abs_air_humidity,
+                lattice_water=lattice_water,
+                water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
+                koehli_method_form=koehli_method_form,
+            )
+            rel_error = (
+                abs(sm_prediction - gravimetric_sm_on_day_total)
+            ) / gravimetric_sm_on_day_total
+
+            return pd.Series(
+                {
+                    "N0": n0,
+                    "soil_moisture_prediction": sm_prediction,
+                    "relative_error": rel_error,
+                }
+            )
+
+        results_df = n0_range.apply(calculate_sm_and_error_koehli)
+        return results_df
 
     def find_optimal_N0(
         self,
@@ -1259,39 +1501,66 @@ class CalibrationWeightsCalculator:
         average_n0
             The optimal n0 across all the supplied calibration days.
         """
+        # Create neutron range
+        all_neutron_values = []
+        for day in self.calib_metrics_dict.keys():
+            day_neutrons = self.time_series_data_object.data_dict[day][
+                self.config.neutron_column_name
+            ]
+            all_neutron_values.extend(day_neutrons.values)
+
+        neutron_mean = pd.Series(all_neutron_values).mean()
+        n0_range = pd.Series(range(int(neutron_mean), int(neutron_mean * 2.5)))
+
+        dict_of_df = {}
 
         for day, metrics in self.calib_metrics_dict.items():
+
             neutron_mean = self.time_series_data_object.data_dict[day][
                 self.config.neutron_column_name
             ].mean()
             grav_sm = metrics["field_average_soil_moisture_gravimetric"]
 
             if self.config.neutron_conversion_method == "desilets_etal_2010":
-                n0_opt, abs_error = (
-                    self._find_optimal_N0_single_day_desilets_etal_2010(
-                        gravimetric_sm_on_day=grav_sm,
-                        neutron_mean=neutron_mean,
-                        lattice_water=self.config.value_avg_lattice_water,
-                        water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
-                    )
+                df_calib = self._find_optimal_n0_single_day_desilets_etal_2010(
+                    gravimetric_sm_on_day=grav_sm,
+                    neutron_mean=neutron_mean,
+                    n0_range=n0_range,
+                    lattice_water=self.config.value_avg_lattice_water,
+                    water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
                 )
 
             elif self.config.neutron_conversion_method == "koehli_etal_2021":
-                n0_opt, abs_error = (
-                    self._find_optimal_n0_single_day_koehli_etal_2021(
-                        gravimetric_sm_on_day=grav_sm,
-                        neutron_mean=neutron_mean,
-                        abs_air_humidity=metrics["absolute_air_humidity"],
-                        lattice_water=self.config.value_avg_lattice_water,
-                        water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
-                        koehli_method_form=self.config.koehli_method_form,
-                    )
+                df_calib = self._find_optimal_n0_single_day_koehli_etal_2021(
+                    gravimetric_sm_on_day=grav_sm,
+                    neutron_mean=neutron_mean,
+                    n0_range=n0_range,
+                    abs_air_humidity=metrics["absolute_air_humidity"],
+                    lattice_water=self.config.value_avg_lattice_water,
+                    water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
+                    koehli_method_form=self.config.koehli_method_form,
                 )
+            dict_of_df[day] = df_calib
 
-            metrics.update({"optimal_N0": n0_opt, "absolute_error": abs_error})
+        first_day = next(iter(dict_of_df))
+        total_error_df = pd.DataFrame({"N0": dict_of_df[first_day]["N0"]})
+        # total_error_df.set_index("N0", inplace=True)
+        total_error_df["total_error"] = 0
+        day_count = 0
+        for day_df in dict_of_df.values():
+            total_error_df["total_error"] += day_df["relative_error"]
+            day_count += 1
 
-        return float(
-            np.mean(
-                [m["optimal_N0"] for m in self.calib_metrics_dict.values()]
-            )
+        new_total_error_col_name = f"total_error_from_{day_count}_calib_days"
+        total_error_df.rename(
+            {"total_error": new_total_error_col_name},
+            axis=1,
+            inplace=True,
         )
+
+        # metrics.update({"optimal_N0": n0_opt, "absolute_error": abs_error})
+
+        min_error_idx = total_error_df[new_total_error_col_name].idxmin()
+        n0_optimal = total_error_df.loc[min_error_idx, "N0"]
+        # minimum_error = results_df.loc[min_error_idx, "absolute_error"]
+        return n0_optimal
