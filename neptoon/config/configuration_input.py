@@ -611,7 +611,7 @@ def _print_table_format(e: ValidationError, config_file: str):
     table.add_column("#", style="cyan", width=3)
     table.add_column("Field", style="yellow", min_width=15)
     table.add_column("Error", style="orange3", min_width=20)
-    table.add_column("Given value", style="bright_blue", min_width=15)
+    table.add_column("Incorrect value provided", style="cyan", min_width=15)
 
     for i, error in enumerate(e.errors(), 1):
         field_parts = []
