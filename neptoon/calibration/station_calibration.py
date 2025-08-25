@@ -1035,7 +1035,7 @@ class CalibrationWeightsCalculator:
                     volumetric_soil_moisture=volumetric_sm_estimate,
                 )
 
-                if self.config.vertical_weighting_method == "equal":
+                if self.config.vertical_weight_method == "equal":
                     p.vertical_weights = np.ones(len(p.rescaled_distance))
                 else:
                     p.vertical_weights = Schroen2017.vertical_weighting(
@@ -1198,10 +1198,12 @@ class CalibrationWeightsCalculator:
             )
 
         results_df = n0_range.apply(calculate_sm_and_error)
-        min_error_idx = results_df["absolute_error"].idxmin()
-        n0_optimal = results_df.loc[min_error_idx, "N0"]
-        minimum_error = results_df.loc[min_error_idx, "absolute_error"]
-        return n0_optimal, minimum_error
+        print(results_df)
+        return results_df
+        # min_error_idx = results_df["absolute_error"].idxmin()
+        # n0_optimal = results_df.loc[min_error_idx, "N0"]
+        # minimum_error = results_df.loc[min_error_idx, "absolute_error"]
+        # return n0_optimal, minimum_error
 
     def _find_optimal_n0_single_day_koehli_etal_2021(
         self,
