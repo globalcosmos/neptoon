@@ -24,6 +24,7 @@ dependencies = [
     "figurex>=0.2.10",
     "seaborn>=0.13.2",
     "typer>=0.15.2",
+    "rich>=13.9.4",
 ]
 authors = [
     { name = "Daniel Power", email = "daniel.power@ufz.de" },

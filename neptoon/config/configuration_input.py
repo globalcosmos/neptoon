@@ -5,6 +5,11 @@ import datetime
 import yaml
 import warnings
 from enum import Enum
+from rich.console import Console
+from rich.table import Table
+from contextlib import contextmanager
+from rich.traceback import install
+from pydantic import ValidationError
 
 from neptoon.logging import get_logger
 from neptoon.utils.docker_utils import return_file_path_with_suffix
@@ -571,6 +576,76 @@ class ConfigType(Enum):
     PROCESS = "process"
 
 
+install(show_locals=True)
+
+console = Console()
+
+
+@contextmanager
+def rich_validation(config_file: str, verbose=False):
+    """
+    Simple context manager for Pydantic validation errors.
+
+    Args:
+        style: "table" or "list" format
+        verbose: If False, shows minimal error info without input values
+    """
+    try:
+        yield
+    except ValidationError as e:
+        _print_table_format(e=e, config_file=config_file)
+        if verbose:
+            raise
+
+
+def _print_table_format(e: ValidationError, config_file: str):
+    """Print errors in a clean table format."""
+    table = Table(
+        title=f"Incorrect value given in the {config_file}",
+        title_style="bold orange3",
+        border_style="orange3",
+        show_header=True,
+        header_style="bold white on orange3",
+    )
+
+    table.add_column("#", style="cyan", width=3)
+    table.add_column("Field", style="yellow", min_width=15)
+    table.add_column("Error", style="orange3", min_width=20)
+    table.add_column("Given value", style="magenta", min_width=15)
+
+    for i, error in enumerate(e.errors(), 1):
+        field_parts = []
+        for loc in error["loc"]:
+            if isinstance(loc, int):
+                field_parts.append(f"[{loc}]")
+            else:
+                if field_parts:
+                    field_parts.append(f".{loc}")
+                else:
+                    field_parts.append(str(loc))
+        field = "".join(field_parts) if field_parts else "root"
+
+        # Error message
+        error_msg = error["msg"]
+
+        # Input value with truncation
+        input_val = error.get("input", "N/A")
+        if input_val != "N/A":
+            input_str = str(input_val)
+            if len(input_str) > 50:  # Shorter truncation for table
+                input_str = input_str[:47] + "..."
+        else:
+            input_str = "N/A"
+
+        row = [str(i), field, error_msg, input_str]
+
+        table.add_row(*row)
+
+    console.print("\n")
+    console.print(table)
+    console.print()
+
+
 class ConfigurationManager:
     """Manages loading and access of nested configurations."""
 
@@ -678,7 +753,8 @@ class ConfigurationManager:
             _description_
         """
         config_type = str(ConfigType.SENSOR.value)
-        config_obj = SensorConfig(**config_dict)
+        with rich_validation(config_file="sensor config file"):
+            config_obj = SensorConfig(**config_dict)
         if self.running_in_docker:
             config_obj.raw_data_parse_options.data_location = (
                 return_file_path_with_suffix(base_path="/workingdir/inputs")
@@ -709,7 +785,8 @@ class ConfigurationManager:
 
     def _load_process_config(self, config_dict: dict):
         config_type = str(ConfigType.PROCESS.value)
-        config_obj = ProcessConfig(**config_dict)
+        with rich_validation(config_file="process config file"):
+            config_obj = ProcessConfig(**config_dict)
         if hasattr(config_obj.correction_steps.air_humidity, "omega"):
             message1 = (
                 "\n"
