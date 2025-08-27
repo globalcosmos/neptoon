@@ -22,26 +22,40 @@ class AbsoluteHumidityCreator:
     def __init__(
         self,
         data_frame: pd.DataFrame,
-        absolute_hum_col_name: str = str(ColumnInfo.Name.ABSOLUTE_HUMIDITY),
-        temperature_col_name: str = str(ColumnInfo.Name.AIR_TEMPERATURE),
-        sat_vapour_col_name: str = str(
-            ColumnInfo.Name.SATURATION_VAPOUR_PRESSURE
-        ),
-        actual_vapour_pressure_col_name: str = str(
-            ColumnInfo.Name.ACTUAL_VAPOUR_PRESSURE
-        ),
-        relative_hum_col_name: str = str(
-            ColumnInfo.Name.AIR_RELATIVE_HUMIDITY
-        ),
+        absolute_hum_col_name: str = None,
+        temperature_col_name: str = None,
+        sat_vapour_col_name: str = None,
+        actual_vapour_pressure_col_name: str = None,
+        relative_hum_col_name: str = None,
     ):
         self.data_frame = data_frame
+
+        # Set column names with runtime evaluation of ColumnInfo.Name
+        if absolute_hum_col_name is None:
+            absolute_hum_col_name = str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
         self.absolute_hum_col_name = absolute_hum_col_name
+
+        if temperature_col_name is None:
+            temperature_col_name = str(ColumnInfo.Name.AIR_TEMPERATURE)
         self.temperature_col_name = temperature_col_name
+
+        if sat_vapour_col_name is None:
+            sat_vapour_col_name = str(
+                ColumnInfo.Name.SATURATION_VAPOUR_PRESSURE
+            )
         self.sat_vapour_col_name = sat_vapour_col_name
+
+        if actual_vapour_pressure_col_name is None:
+            actual_vapour_pressure_col_name = str(
+                ColumnInfo.Name.ACTUAL_VAPOUR_PRESSURE
+            )
         self.actual_vapour_pressure_col_name = actual_vapour_pressure_col_name
+
+        if relative_hum_col_name is None:
+            relative_hum_col_name = str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
         self.relative_hum_col_name = relative_hum_col_name
 
-        # self._check_required_columns_available()
+    # self._check_required_columns_available()
 
     def _check_required_columns_available(self):
         """

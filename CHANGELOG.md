@@ -24,9 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- spike detection using simple offset rule 
+- spike detection using simple offset rule
+
 
 ### Changed
+
+- changed attribute naming from `koehlie_method_form` to `koehlie_parameters` throughout
+- Refactored calibration routines back end
 
 ### Depreceated
 

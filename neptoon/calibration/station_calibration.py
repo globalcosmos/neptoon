@@ -3,6 +3,7 @@ import numpy as np
 import copy
 from datetime import timedelta
 from typing import Literal, List
+from dataclasses import dataclass, field
 
 # from scipy.optimize import minimize
 from neptoon.columns import ColumnInfo
@@ -21,38 +22,21 @@ def _create_water_equiv_soc(soil_organic_carbon: float):
 
 class CalibrationConfiguration:
     """
-    Configuration class for calibration steps
+    User facing configuration class for calibration steps. Here a user
+    can add information required for calibration. Defaults can often
+    also be used if following similar data structure and naming as
+    neptoon uses as standard.
     """
 
     def __init__(
         self,
+        # Settings
         hours_of_data_around_calib: int = 6,
         converge_accuracy: float = 0.01,
         neutron_conversion_method: Literal[
             "desilets_etal_2010", "koehli_etal_2021"
         ] = "desilets_etal_2010",
-        calib_data_date_time_column_name: str | None = None,
-        calib_data_date_time_format: str = "%Y-%m-%d %H:%M",
-        sample_depth_column: str = None,
-        distance_column: str = None,
-        bulk_density_of_sample_column: str = None,
-        profile_id_column: str = None,
-        soil_moisture_gravimetric_column: str = None,
-        soil_organic_carbon_column: str = None,
-        lattice_water_column: str = None,
-        abs_air_humidity_column: str = None,
-        neutron_column_name: str = None,
-        air_pressure_column_name: str = None,
-        value_avg_lattice_water: float = 0,
-        value_avg_bulk_density: float = 0,
-        value_avg_soil_organic_carbon: float = 0,
-        horizontal_weight_method: Literal[
-            "schroen_etal_2017", "equal"
-        ] = "schroen_etal_2017",
-        vertical_weight_method: Literal[
-            "schroen_etal_2017", "equal"
-        ] = "schroen_etal_2017",
-        koehli_method_form: Literal[
+        koehli_parameters: Literal[
             "Jan23_uranos",
             "Jan23_mcnpfull",
             "Mar12_atmprof",
@@ -72,9 +56,34 @@ class CalibrationConfiguration:
             "Aug13_uranos_atmprof",
             "Aug13_uranos_atmprof2",
         ] = "Mar21_uranos_drf",
+        horizontal_weight_method: Literal[
+            "schroen_etal_2017", "equal"
+        ] = "schroen_etal_2017",
+        vertical_weight_method: Literal[
+            "schroen_etal_2017", "equal"
+        ] = "schroen_etal_2017",
+        # Calibration Data Settings
+        calib_data_date_time_column_name: str | None = None,
+        calib_data_date_time_format: str = "%Y-%m-%d %H:%M",
+        sample_depth_column: str | None = None,
+        distance_column: str | None = None,
+        bulk_density_of_sample_column: str | None = None,
+        profile_id_column: str | None = None,
+        soil_moisture_gravimetric_column: str | None = None,
+        soil_organic_carbon_column: str | None = None,
+        lattice_water_column: str | None = None,
+        # Time Series Data Settings
+        temperature_column: str | None = None,
+        relative_humidity_column: str | None = None,
+        abs_air_humidity_column: str | None = None,
+        neutron_column_name: str | None = None,
+        air_pressure_column_name: str | None = None,
+        value_avg_lattice_water: float | None = None,
+        value_avg_bulk_density: float | None = None,
+        value_avg_soil_organic_carbon: float | None = None,
     ):
         """
-        Attributes.
+        User-facing configuration for calibration parameters.
 
         Parameters
         ----------
@@ -92,127 +101,347 @@ class CalibrationConfiguration:
             into soil moisture estimates. Options are
             "desilets_etal_2010" or "koehli_etal_2021". Default is
             "desilets_etal_2010".
+        koehli_parameters : str, optional
+            Parameter set to use when koehli_etal_2021 method is
+            selected. Default is "Mar21_uranos_drf".
+        horizontal_weight_method : {"schroen_etal_2017", "equal"},
+        optional
+            Method for horizontal weighting. Default is
+            "schroen_etal_2017".
+        vertical_weight_method : {"schroen_etal_2017", "equal"},
+        optional
+            Method for vertical weighting. Default is
+            "schroen_etal_2017".
         calib_data_date_time_column_name : str, optional
             The name of the column containing date‐time information for
-            each calibration day. If None, defaults to the current value
-            from ColumnInfo.Name.DATE_TIME.
+            each calibration day. If None, uses default from ColumnInfo.
+        calib_data_date_time_format : str, optional
+            Format string for parsing date-time values. Default is
+            "%Y-%m-%d %H:%M".
         sample_depth_column : str, optional
             The name of the column with sample depth values (cm). If
-            None, defaults to the current value from
-            ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE.
+            None, uses default from ColumnInfo.
         distance_column : str, optional
             The name of the column stating the distance of the sample
-            from the sensor (meters). If None, defaults to the current
-            value from ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR.
+            from the sensor (meters). If None, uses default from
+            ColumnInfo.
         bulk_density_of_sample_column : str, optional
             The name of the column with bulk density values of the
-            samples (g/cm^3). If None, defaults to the current value
-            from ColumnInfo.Name.CALIB_BULK_DENSITY.
+            samples (g/cm^3). If None, uses default from ColumnInfo.
         profile_id_column : str, optional
-            Name of the column with profile IDs. If None, defaults to
-            the current value from ColumnInfo.Name.CALIB_PROFILE_ID.
+            Name of the column with profile IDs. If None, uses default
+            from ColumnInfo.
         soil_moisture_gravimetric_column : str, optional
             Name of the column with gravimetric soil moisture values
-            (g/g). If None, defaults to the current value from
-            ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC.
+            (g/g). If None, uses default from ColumnInfo.
         soil_organic_carbon_column : str, optional
             Name of the column with soil organic carbon values (g/g). If
-            None, defaults to the current value from
-            ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON.
+            None, uses default from ColumnInfo.
         lattice_water_column : str, optional
             Name of the column with lattice water values (g/g). If None,
-            defaults to the current value from
-            ColumnInfo.Name.CALIB_LATTICE_WATER.
+            uses default from ColumnInfo.
+        temperature_column : str, optional
+            Name of the column with temperature values. If None, uses
+            default from ColumnInfo.
+        relative_humidity_column : str, optional
+            Name of the column with relative humidity values. If None,
+            uses default from ColumnInfo.
         abs_air_humidity_column : str, optional
             Name of the column with absolute air humidity values
-            (g/cm3). If None, defaults to the current value from
-            ColumnInfo.Name.ABSOLUTE_HUMIDITY.
+            (g/cm3). If None, uses default from ColumnInfo.
         neutron_column_name : str, optional
             Name of the column with corrected neutrons in it. If None,
-            defaults to the current value from
-            ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL.
+            uses default from ColumnInfo.
         air_pressure_column_name : str, optional
             Name of the column with air pressure values in it. If None,
-            defaults to the current value from
-            ColumnInfo.Name.AIR_PRESSURE.
+            uses default from ColumnInfo.
         value_avg_lattice_water: float, optional
-            The actual site average lattice water value
+            The actual site average lattice water value. Default is 0.
         value_avg_bulk_density: float, optional
-            The actual site average dry soil bulk density
+            The actual site average dry soil bulk density. Default is 0.
         value_avg_soil_organic_carbon: float, optional
-            The actual site average soil organic carbon
+            The actual site average soil organic carbon. Default is 0.
         """
+        # Processing settings
         self.hours_of_data_around_calib = hours_of_data_around_calib
         self.converge_accuracy = converge_accuracy
         self.neutron_conversion_method = neutron_conversion_method
-        self.calib_data_date_time_format = calib_data_date_time_format
-        self.value_avg_lattice_water = value_avg_lattice_water
-        self.value_avg_bulk_density = value_avg_bulk_density
-        self.value_avg_soil_organic_carbon = value_avg_soil_organic_carbon
+        self.koehli_parameters = koehli_parameters
         self.horizontal_weight_method = horizontal_weight_method
         self.vertical_weight_method = vertical_weight_method
-        self.koehli_method_form = koehli_method_form
 
-        # Set column names with runtime evaluation of ColumnInfo.Name
-        if calib_data_date_time_column_name is None:
-            calib_data_date_time_column_name = str(ColumnInfo.Name.DATE_TIME)
+        # Date/time settings
         self.calib_data_date_time_column_name = (
             calib_data_date_time_column_name
         )
+        self.calib_data_date_time_format = calib_data_date_time_format
 
-        if sample_depth_column is None:
-            sample_depth_column = str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE)
+        # Column names (user can override defaults by providing values)
         self.sample_depth_column = sample_depth_column
-
-        if distance_column is None:
-            distance_column = str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR)
         self.distance_column = distance_column
-
-        if bulk_density_of_sample_column is None:
-            bulk_density_of_sample_column = str(
-                ColumnInfo.Name.CALIB_BULK_DENSITY
-            )
         self.bulk_density_of_sample_column = bulk_density_of_sample_column
-
-        if profile_id_column is None:
-            profile_id_column = str(ColumnInfo.Name.CALIB_PROFILE_ID)
         self.profile_id_column = profile_id_column
-
-        if soil_moisture_gravimetric_column is None:
-            soil_moisture_gravimetric_column = str(
-                ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC
-            )
         self.soil_moisture_gravimetric_column = (
             soil_moisture_gravimetric_column
         )
-
-        if soil_organic_carbon_column is None:
-            soil_organic_carbon_column = str(
-                ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON
-            )
         self.soil_organic_carbon_column = soil_organic_carbon_column
-
-        if lattice_water_column is None:
-            lattice_water_column = str(ColumnInfo.Name.CALIB_LATTICE_WATER)
         self.lattice_water_column = lattice_water_column
-
-        if abs_air_humidity_column is None:
-            abs_air_humidity_column = str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
+        self.temperature_column = temperature_column
+        self.relative_humidity_column = relative_humidity_column
         self.abs_air_humidity_column = abs_air_humidity_column
-
-        if neutron_column_name is None:
-            neutron_column_name = str(
-                ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL
-            )
         self.neutron_column_name = neutron_column_name
-
-        if air_pressure_column_name is None:
-            air_pressure_column_name = str(ColumnInfo.Name.AIR_PRESSURE)
         self.air_pressure_column_name = air_pressure_column_name
 
-        # Calculate water equivalent soil organic carbon
-        self.value_avg_soil_organic_carbon_water_equiv = (
-            _create_water_equiv_soc(value_avg_soil_organic_carbon)
+        # Extra
+        # Site average values
+        self.value_avg_lattice_water = value_avg_lattice_water
+        self.value_avg_bulk_density = value_avg_bulk_density
+        self.value_avg_soil_organic_carbon = value_avg_soil_organic_carbon
+
+
+@dataclass
+class CalibrationContext:
+    """
+    Internal context for data processing - outputs of each stage are
+    written here. Contains resolved column names and processed values.
+    """
+
+    # Configuration Values @
+    # Processing settings
+    hours_of_data_around_calib: int | None = None
+    converge_accuracy: float | None = None
+    neutron_conversion_method: str | None = None
+    koehli_parameters: str | None = None
+    horizontal_weight_method: str | None = None
+    vertical_weight_method: str | None = None
+
+    # Date/time settings
+    calib_data_date_time_column_name: str | None = None
+    calib_data_date_time_format: str | None = None
+
+    # Resolved column names
+    sample_depth_column: str | None = None
+    distance_column: str | None = None
+    bulk_density_of_sample_column: str | None = None
+    profile_id_column: str | None = None
+    soil_moisture_gravimetric_column: str | None = None
+    soil_organic_carbon_column: str | None = None
+    lattice_water_column: str | None = None
+    temperature_column: str | None = None
+    relative_humidity_column: str | None = None
+    abs_air_humidity_column: str | None = None
+    neutron_column_name: str | None = None
+    air_pressure_column_name: str | None = None
+
+    # Site average values
+    value_avg_lattice_water: float | None = None
+    value_avg_bulk_density: float | None = None
+    value_avg_soil_organic_carbon: float | None = None
+    value_avg_soil_organic_carbon_water_equiv: float | None = None
+
+    # Derived values #
+    unique_calibration_days: list = field(default_factory=list)
+    list_of_data_frames: list = field(default_factory=list)
+    list_of_profiles: list = field(default_factory=list)
+    data_dict: dict = field(default_factory=dict)
+    calib_metrics_dict: dict = field(default_factory=dict)
+
+    @classmethod
+    def from_config(cls, config: CalibrationConfiguration):
+        """
+        Convert configuration to context, resolving all None values to defaults
+        from ColumnInfo and calculating derived values.
+
+        Parameters
+        ----------
+        config : CalibrationConfiguration
+            User configuration object
+
+        Returns
+        -------
+        CalibrationContext
+            Internal processing context with all values resolved
+        """
+        # Resolve column names - use config value if provided, otherwise default
+        calib_data_date_time_column_name = (
+            config.calib_data_date_time_column_name
+            if config.calib_data_date_time_column_name is not None
+            else str(ColumnInfo.Name.DATE_TIME)
+        )
+
+        sample_depth_column = (
+            config.sample_depth_column
+            if config.sample_depth_column is not None
+            else str(ColumnInfo.Name.CALIB_DEPTH_OF_SAMPLE)
+        )
+
+        distance_column = (
+            config.distance_column
+            if config.distance_column is not None
+            else str(ColumnInfo.Name.CALIB_DISTANCE_TO_SENSOR)
+        )
+
+        bulk_density_of_sample_column = (
+            config.bulk_density_of_sample_column
+            if config.bulk_density_of_sample_column is not None
+            else str(ColumnInfo.Name.CALIB_BULK_DENSITY)
+        )
+
+        profile_id_column = (
+            config.profile_id_column
+            if config.profile_id_column is not None
+            else str(ColumnInfo.Name.CALIB_PROFILE_ID)
+        )
+
+        soil_moisture_gravimetric_column = (
+            config.soil_moisture_gravimetric_column
+            if config.soil_moisture_gravimetric_column is not None
+            else str(ColumnInfo.Name.CALIB_SOIL_MOISTURE_GRAVIMETRIC)
+        )
+
+        soil_organic_carbon_column = (
+            config.soil_organic_carbon_column
+            if config.soil_organic_carbon_column is not None
+            else str(ColumnInfo.Name.CALIB_SOIL_ORGANIC_CARBON)
+        )
+
+        lattice_water_column = (
+            config.lattice_water_column
+            if config.lattice_water_column is not None
+            else str(ColumnInfo.Name.CALIB_LATTICE_WATER)
+        )
+
+        temperature_column = (
+            config.temperature_column
+            if config.temperature_column is not None
+            else str(ColumnInfo.Name.AIR_TEMPERATURE)
+        )
+
+        relative_humidity_column = (
+            config.relative_humidity_column
+            if config.relative_humidity_column is not None
+            else str(ColumnInfo.Name.AIR_RELATIVE_HUMIDITY)
+        )
+
+        abs_air_humidity_column = (
+            config.abs_air_humidity_column
+            if config.abs_air_humidity_column is not None
+            else str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
+        )
+
+        neutron_column_name = (
+            config.neutron_column_name
+            if config.neutron_column_name is not None
+            else str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
+        )
+
+        air_pressure_column_name = (
+            config.air_pressure_column_name
+            if config.air_pressure_column_name is not None
+            else str(ColumnInfo.Name.AIR_PRESSURE)
+        )
+
+        if config.value_avg_soil_organic_carbon:
+            value_avg_soil_organic_carbon_water_equiv = (
+                _create_water_equiv_soc(config.value_avg_soil_organic_carbon)
+            )
+        else:
+            value_avg_soil_organic_carbon_water_equiv = None
+
+        return cls(
+            # Processing settings
+            hours_of_data_around_calib=config.hours_of_data_around_calib,
+            converge_accuracy=config.converge_accuracy,
+            neutron_conversion_method=config.neutron_conversion_method,
+            koehli_parameters=config.koehli_parameters,
+            horizontal_weight_method=config.horizontal_weight_method,
+            vertical_weight_method=config.vertical_weight_method,
+            # Date/time settings
+            calib_data_date_time_column_name=calib_data_date_time_column_name,
+            calib_data_date_time_format=config.calib_data_date_time_format,
+            # Resolved column names
+            sample_depth_column=sample_depth_column,
+            distance_column=distance_column,
+            bulk_density_of_sample_column=bulk_density_of_sample_column,
+            profile_id_column=profile_id_column,
+            soil_moisture_gravimetric_column=soil_moisture_gravimetric_column,
+            soil_organic_carbon_column=soil_organic_carbon_column,
+            lattice_water_column=lattice_water_column,
+            temperature_column=temperature_column,
+            relative_humidity_column=relative_humidity_column,
+            abs_air_humidity_column=abs_air_humidity_column,
+            neutron_column_name=neutron_column_name,
+            air_pressure_column_name=air_pressure_column_name,
+            # Site average values
+            value_avg_lattice_water=config.value_avg_lattice_water,
+            value_avg_bulk_density=config.value_avg_bulk_density,
+            value_avg_soil_organic_carbon=config.value_avg_soil_organic_carbon,
+            value_avg_soil_organic_carbon_water_equiv=value_avg_soil_organic_carbon_water_equiv,
+        )
+
+
+def _ensure_date_time_index(
+    data_frame: pd.DataFrame, context: CalibrationContext
+):
+    """
+    Ensures datetime is properly set as index. If user already has datetime index,
+    leave it alone. If datetime is a column, convert to datetime and set as index.
+
+    Parameters
+    ----------
+    data_frame : pd.DataFrame
+        Calibration or time series DataFrame
+    context : CalibrationContext
+        Context info
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with datetime index
+
+    Raises
+    ------
+    ValueError
+        If the expected datetime column is found neither as column nor index
+    """
+    target_col = context.calib_data_date_time_column_name
+
+    if data_frame.index.name == target_col or (
+        hasattr(data_frame.index, "names")
+        and target_col in data_frame.index.names
+    ):
+        print(f"Datetime already set as index ('{target_col}'), leaving as-is")
+        # Ensure it's datetime type if it isn't already
+        if not isinstance(data_frame.index, pd.DatetimeIndex):
+            data_frame.index = pd.to_datetime(
+                data_frame.index,
+                utc=True,
+                dayfirst=True,
+                format=context.calib_data_date_time_format,
+            )
+        return data_frame
+
+    elif target_col in data_frame.columns:
+        print(f"Converting '{target_col}' column to datetime index")
+        data_frame[target_col] = pd.to_datetime(
+            data_frame[target_col],
+            utc=True,
+            dayfirst=True,
+            format=context.calib_data_date_time_format,
+        )
+        data_frame = data_frame.set_index(target_col)
+        return data_frame
+
+    else:
+        available_cols = list(data_frame.columns)
+        index_name = data_frame.index.name
+
+        raise ValueError(
+            f"Expected datetime column '{target_col}' not found as column or index. "
+            f"Available columns: {available_cols}. "
+            f"Index name: {index_name}. "
+            f"Please specify the correct column name in CalibrationConfiguration using "
+            f"calib_data_date_time_column_name parameter."
         )
 
 
@@ -235,11 +464,7 @@ class CalibrationStation:
         self.time_series_data = (
             time_series_data.copy()
         )  # copy time series to avoid side effects
-        self.config = config
-        # place holders
-        self.calib_prepper = None
-        self.times_series_prepper = None
-        self.calibrator = None
+        self.context = CalibrationContext().from_config(config=config)
 
     def _collect_stats_for_magazine(self):
         self.number_calib_days = len(
@@ -255,24 +480,27 @@ class CalibrationStation:
         float
             N0 estimate after calibration.
         """
-        self.calib_prepper = PrepareCalibrationData(
+        # Prepare calibration data
+        calib_prepper = PrepareCalibrationData(
             calibration_data_frame=self.calibration_data,
-            config=self.config,
+            context=self.context,
         )
-        self.calib_prepper.prepare_calibration_data()
+        self.context = calib_prepper.prepare_calibration_data()
+
+        # Prepare neutron data
         times_series_prepper = PrepareNeutronCorrectedData(
             corrected_neutron_data_frame=self.time_series_data,
-            calibration_data_prepper=self.calib_prepper,
-            config=self.config,
+            context=self.context,
         )
-        times_series_prepper.extract_calibration_day_values()
-        self.calibrator = CalibrationWeightsCalculator(
-            time_series_data_object=times_series_prepper,
-            calib_data_object=self.calib_prepper,
-            config=self.config,
-        )
-        self.calibrator.apply_weighting_to_multiple_days()
-        optimal_n0 = self.calibrator.find_optimal_N0()
+        self.context = times_series_prepper.extract_calibration_day_values()
+
+        # Weight samples of sm
+        self.calibrator = CalibrationWeightsCalculator(context=self.context)
+        self.context = self.calibrator.apply_weighting_to_multiple_days()
+
+        # Find optimal N0
+        n0_finder = CalculateN0(context=self.context)
+        optimal_n0 = n0_finder.find_optimal_N0()
         return optimal_n0
 
     def return_calibration_results_data_frame(self):
@@ -405,7 +633,7 @@ class PrepareCalibrationData:
     def __init__(
         self,
         calibration_data_frame: pd.DataFrame,
-        config: CalibrationConfiguration,
+        context: CalibrationContext,
     ):
         """
         Instantiate attributes
@@ -419,55 +647,36 @@ class PrepareCalibrationData:
         """
 
         self.calibration_data_frame = calibration_data_frame
-        self.config = config
-        self._ensure_date_time_index()
+        self.context = context
 
-        self.unique_calibration_days = np.unique(
-            self.calibration_data_frame[
-                self.config.calib_data_date_time_column_name
-            ]
-        )
-        self.list_of_data_frames = []
-        self.list_of_profiles = []
-
-    def _ensure_date_time_index(self):
-        """
-        Converts the date time column so the values are datetime type.
-        """
-
-        self.calibration_data_frame[
-            self.config.calib_data_date_time_column_name
-        ] = pd.to_datetime(
-            self.calibration_data_frame[
-                self.config.calib_data_date_time_column_name
-            ],
-            utc=True,
-            dayfirst=True,
-            format=self.config.calib_data_date_time_format,
-        )
-
-    def _create_list_of_df(self):
+    def _create_list_of_df(self, context: CalibrationContext):
         """
         Splits up the self.calibration_data_frame into individual data
         frames, where each data frame is a different calibration day.
+
+        Parameters
+        ----------
+        context : CalibrationContext
+            Context for calibration
+
+        Returns
+        -------
+        context
+            CalibrationContext
         """
 
-        self.list_of_data_frames = [
+        context.list_of_data_frames = [
             self.calibration_data_frame[
-                self.calibration_data_frame[
-                    self.config.calib_data_date_time_column_name
-                ]
-                == calibration_day
+                self.calibration_data_frame.index == calibration_day
             ]
-            for calibration_day in self.unique_calibration_days
+            for calibration_day in context.unique_calibration_days
         ]
+        return context
 
     def _create_calibration_day_profiles(
         self,
         single_day_data_frame,
-        site_avg_bulk_density,
-        site_avg_lattice_water,
-        site_avg_organic_carbon,
+        context: CalibrationContext,
     ):
         """
         Returns a list of SampleProfile objects which have been created
@@ -476,7 +685,9 @@ class PrepareCalibrationData:
         Parameters
         ----------
         single_day_data_frame : pd.DataFrame
-            _description_
+            DataFrame snipped during calibration period
+        context : CalibrationContext
+            Data for processing.
 
         Returns
         -------
@@ -485,18 +696,14 @@ class PrepareCalibrationData:
         """
         calibration_day_profiles = []
         profile_ids = np.unique(
-            single_day_data_frame[self.config.profile_id_column]
+            single_day_data_frame[context.profile_id_column]
         )
         for pid in profile_ids:
             temp_df = single_day_data_frame[
-                single_day_data_frame[self.config.profile_id_column] == pid
+                single_day_data_frame[context.profile_id_column] == pid
             ]
             soil_profile = self._create_individual_profile(
-                pid=pid,
-                profile_data_frame=temp_df,
-                site_avg_bulk_density=site_avg_bulk_density,
-                site_avg_lattice_water=site_avg_lattice_water,
-                site_avg_organic_carbon=site_avg_organic_carbon,
+                pid=pid, profile_data_frame=temp_df, context=context
             )
 
             calibration_day_profiles.append(soil_profile)
@@ -506,9 +713,7 @@ class PrepareCalibrationData:
         self,
         pid,
         profile_data_frame,
-        site_avg_bulk_density,
-        site_avg_lattice_water,
-        site_avg_organic_carbon,
+        context,
     ):
         """
         Creates a SampleProfile object from a individual profile
@@ -520,47 +725,49 @@ class PrepareCalibrationData:
             The profile ID to represent the profile.
         profile_data_frame : pd.DataFrame
             A data frame which holds the values for one single profile.
+        context : CalibrationContext
+            Information for processing
 
         Returns
         -------
         SampleProfile
             A SampleProfile object is returned.
         """
-        distances = profile_data_frame[self.config.distance_column].median()
-        depths = profile_data_frame[self.config.sample_depth_column]
+        distances = profile_data_frame[context.distance_column].median()
+        depths = profile_data_frame[context.sample_depth_column]
         bulk_density = profile_data_frame[
-            self.config.bulk_density_of_sample_column
+            context.bulk_density_of_sample_column
         ]
 
         soil_moisture_gravimetric = profile_data_frame[
-            self.config.soil_moisture_gravimetric_column
+            context.soil_moisture_gravimetric_column
         ]
 
         soil_organic_carbon = profile_data_frame[
-            self.config.soil_organic_carbon_column
+            context.soil_organic_carbon_column
         ]
 
-        lattice_water = profile_data_frame[self.config.lattice_water_column]
+        lattice_water = profile_data_frame[context.lattice_water_column]
+
         # only need one calibration datetime
-        calibration_datetime = profile_data_frame[
-            self.config.calib_data_date_time_column_name
-        ].iloc[0]
+        calibration_datetime = next(iter(profile_data_frame.index))
+
         soil_profile = SampleProfile(
             soil_moisture_gravimetric=soil_moisture_gravimetric,
             depth=depths,
             bulk_density=bulk_density,
-            site_avg_bulk_density=site_avg_bulk_density,
+            site_avg_bulk_density=context.value_avg_bulk_density,
             distance=distances,
             lattice_water=lattice_water,
             soil_organic_carbon=soil_organic_carbon,
             pid=pid,
             calibration_day=calibration_datetime,
-            site_avg_lattice_water=site_avg_lattice_water,
-            site_avg_organic_carbon=site_avg_organic_carbon,
+            site_avg_lattice_water=context.value_avg_lattice_water,
+            site_avg_organic_carbon=context.value_avg_soil_organic_carbon,
         )
         return soil_profile
 
-    def _create_site_avg_bulk_density(self):
+    def _create_site_avg_bulk_density(self, context: CalibrationContext):
         """
         Produces a average bulk density from provided sample data, if
         not available uses user provided average, if thats not available
@@ -577,7 +784,7 @@ class PrepareCalibrationData:
             No bulk density provided
         """
         if (
-            self.config.bulk_density_of_sample_column
+            context.bulk_density_of_sample_column
             not in self.calibration_data_frame.columns
         ):
             message = (
@@ -585,7 +792,7 @@ class PrepareCalibrationData:
                 "Attempting to use the provided site average..."
             )
             print(message)
-            if self.config.value_avg_bulk_density is None:
+            if context.value_avg_bulk_density is None:
                 message = (
                     "There is no provided site average bulk density value. Please provide this "
                     "in sensor configuration files (if using configs), SensorInformation (if using notebooks)"
@@ -599,20 +806,22 @@ class PrepareCalibrationData:
         else:
             message = "Calculating site average bulk density from provided sample data."
             print(message)
-            return self.calibration_data_frame[
-                self.config.bulk_density_of_sample_column
+            context.value_avg_bulk_density = self.calibration_data_frame[
+                context.bulk_density_of_sample_column
             ].mean()
 
-    def _create_site_avg_lattice_water(self):
+        return context
+
+    def _create_site_avg_lattice_water(self, context: CalibrationContext):
         """
         Produces a average lattice water from provided sample data, if
         not available uses user provided average, if thats not available
-        raises error
+        raises error. Adds info to context
 
         Returns
         -------
-        float
-            site average lattice water
+        context
+            Context
 
         Raises
         ------
@@ -620,7 +829,7 @@ class PrepareCalibrationData:
             No lattice water provided
         """
         if (
-            self.config.lattice_water_column
+            context.lattice_water_column
             not in self.calibration_data_frame.columns
         ):
             message = (
@@ -628,7 +837,7 @@ class PrepareCalibrationData:
                 "Attempting to use the provided site average..."
             )
             print(message)
-            if self.config.value_avg_lattice_water is None:
+            if context.value_avg_lattice_water is None:
                 message = (
                     "There is no provided site average lattice water value. Please provide this "
                     "in sensor configuration files (if using configs), SensorInformation (if using notebooks)"
@@ -645,11 +854,14 @@ class PrepareCalibrationData:
         else:
             message = "Calculating site average lattice water from provided sample data."
             print(message)
-            return self.calibration_data_frame[
-                self.config.lattice_water_column
+            context.value_avg_lattice_water = self.calibration_data_frame[
+                context.lattice_water_column
             ].mean()
+        return context
 
-    def _create_site_avg_soil_organic_carbon(self):
+    def _create_site_avg_soil_organic_carbon(
+        self, context: CalibrationContext
+    ):
         """
         Produces a average soil_organic_carbon from provided sample
         data, if not available uses user provided average, if thats not
@@ -657,8 +869,8 @@ class PrepareCalibrationData:
 
         Returns
         -------
-        float
-            site average soil_organic_carbon
+        CalibrationContext
+            site average soil_organic_carbon in context
 
         Raises
         ------
@@ -666,7 +878,7 @@ class PrepareCalibrationData:
             No soil_organic_carbon provided
         """
         if (
-            self.config.soil_organic_carbon_column
+            context.soil_organic_carbon_column
             not in self.calibration_data_frame.columns
         ):
             message = (
@@ -674,7 +886,7 @@ class PrepareCalibrationData:
                 "Attempting to use the provided site average..."
             )
             print(message)
-            if self.config.value_avg_soil_organic_carbon is None:
+            if context.value_avg_soil_organic_carbon is None:
                 message = (
                     "There is no provided site average soil_organic_carbon value. Please provide this "
                     "in sensor configuration files (if using configs), SensorInformation (if using notebooks)"
@@ -690,42 +902,95 @@ class PrepareCalibrationData:
             message = "Calculating site average soil_organic_carbon from provided sample data."
             print(message)
 
-            return self.calibration_data_frame[
-                self.config.soil_organic_carbon_column
-            ].mean()
+            context.value_avg_soil_organic_carbon = (
+                self.calibration_data_frame[
+                    context.soil_organic_carbon_column
+                ].mean()
+            )
+
+        if np.isnan(context.value_avg_soil_organic_carbon):
+            context.value_avg_soil_organic_carbon = 0
+
+        context.value_avg_soil_organic_carbon_water_equiv = (
+            _create_water_equiv_soc(context.value_avg_soil_organic_carbon)
+        )
+
+        return context
+
+    def _create_site_avg_values(self, context: CalibrationContext):
+        """
+        Derives site avg values required for calibration
+
+        Returns
+        -------
+        CalibrationContext
+            more context
+        """
+        context = self._create_site_avg_bulk_density(context=context)
+        context = self._create_site_avg_lattice_water(context=context)
+        context = self._create_site_avg_soil_organic_carbon(context=context)
+        return context
+
+    def _parse_unique_calibration_days(
+        self,
+        context: CalibrationContext,
+    ):
+        """
+        Parses unique calibration days and adds information to context
+
+        Parameters
+        ----------
+        context : CalibrationContext
+            DataContext for calibration
+
+        Returns
+        -------
+        context
+            CalibrationContext
+        """
+        context.unique_calibration_days = np.unique(
+            self.calibration_data_frame.index
+        )
+        return context
+
+    def _process_dfs_into_profiles(self, context: CalibrationContext):
+        """
+        Processes the calibration day data into profiles
+
+        Parameters
+        ----------
+        context : CalibrationContext
+            _description_
+
+        Returns
+        -------
+        CalibrationContext
+            context with profiles
+        """
+
+        for data_frame in context.list_of_data_frames:
+            calibration_day_profiles = self._create_calibration_day_profiles(
+                single_day_data_frame=data_frame,
+                context=context,
+            )
+            context.list_of_profiles.extend(calibration_day_profiles)
+        return context
 
     def prepare_calibration_data(self):
         """
         Prepares the calibration data into a list of profiles.
         """
-
-        self.config.value_avg_bulk_density = (
-            self._create_site_avg_bulk_density()
+        context = self.context
+        self.calibration_data_frame = _ensure_date_time_index(
+            data_frame=self.calibration_data_frame, context=context
         )
 
-        self.config.value_avg_lattice_water = (
-            self._create_site_avg_lattice_water()
-        )
+        context = self._parse_unique_calibration_days(context)
+        context = self._create_site_avg_values(context)
+        context = self._create_list_of_df(context=context)
+        context = self._process_dfs_into_profiles(context=context)
 
-        self.config.value_avg_soil_organic_carbon = (
-            self.calibration_data_frame[
-                self.config.soil_organic_carbon_column
-            ].mean()
-        )
-
-        if np.isnan(self.config.value_avg_soil_organic_carbon):
-            self.config.value_avg_soil_organic_carbon = 0
-
-        self._create_list_of_df()
-
-        for data_frame in self.list_of_data_frames:
-            calibration_day_profiles = self._create_calibration_day_profiles(
-                single_day_data_frame=data_frame,
-                site_avg_bulk_density=self.config.value_avg_bulk_density,
-                site_avg_organic_carbon=self.config.value_avg_soil_organic_carbon,
-                site_avg_lattice_water=self.config.value_avg_lattice_water,
-            )
-            self.list_of_profiles.extend(calibration_day_profiles)
+        return context
 
 
 class PrepareNeutronCorrectedData:
@@ -733,78 +998,97 @@ class PrepareNeutronCorrectedData:
     def __init__(
         self,
         corrected_neutron_data_frame: pd.DataFrame,
-        calibration_data_prepper: PrepareCalibrationData,
-        config: CalibrationConfiguration,
+        context: CalibrationConfiguration,
     ):
         self.corrected_neutron_data_frame = corrected_neutron_data_frame
-        self.calibration_data_prepper = calibration_data_prepper
-        self.config = config
-        self.data_dict = {}
+        self.context = context
 
-        self._ensure_date_time_index()
-        self._ensure_abs_humidity_exists()
-        self._uncorrect_humidity_for_koehli()
-
-    def _ensure_date_time_index(self):
-        """
-        Converts the date time column so the values are datetime type.
-        """
-
-        self.corrected_neutron_data_frame.index = pd.to_datetime(
-            self.corrected_neutron_data_frame.index,
-            utc=True,
-        )
-
-    def _ensure_abs_humidity_exists(self):
+    def _ensure_abs_humidity_exists(self, data_frame: pd.DataFrame):
         """
         Checks to see if absolute humidity exists in the data frame. If
         it doesn't it will create it.
-        """
-        if (
-            str(ColumnInfo.Name.ABSOLUTE_HUMIDITY)
-            not in self.corrected_neutron_data_frame.columns
-        ):
-            abs_humidity_creator = AbsoluteHumidityCreator(
-                self.corrected_neutron_data_frame
-            )
-            self.corrected_neutron_data_frame = (
-                abs_humidity_creator.check_and_return_abs_hum_column()
-            )
 
-    def _uncorrect_humidity_for_koehli(self):
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            Corrected neutron dataframe
+
+        Returns
+        -------
+        pd.DataFrame
+            Corrected neutron dataframe with abs humidity
         """
-        Uncorrects humidity from corrected neutrons if this was done and
+        if str(ColumnInfo.Name.ABSOLUTE_HUMIDITY) not in data_frame.columns:
+            abs_humidity_creator = AbsoluteHumidityCreator(
+                data_frame=data_frame
+            )
+            data_frame = abs_humidity_creator.check_and_return_abs_hum_column()
+            return data_frame
+        else:
+            return data_frame
+
+    def _uncorrect_humidity_for_koehli(
+        self,
+        data_frame: pd.DataFrame,
+        context: CalibrationContext,
+    ):
+        """
+        Uncorrect humidity from corrected neutrons if this was done and
         the koehli method is selected.
 
         NOTE: This occurs on a copy of the crns_data_frame (i.e., the
-        changes are not maintained outside of the calibration stage).
-        It will be uncorrected a second time later when the conversion
-        to soil moisture happens, if required.
+        changes are not maintained outside of the calibration stage). It
+        will be uncorrected a second time later when the conversion to
+        soil moisture happens, if required.
+
+        Parameters
+        ----------
+        data_frame : pd.DataFrame
+            DataFrame with data for processing
+        context : _type_, optional
+            context, by default CalibrationContext
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with either correction removed or not
         """
         if (
-            self.config.neutron_conversion_method == "koehli_etal_2021"
-            and str(ColumnInfo.Name.HUMIDITY_CORRECTION)
-            in self.corrected_neutron_data_frame.columns
+            context.neutron_conversion_method == "koehli_etal_2021"
+            and str(ColumnInfo.Name.HUMIDITY_CORRECTION) in data_frame.columns
         ):
-            self.corrected_neutron_data_frame[
-                self.config.neutron_column_name
-            ] /= self.corrected_neutron_data_frame[
+            data_frame[context.neutron_column_name] /= data_frame[
                 str(ColumnInfo.Name.HUMIDITY_CORRECTION)
             ]
+            return data_frame
+        else:
+            return data_frame
 
     def extract_calibration_day_values(self):
         """
         Extracts the rows of data for each calibration day.
         """
-        calibration_indicies_dict = self._extract_calibration_day_indices(
-            hours_of_data=self.config.hours_of_data_around_calib
+
+        context = self.context
+        data_frame = self.corrected_neutron_data_frame
+        data_frame = _ensure_date_time_index(
+            data_frame=data_frame, context=context
         )
+        data_frame = self._ensure_abs_humidity_exists(data_frame=data_frame)
+        data_frame = self._uncorrect_humidity_for_koehli(
+            data_frame=data_frame, context=context
+        )
+
+        calibration_indicies_dict = self._extract_calibration_day_indices(
+            corrected_neutron_data_frame=data_frame, context=context
+        )
+
         dict_of_data = {}
         for value in calibration_indicies_dict.values():
-            tmp_df = self.corrected_neutron_data_frame.loc[value]
+            tmp_df = data_frame.loc[value]
             calib_day = None
             # Find calibration day index to use as dict key
-            for day in self.calibration_data_prepper.unique_calibration_days:
+            for day in context.unique_calibration_days:
                 calib_day = self._find_nearest_calib_day_in_indicies(
                     day=day, data_frame=tmp_df
                 )
@@ -812,9 +1096,25 @@ class PrepareNeutronCorrectedData:
                     break
             dict_of_data[calib_day] = tmp_df
 
-        self.data_dict = dict_of_data
+        context.data_dict = dict_of_data
+        return context
 
     def _find_nearest_calib_day_in_indicies(self, day, data_frame):
+        """
+        Finds the nearest calibration day to the indices.
+
+        Parameters
+        ----------
+        day : Timedelta
+            _description_
+        data_frame : pd.DataFrame
+            dataframe of data
+
+        Returns
+        -------
+        Timedelta
+            Calibration day
+        """
 
         day = pd.to_datetime(day)
         mask = (data_frame.index >= day - timedelta(hours=1)) & (
@@ -826,16 +1126,18 @@ class PrepareNeutronCorrectedData:
 
     def _extract_calibration_day_indices(
         self,
-        hours_of_data=6,
+        corrected_neutron_data_frame,
+        context: CalibrationContext,
     ):
         """
         Extracts the required indices
 
         Parameters
         ----------
-        hours_of_data : int, optional
-            The hours of data around the calibration time stampe to
-            collect, by default 6
+        corrected_neutron_data_frame : pd.DataFrame
+            DataFrame with corrected neutrons and meteorological data
+        context : CalibrationContext
+            Context for processing
 
         Returns
         -------
@@ -844,9 +1146,8 @@ class PrepareNeutronCorrectedData:
             extract from corrected neutron data.
         """
         extractor = IndicesExtractor(
-            corrected_neutron_data_frame=self.corrected_neutron_data_frame,
-            calibration_data_prepper=self.calibration_data_prepper,
-            hours_of_data_to_extract=hours_of_data,
+            corrected_neutron_data_frame=corrected_neutron_data_frame,
+            context=context,
         )
         calibration_indices = extractor.extract_calibration_day_indices()
 
@@ -862,8 +1163,7 @@ class IndicesExtractor:
     def __init__(
         self,
         corrected_neutron_data_frame,
-        calibration_data_prepper,
-        hours_of_data_to_extract=6,
+        context,
     ):
         """
         Attributes.
@@ -879,8 +1179,7 @@ class IndicesExtractor:
             stamp to collect., by default 6
         """
         self.corrected_neutron_data_frame = corrected_neutron_data_frame
-        self.calibration_data_prepper = calibration_data_prepper
-        self.hours_of_data_to_extract = hours_of_data_to_extract
+        self.context = context
 
     def _convert_to_datetime(
         self,
@@ -894,11 +1193,24 @@ class IndicesExtractor:
     def _create_time_window(
         self,
         date: pd.Timestamp,
+        context: CalibrationContext,
     ):
         """
         Create a time window around a given date.
+
+        Parameters
+        ----------
+        date : pd.Timestamp
+            Time stamp to create windows around
+        context : CalibrationContext
+            Context for processing
+
+        Returns
+        -------
+        Timedelta, Timedelta
+            Start and end Timedelta for calib window
         """
-        half_window = self.hours_of_data_to_extract / 2
+        half_window = context.hours_of_data_around_calib / 2
         window = pd.Timedelta(hours=half_window)
         return date - window, date + window
 
@@ -906,28 +1218,52 @@ class IndicesExtractor:
         self,
         start: pd.Timestamp,
         end: pd.Timestamp,
+        data_frame: pd.DataFrame,
     ):
         """
         Extract indices of data points within a given time window.
+
+        Parameters
+        ----------
+        start : pd.Timestamp
+            Start point
+        end : pd.Timestamp
+            End point
+        data_frame : pd.DataFrame
+            DataFrame
+
+        Returns
+        -------
+        List
+            Indexes in range
         """
-        mask = (self.corrected_neutron_data_frame.index >= start) & (
-            self.corrected_neutron_data_frame.index <= end
-        )
-        return self.corrected_neutron_data_frame.index[mask].tolist()
+        mask = (data_frame.index >= start) & (data_frame.index <= end)
+        return data_frame.index[mask].tolist()
 
     def extract_calibration_day_indices(self):
         """
-        Extract indices for each calibration day within a 6-hour window.
+        Extract indices for each calibration day within a time window.
+
+        Returns
+        -------
+        Dict
+            Indicies for each calibration day
         """
+        context = self.context
         unique_days = self._convert_to_datetime(
-            self.calibration_data_prepper.unique_calibration_days
+            context.unique_calibration_days
         )
 
         calibration_indices = {}
         for day in unique_days:
-            start, end = self._create_time_window(day)
+            start, end = self._create_time_window(
+                date=day,
+                context=context,
+            )
             calibration_indices[day] = self._extract_indices_within_window(
-                start, end
+                start=start,
+                end=end,
+                data_frame=self.corrected_neutron_data_frame,
             )
 
         return calibration_indices
@@ -936,21 +1272,25 @@ class IndicesExtractor:
 class CalibrationWeightsCalculator:
     def __init__(
         self,
-        time_series_data_object: PrepareNeutronCorrectedData,
-        calib_data_object: PrepareCalibrationData,
-        config: CalibrationConfiguration,
+        context: CalibrationContext,
     ):
-        self.time_series_data_object = time_series_data_object
-        self.calib_data_object = calib_data_object
-        self.config = config
+        self.context = context
 
-        self.calib_metrics_dict = {}
+    def _get_time_series_data_for_day(self, day):
+        """
+        Get data for particular day
 
-    def _get_time_series_data_for_day(
-        self,
-        day,
-    ):
-        return self.time_series_data_object.data_dict[day]
+        Parameters
+        ----------
+        day : Timedelta
+            Day
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+        return self.context.data_dict[day]
 
     @staticmethod
     def _initial_vol_sm_estimate(profiles: List):
@@ -981,25 +1321,30 @@ class CalibrationWeightsCalculator:
         """
         Applies the weighting procedure to multiple calibration days if
         present.
+
+        Returns
+        -------
+        CalibrationContext
+            With more context
         """
 
-        for day in self.calib_data_object.unique_calibration_days:
+        context = self.context
+
+        for day in context.unique_calibration_days:
 
             tmp_data = self._get_time_series_data_for_day(day)
             profiles = [
-                p
-                for p in self.calib_data_object.list_of_profiles
-                if p.calibration_day == day
+                p for p in context.list_of_profiles if p.calibration_day == day
             ]
 
             volumetric_sm_estimate = self._initial_vol_sm_estimate(
                 profiles=profiles
             )
             average_abs_air_humidity = tmp_data[
-                self.config.abs_air_humidity_column
+                context.abs_air_humidity_column
             ].mean()
             average_air_pressure = tmp_data[
-                self.config.air_pressure_column_name
+                context.air_pressure_column_name
             ].mean()
 
             field_average_sm_vol, field_average_sm_grav, footprint = (
@@ -1019,7 +1364,8 @@ class CalibrationWeightsCalculator:
                 "atmospheric_pressure": average_air_pressure,
             }
 
-            self.calib_metrics_dict[day] = output
+            context.calib_metrics_dict[day] = output
+        return context
 
     def calculate_weighted_sm_average(
         self,
@@ -1081,7 +1427,7 @@ class CalibrationWeightsCalculator:
         field_average_sm_volumetric = None
         field_average_sm_gravimetric = None
 
-        while accuracy > self.config.converge_accuracy:
+        while accuracy > self.context.converge_accuracy:
             profile_sm_averages_volumetric = []
             profile_sm_averages_gravimetric = []
             profiles_horizontal_weights = []
@@ -1100,7 +1446,7 @@ class CalibrationWeightsCalculator:
                     volumetric_soil_moisture=volumetric_sm_estimate,
                 )
 
-                if self.config.vertical_weight_method == "equal":
+                if self.context.vertical_weight_method == "equal":
                     p.vertical_weights = np.ones(len(p.rescaled_distance))
                 else:
                     p.vertical_weights = Schroen2017.vertical_weighting(
@@ -1117,7 +1463,7 @@ class CalibrationWeightsCalculator:
                 p.sm_total_weighted_avg_grv = np.average(
                     p.sm_total_grv, weights=p.vertical_weights
                 )
-                if self.config.horizontal_weight_method == "equal":
+                if self.context.horizontal_weight_method == "equal":
                     p.horizontal_weight = np.ones(len(p.rescaled_distance))
                 else:
                     p.horizontal_weight = Schroen2017.horizontal_weighting(
@@ -1162,8 +1508,9 @@ class CalibrationWeightsCalculator:
 
             # check convergence accuracy
             if (
-                self.config.vertical_weight_method == "schroen_etal_2017"
-                and self.config.horizontal_weight_method == "schroen_etal_2017"
+                self.context.vertical_weight_method == "schroen_etal_2017"
+                and self.context.horizontal_weight_method
+                == "schroen_etal_2017"
             ):
                 accuracy = abs(
                     (field_average_sm_volumetric - volumetric_sm_estimate)
@@ -1171,9 +1518,9 @@ class CalibrationWeightsCalculator:
                 )
             else:
                 # Stop convergence if any weighting left as equal
-                accuracy = self.congfig.converge_accuracy
+                accuracy = self.context.converge_accuracy
 
-            if accuracy > self.config.converge_accuracy:
+            if accuracy > self.context.converge_accuracy:
 
                 volumetric_sm_estimate = copy.deepcopy(
                     field_average_sm_volumetric
@@ -1204,7 +1551,9 @@ class CalibrationWeightsCalculator:
         pd.DataFrame
             DataFrame with information created during processing.
         """
-        df = pd.DataFrame.from_dict(self.calib_metrics_dict, orient="index")
+        df = pd.DataFrame.from_dict(
+            self.context.calib_metrics_dict, orient="index"
+        )
         df = df.reset_index()
         df = df.rename(
             columns={
@@ -1215,6 +1564,17 @@ class CalibrationWeightsCalculator:
             }
         )
         return df
+
+
+class CalculateN0:
+    def __init__(
+        self,
+        context: CalibrationContext | None = None,
+    ):
+        self.context = context
+
+    def set_values_to_calibrate(self):
+        pass
 
     def _find_optimal_n0_single_day_desilets_etal_2010(
         self,
@@ -1276,7 +1636,7 @@ class CalibrationWeightsCalculator:
         abs_air_humidity: float,
         lattice_water: float,
         water_equiv_soil_organic_carbon: float,
-        koehli_method_form: str,
+        koehli_parameters: str,
     ):
         """
         Finds optimal N0 number when using Koehli etal method
@@ -1293,7 +1653,7 @@ class CalibrationWeightsCalculator:
             Lattice water content of soil
         water_equiv_soil_organic_carbon : float
             water equivelant of soil organic carbon
-        koehli_method_form: str
+        koehli_parameters: str
             The specific method form of Koehli method
 
         Returns
@@ -1315,7 +1675,7 @@ class CalibrationWeightsCalculator:
                 abs_air_humidity=abs_air_humidity,
                 lattice_water=lattice_water,
                 water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
-                koehli_method_form=koehli_method_form,
+                koehli_parameters=koehli_parameters,
             )
             rel_error = (
                 abs(sm_prediction - gravimetric_sm_on_day_total)
@@ -1332,9 +1692,7 @@ class CalibrationWeightsCalculator:
         results_df = n0_range.apply(calculate_sm_and_error_koehli)
         return results_df
 
-    def find_optimal_N0(
-        self,
-    ):
+    def find_optimal_N0(self):
         """
         Finds the optimal N0 number for the site using the weighted
         field average soil mositure.
@@ -1345,11 +1703,11 @@ class CalibrationWeightsCalculator:
             The optimal n0 across all the supplied calibration days.
         """
         # Create neutron range
+        context = self.context
+
         all_neutron_values = []
-        for day in self.calib_metrics_dict.keys():
-            day_neutrons = self.time_series_data_object.data_dict[day][
-                self.config.neutron_column_name
-            ]
+        for day in context.calib_metrics_dict.keys():
+            day_neutrons = context.data_dict[day][context.neutron_column_name]
             all_neutron_values.extend(day_neutrons.values)
 
         neutron_mean = pd.Series(all_neutron_values).mean()
@@ -1357,31 +1715,31 @@ class CalibrationWeightsCalculator:
 
         dict_of_df = {}
 
-        for day, metrics in self.calib_metrics_dict.items():
+        for day, metrics in context.calib_metrics_dict.items():
 
-            neutron_mean = self.time_series_data_object.data_dict[day][
-                self.config.neutron_column_name
+            neutron_mean = context.data_dict[day][
+                context.neutron_column_name
             ].mean()
             grav_sm = metrics["field_average_soil_moisture_gravimetric"]
 
-            if self.config.neutron_conversion_method == "desilets_etal_2010":
+            if context.neutron_conversion_method == "desilets_etal_2010":
                 df_calib = self._find_optimal_n0_single_day_desilets_etal_2010(
                     gravimetric_sm_on_day=grav_sm,
                     neutron_mean=neutron_mean,
                     n0_range=n0_range,
-                    lattice_water=self.config.value_avg_lattice_water,
-                    water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
+                    lattice_water=context.value_avg_lattice_water,
+                    water_equiv_soil_organic_carbon=context.value_avg_soil_organic_carbon_water_equiv,
                 )
 
-            elif self.config.neutron_conversion_method == "koehli_etal_2021":
+            elif context.neutron_conversion_method == "koehli_etal_2021":
                 df_calib = self._find_optimal_n0_single_day_koehli_etal_2021(
                     gravimetric_sm_on_day=grav_sm,
                     neutron_mean=neutron_mean,
                     n0_range=n0_range,
                     abs_air_humidity=metrics["absolute_air_humidity"],
-                    lattice_water=self.config.value_avg_lattice_water,
-                    water_equiv_soil_organic_carbon=self.config.value_avg_soil_organic_carbon_water_equiv,
-                    koehli_method_form=self.config.koehli_method_form,
+                    lattice_water=context.value_avg_lattice_water,
+                    water_equiv_soil_organic_carbon=context.value_avg_soil_organic_carbon_water_equiv,
+                    koehli_parameters=context.koehli_parameters,
                 )
             dict_of_df[day] = df_calib
 

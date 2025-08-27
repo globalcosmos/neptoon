@@ -137,7 +137,7 @@ def neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
     abs_air_humidity: float,
     lattice_water: float = 0.0,
     water_equiv_soil_organic_carbon: float = 0.0,
-    koehli_method_form: Literal[
+    koehli_parameters: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
         "Mar12_atmprof",
@@ -199,7 +199,7 @@ def neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
             gravimetric_sm=gravimetric_soil_moisture_2,
             abs_air_humidity=abs_air_humidity,
             n0=n0,
-            koehli_method_form=koehli_method_form,
+            koehli_parameters=koehli_parameters,
             offset=lattice_water + water_equiv_soil_organic_carbon,
         )
         if neutron_count < n2:
@@ -214,7 +214,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
     abs_air_humidity: float,
     n0: float,
     offset: float = 0.0,
-    koehli_method_form: Literal[
+    koehli_parameters: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
         "Mar12_atmprof",
@@ -255,7 +255,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
         water
     bulk_density : float
         dry soil bulk density g/cm^3
-    method : str
+    koehli_parameters : str
         The method to apply. See reference. default Mar21_uranos_drf
     biomass : float
         The biomass at the site kg/m^2
@@ -267,7 +267,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
         soil_moisture_total = 0.001
     p = []
 
-    if koehli_method_form == "Jan23_uranos":
+    if koehli_parameters == "Jan23_uranos":
         p = [
             4.2580,
             0.0212,
@@ -279,7 +279,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0003200,
             -0.0000000180,
         ]
-    elif koehli_method_form == "Jan23_mcnpfull":
+    elif koehli_parameters == "Jan23_mcnpfull":
         p = [
             7.0000,
             0.0250,
@@ -291,7 +291,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0004100,
             -0.0000000410,
         ]
-    elif koehli_method_form == "Mar12_atmprof":
+    elif koehli_parameters == "Mar12_atmprof":
         p = [
             4.4775,
             0.0230,
@@ -303,7 +303,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0003100,
             -0.0000000003,
         ]
-    elif koehli_method_form == "Mar21_mcnp_drf":
+    elif koehli_parameters == "Mar21_mcnp_drf":
         p = [
             1.0940,
             0.0280,
@@ -315,7 +315,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0001150,
             0.0000000000,
         ]
-    elif koehli_method_form == "Mar21_mcnp_ewin":
+    elif koehli_parameters == "Mar21_mcnp_ewin":
         p = [
             1.2650,
             0.0259,
@@ -327,7 +327,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0001200,
             0.0000000000,
         ]
-    elif koehli_method_form == "Mar21_uranos_drf":
+    elif koehli_parameters == "Mar21_uranos_drf":
         p = [
             1.0240,
             0.0226,
@@ -339,7 +339,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0000740,
             0.0000000000,
         ]
-    elif koehli_method_form == "Mar21_uranos_ewin":
+    elif koehli_parameters == "Mar21_uranos_ewin":
         p = [
             1.2230,
             0.0185,
@@ -351,7 +351,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0000920,
             0.0000000000,
         ]
-    elif koehli_method_form == "Mar22_mcnp_drf_Jan":
+    elif koehli_parameters == "Mar22_mcnp_drf_Jan":
         p = [
             1.0820,
             0.0250,
@@ -363,7 +363,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0000500,
             0.0000000000,
         ]
-    elif koehli_method_form == "Mar22_mcnp_ewin_gd":
+    elif koehli_parameters == "Mar22_mcnp_ewin_gd":
         p = [
             1.1630,
             0.0244,
@@ -375,7 +375,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0000580,
             0.0000000000,
         ]
-    elif koehli_method_form == "Mar22_uranos_drf_gd":
+    elif koehli_parameters == "Mar22_uranos_drf_gd":
         p = [
             1.1180,
             0.0221,
@@ -387,7 +387,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0000810,
             0.0000000000,
         ]
-    elif koehli_method_form == "Mar22_uranos_ewin_chi2":
+    elif koehli_parameters == "Mar22_uranos_ewin_chi2":
         p = [
             1.0220,
             0.0218,
@@ -399,7 +399,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0000780,
             0.0000000000,
         ]
-    elif koehli_method_form == "Mar22_uranos_drf_h200m":
+    elif koehli_parameters == "Mar22_uranos_drf_h200m":
         p = [
             1.0210,
             0.0222,
@@ -411,7 +411,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             0.0000740,
             0.0000000000,
         ]
-    elif koehli_method_form == "Aug08_mcnp_drf":
+    elif koehli_parameters == "Aug08_mcnp_drf":
         p = [
             1.110773444917129,
             0.034319446894963,
@@ -423,7 +423,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             5.0316941885e-005,
             0.0000000000,
         ]
-    elif koehli_method_form == "Aug08_mcnp_ewin":
+    elif koehli_parameters == "Aug08_mcnp_ewin":
         p = [
             1.271225645585415,
             0.024790265564895,
@@ -435,7 +435,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             6.198559205414182,
             0.0000000000,
         ]
-    elif koehli_method_form == "Aug12_uranos_drf":
+    elif koehli_parameters == "Aug12_uranos_drf":
         p = [
             1.042588152355816,
             0.024362250648228,
@@ -447,7 +447,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             6.6412111902e-005,
             0.0000000000,
         ]
-    elif koehli_method_form == "Aug12_uranos_ewin":
+    elif koehli_parameters == "Aug12_uranos_ewin":
         p = [
             1.209060105287452,
             0.021546879683024,
@@ -459,7 +459,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             8.8939419535e-005,
             0.0000000000,
         ]
-    elif koehli_method_form == "Aug13_uranos_atmprof":
+    elif koehli_parameters == "Aug13_uranos_atmprof":
         p = [
             1.044276170094123,
             0.024099232055379,
@@ -471,7 +471,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
             7.3282344356e-005,
             0.0000000000,
         ]
-    elif koehli_method_form == "Aug13_uranos_atmprof2":
+    elif koehli_parameters == "Aug13_uranos_atmprof2":
         p = [
             4.31237,
             0.020765,
@@ -551,7 +551,7 @@ def compute_n0_koehli_etal_2021(
     neutron_count: float,
     lattice_water=0.0,
     water_equiv_soil_organic_carbon=0.0,
-    koehli_method_form: Literal[
+    koehli_parameters: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
         "Mar12_atmprof",
@@ -596,7 +596,7 @@ def compute_n0_koehli_etal_2021(
         Lattice water - decimal percent e.g. 0.002
     water_equiv_soil_organic_carbon : float
         Water equivalent soil organic carbon - decimal percent e.g, 0.02
-    method: str
+    koehli_parameters: str
         one of "Mar21_uranos_drf", "Aug13_uranos_atmprof", ...
 
     Example
@@ -625,7 +625,7 @@ def compute_n0_koehli_etal_2021(
                 abs_air_humidity=abs_air_humidity,
                 n0=n0_try,
                 offset=off,
-                koehli_method_form=koehli_method_form,
+                koehli_parameters=koehli_parameters,
                 biomass=biomass,
             )
         )
