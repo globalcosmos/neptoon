@@ -4,7 +4,8 @@ from typing import Literal
 
 
 def neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
-    neutrons,
+    neutron_count=None,
+    neutrons=None,
     n0=1000,
     a0=0.0808,
     a1=0.372,
@@ -18,8 +19,10 @@ def neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
 
     Parameters
     ----------
-    neutrons : float
+    neutron_count : float
         corrected neutron count
+    neutrons : float
+        alias for neutron count
     n0 : int | float, optional
         the n0 calibration term, by default 1000
     a0 : float, optional
@@ -34,7 +37,9 @@ def neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
     float
         calculated gravimetric soil moisture value g/g
     """
-    return a0 / (neutrons / n0 - a1) - a2
+    if neutrons:
+        neutron_count = neutrons
+    return a0 / (neutron_count / n0 - a1) - a2
 
 
 def neutrons_to_vol_soil_moisture_desilets_etal_2010(
@@ -156,7 +161,7 @@ def neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
         "Aug12_uranos_ewin",
         "Aug13_uranos_atmprof",
         "Aug13_uranos_atmprof2",
-    ] = "Mar21_uranos_drf",
+    ] = "Mar21_mcnp_drf",
 ):
     """
     Converts corrected neutrons counts into volumetric soil moisture

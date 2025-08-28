@@ -55,7 +55,7 @@ class CalibrationConfiguration:
             "Aug12_uranos_ewin",
             "Aug13_uranos_atmprof",
             "Aug13_uranos_atmprof2",
-        ] = "Mar21_uranos_drf",
+        ] = "Mar21_mcnp_drf",
         horizontal_weight_method: Literal[
             "schroen_etal_2017", "equal"
         ] = "schroen_etal_2017",
@@ -405,10 +405,16 @@ def _ensure_date_time_index(
         If the expected datetime column is found neither as column nor index
     """
     target_col = context.calib_data_date_time_column_name
-
-    if data_frame.index.name == target_col or (
-        hasattr(data_frame.index, "names")
-        and target_col in data_frame.index.names
+    if (
+        (data_frame.index.name == target_col)
+        or (
+            hasattr(data_frame.index, "names")
+            and target_col in data_frame.index.names
+        )
+        or (
+            isinstance(data_frame.index, pd.DatetimeIndex)
+            and target_col not in data_frame.columns
+        )
     ):
         print(f"Datetime already set as index ('{target_col}'), leaving as-is")
         # Ensure it's datetime type if it isn't already
@@ -1609,7 +1615,7 @@ class CalculateN0:
         def calculate_sm_and_error_desilets(n0):
             sm_prediction = (
                 neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
-                    neutrons=neutron_mean,
+                    neutron_count=neutron_mean,
                     n0=n0,
                 )
             )
@@ -1761,3 +1767,12 @@ class CalculateN0:
         min_error_idx = total_error_df[new_total_error_col_name].idxmin()
         n0_optimal = total_error_df.loc[min_error_idx, "N0"]
         return n0_optimal
+
+
+# CalculateN0.find_optimal_n0(
+#     soil_moisture = [0.2, 0.21],
+#     corrected_neutrons = [1000, 1040],
+#     lattice_water = 0.001,
+#     water_equiv_soc = 0.02,
+#     abs_humidity = [2.35, 2.50], # for koehli
+# )
