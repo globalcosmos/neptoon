@@ -4,6 +4,7 @@ import copy
 from datetime import timedelta
 from typing import Literal, List
 from dataclasses import dataclass, field
+import statistics
 
 # from scipy.optimize import minimize
 from neptoon.columns import ColumnInfo
@@ -243,8 +244,9 @@ class CalibrationContext:
     unique_calibration_days: list = field(default_factory=list)
     list_of_data_frames: list = field(default_factory=list)
     list_of_profiles: list = field(default_factory=list)
-    data_dict: dict = field(default_factory=dict)
+    calib_day_df_dict: dict = field(default_factory=dict)
     calib_metrics_dict: dict = field(default_factory=dict)
+    calibration_results_by_day: dict = field(default_factory=dict)
 
     @classmethod
     def from_config(cls, config: CalibrationConfiguration):
@@ -1102,7 +1104,7 @@ class PrepareNeutronCorrectedData:
                     break
             dict_of_data[calib_day] = tmp_df
 
-        context.data_dict = dict_of_data
+        context.calib_day_df_dict = dict_of_data
         return context
 
     def _find_nearest_calib_day_in_indicies(self, day, data_frame):
@@ -1296,7 +1298,7 @@ class CalibrationWeightsCalculator:
         _type_
             _description_
         """
-        return self.context.data_dict[day]
+        return self.context.calib_day_df_dict[day]
 
     @staticmethod
     def _initial_vol_sm_estimate(profiles: List):
@@ -1352,6 +1354,9 @@ class CalibrationWeightsCalculator:
             average_air_pressure = tmp_data[
                 context.air_pressure_column_name
             ].mean()
+            average_neutron_count = tmp_data[
+                context.neutron_column_name
+            ].mean()
 
             field_average_sm_vol, field_average_sm_grav, footprint = (
                 self.calculate_weighted_sm_average(
@@ -1365,6 +1370,7 @@ class CalibrationWeightsCalculator:
             output = {
                 "field_average_soil_moisture_volumetric": field_average_sm_vol,
                 "field_average_soil_moisture_gravimetric": field_average_sm_grav,
+                "average_neutron_count": average_neutron_count,
                 "horizontal_footprint_radius_in_meters": footprint,
                 "absolute_air_humidity": average_abs_air_humidity,
                 "atmospheric_pressure": average_air_pressure,
@@ -1578,9 +1584,89 @@ class CalculateN0:
         context: CalibrationContext | None = None,
     ):
         self.context = context
+        self._using_custom_vals = False
+        self._neutron_counts = None  # only used for custom inputs
 
-    def set_values_to_calibrate(self):
-        pass
+    def set_values(
+        self,
+        soil_moisture: list,
+        neutron_counts: list,
+        conversion_method: Literal[
+            "desilets_etal_2010", "koehli_etal_2021"
+        ] = "desilets_etal_2010",
+        lattice_water=0,
+        water_equiv_soil_organic_carbon=0,
+        absolute_humidity=None,
+        koehli_parameters: Literal[
+            "Jan23_uranos",
+            "Jan23_mcnpfull",
+            "Mar12_atmprof",
+            "Mar21_mcnp_drf",
+            "Mar21_mcnp_ewin",
+            "Mar21_uranos_drf",
+            "Mar21_uranos_ewin",
+            "Mar22_mcnp_drf_Jan",
+            "Mar22_mcnp_ewin_gd",
+            "Mar22_uranos_drf_gd",
+            "Mar22_uranos_ewin_chi2",
+            "Mar22_uranos_drf_h200m",
+            "Aug08_mcnp_drf",
+            "Aug08_mcnp_ewin",
+            "Aug12_uranos_drf",
+            "Aug12_uranos_ewin",
+            "Aug13_uranos_atmprof",
+            "Aug13_uranos_atmprof2",
+        ] = "Mar21_mcnp_drf",
+    ):
+        def _ensure_list(value, name):
+            if value is None:
+                return None
+            if isinstance(value, (int, float)):
+                return [float(value)]
+            if isinstance(value, list):
+                return [float(x) for x in value]
+            raise TypeError(
+                f"{name} must be a number, list of numbers, or None"
+            )
+
+        soil_moisture = _ensure_list(soil_moisture, "soil_moisture")
+        neutron_counts = _ensure_list(neutron_counts, "neutron_counts")
+        self._neutron_counts = neutron_counts
+        if len(soil_moisture) != len(neutron_counts):
+            raise ValueError(
+                f"soil_moisture and neutron_count must have the same length. "
+                f"Got {len(soil_moisture)} and {len(neutron_counts)} respectively."
+            )
+
+        if absolute_humidity is None:
+            absolute_humidity = [0.0] * len(soil_moisture)
+        else:
+            absolute_humidity = _ensure_list(
+                absolute_humidity, "absolute_humidity"
+            )
+            if len(absolute_humidity) != len(neutron_counts):
+                raise ValueError(
+                    f"absolute_humidity and neutron_count must have the same length. "
+                    f"Got {len(soil_moisture)} and {len(neutron_counts)} respectively."
+                )
+
+        metrics_dict = {}
+        for i in range(len(soil_moisture)):
+            output = {
+                "field_average_soil_moisture_gravimetric": soil_moisture[i],
+                "average_neutron_count": neutron_counts[i],
+                "absolute_air_humidity": absolute_humidity[i],
+            }
+            metrics_dict[i] = output
+
+        self.context = CalibrationContext(
+            neutron_conversion_method=conversion_method,
+            value_avg_lattice_water=lattice_water,
+            value_avg_soil_organic_carbon_water_equiv=water_equiv_soil_organic_carbon,
+            koehli_parameters=koehli_parameters,
+            calib_metrics_dict=metrics_dict,
+        )
+        self._using_custom_vals = True
 
     def _find_optimal_n0_single_day_desilets_etal_2010(
         self,
@@ -1637,7 +1723,7 @@ class CalculateN0:
     def _find_optimal_n0_single_day_koehli_etal_2021(
         self,
         gravimetric_sm_on_day: float,
-        neutron_mean: int,
+        neutron_mean: float,
         n0_range: pd.Series,
         abs_air_humidity: float,
         lattice_water: float,
@@ -1698,6 +1784,42 @@ class CalculateN0:
         results_df = n0_range.apply(calculate_sm_and_error_koehli)
         return results_df
 
+    def _create_n0_range(
+        self,
+        context: CalibrationContext,
+        custom_range=False,
+        neutron_counts=None,
+    ):
+        """
+        Create a range of n0
+
+        Parameters
+        ----------
+        context : CalibrationContext
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+        if custom_range:
+            total_neutron_mean = statistics.mean(neutron_counts)
+        else:
+            all_neutron_values = []
+            for day in context.calib_metrics_dict.keys():
+                day_neutrons = context.calib_day_df_dict[day][
+                    context.neutron_column_name
+                ]
+                all_neutron_values.extend(day_neutrons.values)
+
+            total_neutron_mean = pd.Series(all_neutron_values).mean()
+
+        n0_range = pd.Series(
+            range(int(total_neutron_mean), int(total_neutron_mean * 2.5))
+        )
+        return n0_range
+
     def find_optimal_N0(self):
         """
         Finds the optimal N0 number for the site using the weighted
@@ -1711,21 +1833,24 @@ class CalculateN0:
         # Create neutron range
         context = self.context
 
-        all_neutron_values = []
-        for day in context.calib_metrics_dict.keys():
-            day_neutrons = context.data_dict[day][context.neutron_column_name]
-            all_neutron_values.extend(day_neutrons.values)
+        if self._using_custom_vals:
+            n0_range = self._create_n0_range(
+                context=context,
+                custom_range=True,
+                neutron_counts=self._neutron_counts,
+            )
+        else:
+            n0_range = self._create_n0_range(context=context)
 
-        neutron_mean = pd.Series(all_neutron_values).mean()
-        n0_range = pd.Series(range(int(neutron_mean), int(neutron_mean * 2.5)))
-
-        dict_of_df = {}
+        lattice_water = context.value_avg_lattice_water
+        water_equiv_soil_organic_carbon = (
+            context.value_avg_soil_organic_carbon_water_equiv
+        )
+        context.calibration_results_by_day = {}
 
         for day, metrics in context.calib_metrics_dict.items():
 
-            neutron_mean = context.data_dict[day][
-                context.neutron_column_name
-            ].mean()
+            neutron_mean = metrics["average_neutron_count"]
             grav_sm = metrics["field_average_soil_moisture_gravimetric"]
 
             if context.neutron_conversion_method == "desilets_etal_2010":
@@ -1733,27 +1858,30 @@ class CalculateN0:
                     gravimetric_sm_on_day=grav_sm,
                     neutron_mean=neutron_mean,
                     n0_range=n0_range,
-                    lattice_water=context.value_avg_lattice_water,
-                    water_equiv_soil_organic_carbon=context.value_avg_soil_organic_carbon_water_equiv,
+                    lattice_water=lattice_water,
+                    water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
                 )
 
             elif context.neutron_conversion_method == "koehli_etal_2021":
+
                 df_calib = self._find_optimal_n0_single_day_koehli_etal_2021(
                     gravimetric_sm_on_day=grav_sm,
                     neutron_mean=neutron_mean,
                     n0_range=n0_range,
                     abs_air_humidity=metrics["absolute_air_humidity"],
-                    lattice_water=context.value_avg_lattice_water,
-                    water_equiv_soil_organic_carbon=context.value_avg_soil_organic_carbon_water_equiv,
+                    lattice_water=lattice_water,
+                    water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
                     koehli_parameters=context.koehli_parameters,
                 )
-            dict_of_df[day] = df_calib
+            context.calibration_results_by_day[day] = df_calib
 
-        first_day = next(iter(dict_of_df))
-        total_error_df = pd.DataFrame({"N0": dict_of_df[first_day]["N0"]})
+        first_day = next(iter(context.calibration_results_by_day))
+        total_error_df = pd.DataFrame(
+            {"N0": context.calibration_results_by_day[first_day]["N0"]}
+        )
         total_error_df["total_error"] = 0
         day_count = 0
-        for day_df in dict_of_df.values():
+        for day_df in context.calibration_results_by_day.values():
             total_error_df["total_error"] += day_df["relative_error"]
             day_count += 1
 
@@ -1763,16 +1891,8 @@ class CalculateN0:
             axis=1,
             inplace=True,
         )
+        print(total_error_df)
 
         min_error_idx = total_error_df[new_total_error_col_name].idxmin()
         n0_optimal = total_error_df.loc[min_error_idx, "N0"]
         return n0_optimal
-
-
-# CalculateN0.find_optimal_n0(
-#     soil_moisture = [0.2, 0.21],
-#     corrected_neutrons = [1000, 1040],
-#     lattice_water = 0.001,
-#     water_equiv_soc = 0.02,
-#     abs_humidity = [2.35, 2.50], # for koehli
-# )
