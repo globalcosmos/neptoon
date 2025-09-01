@@ -1590,7 +1590,7 @@ class CalculateN0:
     def set_values(
         self,
         soil_moisture: list,
-        neutron_counts: list,
+        corrected_neutron_counts: list,
         conversion_method: Literal[
             "desilets_etal_2010", "koehli_etal_2021"
         ] = "desilets_etal_2010",
@@ -1630,12 +1630,14 @@ class CalculateN0:
             )
 
         soil_moisture = _ensure_list(soil_moisture, "soil_moisture")
-        neutron_counts = _ensure_list(neutron_counts, "neutron_counts")
-        self._neutron_counts = neutron_counts
-        if len(soil_moisture) != len(neutron_counts):
+        corrected_neutron_counts = _ensure_list(
+            corrected_neutron_counts, "neutron_counts"
+        )
+        self._neutron_counts = corrected_neutron_counts
+        if len(soil_moisture) != len(corrected_neutron_counts):
             raise ValueError(
                 f"soil_moisture and neutron_count must have the same length. "
-                f"Got {len(soil_moisture)} and {len(neutron_counts)} respectively."
+                f"Got {len(soil_moisture)} and {len(corrected_neutron_counts)} respectively."
             )
 
         if absolute_humidity is None:
@@ -1644,17 +1646,17 @@ class CalculateN0:
             absolute_humidity = _ensure_list(
                 absolute_humidity, "absolute_humidity"
             )
-            if len(absolute_humidity) != len(neutron_counts):
+            if len(absolute_humidity) != len(corrected_neutron_counts):
                 raise ValueError(
                     f"absolute_humidity and neutron_count must have the same length. "
-                    f"Got {len(soil_moisture)} and {len(neutron_counts)} respectively."
+                    f"Got {len(soil_moisture)} and {len(corrected_neutron_counts)} respectively."
                 )
 
         metrics_dict = {}
         for i in range(len(soil_moisture)):
             output = {
                 "field_average_soil_moisture_gravimetric": soil_moisture[i],
-                "average_neutron_count": neutron_counts[i],
+                "average_neutron_count": corrected_neutron_counts[i],
                 "absolute_air_humidity": absolute_humidity[i],
             }
             metrics_dict[i] = output
@@ -1891,8 +1893,18 @@ class CalculateN0:
             axis=1,
             inplace=True,
         )
-        print(total_error_df)
-
         min_error_idx = total_error_df[new_total_error_col_name].idxmin()
         n0_optimal = total_error_df.loc[min_error_idx, "N0"]
         return n0_optimal
+
+
+n0_calc = CalculateN0()
+n0_calc.set_values(
+    soil_moisture=[0.4, 0.2],
+    corrected_neutron_counts=[1200, 1100],
+    lattice_water=0.001,
+    water_equiv_soil_organic_carbon=0.02,
+    absolute_humidity=[2.35, 2.50],  # for koehli
+    conversion_method="koehli_etal_2021",
+)
+n0_calc.find_optimal_N0()
