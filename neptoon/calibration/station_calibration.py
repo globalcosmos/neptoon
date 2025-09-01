@@ -1898,13 +1898,13 @@ class CalculateN0:
         return n0_optimal
 
 
-n0_calc = CalculateN0()
-n0_calc.set_values(
-    soil_moisture=[0.4, 0.2],
-    corrected_neutron_counts=[1200, 1100],
-    lattice_water=0.001,
-    water_equiv_soil_organic_carbon=0.02,
-    absolute_humidity=[2.35, 2.50],  # for koehli
-    conversion_method="koehli_etal_2021",
-)
-n0_calc.find_optimal_N0()
+# n0_calc = CalculateN0()
+# n0_calc.set_values(
+#     soil_moisture=[0.4, 0.2],
+#     corrected_neutron_counts=[1200, 1100],
+#     lattice_water=0.001,
+#     water_equiv_soil_organic_carbon=0.02,
+#     absolute_humidity=[2.35, 2.50],  # for koehli
+#     conversion_method="koehli_etal_2021",
+# )
+# n0_calc.find_optimal_N0()
