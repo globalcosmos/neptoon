@@ -1459,7 +1459,9 @@ class CalibrationWeightsCalculator:
                 )
 
                 if self.context.vertical_weight_method == "equal":
-                    p.vertical_weights = np.ones(len(p.rescaled_distance))
+                    p.vertical_weights = np.ones_like(
+                        p.soil_moisture_gravimetric
+                    )
                 else:
                     p.vertical_weights = Schroen2017.vertical_weighting(
                         depth=p.depth,
@@ -1476,7 +1478,7 @@ class CalibrationWeightsCalculator:
                     p.sm_total_grv, weights=p.vertical_weights
                 )
                 if self.context.horizontal_weight_method == "equal":
-                    p.horizontal_weight = np.ones(len(p.rescaled_distance))
+                    p.horizontal_weight = 1
                 else:
                     p.horizontal_weight = Schroen2017.horizontal_weighting(
                         distance=p.rescaled_distance,
