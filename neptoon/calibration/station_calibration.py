@@ -505,7 +505,7 @@ class CalibrationStation:
 
         # Weight samples of sm
         self.calibrator = CalibrationWeightsCalculator(context=self.context)
-        self.context = self.calibrator.apply_weighting_to_multiple_days()
+        self.context = self.calibrator.calculate_all_sample_weights()
 
         # Find optimal N0
         n0_finder = CalculateN0(context=self.context)
@@ -757,19 +757,28 @@ class PrepareCalibrationData:
         """
         distances = profile_data_frame[context.distance_column].median()
         depths = profile_data_frame[context.sample_depth_column]
-        bulk_density = profile_data_frame[
-            context.bulk_density_of_sample_column
-        ]
 
         soil_moisture_gravimetric = profile_data_frame[
             context.soil_moisture_gravimetric_column
         ]
 
-        soil_organic_carbon = profile_data_frame[
-            context.soil_organic_carbon_column
-        ]
+        try:
+            bulk_density = profile_data_frame[
+                context.bulk_density_of_sample_column
+            ]
+        except KeyError:
+            bulk_density = [np.nan] * len(soil_moisture_gravimetric)
+        try:
+            soil_organic_carbon = profile_data_frame[
+                context.soil_organic_carbon_column
+            ]
+        except KeyError:
+            soil_organic_carbon = [np.nan] * len(soil_moisture_gravimetric)
 
-        lattice_water = profile_data_frame[context.lattice_water_column]
+        try:
+            lattice_water = profile_data_frame[context.lattice_water_column]
+        except KeyError:
+            lattice_water = [np.nan] * len(soil_moisture_gravimetric)
 
         # only need one calibration datetime
         calibration_datetime = next(iter(profile_data_frame.index))
@@ -822,7 +831,7 @@ class PrepareCalibrationData:
                 )
                 raise ValueError(message)
             else:
-                message = "Using the provided site average bulk density value."
+                message = f"Using the provided site average bulk density value: {context.value_avg_bulk_density}"
                 print(message)
 
         else:
@@ -868,9 +877,7 @@ class PrepareCalibrationData:
                 )
                 raise ValueError(message)
             else:
-                message = (
-                    "Using the provided site average lattice water value."
-                )
+                message = f"Using the provided site average lattice water value: {context.value_avg_lattice_water}."
                 print(message)
 
         else:
@@ -917,7 +924,7 @@ class PrepareCalibrationData:
                 )
                 raise ValueError(message)
             else:
-                message = "Using the provided site average soil_organic_carbon value."
+                message = f"Using the provided site average soil_organic_carbon value: {context.value_avg_soil_organic_carbon}"
                 print(message)
 
         else:
@@ -1294,8 +1301,63 @@ class IndicesExtractor:
 class CalibrationWeightsCalculator:
     def __init__(
         self,
-        context: CalibrationContext,
+        context: CalibrationContext | None = None,
     ):
+        self.context = context
+
+    def set_values(
+        self,
+        config: CalibrationConfiguration,
+        calibration_df: pd.DataFrame,
+        absolute_humidity: list,
+        air_pressure: list,
+    ):
+        """
+        Set required values for calculating weights on calibration data.
+        Use this when you already have derived values (e.g., air
+        pressure during calibration period), and want to submit them
+        directly.
+
+        Parameters
+        ----------
+        config : CalibrationConfiguration
+            Calibration config with required information for finding
+            sample weights.
+        calibration_df : pd.DataFrame
+            Calibration sample data
+        absolute_humidity : list
+            List of absolute humidity values, one for each calibration
+            day in the order they appear in the dataframe.
+        air_pressure : list
+            List of atmospheric pressure values, one for each
+            calibration day in the order they appear in the dataframe.
+        bulk_density : float | None, optional
+            Bulk Density for the site, by default None
+        lattice_water : float | None, optional
+            Lattice water, by default None
+        soil_organic_carbon : float | None, optional
+            Soil organic carbon, by default None
+        """
+
+        context = CalibrationContext().from_config(config=config)
+        average_neutron_count = np.ones_like(
+            absolute_humidity
+        )  # Need this to not break code
+
+        calib_df_prepper = PrepareCalibrationData(
+            calibration_data_frame=calibration_df, context=context
+        )
+        context = calib_df_prepper.prepare_calibration_data()
+
+        for i in range(len(absolute_humidity)):
+            day = context.unique_calibration_days[i]
+            data = {
+                context.abs_air_humidity_column: absolute_humidity[i],
+                context.air_pressure_column_name: air_pressure[i],
+                context.neutron_column_name: average_neutron_count[i],
+            }
+            tmp_df = pd.DataFrame(data=data, index=[day])
+            context.calib_day_df_dict[day] = tmp_df
         self.context = context
 
     def _get_time_series_data_for_day(self, day):
@@ -1339,7 +1401,7 @@ class CalibrationWeightsCalculator:
         sm_estimate = np.mean(valid_values)
         return sm_estimate
 
-    def apply_weighting_to_multiple_days(self):
+    def calculate_all_sample_weights(self):
         """
         Applies the weighting procedure to multiple calibration days if
         present.
@@ -1373,7 +1435,7 @@ class CalibrationWeightsCalculator:
             ].mean()
 
             field_average_sm_vol, field_average_sm_grav, footprint = (
-                self.calculate_weighted_sm_average(
+                self._calculate_weighted_sm_average(
                     profiles=profiles,
                     initial_volumetric_sm_estimate=volumetric_sm_estimate,
                     average_abs_air_humidity=average_abs_air_humidity,
@@ -1395,7 +1457,7 @@ class CalibrationWeightsCalculator:
         context = self._sample_profiles_to_dataframe(context)
         return context
 
-    def calculate_weighted_sm_average(
+    def _calculate_weighted_sm_average(
         self,
         profiles: List,
         initial_volumetric_sm_estimate: float,
