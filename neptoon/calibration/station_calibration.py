@@ -247,6 +247,7 @@ class CalibrationContext:
     calib_day_df_dict: dict = field(default_factory=dict)
     calib_metrics_dict: dict = field(default_factory=dict)
     calibration_results_by_day: dict = field(default_factory=dict)
+    weights_df: pd.DataFrame = field(default_factory=pd.DataFrame)
 
     @classmethod
     def from_config(cls, config: CalibrationConfiguration):
@@ -524,6 +525,20 @@ class CalibrationStation:
         """
         return self.calibrator.return_output_dict_as_dataframe()
 
+    def return_weighting_dataframe(self):
+        """
+        Returns the information about the weighting procedure
+
+        Returns
+        -------
+        pd.DataFrame
+            dataframe with weights
+        """
+        try:
+            return self.context.weights_df
+        except Exception as e:
+            print(e)
+
 
 class SampleProfile:
 
@@ -597,7 +612,6 @@ class SampleProfile:
 
         self._distance = distance
         self.rescaled_distance = distance  # initialise as distance first
-        self.D86 = np.nan
         self.sm_total_weighted_avg_grv = np.nan
         self.sm_total_weighted_avg_vol = np.nan
         self.horizontal_weight = 1  # intialise as 1
@@ -1377,6 +1391,8 @@ class CalibrationWeightsCalculator:
             }
 
             context.calib_metrics_dict[day] = output
+
+        context = self._sample_profiles_to_dataframe(context)
         return context
 
     def calculate_weighted_sm_average(
@@ -1452,12 +1468,6 @@ class CalibrationWeightsCalculator:
                     volumetric_soil_moisture=volumetric_sm_estimate,
                 )
 
-                p.D86 = Schroen2017.calculate_measurement_depth(
-                    distance=p.rescaled_distance,
-                    bulk_density=p.site_avg_bulk_density,
-                    volumetric_soil_moisture=volumetric_sm_estimate,
-                )
-
                 if self.context.vertical_weight_method == "equal":
                     p.vertical_weights = np.ones_like(
                         p.soil_moisture_gravimetric
@@ -1468,6 +1478,10 @@ class CalibrationWeightsCalculator:
                         distance=p.rescaled_distance,
                         bulk_density=p.site_avg_bulk_density,
                         volumetric_soil_moisture=volumetric_sm_estimate,
+                    )
+                    # Normalise
+                    p.vertical_weights = p.vertical_weights / sum(
+                        p.vertical_weights
                     )
 
                 # Calculate weighted sm average
@@ -1508,6 +1522,14 @@ class CalibrationWeightsCalculator:
                 profiles_horizontal_weights,
                 mask=np.isnan(profiles_horizontal_weights),
             )
+
+            # Normalise horizontal weights
+            weight_sum = np.ma.sum(profiles_horizontal_weights)
+            profiles_horizontal_weights = (
+                profiles_horizontal_weights / weight_sum
+            )
+            for i, p in enumerate(profiles):
+                p.horizontal_weight = profiles_horizontal_weights.data[i]
 
             # create field averages of soil moisture
 
@@ -1578,6 +1600,116 @@ class CalibrationWeightsCalculator:
             }
         )
         return df
+
+    def return_weighting_dataframe(self):
+        """
+        Returns the information about the weighting procedure
+
+        Returns
+        -------
+        pd.DataFrame
+            dataframe with weights
+        """
+        return self.context.weights_df
+
+    def _get_array_attributes(self, profile) -> List[str]:
+        """Get list of attributes that are arrays/lists."""
+        array_attrs = []
+
+        for attr_name in dir(profile):
+            if attr_name.startswith("_") or callable(
+                getattr(profile, attr_name)
+            ):
+                continue
+
+            attr_value = getattr(profile, attr_name)
+            if (
+                isinstance(attr_value, (np.ndarray, list))
+                and len(attr_value) > 1
+            ):
+                array_attrs.append(attr_name)
+
+        return array_attrs
+
+    def _get_scalar_attributes(self, profile) -> List[str]:
+        """Get list of attributes that are scalar values."""
+        scalar_attrs = []
+
+        for attr_name in dir(profile):
+            if attr_name.startswith("_") or callable(
+                getattr(profile, attr_name)
+            ):
+                continue
+
+            attr_value = getattr(profile, attr_name)
+            if not isinstance(attr_value, (np.ndarray, list)) or (
+                isinstance(attr_value, (np.ndarray, list))
+                and len(attr_value) <= 1
+            ):
+                # Handle scalar numpy arrays
+                if isinstance(attr_value, np.ndarray) and attr_value.size == 1:
+                    scalar_attrs.append(attr_name)
+                elif not isinstance(attr_value, (np.ndarray, list)):
+                    scalar_attrs.append(attr_name)
+
+        return scalar_attrs
+
+    def _sample_profiles_to_dataframe(
+        self,
+        context: CalibrationContext,
+    ):
+        """
+        Convert a list of SampleProfile objects to a pandas DataFrame.
+
+        Creates a long-format DataFrame where each row represents one
+        depth measurement. Scalar values from each profile are repeated
+        for all depth measurements in that profile.
+
+        Parameters
+        ----------
+        context: CalibrationContext
+            Context which holds list of profiles
+
+        Returns
+        -------
+        CalibrationContext
+        """
+        sample_profiles = context.list_of_profiles
+        if not sample_profiles:
+            return pd.DataFrame()
+
+        all_rows = []
+
+        for profile in sample_profiles:
+            array_attrs = self._get_array_attributes(profile)
+            scalar_attrs = self._get_scalar_attributes(profile)
+
+            if not array_attrs:
+                row_data = {
+                    attr: getattr(profile, attr) for attr in scalar_attrs
+                }
+                all_rows.append(row_data)
+            else:
+                array_length = len(getattr(profile, array_attrs[0]))
+
+                for i in range(array_length):
+                    row_data = {}
+
+                    for attr in scalar_attrs:
+                        row_data[attr] = getattr(profile, attr)
+
+                    for attr in array_attrs:
+                        array_val = getattr(profile, attr)
+                        row_data[attr] = (
+                            array_val[i]
+                            if isinstance(array_val, np.ndarray)
+                            else array_val[i]
+                        )
+
+                    all_rows.append(row_data)
+
+        context.weights_df = pd.DataFrame(all_rows)
+        return context
 
 
 class CalculateN0:
@@ -1898,15 +2030,3 @@ class CalculateN0:
         min_error_idx = total_error_df[new_total_error_col_name].idxmin()
         n0_optimal = total_error_df.loc[min_error_idx, "N0"]
         return n0_optimal
-
-
-# n0_calc = CalculateN0()
-# n0_calc.set_values(
-#     soil_moisture=[0.4, 0.2],
-#     corrected_neutron_counts=[1200, 1100],
-#     lattice_water=0.001,
-#     water_equiv_soil_organic_carbon=0.02,
-#     absolute_humidity=[2.35, 2.50],  # for koehli
-#     conversion_method="koehli_etal_2021",
-# )
-# n0_calc.find_optimal_N0()
