@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.13.0] 15/08/2025
 
 ### Added
-
+- bespoke ways to calibrate data - such as finding only weights or equal weighting
 - spike detection using simple offset rule
 
 
