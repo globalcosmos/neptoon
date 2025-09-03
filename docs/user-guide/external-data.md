@@ -13,7 +13,7 @@ To create a dataframe of NMDB data you can use the `fetch_nmdb_data()` function 
 ```python
 from neptoon.external import fetch_nmdb_data
 
-df = return_nmdb_dataframe(
+df = fetch_nmdb_data(
     start_date="2022-01-01",
     end_date="2022-01-10",
     station="JUNG",
