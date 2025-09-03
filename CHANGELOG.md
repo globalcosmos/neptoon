@@ -5,26 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-
-### Changed
-
-### Depreceated
-
-### Removed
-
-### Fixed
-
-### Security
 
 
-## [0.13.0] 15/08/2025
+## [Unreleased] 
 
 ### Added
 - bespoke ways to calibrate data - such as finding only weights or equal weighting
 - spike detection using simple offset rule
+- stand alone method (`fetch_nmdb_data()`) for fetching and returning a dataframe of data from NMDB.eu
 
 
 ### Changed
