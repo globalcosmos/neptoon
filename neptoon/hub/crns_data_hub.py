@@ -26,10 +26,6 @@ from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
-from neptoon.utils import (
-    validate_timestamp_index,
-    find_temporal_resolution_seconds,
-)
 from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData

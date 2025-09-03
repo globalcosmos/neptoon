@@ -1,14 +1,12 @@
 import pandas as pd
 import math
 from pathlib import Path
-from typing import Union
 import shutil
 import json
 import yaml
 from typing import List
 from magazine import Publish, Magazine
 from neptoon.logging import get_logger
-from neptoon.data_audit import DataAuditLog
 from neptoon.config.configuration_input import (
     SensorInfo,
     SensorConfig,
@@ -159,6 +157,8 @@ class SaveAndArchiveOutputs:
         append_hash: bool = False,
     ):
         """
+        NOTE: CURRENTLY NOT IMPLEMENTED
+
         Handles closing the data audit log, producing the YAML output,
         and optionally appending a hash to the save location folder
         name.
@@ -180,6 +180,8 @@ class SaveAndArchiveOutputs:
             hash.txt to the folder name.
 
         """
+        from neptoon.data_audit import DataAuditLog
+
         try:
             DataAuditLog.archive_and_delete_log(
                 site_name=self.sensor_info.name,
@@ -415,9 +417,6 @@ class SaveAndArchiveOutputs:
         self._update_sensor_info()
         if Magazine.active:
             self._save_pdf(location=self.full_folder_location)
-        self.close_and_save_data_audit_log(
-            append_hash=self.append_audit_log_hash_to_folder_name
-        )
 
     # ---- TODO below this line ----
 

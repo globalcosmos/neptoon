@@ -13,7 +13,6 @@ from typing import Union, Literal, List, Optional
 from neptoon.logging import get_logger
 from neptoon.utils.general_utils import (
     validate_and_convert_file_path,
-    parse_resolution_to_timedelta,
 )
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import (

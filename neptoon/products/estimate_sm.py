@@ -1,6 +1,5 @@
 import pandas as pd
 from typing import Literal, Optional
-import pandera
 import pandera.pandas as pa
 
 ###
@@ -12,7 +11,6 @@ from neptoon.corrections import (
 )
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 from neptoon.logging import get_logger
-from neptoon.data_audit import log_key_step
 from neptoon.utils import validate_df
 
 core_logger = get_logger()
@@ -496,7 +494,6 @@ class NeutronsToSM:
             ),
         )
 
-    @log_key_step("radius")
     def calculate_depth_of_measurement(
         self,
         radius: float = 50,

@@ -8,7 +8,6 @@ from dateutil import parser
 
 from neptoon.columns import ColumnInfo
 from neptoon.config.global_configuration import GlobalConfig
-from neptoon.data_audit import log_key_step
 from neptoon.logging import get_logger
 
 core_logger = get_logger()
@@ -293,7 +292,6 @@ class NMDBConfig:
 
     """
 
-    @log_key_step("station", "nmdb_table", "resolution")
     def __init__(
         self,
         start_date_wanted,
