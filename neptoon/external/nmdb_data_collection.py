@@ -287,6 +287,9 @@ class NMDBConfig:
     end_date_needed : str or None, optional
         End date for which data needs to be fetched, considering cached
         data. None if all data is cached.
+    use_cache : bool, optional
+        whether to use cached data, ignore the cache entirely, defaults
+        to True
 
     """
 
@@ -305,6 +308,7 @@ class NMDBConfig:
         cache_end_date=None,
         start_date_needed=None,
         end_date_needed=None,
+        use_cache=True,
     ):
         self._start_date_wanted = start_date_wanted
         self._end_date_wanted = end_date_wanted
@@ -318,6 +322,7 @@ class NMDBConfig:
         self.cache_end_date = cache_end_date
         self.start_date_needed = start_date_needed
         self.end_date_needed = end_date_needed
+        self.use_cache = use_cache
 
     @property
     def start_date_wanted(self):
@@ -915,7 +920,7 @@ class NMDBDataHandler:
         """
 
         self.cache_handler.check_cache_file_exists()
-        if self.config.cache_exists:
+        if self.config.cache_exists and self.config.use_cache:
             self.cache_handler.check_cache_range()
             self.data_manager.check_if_need_extra_data()
             if (
@@ -941,7 +946,52 @@ class NMDBDataHandler:
                 f" {self.cache_handler.cache_file_path}."
             )
             df_download = self.data_fetcher.fetch_and_parse_http_data()
-            self.cache_handler.write_cache(df_download)
-            self.config.cache_exists = True
-            self.cache_handler.cache_file = df_download
+            if self.config.use_cache:
+                self.cache_handler.write_cache(df_download)
+                self.config.cache_exists = True
+                self.cache_handler.cache_file = df_download
             return df_download
+
+
+def fetch_nmdb_data(
+    start_date,
+    end_date,
+    station,
+    resolution,
+    nmdb_table="revori",
+):
+    """
+    Returns a dataframe of data from nmdb.eu
+
+    https://www.nmdb.eu
+
+    Parameters
+    ----------
+    start_date : str
+        Start date of desired data, format "YYYY-MM-DD"
+    end_date : str
+        End date of desired data, format "YYYY-MM-DD"
+    station : str
+        Desired station as string, as available from
+        https://www.nmdb.eu. E.g., "JUNG" or "OULU"
+    resolution : int
+        The desired resolution in minutes
+    nmdb_table : str, optional
+        The table to collect from nmdb.eu, by default "revori"
+
+    Returns
+    -------
+    pd.DataFrame
+        Datetime indexed dataframe
+    """
+    config = NMDBConfig(
+        start_date_wanted=start_date,
+        end_date_wanted=end_date,
+        station=station,
+        resolution=resolution,
+        nmdb_table=nmdb_table,
+        use_cache=False,
+    )
+    handler = NMDBDataHandler(config=config)
+    df = handler.collect_nmdb_data()
+    return df
