@@ -10,12 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] 
 
 ### Added
-
-- spike detection using simple offset rule 
+- bespoke ways to calibrate data - such as finding only weights or equal weighting
+- spike detection using simple offset rule
 - stand alone method (`fetch_nmdb_data()`) for fetching and returning a dataframe of data from NMDB.eu
 - 3 methods for pressure correction (changes derivation of beta coefficient)
 
 ### Changed
+
+- changed attribute naming from `koehlie_method_form` to `koehlie_parameters` throughout
+- Refactored calibration routines back end
+- default `koehlie_parameters` changed from `Mar21_uranos_drf` to `Mar21_mcnp_drf`
 
 - name of pressure corrections method in config file (breaking)
 
@@ -32,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - fixed parameter error for Biomass Correction
 - Fixed issue where pressure units were not converted
 - Magazine cleared after saving pdf - preventing problem with bad reports
+- Optimised import of datahub with lazy loading - speeding up importing of functions
 
 ### Security
 

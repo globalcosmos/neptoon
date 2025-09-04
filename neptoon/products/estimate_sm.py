@@ -1,6 +1,5 @@
 import pandas as pd
 from typing import Literal, Optional
-import pandera
 import pandera.pandas as pa
 
 ###
@@ -12,7 +11,6 @@ from neptoon.corrections import (
 )
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
 from neptoon.logging import get_logger
-from neptoon.data_audit import log_key_step
 from neptoon.utils import validate_df
 
 core_logger = get_logger()
@@ -175,7 +173,7 @@ class NeutronsToSM:
         conversion_theory: Literal[
             "desilets_etal_2010", "koehli_etal_2021"
         ] = "desilets_etal_2010",
-        koehli_method_form: Literal[
+        koehli_parameters: Literal[
             "Jan23_uranos",
             "Jan23_mcnpfull",
             "Mar12_atmprof",
@@ -270,7 +268,7 @@ class NeutronsToSM:
             else radius_column_name
         )
         self.conversion_theory = conversion_theory
-        self.koehli_method_form = koehli_method_form
+        self.koehli_parameters = koehli_parameters
         self.abs_air_humidity_col_name = abs_air_humidity_col_name
         self.air_pressure_col_name = air_pressure_col_name
         self.air_humidity_uncorrected = False
@@ -383,7 +381,7 @@ class NeutronsToSM:
         if self.conversion_theory == "desilets_etal_2010":
             raw_grav = self.crns_data_frame.apply(
                 lambda row: neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
-                    neutrons=row[neutron_data_column_name],
+                    neutron_count=row[neutron_data_column_name],
                     n0=self.n0,
                 ),
                 axis=1,
@@ -408,7 +406,7 @@ class NeutronsToSM:
                     lattice_water=self.lattice_water,
                     abs_air_humidity=row[self.abs_air_humidity_col_name],
                     water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
-                    koehli_method_form=self.koehli_method_form,
+                    koehli_parameters=self.koehli_parameters,
                 ),
                 axis=1,
             )
@@ -496,7 +494,6 @@ class NeutronsToSM:
             ),
         )
 
-    @log_key_step("radius")
     def calculate_depth_of_measurement(
         self,
         radius: float = 50,
