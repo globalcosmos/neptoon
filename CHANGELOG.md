@@ -14,7 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - spike detection using simple offset rule
 - stand alone method (`fetch_nmdb_data()`) for fetching and returning a dataframe of data from NMDB.eu
 
-
 ### Changed
 
 - changed attribute naming from `koehlie_method_form` to `koehlie_parameters` throughout
@@ -34,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - fixed parameter error for Biomass Correction
 - Fixed issue where pressure units were not converted
 - Magazine cleared after saving pdf - preventing problem with bad reports
+- Optimised import of datahub with lazy loading - speeding up importing of functions
 
 ### Security
 
