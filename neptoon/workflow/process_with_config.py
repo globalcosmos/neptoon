@@ -305,15 +305,15 @@ class ProcessWithConfig:
         if conversion_theory == "desilets_etal_2010":
             data_hub.produce_soil_moisture_estimates()
         elif conversion_theory == "koehli_etal_2021":
-            koehli_method_form = (
-                self.process_config.correction_steps.soil_moisture_estimation.koehli_method_form
+            koehli_parameters = (
+                self.process_config.correction_steps.soil_moisture_estimation.koehli_etal_2021_parameterset
             )
             data_hub.produce_soil_moisture_estimates(
                 conversion_theory=conversion_theory,
                 dry_soil_bulk_density=self.sensor_config.sensor_info.avg_dry_soil_bulk_density,
                 lattice_water=self.sensor_config.sensor_info.avg_lattice_water,
                 soil_organic_carbon=self.sensor_config.sensor_info.avg_soil_organic_carbon,
-                koehli_method_form=koehli_method_form,
+                koehli_parameters=koehli_parameters,
             )
         # else:
         #     raise ValueError(f"Unknown conversion method: {conversion_theory}")
@@ -459,7 +459,7 @@ class ProcessWithConfig:
                 bulk_density_of_sample_column=sensor_config.calibration.key_column_names.bulk_density_of_sample,
                 soil_organic_carbon_column=sensor_config.calibration.key_column_names.soil_organic_carbon,
                 lattice_water_column=sensor_config.calibration.key_column_names.lattice_water,
-                koehli_method_form=neutron_conversion.koehli_method_form,
+                koehli_parameters=neutron_conversion.koehli_etal_2021_parameterset,
             )
         data_hub.calibrate_station(config=calibration_config)
         sensor_config = self._update_sensor_config_after_calibration(

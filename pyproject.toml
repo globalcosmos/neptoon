@@ -5,7 +5,7 @@ dynamic = ['version']
 description = "The neptoon package makes CRNS processing and research simple."
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "pandas>=2.2.0",
     "urllib3>=2.2.0",
