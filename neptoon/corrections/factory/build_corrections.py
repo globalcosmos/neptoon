@@ -10,7 +10,9 @@ from .correction_classes import (
     IncomingIntensityCorrectionHawdon2014,
     IncomingIntensityCorrectionMcJannetDesilets2023,
     HumidityCorrectionRosolem2013,
-    PressureCorrectionZreda2012,
+    PressureCorrectionDesiletsZreda2003,
+    PressureCorrectionTiradoBueno2021,
+    PressureCorrectionDesilets2021,
     AboveGroundBiomassCorrectionBaatz2015,
     AboveGroundBiomassCorrectionMorris2024,
 )
@@ -377,7 +379,7 @@ class CorrectionFactory:
             Above Ground Biomass correction with values filled in.
         """
         if correction_theory is None:
-            return AboveGroundBiomassCorrectionMorris2024()
+            return AboveGroundBiomassCorrectionBaatz2015()
         elif correction_theory == CorrectionTheory.BAATZ_2015:
             return AboveGroundBiomassCorrectionBaatz2015()
         elif correction_theory == CorrectionTheory.MORRIS_2024:
@@ -398,10 +400,14 @@ class CorrectionFactory:
         Correction
             Returns a pressure Correction with values inserted.
         """
-        correction_theory = (
-            correction_theory  # TODO remove this or leave it for consistency?
-        )
-        return PressureCorrectionZreda2012()
+        if correction_theory is None:
+            return PressureCorrectionTiradoBueno2021()
+        elif correction_theory is CorrectionTheory.TIRADO_BUENO_2021:
+            return PressureCorrectionTiradoBueno2021()
+        elif correction_theory is CorrectionTheory.DESILETS_2021:
+            return PressureCorrectionDesilets2021()
+        elif correction_theory is CorrectionTheory.DESILETS_ZREDA_2003:
+            return PressureCorrectionDesiletsZreda2003()
 
     def create_humidity_correction(
         self, correction_theory: CorrectionTheory = None

@@ -13,8 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - spike detection using simple offset rule 
 - stand alone method (`fetch_nmdb_data()`) for fetching and returning a dataframe of data from NMDB.eu
+- 3 methods for pressure correction (changes derivation of beta coefficient)
 
 ### Changed
+
+- name of pressure corrections method in config file (breaking)
 
 ### Depreceated
 

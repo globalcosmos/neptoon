@@ -65,10 +65,15 @@ data_hub.correct_neutrons()
 
 ### Pressure Correction
 
-The pressure correction accounts for the influence of atmospheric pressure on neutron count rates. Higher pressure means more air mass above the sensor, which attenuates more cosmic rays.
+The pressure correction accounts for the influence of atmospheric pressure on neutron count rates. Higher pressure means more air mass above the sensor, which attenuates more cosmic rays. The correction matches pressure to a reference point - in neptoon this reference point is 1013.25 hPa.
 
-!!! important "Reference Pressure"
-    The reference pressure should ideally be the long-term average atmospheric pressure at your site. Changing this value will affect your calibration parameters, so document what reference value you use.
+All of the corrections require cut-off rigidity values to be present in your data - if you build you datahub using a config this will be read in automatically from your config file. DESILETS_ZREDA_2003 and DESILETS_2021 additionally require elevation and latiude data to correctly calculate the beta coeffient
+
+| Theory | Description | 
+|--------|-------------|
+| `DESILETS_ZREDA_2003` | Derive beta coefficient according to Desilets and Zreda (2003) https://doi.org/10.1016/S0012-821X(02)01088-9 |
+| `DESILETS_2021` | Derive beta coefficient according to Desilets (2021) https://doi.org/10.5281/ZENODO.4569062 |
+| `TIRADO_BUENO_2021` | Derive beta coefficient according to Tirado-Bueno et al., (2021) https://doi.org/10.1016/j.asr.2021.04.034 |
 
 ### Incoming Intensity Correction
 
@@ -101,7 +106,7 @@ Available theoretical implementations:
 
 The corrections implemented in this module are based on peer-reviewed scientific literature:
 
-- **Pressure Correction**: Based on exponential attenuation of cosmic rays in the atmosphere, from [Zreda et al., 2012](https://doi.org/10.5194/hess-16-4079-2012)
+- **Pressure Correction**: Based on exponential attenuation of cosmic rays in the atmosphere, from [Zreda et al., 2012](https://doi.org/10.5194/hess-16-4079-2012), [Desilets and Zreda 2003](https://doi.org/10.1016/S0012-821X(02)01088-9), [Desilets 2021](https://doi.org/10.5281/ZENODO.4569062), and [Tirado-Bueno et al., 2021](https://doi.org/10.1016/j.asr.2021.04.034)
 - **Incoming Intensity**: Methods from [Zreda et al., 2012](https://doi.org/10.5194/hess-16-4079-2012), [Hawdon et al., 2014](https://doi.org/10.1002/2013WR015138) and [McJannet & Desilets, 2023](https://doi.org/10.1029/2022WR033889)
 - **Humidity Correction**: From [Rosolem et al., 2013](https://doi.org/10.1175/JHM-D-12-0120.1)
 - **Biomass Correction**: Methods from [Baatz et al., 2015](https://doi.org/10.5194/hess-19-3203-2015) and [Morris et al., 2024](https://doi.org/10.3390/s24134094)

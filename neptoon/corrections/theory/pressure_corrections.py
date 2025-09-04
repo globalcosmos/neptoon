@@ -16,7 +16,7 @@ from neptoon.logging import get_logger
 core_logger = get_logger()
 
 
-def calc_pressure_correction_beta_coeff(
+def calc_pressure_correction_factor(
     current_pressure: float, reference_pressure: float, beta_coeff: float
 ):
     """
@@ -41,15 +41,6 @@ def calc_pressure_correction_beta_coeff(
         Correction factor to multiply raw neutron count rates by, e.g.,
         1.04.
     """
-    if beta_coeff >= 1:
-        message = (
-            "The beta_coeff is > 1 which suggests "
-            "the incorrect function is being used. "
-            "Use pressure_correction_l_coeff() instead"
-        )
-
-        core_logger.warning(message)
-        raise ValueError(message)
     c_factor = np.exp(beta_coeff * (current_pressure - reference_pressure))
     return c_factor
 
@@ -74,27 +65,7 @@ def calc_mean_pressure(elevation: float):
     return mean_pressure
 
 
-def calc_beta_coefficient(latitude, elevation, cutoff_rigidity):
-    """
-    Calculate the beta coefficient necessary for the
-    pressure_correction_beta_coeff() function. This coefficient
-    represents the inverse of the mass attenuation length.
-
-    Parameters
-    ----------
-
-    latitude : float
-        Geographic latitude of the site in degrees.
-    elevation : float
-        Elevation of the site in meters (m).
-    cutoff_rigidity : float
-        Cutoff rigidity at the site in MeV.
-
-    Returns
-    -------
-    beta_coeff: float
-        Beta coefficient at site (usually ~0.007)
-    """
+def calc_atmos_depth_mean_press(elevation, latitude):
     rho_rck = 2670
     mean_pressure = calc_mean_pressure(elevation)
     # variables
@@ -122,7 +93,79 @@ def calc_beta_coefficient(latitude, elevation, cutoff_rigidity):
 
     # final gravity and depth
     g = g_corr / 10
-    x = mean_pressure / g
+    atmopsheric_depth = mean_pressure / g
+    return atmopsheric_depth, mean_pressure
+
+
+def calc_beta_coefficient_desilets_zreda_2003(
+    latitude, elevation, cutoff_rigidity
+):
+    """
+    Calc beta coeff according to Desilets and Zreda (2003).
+
+    https://doi.org/10.1016/S0012-821X(02)01088-9
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    atmospheric_depth, _ = calc_atmos_depth_mean_press(
+        elevation=elevation, latitude=latitude
+    )
+
+    n = 9.9741 * 10 ** (-3)
+    alpha = 4.5318 * 10 ** (-1)
+    k = -8.1613 * 10 ** (-2)
+    b0 = 6.3813 * 10 ** (-6)
+    b1 = -6.2639 * 10 ** (-7)
+    b2 = -5.1187 * 10 ** (-9)
+    b3 = -7.1914 * 10 ** (-9)
+    b4 = 1.1291 * 10 ** (-9)
+    b5 = 1.74 * 10 ** (-11)
+    b6 = 2.5816 * 10 ** (-12)
+    b7 = -5.8588 * 10 ** (-13)
+    b8 = -1.2168 * 10 ** (-14)
+
+    t0 = n / (1 + np.exp(-alpha * cutoff_rigidity ** (-k)))
+    t1 = (
+        b0 + b1 * cutoff_rigidity + b2 * cutoff_rigidity**2
+    ) * atmospheric_depth
+    t2 = (
+        b3 + b4 * cutoff_rigidity + b5 * cutoff_rigidity**2
+    ) * atmospheric_depth**2
+    t3 = (
+        b6 + b7 * cutoff_rigidity + b8 * cutoff_rigidity**2
+    ) * atmospheric_depth**3
+
+    beta_coefficent = t0 + t1 + t2 + t3
+    return beta_coefficent
+
+
+def calc_beta_coefficient_desilets_2021(latitude, elevation, cutoff_rigidity):
+    """
+    Calculate the beta coefficient necessary for the
+    pressure_correction_beta_coeff() function. This coefficient
+    represents the inverse of the mass attenuation length.
+
+    Parameters
+    ----------
+
+    latitude : float
+        Geographic latitude of the site in degrees.
+    elevation : float
+        Elevation of the site in meters (m).
+    cutoff_rigidity : float
+        Cutoff rigidity at the site in MeV.
+
+    Returns
+    -------
+    beta_coeff: float
+        Beta coefficient at site (usually ~0.007)
+    """
+    atmospheric_depth, mean_pressure = calc_atmos_depth_mean_press(
+        elevation=elevation, latitude=latitude
+    )
 
     # --- elevation scaling ---
 
@@ -144,37 +187,47 @@ def calc_beta_coefficient(latitude, elevation, cutoff_rigidity):
     term1 = (
         n_1
         * (1 + np.exp(-alpha_1 * cutoff_rigidity**k_1)) ** -1
-        * (x - mean_pressure)
+        * (atmospheric_depth - mean_pressure)
     )
     term2 = (
         0.5
         * (b0 + b1 * cutoff_rigidity + b2 * cutoff_rigidity**2)
-        * (x**2 - mean_pressure**2)
+        * (atmospheric_depth**2 - mean_pressure**2)
     )
     term3 = (
         0.3333
         * (b3 + b4 * cutoff_rigidity + b5 * cutoff_rigidity**2)
-        * (x**3 - mean_pressure**3)
+        * (atmospheric_depth**3 - mean_pressure**3)
     )
     term4 = (
         0.25
         * (b6 + b7 * cutoff_rigidity + b8 * cutoff_rigidity**2)
-        * (x**4 - mean_pressure**4)
+        * (atmospheric_depth**4 - mean_pressure**4)
     )
 
-    beta_ceoff = abs((term1 + term2 + term3 + term4) / (mean_pressure - x))
+    beta_ceoff = abs(
+        (term1 + term2 + term3 + term4) / (mean_pressure - atmospheric_depth)
+    )
 
     return beta_ceoff
 
 
-def dunai_2020(
-    current_pressure: float,
-    reference_pressure: float,
-    beta_coeff: float,
-    inclination: float,
-):
+def calc_beta_ceofficient_tirado_bueno_etal_2021(cutoff_rigidity: float):
     """
-    TODO
-    !!!Speak with Martin about this method from corny!!!
+    Calculated the beta coefficient according to Tirado-Bueno et al.,
+    (2021)
+
+    https://doi.org/10.1016/j.asr.2021.04.034
+
+    Parameters
+    ----------
+    cutoff_rigidity : float
+        Cutoff rigidity in GV
+
+    Returns
+    -------
+    float
+        The cutoff rigidity at the site
     """
-    pass
+
+    return ((-0.74 + 0.01 * np.log(cutoff_rigidity)) / 100) * -1
