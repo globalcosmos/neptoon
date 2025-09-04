@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Union
 from neptoon.logging import get_logger
 from datetime import timedelta
 import re

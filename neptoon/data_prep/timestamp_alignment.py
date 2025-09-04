@@ -1,9 +1,7 @@
 import pandas as pd
-import numpy as np
 from saqc import SaQC
 import datetime
 from typing import List
-from neptoon.data_audit import log_key_step
 from neptoon.utils import (
     validate_timestamp_index,
     find_temporal_resolution_seconds,
@@ -68,7 +66,6 @@ class TimeStampAligner:
         freq = timedelta_to_freq_str(freq)
         return freq
 
-    @log_key_step("method", "freq")
     def align_timestamps(
         self,
         method: str = "time",
@@ -251,7 +248,6 @@ class TimeStampAggregator:
             method=method,
         )
 
-    @log_key_step("method", "freq")
     def aggregate_data(
         self,
         method: str = "bagg",
