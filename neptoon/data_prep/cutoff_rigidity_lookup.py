@@ -1,12 +1,19 @@
 import pandas as pd
 import numpy as np
 from scipy.interpolate import RectBivariateSpline
+from pathlib import Path
 
 
 class GVLookup:
-    def __init__(self, path: str):
+    def __init__(self, path: str = None):
         """Initialize with CSV file containing GV lookup table."""
-        self.df = pd.read_csv(path, index_col=0)
+
+        if path is None:
+            this_file_dir = Path(__file__).parent
+            csv_path = this_file_dir / "assets" / "RC_2020.csv"
+        else:
+            csv_path = Path(path)
+        self.df = pd.read_csv(csv_path, index_col=0)
         self.lats = self.df.index.astype(float).values
         self.lons = self.df.columns.astype(float).values
         self.values = self.df.values.astype(float)
