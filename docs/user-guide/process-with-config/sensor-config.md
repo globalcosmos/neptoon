@@ -40,7 +40,7 @@ Same for the `N0` however this requires the calibration section to be correctly 
 | longitude | Yes | float | `12.557120` | Site longitude in decimal degrees |
 | elevation | Yes | float | `113` | Site elevation in meters |
 | time_zone | Yes | string | `+1` | Time zone offset from UTC |
-| site_cutoff_rigidity | Yes | float | `2.94` | Geomagnetic cutoff rigidity in GV |
+| site_cutoff_rigidity | No | float | `2.94` | Geomagnetic cutoff rigidity in GV |
 | avg_lattice_water | No | float | `0.0043` | Average lattice water content as decimal (e.g., 0.0043 = 0.43%) |
 | avg_soil_organic_carbon | No | float | `0.0184` | Soil organic carbon content as decimal (e.g., 0.0184 = 1.84%) |
 | avg_dry_soil_bulk_density | No | float | `1.6` | Dry soil bulk density in g/cm³ |
@@ -274,7 +274,7 @@ The geomagnetic cutoff rigidity at the installation site, which affects cosmic r
 **Specification**
 
   - **Type**: float
-  - **Required**: Yes
+  - **Required**: No
   - **Units**: GV (gigavolts)
   - **Example**: `2.94`
 
@@ -283,6 +283,7 @@ The geomagnetic cutoff rigidity at the installation site, which affects cosmic r
   - Affects incoming neutron corrections
   - Location-dependent parameter
   - www.crnslab.org provides methods to calculate this with latitude and longitude values
+  - If not supplied in config it will use a lookup table to find the value with lat and lon
 
 
 ---

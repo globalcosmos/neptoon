@@ -1,5 +1,11 @@
 from typing import List, Optional, Literal, Dict
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    model_validator,
+    computed_field,
+)
 from pathlib import Path
 import datetime
 import yaml
@@ -8,6 +14,7 @@ from enum import Enum
 
 from neptoon.logging import get_logger
 from neptoon.utils.docker_utils import return_file_path_with_suffix
+from neptoon.data_prep.cutoff_rigidity_lookup import GVLookup
 
 core_logger = get_logger()
 
@@ -54,7 +61,7 @@ class SensorInfo(BaseConfig):
     longitude: float
     elevation: float
     time_zone: int
-    site_cutoff_rigidity: float
+    site_cutoff_rigidity: Optional[float] = Field(default=None)
     avg_lattice_water: Optional[float] = Field(default=None)
     avg_soil_organic_carbon: Optional[float] = Field(default=None)
     avg_dry_soil_bulk_density: Optional[float] = Field(default=None)
@@ -63,6 +70,14 @@ class SensorInfo(BaseConfig):
     )
     beta_coefficient: Optional[float] = Field(default=None)
     mean_pressure: Optional[float] = Field(default=None)
+
+    @model_validator(mode="after")
+    def calculate_rigidity_if_missing(self):
+        if self.site_cutoff_rigidity is None:
+            self.site_cutoff_rigidity = GVLookup().get_gv(
+                lat=self.latitude, lon=self.longitude
+            )
+        return self
 
 
 # Time Series Validation
