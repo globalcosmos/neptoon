@@ -40,18 +40,4 @@ class GVLookup:
         lat = np.clip(lat, -90, 90)
         lon = np.clip(lon, -180, 180)
 
-        return float(self.interpolator(lat, lon)[0, 0])
-
-    def get_gv_batch(self, lats, lons):
-        """Get GV values for arrays of coordinates."""
-        lats = np.clip(lats, -90, 90)
-        lons = np.clip(lons, -180, 180)
-        return self.interpolator(lats, lons, grid=False)
-
-
-# lookup = GVLookup(path="./assets/RC_2020.csv")
-
-# lat = 42
-# lon = -70
-
-# lookup.get_gv(lat=lat, lon=lon)
+        return round(float(self.interpolator(lat, lon)[0, 0]), 2)
