@@ -45,6 +45,15 @@ raw_data_parse_options:
   strip_names: True
   remove_prefix: "//"
 
+##################################################################
+#    This section provides information to neptoon about your    #
+#    input data. Things like where to find it (path_to_data)    #
+#    and what the key columns are names. When multiple columns  #
+#    are present (often the case for redundancy) they will be   #
+#    merged into one. In this case add them as a list as shown  #
+#    below and state the merge method (priority recommended).   #
+##################################################################
+
 time_series_data:
   path_to_data: # blank if parsing raw data
   key_column_info:

@@ -8,6 +8,12 @@
 ## Overview
 The process configuration file tells neptoon about the sensor being processed. The sections in this file are: config, neutron_quality_assessment, correction_steps, and data_smoothing. Below is an example file which you can use a starting point for your own sensor.
 
+### Cosmos Standard
+
+There are ongoing discussion in the community to set a standard for CRNS which users can use as a jumping off point. The standard is considered to be using established methods that have been tested in the field and produce good results. There are arguably better technique (and ones we've yet to discover) - we endeavour to keep up to date with the scienfitic knowledge. 
+
+The below processing yaml will be up to date with the current standard. 
+
 ```yaml
 --8<-- "./examples/v1_processing_method.yaml"
 ```
@@ -63,7 +69,7 @@ Air pressure correction - very important to leave on as CRNS are very sensitive 
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| method | Yes | string | `"zreda_2012"` or `"none"` | Method used for pressure correction |
+| method | Yes | string | `"desilets_zreda_2003"` or `"desilets_2021"` or `"tirado_bueno_2021"` or `"none"` | Method used for pressure correction |
 | dunai_inclination | No | float | - | Inclination parameter for dunai method |
 
 ### Incoming Intensity Correction
@@ -90,7 +96,7 @@ Here we state how we will convert neutrons to soil mositure. If you choose `koeh
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | method | Yes | string | `"desilets_etal_2010"` or `"koehli_etal_2021"` or `"none"` | Method for converting neutrons to soil mositure|
-|koehli_method_form| No | string |`"Jan23_uranos"` or `"Jan23_mcnpfull"` or `"Mar12_atmprof"` or `"Mar21_mcnp_drf"` or `"Mar21_mcnp_ewin"` or `"Mar21_uranos_drf"` or `"Mar21_uranos_ewin"` or `"Mar22_mcnp_drf_Jan"` or `"Mar22_mcnp_ewin_gd"` or `"Mar22_uranos_drf_gd"` or `"Mar22_uranos_ewin_chi2"` or `"Mar22_uranos_drf_h200m"` or `"Aug08_mcnp_drf"` or `"Aug08_mcnp_ewin"` or `"Aug12_uranos_drf"` or `"Aug12_uranos_ewin"` or `"Aug13_uranos_atmprof"` or `"Aug13_uranos_atmprof2"`| Thats a lot of options... just stick with `"Mar21_uranos_drf"` if you want simple. This sets the parameters when using the koehlie et al., 2021 method|
+|koehli_etal_2021_parameterset| No | string |`"Jan23_uranos"` or `"Jan23_mcnpfull"` or `"Mar12_atmprof"` or `"Mar21_mcnp_drf"` or `"Mar21_mcnp_ewin"` or `"Mar21_uranos_drf"` or `"Mar21_uranos_ewin"` or `"Mar22_mcnp_drf_Jan"` or `"Mar22_mcnp_ewin_gd"` or `"Mar22_uranos_drf_gd"` or `"Mar22_uranos_ewin_chi2"` or `"Mar22_uranos_drf_h200m"` or `"Aug08_mcnp_drf"` or `"Aug08_mcnp_ewin"` or `"Aug12_uranos_drf"` or `"Aug12_uranos_ewin"` or `"Aug13_uranos_atmprof"` or `"Aug13_uranos_atmprof2"`| Thats a lot of options... just stick with `"Mar21_mcnp_drf"` if you want simple. This sets the parameters when using the koehlie et al., 2021 method|
 
 
 ## Data Smoothing

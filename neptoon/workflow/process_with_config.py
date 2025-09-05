@@ -918,11 +918,22 @@ class CorrectionSelectorFromConfig:
         if tmp.method is None or str(tmp.method).lower() == "none":
             return
 
-        if tmp.method.lower() == "zreda_2012":
+        if tmp.method.lower() == "tirado_bueno_2021":
             self.data_hub.select_correction(
                 correction_type=CorrectionType.PRESSURE,
-                correction_theory=CorrectionTheory.ZREDA_2012,
+                correction_theory=CorrectionTheory.TIRADO_BUENO_2021,
             )
+        elif tmp.method.lower() == "desilets_zreda_2003":
+            self.data_hub.select_correction(
+                correction_type=CorrectionType.PRESSURE,
+                correction_theory=CorrectionTheory.DESILETS_ZREDA_2003,
+            )
+        elif tmp.method.lower() == "desilets_2021":
+            self.data_hub.select_correction(
+                correction_type=CorrectionType.PRESSURE,
+                correction_theory=CorrectionTheory.DESILETS_2021,
+            )
+
         else:
             message = (
                 f"{tmp.method} is not a known pressure correction theory. \n"

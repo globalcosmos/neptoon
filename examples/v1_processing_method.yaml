@@ -20,8 +20,7 @@ correction_steps:
     coefficient: 0.0054
     humidity_ref: 0
   air_pressure:
-    method: zreda_2012
-    dunai_inclination:
+    method: tirado_bueno_2021
   incoming_radiation:
     method: hawdon_2014
     reference_neutron_monitor:

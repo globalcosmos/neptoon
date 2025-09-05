@@ -406,7 +406,11 @@ class AirHumidityCorrection(BaseModel):
 class AirPressureCorrection(BaseModel):
     """Configuration for air pressure correction parameters."""
 
-    method: Optional[Literal["zreda_2012", "none"]] = Field(
+    method: Optional[
+        Literal[
+            "desilets_zreda_2003", "desilets_2021", "tirado_bueno_2021", "none"
+        ]
+    ] = Field(
         description="Air pressure correction method",
         default="none",
     )
@@ -723,6 +727,20 @@ class ConfigurationManager:
                 f"Found 'omega' in air humidity settings "
                 f"which has been changed to `coefficient`.\n"
                 f"Change `omega` to `coefficient` and this will work\n"
+                "see: https://www.neptoon.org/en/latest/user-guide/process-with-config/process-config/"
+            )
+            warnings.warn(
+                message1,
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        if config_obj.correction_steps.air_pressure.method == "zreda_2012":
+            message1 = (
+                "\n"
+                f"\033[1m\033[93mProcess config needs updating:\033[0m "
+                f"There are more options for pressure correction now related"
+                f"to the beta coefficient calculation method.\n"
+                f"`zreda_2012` is now called `desilets_zreda_2003` - please update\n"
                 "see: https://www.neptoon.org/en/latest/user-guide/process-with-config/process-config/"
             )
             warnings.warn(
