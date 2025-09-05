@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - changed attribute naming from `koehlie_method_form` to `koehlie_parameters` throughout
 - Refactored calibration routines back end
 - default `koehlie_parameters` changed from `Mar21_uranos_drf` to `Mar21_mcnp_drf`
-
+- config - pressure correction method `zreda_2010` renamed to `desilets_zreda_2003`
 - name of pressure corrections method in config file (breaking)
 
 ### Depreceated
