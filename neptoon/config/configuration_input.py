@@ -4,7 +4,7 @@ from pydantic import (
     ConfigDict,
     Field,
     model_validator,
-    computed_field,
+    field_validator,
 )
 from pathlib import Path
 import datetime
@@ -260,8 +260,15 @@ class SpikeZScore(BaseConfig):
 
 
 class SpikeOffset(BaseConfig):
-    threshold_relative: Optional[float] = None
+    threshold_relative: Optional[tuple | float] = None
     window: Optional[str] = "12h"
+
+    @field_validator("threshold_relative")
+    @classmethod
+    def convert_list_to_tuple(cls, v):
+        if isinstance(v, list):
+            return tuple(v)
+        return v
 
 
 class GreaterThanN0(BaseConfig):

@@ -4,9 +4,8 @@ config: process
 neutron_quality_assessment:
   raw_neutrons:
     spike_offset:
-      threshold_relative: 0.2 # 20%
+      threshold_relative: [0.2, -0.2] # + or - 20%
       window: 12h
-      bidirectional: true # always set to true
   corrected_neutrons:
     greater_than_N0:
       percent_maximum: 1.075 # Köhli 2021
