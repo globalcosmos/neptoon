@@ -268,6 +268,8 @@ class SpikeOffset(BaseConfig):
     def convert_list_to_tuple(cls, v):
         if isinstance(v, list):
             return tuple(v)
+        elif isinstance(v, float):
+            return (abs(v), -abs(v))
         return v
 
 
