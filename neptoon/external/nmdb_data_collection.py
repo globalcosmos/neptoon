@@ -42,87 +42,6 @@ NMDB_CUTOFF_RIGIDITIES = {
     "THUL": 0,
 }
 
-NMDB_TERMS_OF_USE = {
-    "JUNG": {
-        "acknowledgment": "Jungfraujoch neutron monitor data were kindly provided by the Physikalisches Institut, University of Bern, Switzerland",
-        "contact_name": "Lukas Bäni",
-        "contact_address": "Physikalisches Institut\nUniversity of Bern\nSidlerstrasse 5\nCH-3012 Bern / Switzerland",
-        "website": "https://cosray.unibe.ch",
-        "email": "lukas.baeni@unibe.ch",
-    },
-    "SOPO": {
-        "acknowledgment": "The neutron monitor data from South Pole are provided by the University of Wisconsin, River Falls.",
-        "contact_name": "Professor Surujhdeo Seunarine",
-        "contact_address": "Physics Department\nUniversity of Wisconsin, River Falls\n410 South Third Street\nRiver Falls, WI 54022",
-        "website": None,
-        "email": None,
-    },
-    "OULU": {
-        "acknowledgment": "Data are intended strictly for research/educational purposes and public non-commercial services. Users of the data are expected to acknowledge this web-site and the Sodankyla Geophysical Observatory.",
-        "contact_name": "Ilya Usoskin",
-        "contact_address": None,
-        "website": "http://cosmicrays.oulu.fi",
-        "email": None,
-        "special_note": "Details about the use of the Oulu NM data can be found in http://cosmicrays.oulu.fi/readme.html",
-    },
-    "PSNM": {
-        "acknowledgment": "Neutron monitor data from Doi Inthanon were provided by courtesy of the Princess Sirindhorn Neutron Monitor Program.",
-        "contact_name": "Prof. David Ruffolo",
-        "contact_address": "Space Physics and Energetic Particles Group\nDepartment of Physics, Faculty of Science\nMahidol University\nBangkok, 10400, THAILAND",
-        "website": "http://www.thaispaceweather.com",
-        "email": None,
-    },
-    "MXCO": {
-        "acknowledgment": "Mexico City neutron monitor data were kindly provided by the Cosmic Ray Group, Geophysical Institute, National Autonomous University of Mexico (UNAM), Mexico",
-        "contact_name": "Information withheld according to EU GDPR, please contact us at questions@nmdb.eu",
-        "contact_address": "Cosmic Ray Group\nGeophysical Institute\nNational Autonomous University of Mexico (UNAM)\nMexico City, Mexico",
-        "website": "http://www.cosmicrays.unam.mx",
-        "email": None,
-    },
-    "AATB": {
-        "acknowledgment": "Please check https://www.nmdb.eu/station/aatb for station-specific terms of use.",
-        "contact_name": "Dr. Olga Kryakunova",
-        "contact_address": "Institute of Ionosphere\nAlmaty, 050020, Kazakhstan",
-        "website": None,
-        "email": "krolganik@yandex.ru",
-    },
-    "INVK": {  # Inuvik
-        "acknowledgment": "The neutron monitor data from Inuvik are provided by the University of Delaware Department of Physics and Astronomy and the Bartol Research Institute.",
-        "contact_name": "Dr. John Clem",
-        "contact_address": "Department of Physics and Astronomy\n201 Sharp Lab, University of Delaware\nNewark, DE 19716, U.S.A.",
-        "website": None,
-        "email": None,
-    },
-    "KIEL": {
-        "acknowledgment": "Please check https://www.nmdb.eu/station/kiel for station-specific terms of use.",
-        "contact_name": None,
-        "contact_address": "Extraterrestrial Physics Department\nInstitute for Experimental and Applied Physics\nChristian-Albrechts University of Kiel",
-        "website": None,
-        "email": None,
-    },
-    "NEWK": {
-        "acknowledgment": "The neutron monitor data from Newark/Swarthmore are provided by the University of Delaware Department of Physics and Astronomy and the Bartol Research Institute.",
-        "contact_name": "Dr. John Clem",
-        "contact_address": "Department of Physics and Astronomy\n201 Sharp Lab, University of Delaware\nNewark, DE 19716, U.S.A.",
-        "website": None,
-        "email": None,
-    },
-    "TERA": {
-        "acknowledgment": "Terre Adelie neutron monitor data were kindly provided by Observatoire de Paris and the French polar institute (IPEV), France",
-        "contact_name": "Ludwig Klein",
-        "contact_address": "Observatoire de Paris\nSite de Meudon\n5 place Jules Janssen\n92195 Meudon / France",
-        "website": "http://previ.obspm.fr/",
-        "email": None,
-    },
-    "THUL": {
-        "acknowledgment": "The neutron monitor data from Thule are provided by the University of Delaware Department of Physics and Astronomy and the Bartol Research Institute.",
-        "contact_name": "Dr. John Clem",
-        "contact_address": "Department of Physics and Astronomy\n201 Sharp Lab, University of Delaware\nNewark, DE 19716, U.S.A.",
-        "website": None,
-        "email": None,
-    },
-}
-
 
 class NMDBDataAttacher:
     """
@@ -439,36 +358,24 @@ class NMDBConfig:
 class TermsDisplayManager:
     """Manages display of NMDB station terms of use"""
 
-    _displayed_stations = set()
+    _displayed_stations = (
+        set()
+    )  # Track which stations have shown terms this session
 
     @classmethod
     def display_terms(cls, station):
         """Display terms of use for a station (once per session)"""
         if station in cls._displayed_stations:
-            return
+            return  # Already shown this session
 
-        if station not in NMDB_TERMS_OF_USE:
-            print(f"\n--- NMDB Terms of Use for {station} ---")
-            print(
-                "Please check https://www.nmdb.eu for station-specific terms of use."
-            )
-            print(
-                "You are required to acknowledge the data provider in any published use."
-            )
-            print(
-                "Commercial use may require prior agreement with the station PI."
-            )
-            print("-" * 50)
-        else:
-            terms = NMDB_TERMS_OF_USE[station]
-            print(f"\n--- NMDB Terms of Use for {station} ---")
-            print(f"Acknowledgment required: {terms['acknowledgment']}")
-            print(f"Send copies of papers to: {terms['contact_name']}")
-            print(f"Address: {terms['contact_address']}")
-            print(f"Contact: {terms['email']}")
-            print(f"Website: {terms['website']}")
-            print("Commercial use prohibited without prior agreement.")
-            print("-" * 50)
+        station_url = f"https://www.nmdb.eu/station/{station.lower()}/"
+
+        print(f"\n=== NMDB DATA USAGE NOTICE ===")
+        print(
+            f"Using NMDB.eu data for processing, there are stipulations in the usage of this data."
+        )
+        print(f"Please see {station_url} for details.")
+        print("=" * 40)
 
         cls._displayed_stations.add(station)
 
