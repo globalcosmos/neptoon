@@ -40,11 +40,12 @@ neutron_range_check = QualityCheck(
 # Create a spike detection check for air pressure
 pressure_spike_check = QualityCheck(
     target=QATarget.AIR_PRESSURE,
-    method=QAMethod.SPIKE_UNILOF,  # Univariate Local Outlier Factor method
+    method=QAMethod.SPIKE_OFFSET,  # Univariate Local Outlier Factor method
     parameters={
-        "periods_in_calculation": 24,  # Look at 24 time periods
-        "threshold": 2.0             # Sensitivity threshold
+        "window": "24h",  
+        "threshold": (0.2, -0.2)      # Must use tuple with positive and negative spike thresholds       
     }
+)
 )
 ```
 
@@ -94,6 +95,7 @@ neptoon provides several quality check methods through the `QAMethod` enum:
 | Method | Description | Common Parameters |
 |--------|-------------|-------------------|
 | `RANGE_CHECK` | Flags values outside a specified range | `min`, `max` |
+| `SPIKE_OFFSET` | Flags offsets by a relative amount of previous value | `threshold_relative`, `window` |
 | `SPIKE_UNILOF` | Detects spikes using the univariate Local Outlier Factor algorithm | `periods_in_calculation`, `threshold` |
 | `CONSTANT` | Flags periods where values remain constant | - |
 | `ABOVE_N0` | Flags neutron counts above a factor of the N0 calibration value | `N0`, `percent_maximum` |
@@ -178,10 +180,10 @@ Identify anomalous spikes in your raw neutron count data:
 ```python
 QualityCheck(
     target=QATarget.RAW_EPI_NEUTRONS,
-    method=QAMethod.SPIKE_UNILOF, 
+    method=QAMethod.SPIKE_OFFSET, 
     parameters={
-        "periods_in_calculation": 24,  
-        "threshold": 2.0              
+        "window": "24h",  
+        "threshold": (0.2, -0.2)      # Must do tuple with positive and negative spike thresholds       
     }
 )
 ```

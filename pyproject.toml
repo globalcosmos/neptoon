@@ -5,7 +5,7 @@ dynamic = ['version']
 description = "The neptoon package makes CRNS processing and research simple."
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.2.0",
     "urllib3>=2.2.0",
@@ -18,15 +18,15 @@ dependencies = [
     "pyaml>=23.12.0",
     "pydantic>=2.6.1",
     "pandera>0.24",
-    # "saqc>=2.6.0",
-    "saqc @ git+https://git.ufz.de/power/saqc.git@neptoon-temp-branch",
-    "magazine>=0.3.2",
-    "figurex>=0.2.10",
+    "numpy>=2.0",
+    "saqc>=2.7.0",
+    "magazine>=0.3.9",
+    "figurex>=0.2.15",
     "seaborn>=0.13.2",
     "typer>=0.15.2",
 ]
 authors = [
-    { name = "Daniel Power", email = "daniel.power@ufz.de" },
+    { name = "Daniel Power", email = "dpower-rse@pm.me" },
     { name = "Martin Schroen", email = "martin.schroen@ufz.de" },
 ]
 keywords = [
