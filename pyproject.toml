@@ -26,7 +26,7 @@ dependencies = [
     "typer>=0.15.2",
 ]
 authors = [
-    { name = "Daniel Power", email = "daniel.power@ufz.de" },
+    { name = "Daniel Power", email = "dpower-rse@pm.me" },
     { name = "Martin Schroen", email = "martin.schroen@ufz.de" },
 ]
 keywords = [
