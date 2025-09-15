@@ -369,7 +369,13 @@ class ManageFileCollection:
         if self.config.data_location.is_dir():
             try:
                 item_list = self.config.data_location.glob("**/*")
-                files = [x.name for x in item_list if x.is_file()]
+                # files = [x.name for x in item_list if x.is_file()] #only gets file names, path of subdirs missing
+
+                files = [
+                    str(x.relative_to(self.config.data_location))
+                    for x in item_list if x.is_file()
+                ] # retrieve the filenames with path
+
 
             except FileNotFoundError as fnf_error:
                 message = (
