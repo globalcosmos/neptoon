@@ -216,6 +216,11 @@ class DataHubFromConfig:
         file_manager = ManageFileCollection(config=file_collection_config)
         file_manager.get_list_of_files()
         file_manager.filter_files()
+        #echo how many files have been found
+        print (f"Found {len(file_manager.files)} files to parse.") #rr
+        core_logger.info(
+            f"Found {len(file_manager.files)} files to parse."
+        )
         file_parser = ParseFilesIntoDataFrame(
             file_manager=file_manager, config=file_collection_config
         )
