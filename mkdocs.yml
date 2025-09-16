@@ -65,8 +65,9 @@ nav:
           - External data collection: user-guide/external-data.md
           - Quality checks: user-guide/data-quality-checks.md
           - Corrections: user-guide/choosing-corrections.md
+          - Smoothing: user-guide/smoothing.md
           - Sensor calibration: user-guide/sensor-calibration.md
-          - Soil moisture estimates: user-guide/producing-soil-moisture-estimates.md
+          - Soil moisture estimates: user-guide/soil-moisture-estimates.md
           - Saving data: user-guide/saving-data.md
           - PDF output: user-guide/pdf-output.md
       - Process data with the Graphical User Interface:
