@@ -44,6 +44,6 @@ def __dir__():
 __all__ = list(_LAZY_IMPORTS.keys())
 
 
-VERSION = "v0.12.1"
+VERSION = "v0.13.0"
 
 __version__ = VERSION
