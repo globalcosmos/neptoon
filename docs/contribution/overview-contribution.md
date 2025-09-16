@@ -6,4 +6,4 @@ This public repository mirrors the main and development branchs, so you can be s
 
 Check out the [Contribution Guidelines](https://codebase.helmholtz.cloud/cosmos/neptoon/-/blob/main/CONTRIBUTING.md?ref_type=heads) for some help on getting going.
 
-Any issues please contact neptoon-contact@ufz.de
+Any issues please contact contact@neptoon.org
