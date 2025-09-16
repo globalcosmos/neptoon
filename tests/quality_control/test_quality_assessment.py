@@ -239,7 +239,6 @@ def test_spike_offset_detects_plateau_above_20_percent_only_on_rising_edge():
             # essential params for offset detection
             "window": "12h",  # compare one step before & after
             "threshold_relative": 0.2,
-            "bidirectional": True,
         },
     )
     assessor.add_quality_check(spike_check)
@@ -277,9 +276,8 @@ def test_spike_offset_detects_plateau_above_20_percent_on_lower():
         method=QAMethod.SPIKE_OFFSET,
         parameters={
             # essential params for offset detection
-            "threshold_relative": 0.2,
+            "threshold_relative": (0.2, -0.2),
             "window": "12h",
-            "bidirectional": True,
         },
     )
     assessor.add_quality_check(spike_check)

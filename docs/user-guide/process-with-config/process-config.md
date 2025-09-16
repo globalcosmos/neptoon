@@ -28,9 +28,8 @@ Here we conduct spike detection to account for problems in the raw count rate. T
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| spike_offset.threshold_relative | Yes | float | `0.2` | Maximum percent (as decimal) that an observation can jump, before being designated a spike |
+| spike_offset.threshold_relative | Yes | list | `[0.2, -0.2]` | Maximum percent (as decimal) that an observation can jump, before being designated a spike. Add two values in list format (with square brackets `[]`), one with a postive sign and one with a negative sign. Advised to stick to uniform.  |
 | spike_offset.window | Yes | integer | `12h` | The window to use to identify whether a spike as returned back to base line after a plateau of spikes |
-| spike_offset.bidirectional | Yes | bool | True | This should always be set to True so that spikes are detected in both the positive and negative directions|
 
 ### Corrected Neutron Quality Control Parameters
 
