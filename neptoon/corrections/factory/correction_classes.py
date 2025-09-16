@@ -9,13 +9,14 @@ from neptoon.corrections import (
     incoming_intensity_correction,
     rc_correction_hawdon,
     McjannetDesilets2023,
-    calc_absolute_humidity,
-    calc_saturation_vapour_pressure,
-    calc_actual_vapour_pressure,
+    # calc_absolute_humidity,
+    # calc_saturation_vapour_pressure,
+    # calc_actual_vapour_pressure,
     humidity_correction_rosolem2013,
-    calc_pressure_correction_beta_coeff,
-    calc_mean_pressure,
-    calc_beta_coefficient,
+    calc_pressure_correction_factor,
+    calc_beta_coefficient_desilets_zreda_2003,
+    calc_beta_coefficient_desilets_2021,
+    calc_beta_ceofficient_tirado_bueno_etal_2021,
     above_ground_biomass_correction_baatz2015,
     above_ground_biomass_correction_morris2024,
 )
@@ -49,6 +50,9 @@ class CorrectionTheory(Enum):
     # Atmospheric Water Vapour
     ROSOLEM_2013 = "rosolem_2013"
     # Pressure
+    DESILETS_ZREDA_2003 = "desilets_zreda_2003"
+    DESILETS_2021 = "desilets_2021"
+    TIRADO_BUENO_2021 = "tirado_bueno_2021"
     # Aboveground Biomass
     BAATZ_2015 = "baatz_2015"
     MORRIS_2024 = "morris_2024"
@@ -640,7 +644,7 @@ class HumidityCorrectionRosolem2013(Correction):
         return data_frame
 
 
-class PressureCorrectionZreda2012(Correction):
+class PressureCorrection(Correction):
     """
     Corrects neutrons for changes in atmospheric pressure according to
     the original Zreda et al. (2012) equation.
@@ -650,17 +654,10 @@ class PressureCorrectionZreda2012(Correction):
 
     def __init__(
         self,
-        site_elevation_col_name: str = str(ColumnInfo.Name.ELEVATION),
-        site_mean_pressure_col_name: str = str(ColumnInfo.Name.MEAN_PRESSURE),
-        beta_coefficient_col_name: str = str(ColumnInfo.Name.BETA_COEFFICIENT),
-        latitude_col_name: str = str(ColumnInfo.Name.LATITUDE),
-        site_cutoff_rigidity_col_name: str = str(
-            ColumnInfo.Name.SITE_CUTOFF_RIGIDITY
-        ),
+        beta_coefficient_col_name: str | None = None,
+        site_cutoff_rigidity_col_name: str = None,
         correction_type: str = CorrectionType.PRESSURE,
-        correction_factor_column_name: str = str(
-            ColumnInfo.Name.PRESSURE_CORRECTION
-        ),
+        correction_factor_column_name: str | None = None,
         reference_pressure_value: float = 1013.25,
     ):
         """
@@ -670,8 +667,6 @@ class PressureCorrectionZreda2012(Correction):
         ----------
         site_elevation_col_name : str, optional
             column containing elevation, by default None
-        site_mean_pressure_col_name : str, optional
-            column containing site mean pressure value
         correction_type : str, optional
             correction type, by default CorrectionType.PRESSURE
         correction_factor_column_name : str, optional
@@ -688,13 +683,22 @@ class PressureCorrectionZreda2012(Correction):
         """
         super().__init__(
             correction_type=correction_type,
-            correction_factor_column_name=correction_factor_column_name,
+            correction_factor_column_name=(
+                correction_factor_column_name
+                if correction_factor_column_name is not None
+                else str(ColumnInfo.Name.PRESSURE_CORRECTION)
+            ),
         )
-        self.site_mean_pressure_col_name = site_mean_pressure_col_name
-        self.beta_coefficient_col_name = beta_coefficient_col_name
-        self.site_elevation_col_name = site_elevation_col_name
-        self.latitude_col_name = latitude_col_name
-        self.site_cutoff_rigidity_col_name = site_cutoff_rigidity_col_name
+        self.beta_coefficient_col_name = (
+            beta_coefficient_col_name
+            if beta_coefficient_col_name is not None
+            else str(ColumnInfo.Name.BETA_COEFFICIENT)
+        )
+        self.site_cutoff_rigidity_col_name = (
+            site_cutoff_rigidity_col_name
+            if site_cutoff_rigidity_col_name is not None
+            else str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY)
+        )
         self.reference_pressure_value = reference_pressure_value
 
     def _prepare_for_correction(self, data_frame):
@@ -705,30 +709,13 @@ class PressureCorrectionZreda2012(Correction):
         calculate the beta_coefficient.
         """
 
-        self._check_coefficient_available(data_frame)
+        self._ensure_coefficient_available(data_frame)
 
-    def _check_coefficient_available(self, data_frame):
+    def _ensure_coefficient_available(self):
         """
-        Checks for coefficient availability. If not available it will
-        calculate it using latitude, site elevation and site cutoff
-        rigidity.
+        Placeholder
         """
-        column_name_beta = self.beta_coefficient_col_name
-
-        if is_column_missing_or_empty(data_frame, column_name_beta):
-            message = (
-                "No coefficient given for pressure correction. "
-                "Calculating beta coefficient."
-            )
-            core_logger.info(message)
-            data_frame[self.beta_coefficient_col_name] = data_frame.apply(
-                lambda row: calc_beta_coefficient(
-                    latitude=row[self.latitude_col_name],
-                    elevation=row[self.site_elevation_col_name],
-                    cutoff_rigidity=row[self.site_cutoff_rigidity_col_name],
-                ),
-                axis=1,
-            )
+        pass
 
     def apply(self, data_frame):
         """
@@ -760,7 +747,7 @@ class PressureCorrectionZreda2012(Correction):
         else:
             self._prepare_for_correction(data_frame)
             data_frame[self.correction_factor_column_name] = data_frame.apply(
-                lambda row: calc_pressure_correction_beta_coeff(
+                lambda row: calc_pressure_correction_factor(
                     row[str(ColumnInfo.Name.AIR_PRESSURE)],
                     self.reference_pressure_value,
                     row[self.beta_coefficient_col_name],
@@ -768,6 +755,252 @@ class PressureCorrectionZreda2012(Correction):
                 axis=1,
             )
             return data_frame
+
+
+class PressureCorrectionDesiletsZreda2003(PressureCorrection):
+    """
+    Corrects neutrons for changes in atmospheric pressure according to
+    the original Zreda et al. (2012) equation.
+
+    https://doi.org/10.5194/hess-16-4079-2012
+    """
+
+    def __init__(
+        self,
+        beta_coefficient_col_name: str | None = None,
+        site_cutoff_rigidity_col_name: str = None,
+        correction_type: str = CorrectionType.PRESSURE,
+        correction_factor_column_name: str | None = None,
+        reference_pressure_value: float = 1013.25,
+        latitude_col_name: str | None = None,
+        site_elevation_col_name: str | None = None,
+    ):
+        """
+        Required attributes for creation.
+
+        Parameters
+        ----------
+        site_elevation_col_name : str, optional
+            column containing elevation, by default None
+        correction_type : str, optional
+            correction type, by default CorrectionType.PRESSURE
+        correction_factor_column_name : str, optional
+            Name of column to store correction factors, by default str(
+            ColumnInfo.Name.PRESSURE_CORRECTION )
+        beta_coefficient_col_name : float, optional
+            beta_coefficient for processing, by default None
+        latitude_col_name : float, optional
+            latitude of site in degrees, by default None
+        site_cutoff_rigidity_col_name : _type_, optional
+            cut-off rigidity at the site, by default None
+        reference_pressure_value : float, optional
+            reference pressure for correction in hPa , by default 1013.25
+        """
+        super().__init__(
+            correction_type=correction_type,
+            correction_factor_column_name=correction_factor_column_name,
+            beta_coefficient_col_name=(
+                beta_coefficient_col_name
+                if beta_coefficient_col_name is not None
+                else str(ColumnInfo.Name.BETA_COEFFICIENT)
+            ),
+            site_cutoff_rigidity_col_name=(
+                site_cutoff_rigidity_col_name
+                if site_cutoff_rigidity_col_name is not None
+                else str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY)
+            ),
+            reference_pressure_value=reference_pressure_value,
+        )
+        self.site_elevation_col_name = (
+            site_elevation_col_name
+            if site_elevation_col_name is not None
+            else str(ColumnInfo.Name.ELEVATION)
+        )
+        self.latitude_col_name = (
+            latitude_col_name
+            if latitude_col_name is not None
+            else str(ColumnInfo.Name.LATITUDE)
+        )
+
+    def _ensure_coefficient_available(self, data_frame):
+        """
+        Checks for coefficient availability. If not available it will
+        calculate it using latitude, site elevation and site cutoff
+        rigidity.
+        """
+        column_name_beta = self.beta_coefficient_col_name
+
+        if is_column_missing_or_empty(data_frame, column_name_beta):
+            message = (
+                "No coefficient given for pressure correction. "
+                "Calculating beta coefficient."
+            )
+            core_logger.info(message)
+            data_frame[self.beta_coefficient_col_name] = data_frame.apply(
+                lambda row: calc_beta_coefficient_desilets_zreda_2003(
+                    latitude=row[self.latitude_col_name],
+                    elevation=row[self.site_elevation_col_name],
+                    cutoff_rigidity=row[self.site_cutoff_rigidity_col_name],
+                ),
+                axis=1,
+            )
+
+
+class PressureCorrectionDesilets2021(PressureCorrection):
+    """
+    Corrects neutrons for changes in atmospheric pressure according to
+    the original Zreda et al. (2012) equation.
+
+    https://doi.org/10.5194/hess-16-4079-2012
+    """
+
+    def __init__(
+        self,
+        beta_coefficient_col_name: str | None = None,
+        site_cutoff_rigidity_col_name: str = None,
+        correction_type: str = CorrectionType.PRESSURE,
+        correction_factor_column_name: str | None = None,
+        reference_pressure_value: float = 1013.25,
+        latitude_col_name: str | None = None,
+        site_elevation_col_name: str | None = None,
+    ):
+        """
+        Required attributes for creation.
+
+        Parameters
+        ----------
+        site_elevation_col_name : str, optional
+            column containing elevation, by default None
+        correction_type : str, optional
+            correction type, by default CorrectionType.PRESSURE
+        correction_factor_column_name : str, optional
+            Name of column to store correction factors, by default str(
+            ColumnInfo.Name.PRESSURE_CORRECTION )
+        beta_coefficient_col_name : float, optional
+            beta_coefficient for processing, by default None
+        latitude_col_name : float, optional
+            latitude of site in degrees, by default None
+        site_cutoff_rigidity_col_name : _type_, optional
+            cut-off rigidity at the site, by default None
+        reference_pressure_value : float, optional
+            reference pressure for correction in hPa , by default 1013.25
+        """
+        super().__init__(
+            correction_type=correction_type,
+            correction_factor_column_name=correction_factor_column_name,
+            beta_coefficient_col_name=(
+                beta_coefficient_col_name
+                if beta_coefficient_col_name is not None
+                else str(ColumnInfo.Name.BETA_COEFFICIENT)
+            ),
+            site_cutoff_rigidity_col_name=(
+                site_cutoff_rigidity_col_name
+                if site_cutoff_rigidity_col_name is not None
+                else str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY)
+            ),
+            reference_pressure_value=reference_pressure_value,
+        )
+        self.site_elevation_col_name = (
+            site_elevation_col_name
+            if site_elevation_col_name is not None
+            else str(ColumnInfo.Name.ELEVATION)
+        )
+        self.latitude_col_name = (
+            latitude_col_name
+            if latitude_col_name is not None
+            else str(ColumnInfo.Name.LATITUDE)
+        )
+
+    def _ensure_coefficient_available(self, data_frame):
+        """
+        Checks for coefficient availability. If not available it will
+        calculate it using latitude, site elevation and site cutoff
+        rigidity.
+        """
+        column_name_beta = self.beta_coefficient_col_name
+
+        if is_column_missing_or_empty(data_frame, column_name_beta):
+            message = (
+                "No coefficient given for pressure correction. "
+                "Calculating beta coefficient."
+            )
+            core_logger.info(message)
+            data_frame[self.beta_coefficient_col_name] = data_frame.apply(
+                lambda row: calc_beta_coefficient_desilets_2021(
+                    latitude=row[self.latitude_col_name],
+                    elevation=row[self.site_elevation_col_name],
+                    cutoff_rigidity=row[self.site_cutoff_rigidity_col_name],
+                ),
+                axis=1,
+            )
+
+
+class PressureCorrectionTiradoBueno2021(PressureCorrection):
+    def __init__(
+        self,
+        beta_coefficient_col_name: str | None = None,
+        site_cutoff_rigidity_col_name: str = None,
+        correction_type: str = CorrectionType.PRESSURE,
+        correction_factor_column_name: str | None = None,
+        reference_pressure_value: float = 1013.25,
+    ):
+        """
+        Required attributes for creation.
+
+        Parameters
+        ----------
+        site_elevation_col_name : str, optional
+            column containing elevation, by default None
+        correction_type : str, optional
+            correction type, by default CorrectionType.PRESSURE
+        correction_factor_column_name : str, optional
+            Name of column to store correction factors, by default str(
+            ColumnInfo.Name.PRESSURE_CORRECTION )
+        beta_coefficient_col_name : float, optional
+            beta_coefficient for processing, by default None
+        latitude_col_name : float, optional
+            latitude of site in degrees, by default None
+        site_cutoff_rigidity_col_name : _type_, optional
+            cut-off rigidity at the site, by default None
+        reference_pressure_value : float, optional
+            reference pressure for correction in hPa , by default 1013.25
+        """
+        super().__init__(
+            correction_type=correction_type,
+            correction_factor_column_name=correction_factor_column_name,
+            beta_coefficient_col_name=(
+                beta_coefficient_col_name
+                if beta_coefficient_col_name is not None
+                else str(ColumnInfo.Name.BETA_COEFFICIENT)
+            ),
+            site_cutoff_rigidity_col_name=(
+                site_cutoff_rigidity_col_name
+                if site_cutoff_rigidity_col_name is not None
+                else str(ColumnInfo.Name.SITE_CUTOFF_RIGIDITY)
+            ),
+            reference_pressure_value=reference_pressure_value,
+        )
+
+    def _ensure_coefficient_available(self, data_frame):
+        """
+        Checks for coefficient availability. If not available it will
+        calculate it using latitude, site elevation and site cutoff
+        rigidity.
+        """
+        column_name_beta = self.beta_coefficient_col_name
+
+        if is_column_missing_or_empty(data_frame, column_name_beta):
+            message = (
+                "No coefficient given for pressure correction. "
+                "Calculating beta coefficient."
+            )
+            core_logger.info(message)
+            data_frame[self.beta_coefficient_col_name] = data_frame.apply(
+                lambda row: calc_beta_ceofficient_tirado_bueno_etal_2021(
+                    cutoff_rigidity=row[self.site_cutoff_rigidity_col_name],
+                ),
+                axis=1,
+            )
 
 
 class AboveGroundBiomassCorrectionBaatz2015(Correction):

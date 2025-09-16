@@ -29,10 +29,12 @@ from .theory.neutrons_to_soil_moisture import (
 )
 
 from .theory.pressure_corrections import (
-    calc_pressure_correction_beta_coeff,
+    calc_atmos_depth_mean_press,
+    calc_beta_ceofficient_tirado_bueno_etal_2021,
+    calc_beta_coefficient_desilets_2021,
+    calc_beta_coefficient_desilets_zreda_2003,
     calc_mean_pressure,
-    calc_beta_coefficient,
-    dunai_2020,
+    calc_pressure_correction_factor,
 )
 
 from .factory.build_corrections import (
@@ -45,5 +47,7 @@ from .factory.correction_classes import (
     IncomingIntensityCorrectionZreda2012,
     IncomingIntensityCorrectionHawdon2014,
     HumidityCorrectionRosolem2013,
-    PressureCorrectionZreda2012,
+    PressureCorrectionDesiletsZreda2003,
+    PressureCorrectionDesilets2021,
+    PressureCorrectionTiradoBueno2021,
 )

@@ -37,7 +37,7 @@ sensor_info = SensorInfo(
 | `dry_soil_bulk_density` | float | Dry soil bulk density (g/cm³) | Critical for converting neutron counts to soil moisture |
 | `lattice_water` | float | Lattice water content (g/g) | Affects neutron moderation and soil moisture calculations |
 | `soil_organic_carbon` | float | Soil organic carbon content (g/g) | Influences neutron moderation similar to water |
-| `site_cutoff_rigidity` | float | Geomagnetic cutoff rigidity (GV) | Used for cosmic ray intensity corrections |
+| `site_cutoff_rigidity` | Optional[float] | Geomagnetic cutoff rigidity (GV) | Used for cosmic ray intensity corrections |
 | `mean_pressure` | Optional[float] | Mean atmospheric pressure (hPa) | Used for pressure correction reference |
 | `site_biomass` | Optional[float] | Above-ground biomass (kg/m²) | Used for biomass correction if enabled |
 | `N0` | Optional[float] | Calibration parameter | Key parameter linking neutron counts to soil moisture |
@@ -111,3 +111,21 @@ data_hub = hub_creator.create_data_hub()
 ```
 
 This approach ensures consistent processing across multiple runs and simplifies reproducibility.
+
+## Site Cutoff Rigidity
+
+The site cutoff rigidity is a crucial variable for processing data. There are online tools available to calculate this (e.g., www.crnslab.org). 
+
+You can also leave this blank and we have supplied a look up table which will provide a reasonable estimate of the cut-off rigidity using latitude and longitude of the site. When creating the `SensorInfo` class (either in a notebook or with the config system), if you leave `site_cutoff_rigidity` as None this is automatically done.
+
+You can also invoke this directly with the following code:
+
+```python
+from neptoon.data_prep.cutoff_rigidity_lookup import GVLookup
+
+lat = 10
+lon = 10
+
+gv = GVLookup().get_gv(lat=lat, lon=lon)
+print(f'The site GV is: {gv}')
+```

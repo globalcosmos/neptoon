@@ -15,10 +15,9 @@ class QAMethod(Enum):
     """
 
     RANGE_CHECK = ("flagRange", None)
-    SPIKE_SIGMA = ("flagSpikeSigma", None)
     SPIKE_UNILOF = ("flagUniLOF", None)
     SPIKE_ZSCORE = ("flagZScore", None)
-    SPIKE_OFFSET = ("flagOffsetRelative", None)
+    SPIKE_OFFSET = ("flagOffset", None)
     CONSTANT = ("flagConstants", None)
     ABOVE_N0 = ("flagRange", "above_n0")
     BELOW_N0_FACTOR = ("flagRange", "below_n0")
@@ -235,7 +234,7 @@ class SpikeZScoreParameters(MethodParameters):
 
 
 class SpikeOffsetParameters(MethodParameters):
-    saqc_web = "TBC"
+    saqc_web = "https://rdm-software.pages.ufz.de/saqc/_api/saqc.SaQC.html#saqc.SaQC.flagOffset"
 
     essential_params = {
         ParameterSpec(
@@ -244,7 +243,7 @@ class SpikeOffsetParameters(MethodParameters):
                 "Maximum precentage difference allowed between the value directly preceding and the "
                 "values succeeding an offset to trigger flagging of the offsetting values."
             ),
-            units="float",
+            units="tuple",
             default=None,
             saqc_name="thresh_relative",
         ),
@@ -256,15 +255,6 @@ class SpikeOffsetParameters(MethodParameters):
             units="float",
             default=None,
             saqc_name="window",
-        ),
-        ParameterSpec(
-            name="bidirectional",
-            description=str(
-                "Whether to check in both the rising and falling direction of data spikes"
-            ),
-            units="bool",
-            default=True,
-            saqc_name="bidirectional",
         ),
     }
 

@@ -66,7 +66,7 @@ def test_pascals_to_hectopascals(base_config):
         InputColumnMetaData(
             initial_name="P_raw",
             variable_type=InputColumnDataType.PRESSURE,
-            unit=PressureUnits.PASCALS,
+            unit=PressureUnits.PASCALS.value,
             priority=1,
         )
     ]
@@ -79,7 +79,7 @@ def test_pascals_to_hectopascals(base_config):
     expected = df["P_raw"] / 100
     pd.testing.assert_series_equal(out["P_raw"], expected, check_names=False)
 
-    assert base_config.column_data[0].unit == PressureUnits.HECTOPASCALS
+    assert base_config.column_data[0].unit == PressureUnits.HECTOPASCALS.value
 
 
 def test_kilopascals_to_hectopascals(base_config):
@@ -89,7 +89,7 @@ def test_kilopascals_to_hectopascals(base_config):
         InputColumnMetaData(
             initial_name="P_kpa",
             variable_type=InputColumnDataType.PRESSURE,
-            unit=PressureUnits.KILOPASCALS,
+            unit=PressureUnits.KILOPASCALS.value,
             priority=1,
         )
     ]
@@ -103,7 +103,7 @@ def test_kilopascals_to_hectopascals(base_config):
     expected = df["P_kpa"] * 10
     pd.testing.assert_series_equal(out["P_kpa"], expected, check_names=False)
 
-    assert base_config.column_data[0].unit == PressureUnits.HECTOPASCALS
+    assert base_config.column_data[0].unit == PressureUnits.HECTOPASCALS.value
 
 
 ###############

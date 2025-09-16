@@ -8,31 +8,38 @@ from dateutil import parser
 
 from neptoon.columns import ColumnInfo
 from neptoon.config.global_configuration import GlobalConfig
-from neptoon.data_audit import log_key_step
 from neptoon.logging import get_logger
 
 core_logger = get_logger()
 
 NMDB_REFERENCES = {
-    "JUNG": 161,
-    "SOPO": 308,
-    "OULU": 108,
-    "PSNM": 615,
-    "MXCO": 227,
-    "AATA": 157,
+    "AATB": 157,
     "INVK": 111,
-    "KIEL": 166,
+    "JUNG": 168,
+    "KERG": 239,
+    "KIEL": 190,
+    "MXCO": 227,
+    "NEWK": 100,
+    "OULU": 113,
+    "PSNM": 615,
+    "SOPO": 308,
+    "TERA": 124,
+    "THUL": 130,
 }
 
 NMDB_CUTOFF_RIGIDITIES = {
-    "JUNG": 4.49,
-    "SOPO": 0.0,
-    "OULU": 0.619,
-    "PSNM": 16.674,
-    "MXCO": 7.495,
-    "AATA": 6.018,
+    "AATB": 5.2,
     "INVK": 0.186,
-    "KIEL": 2.383,
+    "JUNG": 5.0,
+    "KERG": 1,
+    "KIEL": 2.4,
+    "MXCO": 7.495,
+    "NEWK": 2.6,
+    "OULU": 0.7,
+    "PSNM": 16.674,
+    "SOPO": 0.0,
+    "TERA": 0,
+    "THUL": 0,
 }
 
 
@@ -287,10 +294,12 @@ class NMDBConfig:
     end_date_needed : str or None, optional
         End date for which data needs to be fetched, considering cached
         data. None if all data is cached.
+    use_cache : bool, optional
+        whether to use cached data, ignore the cache entirely, defaults
+        to True
 
     """
 
-    @log_key_step("station", "nmdb_table", "resolution")
     def __init__(
         self,
         start_date_wanted,
@@ -305,6 +314,7 @@ class NMDBConfig:
         cache_end_date=None,
         start_date_needed=None,
         end_date_needed=None,
+        use_cache=True,
     ):
         self._start_date_wanted = start_date_wanted
         self._end_date_wanted = end_date_wanted
@@ -318,6 +328,7 @@ class NMDBConfig:
         self.cache_end_date = cache_end_date
         self.start_date_needed = start_date_needed
         self.end_date_needed = end_date_needed
+        self.use_cache = use_cache
 
     @property
     def start_date_wanted(self):
@@ -342,6 +353,31 @@ class NMDBConfig:
             return self._cache_dir
         else:
             return GlobalConfig.get_cache_dir()
+
+
+class TermsDisplayManager:
+    """Manages display of NMDB station terms of use"""
+
+    _displayed_stations = (
+        set()
+    )  # Track which stations have shown terms this session
+
+    @classmethod
+    def display_terms(cls, station):
+        """Display terms of use for a station (once per session)"""
+        if station in cls._displayed_stations:
+            return  # Already shown this session
+
+        station_url = f"https://www.nmdb.eu/station/{station.lower()}/"
+
+        print(f"\n=== NMDB DATA USAGE NOTICE ===")
+        print(
+            f"Using NMDB.eu data for processing, there are stipulations in the usage of this data."
+        )
+        print(f"Please see {station_url} for details.")
+        print("=" * 40)
+
+        cls._displayed_stations.add(station)
 
 
 class CacheHandler:
@@ -884,6 +920,7 @@ class NMDBDataHandler:
             Configuration settings for NMDB data retrieval.
         """
         self.config = config
+        TermsDisplayManager.display_terms(config.station)
         self.cache_handler = CacheHandler(config)
         self.data_fetcher = DataFetcher(config)
         self.data_manager = DataManager(
@@ -915,7 +952,7 @@ class NMDBDataHandler:
         """
 
         self.cache_handler.check_cache_file_exists()
-        if self.config.cache_exists:
+        if self.config.cache_exists and self.config.use_cache:
             self.cache_handler.check_cache_range()
             self.data_manager.check_if_need_extra_data()
             if (
@@ -941,7 +978,52 @@ class NMDBDataHandler:
                 f" {self.cache_handler.cache_file_path}."
             )
             df_download = self.data_fetcher.fetch_and_parse_http_data()
-            self.cache_handler.write_cache(df_download)
-            self.config.cache_exists = True
-            self.cache_handler.cache_file = df_download
+            if self.config.use_cache:
+                self.cache_handler.write_cache(df_download)
+                self.config.cache_exists = True
+                self.cache_handler.cache_file = df_download
             return df_download
+
+
+def fetch_nmdb_data(
+    start_date,
+    end_date,
+    station,
+    resolution,
+    nmdb_table="revori",
+):
+    """
+    Returns a dataframe of data from nmdb.eu
+
+    https://www.nmdb.eu
+
+    Parameters
+    ----------
+    start_date : str
+        Start date of desired data, format "YYYY-MM-DD"
+    end_date : str
+        End date of desired data, format "YYYY-MM-DD"
+    station : str
+        Desired station as string, as available from
+        https://www.nmdb.eu. E.g., "JUNG" or "OULU"
+    resolution : int
+        The desired resolution in minutes
+    nmdb_table : str, optional
+        The table to collect from nmdb.eu, by default "revori"
+
+    Returns
+    -------
+    pd.DataFrame
+        Datetime indexed dataframe
+    """
+    config = NMDBConfig(
+        start_date_wanted=start_date,
+        end_date_wanted=end_date,
+        station=station,
+        resolution=resolution,
+        nmdb_table=nmdb_table,
+        use_cache=False,
+    )
+    handler = NMDBDataHandler(config=config)
+    df = handler.collect_nmdb_data()
+    return df

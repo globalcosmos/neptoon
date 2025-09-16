@@ -9,7 +9,9 @@ pip install neptoon
 For those who are not familiar with python, use `pipx` for installation (described below).
 
 ## Recommended Installation
-We recommend installing neptoon in a dedicated environment to ensure reproducibility and prevent package conflicts.
+
+We recommend installing neptoon in a dedicated environment to ensure reproducibility and prevent package conflicts. Below we show installing with python 3.11 but you do not need to stick to this, as long as you use >= Python 3.10
+
 Here some example scripts to do this using mamba or conda:
 
 === "Mamba"
@@ -29,6 +31,17 @@ Here some example scripts to do this using mamba or conda:
     conda activate neptoon
     # Install neptoon
     pip install neptoon
+    ```
+=== "uv"
+    ```bash
+    # Create a new environment with Python 3.11
+    uv venv neptoon --python 3.11
+    # Activate the environment
+    source ./bin/activate  # On Unix/macOS
+    # or
+    .\Scripts\activate     # On Windows
+    # Install neptoon
+    uv pip install neptoon
     ```
 
 !!! tip "Jupyter Integration"

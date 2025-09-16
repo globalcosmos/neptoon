@@ -13,7 +13,6 @@ from typing import Union, Literal, List, Optional
 from neptoon.logging import get_logger
 from neptoon.utils.general_utils import (
     validate_and_convert_file_path,
-    parse_resolution_to_timedelta,
 )
 from neptoon.columns import ColumnInfo
 from neptoon.config.configuration_input import (
@@ -242,17 +241,15 @@ class FileCollectionConfig:
 
     def dump_zip(self):
         """Create temporary directory and extract"""
-
         self._temp_dir_obj = tempfile.TemporaryDirectory()
         temp_dir = Path(self._temp_dir_obj.name)
-        zip_dirname = Path(self._data_location).stem
 
         with zipfile.ZipFile(self._data_location) as zip_ref:
             zip_ref.extractall(temp_dir)
 
         extracted_items = list(temp_dir.iterdir())
         if extracted_items and extracted_items[0].is_dir():
-            self._data_location = temp_dir / zip_dirname
+            self._data_location = extracted_items[0]
         else:
             self._data_location = temp_dir
 
@@ -372,7 +369,13 @@ class ManageFileCollection:
         if self.config.data_location.is_dir():
             try:
                 item_list = self.config.data_location.glob("**/*")
-                files = [x.name for x in item_list if x.is_file()]
+                # files = [x.name for x in item_list if x.is_file()] #only gets file names, path of subdirs missing
+
+                files = [
+                    str(x.relative_to(self.config.data_location))
+                    for x in item_list if x.is_file()
+                ] # retrieve the filenames with path
+
 
             except FileNotFoundError as fnf_error:
                 message = (
@@ -704,15 +707,15 @@ class InputColumnDataType(Enum):
 
 
 class NeutronCountUnits(Enum):
-    ABSOLUTE_COUNT = auto()
-    COUNTS_PER_HOUR = auto()
-    COUNTS_PER_SECOND = auto()
+    ABSOLUTE_COUNT = "absolute_count"
+    COUNTS_PER_HOUR = "counts_per_hour"
+    COUNTS_PER_SECOND = "counts_per_second"
 
 
 class PressureUnits(Enum):
-    PASCALS = auto()
-    HECTOPASCALS = auto()
-    KILOPASCALS = auto()
+    PASCALS = "pascals"
+    HECTOPASCALS = "hectopascals"
+    KILOPASCALS = "kilopascals"
 
 
 class MergeMethod(Enum):
@@ -1275,16 +1278,16 @@ class FormatDataForCRNSDataHub:
         ]
 
         for pressure_col in pressure_cols:
-            if pressure_col.unit == PressureUnits.PASCALS:
+            if pressure_col.unit == PressureUnits.PASCALS.value:
                 self.data_frame[pressure_col.initial_name] = (
                     self.data_frame[pressure_col.initial_name] / 100
                 )
-                pressure_col.unit = PressureUnits.HECTOPASCALS
-            elif pressure_col.unit == PressureUnits.KILOPASCALS:
+                pressure_col.unit = PressureUnits.HECTOPASCALS.value
+            elif pressure_col.unit == PressureUnits.KILOPASCALS.value:
                 self.data_frame[pressure_col.initial_name] = (
                     self.data_frame[pressure_col.initial_name] * 10
                 )
-                pressure_col.unit = PressureUnits.HECTOPASCALS
+                pressure_col.unit = PressureUnits.HECTOPASCALS.value
 
     def merge_multiple_meteo_columns(
         self,

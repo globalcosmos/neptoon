@@ -110,7 +110,7 @@ Now that we have collected and formatted our data, supplied key information, und
 
 This step takes all the information created from the previous steps and outputs our soil moisture values, as well as information on the depth and radius of the estimation. 
 
-[More information on producing soil moisture estimates](producing-soil-moisture-estimates.md)
+[More information on producing soil moisture estimates](soil-moisture-estimates.md)
 
 #### Saving Data
 
