@@ -26,10 +26,6 @@ from neptoon.quality_control import (
     QualityAssessmentFlagBuilder,
     DataQualityAssessor,
 )
-from neptoon.utils import (
-    validate_timestamp_index,
-    find_temporal_resolution_seconds,
-)
 from neptoon.visulisation.figures_handler import FigureHandler
 from neptoon.io.save import SaveAndArchiveOutputs
 from neptoon.data_prep.smoothing import SmoothData
@@ -446,21 +442,17 @@ class CRNSDataHub:
         )
         n0 = int(self.calibrator.find_n0_value())
         avg_dry_soil_bulk_density = round(
-            self.calibrator.calibrator.calib_data_object.list_of_profiles[
-                0
-            ].site_avg_bulk_density,
+            self.calibrator.context.list_of_profiles[0].site_avg_bulk_density,
             4,
         )
         avg_soil_organic_carbon = round(
-            self.calibrator.calibrator.calib_data_object.list_of_profiles[
+            self.calibrator.context.list_of_profiles[
                 0
             ].site_avg_organic_carbon,
             4,
         )
         avg_lattice_water = round(
-            self.calibrator.calibrator.calib_data_object.list_of_profiles[
-                0
-            ].site_avg_lattice_water,
+            self.calibrator.context.list_of_profiles[0].site_avg_lattice_water,
         )
         self.sensor_info.N0 = n0
         self.sensor_info.avg_dry_soil_bulk_density = avg_dry_soil_bulk_density
@@ -530,7 +522,7 @@ class CRNSDataHub:
         dry_soil_bulk_density: float | None = None,
         lattice_water: float | None = None,
         soil_organic_carbon: float | None = None,
-        koehli_method_form: Literal[
+        koehli_parameters: Literal[
             "Jan23_uranos",
             "Jan23_mcnpfull",
             "Mar12_atmprof",
@@ -549,7 +541,7 @@ class CRNSDataHub:
             "Aug12_uranos_ewin",
             "Aug13_uranos_atmprof",
             "Aug13_uranos_atmprof2",
-        ] = "Mar21_uranos_drf",
+        ] = "Mar21_mcnp_drf",
     ):
         """
         Produces SM estimates with the NeutronsToSM class. If values for
@@ -590,7 +582,7 @@ class CRNSDataHub:
             "lattice_water": lattice_water,
             "soil_organic_carbon": soil_organic_carbon,
             "conversion_theory": conversion_theory,
-            "koehli_method_form": koehli_method_form,
+            "koehli_parameters": koehli_parameters,
         }
         params = {k: v for k, v in provided_params.items() if v is not None}
         default_params.update(params)
@@ -707,7 +699,6 @@ class CRNSDataHub:
         self,
         folder_name: Union[str, None] = None,
         save_folder_location: Union[str, Path, None] = None,
-        append_audit_log_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: Union[dict, None] = None,
         append_timestamp: bool = True,
@@ -738,7 +729,6 @@ class CRNSDataHub:
             flag_data_frame=self.flags_data_frame,
             sensor_info=self.sensor_info,
             save_folder_location=save_folder_location,
-            append_audit_log_hash_to_folder_name=append_audit_log_hash_to_folder_name,
             use_custom_column_names=use_custom_column_names,
             custom_column_names_dict=custom_column_names_dict,
             append_timestamp=append_timestamp,

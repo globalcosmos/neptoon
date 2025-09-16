@@ -4,9 +4,8 @@ config: process
 neutron_quality_assessment:
   raw_neutrons:
     spike_offset:
-      threshold_relative: 0.2 # 20%
+      threshold_relative: [0.2, -0.2] # + or - 20%
       window: 12h
-      bidirectional: true # always set to true
   corrected_neutrons:
     greater_than_N0:
       percent_maximum: 1.075 # Köhli 2021
@@ -20,8 +19,7 @@ correction_steps:
     coefficient: 0.0054
     humidity_ref: 0
   air_pressure:
-    method: zreda_2012
-    dunai_inclination:
+    method: tirado_bueno_2021
   incoming_radiation:
     method: hawdon_2014
     reference_neutron_monitor:
@@ -33,7 +31,7 @@ correction_steps:
     biomass_units:
   soil_moisture_estimation:
     method: desilets_etal_2010 # or koehli_etal_2021
-    koehli_etal_2021_parameterset: Mar21_uranos_drf
+    koehli_etal_2021_parameterset: Mar21_mcnp_drf
 
 # Data Smoothing
 data_smoothing:

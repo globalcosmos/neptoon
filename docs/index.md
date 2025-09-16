@@ -40,8 +40,6 @@ Neptoon is designed to facilitate the painless processing of CRNS sites, utilisi
 <a href="user-guide/neptoon-examples/" class="card"> <div class="card-content"> <i class="fas fa-download"></i> <h3>Examples!</h3> <p>Here we present examples we have made to help you understand Neptoon and start working with it.</p> </div> </a>
 </div>
 
-## Advanced User Guide
-TBC
 
 ## More information
 
@@ -51,14 +49,10 @@ TBC
 
 ## Support
 
-daniel.power@ufz.de
+contact@neptoon.org
 
-martin.schroen@ufz.de
 
 ## Contributing 
-
-!!! warning "Work in Progress"
-	This section is not yet complete. 
 
 If you want to contribute to neptoon we are always open to ideas. The goal is for this to be a useful tool for everyone to adapt and change to their CRNS needs!
 
@@ -67,16 +61,22 @@ If you want to contribute to neptoon we are always open to ideas. The goal is fo
 
 Lead Developers:
 
-- Daniel Power (daniel.power@ufz.de)
-- Martin Schrön (martin.schroen@ufz.de)
+- Daniel Power
+- Martin Schrön 
 
-We would also like to acknowledge the following people and groups for continued support during the development of neptoon.
+We would also like to acknowledge the following people for continued support during the development of neptoon.
 
 - Fredo Erxleben	
 - Steffen Zacharias
 - Rafael Rosolem
 - Miguel Rico-Ramirez
+- Till Francke
+- Louis Ferdinand Trinkle
 
+
+The development of neptoon was supported by the European Commission’s Horizon Europe Framework Programme - ENVironment Research infrastructures INNOVation Roadmap- (ENVRINNOV project, grant no.  101131426)
+
+ 
 <!-- 
 ![alt text](assets/ufz.png) ![alt text](assets/bristol.png) 
 

@@ -53,7 +53,7 @@ class Schroen2017:
             Soil Moisture from 0.02 to 0.50 in m^3/m^3.
             Referred to as y in Schroen et al., (2017)
         abs_air_humidity : float
-            Absolute air humidity from 0.1 to 0.50 in g/m^3.
+            Absolute air humidity in g/m^3.
             Referred to as x in Schroen et al., (2017)
         normalze : bool
             Normalize the weights relative to the sum of weights
@@ -178,7 +178,7 @@ class Schroen2017:
 
             return W.w.values
 
-    W_r = horizontal_weighting
+    # W_r = horizontal_weighting
 
     @staticmethod
     def horizontal_weighting_approx(distance=1, normalize: bool = False):
@@ -230,7 +230,7 @@ class Schroen2017:
 
             return W.w.values
 
-    W_r_approx = horizontal_weighting_approx
+    # W_r_approx = horizontal_weighting_approx
 
     @staticmethod
     def calculate_measurement_depth(
@@ -312,7 +312,7 @@ class Schroen2017:
         w = np.exp(-2 * depth / D86)
         return w
 
-    W_d = vertical_weighting
+    # W_d = vertical_weighting
 
     @staticmethod
     def rescale_distance(

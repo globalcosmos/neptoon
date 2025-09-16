@@ -1,14 +1,11 @@
 from saqc import SaQC
 import pandas as pd
 from neptoon.logging import get_logger
-from neptoon.data_audit import log_key_step
 from neptoon.quality_control.saqc_methods_and_params import (
     QAMethod,
     QATarget,
     ParameterRegistry,
 )
-
-# from neptoon.quality_control.saqc_methods_and_params import WhatParamsDoINeed
 
 
 core_logger = get_logger()
@@ -82,7 +79,6 @@ class QualityCheck:
     allowable params.
     """
 
-    @log_key_step("target", "method", "raw_params")
     def __init__(
         self,
         target: QATarget,

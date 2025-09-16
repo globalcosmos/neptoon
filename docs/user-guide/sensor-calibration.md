@@ -81,6 +81,57 @@ It's possible to calibrate your site more directly, without a data hub. For this
 
 Checkout the [examples](neptoon-examples.md). The example demonstrating this is found under `jupyter_notebooks>calibration>example_calibration.ipynb`
 
+!!! warning "Koehli et al., (2021) method"
+    If you are supplying your own dataframe, with neutrons already corrected, be sure that the neutrons are corrected appropriately. Humidity correction is done as a standard using the Desilets et al. (2010) method. With the Koehli et al., (2021) method humidity is corrected for in the conversion from neutrons to soil moisture. Given this, when using the Koehli et al., (2021) method, humidity correction using the Rosolem et al., (2013) method should _not_ be applied to corrected neutrons, otherwise double humidity correction occurs. 
+
+    If you are using neptoon to do the full pipeline - this will be automatically addressed. 
+    
+
+# Calibrate without data
+
+If you already have values for inputs like field average soil moisture, corrected neutron counts, lattice water etc. you can add these directly to the following function to simply optimise the N0.
+
+In the following case it's expected that:
+
+1. Your soil moisture values are field scale averages using an appropriate weighting scheme
+2. Your corrected neutron counts are corrected for external impacts (e.g., pressure).
+
+Remember that when you find this N0 value, all subsequent neutron corrections and data cleaning methods should match what was done to originally derive your corrected_neutron_counts values. The N0 is a corrected neutron value.
+
+
+```python
+from neptoon.calibration import CalculateN0
+
+n0_calc = CalculateN0()
+n0_calc.set_values(
+    soil_moisture=[0.4, 0.2],
+    corrected_neutron_counts=[1200, 1100],
+    lattice_water=0.001,
+    water_equiv_soil_organic_carbon=0.02,
+)
+n0_calc.find_optimal_N0()
+
+```
+
+or
+
+```python
+from neptoon.calibration import CalculateN0
+
+n0_calc = CalculateN0()
+n0_calc.set_values(
+    soil_moisture=[0.4, 0.2],
+    corrected_neutron_counts=[1200, 1100],
+    lattice_water=0.001,
+    water_equiv_soil_organic_carbon=0.02,
+    absolute_humidity=[2.35, 2.50],  # for koehli
+    conversion_method="koehli_etal_2021",
+)
+n0_calc.find_optimal_N0()
+
+```
+
+
 
 ## References
 

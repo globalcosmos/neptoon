@@ -1,5 +1,11 @@
 from typing import List, Optional, Literal, Dict
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    model_validator,
+    field_validator,
+)
 from pathlib import Path
 import datetime
 import yaml
@@ -13,6 +19,7 @@ from pydantic import ValidationError
 
 from neptoon.logging import get_logger
 from neptoon.utils.docker_utils import return_file_path_with_suffix
+from neptoon.data_prep.cutoff_rigidity_lookup import GVLookup
 
 core_logger = get_logger()
 
@@ -59,7 +66,7 @@ class SensorInfo(BaseConfig):
     longitude: float
     elevation: float
     time_zone: int
-    site_cutoff_rigidity: float
+    site_cutoff_rigidity: Optional[float] = Field(default=None)
     avg_lattice_water: Optional[float] = Field(default=None)
     avg_soil_organic_carbon: Optional[float] = Field(default=None)
     avg_dry_soil_bulk_density: Optional[float] = Field(default=None)
@@ -68,6 +75,14 @@ class SensorInfo(BaseConfig):
     )
     beta_coefficient: Optional[float] = Field(default=None)
     mean_pressure: Optional[float] = Field(default=None)
+
+    @model_validator(mode="after")
+    def calculate_rigidity_if_missing(self):
+        if self.site_cutoff_rigidity is None:
+            self.site_cutoff_rigidity = GVLookup().get_gv(
+                lat=self.latitude, lon=self.longitude
+            )
+        return self
 
 
 # Time Series Validation
@@ -250,8 +265,17 @@ class SpikeZScore(BaseConfig):
 
 
 class SpikeOffset(BaseConfig):
-    threshold_relative: Optional[float] = None
+    threshold_relative: Optional[tuple | float] = None
     window: Optional[str] = "12h"
+
+    @field_validator("threshold_relative")
+    @classmethod
+    def convert_list_to_tuple(cls, v):
+        if isinstance(v, list):
+            return tuple(v)
+        elif isinstance(v, float):
+            return (abs(v), -abs(v))
+        return v
 
 
 class GreaterThanN0(BaseConfig):
@@ -327,6 +351,12 @@ class CalibrationConfig(BaseConfig):
     calibrate: bool = Field(default=False)
     location: Optional[Path] = Field(default="")
     key_column_names: Optional[CalibrationColumnNames] = None
+    horizontal_weighting_method: Optional[str] = Field(
+        default="schroen_etal_2017"
+    )
+    vertical_weighting_method: Optional[str] = Field(
+        default="schroen_etal_2017"
+    )
 
 
 class DataStorageConfig(BaseConfig):
@@ -405,7 +435,11 @@ class AirHumidityCorrection(BaseModel):
 class AirPressureCorrection(BaseModel):
     """Configuration for air pressure correction parameters."""
 
-    method: Optional[Literal["zreda_2012", "none"]] = Field(
+    method: Optional[
+        Literal[
+            "desilets_zreda_2003", "desilets_2021", "tirado_bueno_2021", "none"
+        ]
+    ] = Field(
         description="Air pressure correction method",
         default="none",
     )
@@ -794,6 +828,20 @@ class ConfigurationManager:
                 f"Found 'omega' in air humidity settings "
                 f"which has been changed to `coefficient`.\n"
                 f"Change `omega` to `coefficient` and this will work\n"
+                "see: https://www.neptoon.org/en/latest/user-guide/process-with-config/process-config/"
+            )
+            warnings.warn(
+                message1,
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        if config_obj.correction_steps.air_pressure.method == "zreda_2012":
+            message1 = (
+                "\n"
+                f"\033[1m\033[93mProcess config needs updating:\033[0m "
+                f"There are more options for pressure correction now related"
+                f"to the beta coefficient calculation method.\n"
+                f"`zreda_2012` is now called `desilets_zreda_2003` - please update\n"
                 "see: https://www.neptoon.org/en/latest/user-guide/process-with-config/process-config/"
             )
             warnings.warn(

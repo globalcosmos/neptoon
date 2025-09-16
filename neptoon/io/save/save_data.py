@@ -1,14 +1,12 @@
 import pandas as pd
 import math
 from pathlib import Path
-from typing import Union
 import shutil
 import json
 import yaml
 from typing import List
 from magazine import Publish, Magazine
 from neptoon.logging import get_logger
-from neptoon.data_audit import DataAuditLog
 from neptoon.config.configuration_input import (
     SensorInfo,
     SensorConfig,
@@ -39,7 +37,6 @@ class SaveAndArchiveOutputs:
         flag_data_frame: pd.DataFrame,
         sensor_info: SensorInfo,
         save_folder_location: str | Path | None = None,
-        append_audit_log_hash_to_folder_name: bool = False,
         use_custom_column_names: bool = False,
         custom_column_names_dict: dict | None = None,
         append_timestamp: bool = True,
@@ -62,11 +59,6 @@ class SaveAndArchiveOutputs:
             The SensorInfo object.
         save_folder_location : Union[str, Path], optional
             The folder where the data should be saved. If left as None
-        append_audit_log_hash_to_folder_name : bool, optional
-            The DataAuditLog gets converted to a hash, meaning sites
-            processed the same way share a hash. This can be appended to
-            the folder automatically helping to identify sites processed
-            differently, by default False
         use_custom_column_names : bool, optional
              Whether to use custom column names, by default False
         custom_column_names_dict : dict, optional
@@ -82,9 +74,6 @@ class SaveAndArchiveOutputs:
         self.sensor_info = sensor_info
         self.save_folder_location = self._validate_save_folder(
             save_folder_location
-        )
-        self.append_audit_log_hash_to_folder_name = (
-            append_audit_log_hash_to_folder_name
         )
         self.use_custom_column_names = use_custom_column_names
         self.custom_column_names_dict = custom_column_names_dict
@@ -159,6 +148,8 @@ class SaveAndArchiveOutputs:
         append_hash: bool = False,
     ):
         """
+        NOTE: CURRENTLY NOT IMPLEMENTED
+
         Handles closing the data audit log, producing the YAML output,
         and optionally appending a hash to the save location folder
         name.
@@ -180,6 +171,8 @@ class SaveAndArchiveOutputs:
             hash.txt to the folder name.
 
         """
+        from neptoon.data_audit import DataAuditLog
+
         try:
             DataAuditLog.archive_and_delete_log(
                 site_name=self.sensor_info.name,
@@ -415,9 +408,6 @@ class SaveAndArchiveOutputs:
         self._update_sensor_info()
         if Magazine.active:
             self._save_pdf(location=self.full_folder_location)
-        self.close_and_save_data_audit_log(
-            append_hash=self.append_audit_log_hash_to_folder_name
-        )
 
     # ---- TODO below this line ----
 

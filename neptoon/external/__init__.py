@@ -1,0 +1,1 @@
+from .nmdb_data_collection import fetch_nmdb_data
