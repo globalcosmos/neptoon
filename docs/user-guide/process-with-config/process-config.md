@@ -77,9 +77,10 @@ Air pressure correction - very important to leave on as CRNS are very sensitive 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | method | Yes | string | `"hawdon_2014"` or<br> `"zreda_2012"` or<br> `"mcjannet_desilets_2023"` or<br> `"none"` | Method used for incoming intensity correction |
-| reference_neutron_monitor.station | Yes | string | `"JUNG"` or<br> `"SOPO"` or<br> `"OULU"` or<br> `"PSNM"` or<br> `"MXCO"` or<br> `"AATA"` or<br> `"INVK"` or<br> `"KIEL"` | Reference neutron monitor station |
+| reference_neutron_monitor.station | Yes | string | `"AATB"` or<br> `"INVK"` or<br> `"JUNG"` or<br> `"KERG"` or<br> `"KIEL"` or<br>`"MXCO"` or<br>`"NEWK"` or<br>`"OULU"` or<br>`"PSNM"` or<br>`"SOPO"` or<br>`"TERA"` or<br>`"THUL"` | Reference neutron monitor station |
 | reference_neutron_monitor.resolution | Yes | integer | `60` | Time resolution in minutes |
 | reference_neutron_monitor.nmdb_table | Yes | string | `"revori"` or `"ori"`| NMDB table name (revori recommended) |
+
 
 ### Above Ground Biomass Correction
 
