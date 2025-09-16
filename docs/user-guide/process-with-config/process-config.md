@@ -28,9 +28,8 @@ Here we conduct spike detection to account for problems in the raw count rate. T
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| spike_offset.threshold_relative | Yes | float | `0.2` | Maximum percent (as decimal) that an observation can jump, before being designated a spike |
+| spike_offset.threshold_relative | Yes | list | `[0.2, -0.2]` | Maximum percent (as decimal) that an observation can jump, before being designated a spike. Add two values in list format (with square brackets `[]`), one with a postive sign and one with a negative sign. Advised to stick to uniform.  |
 | spike_offset.window | Yes | integer | `12h` | The window to use to identify whether a spike as returned back to base line after a plateau of spikes |
-| spike_offset.bidirectional | Yes | bool | True | This should always be set to True so that spikes are detected in both the positive and negative directions|
 
 ### Corrected Neutron Quality Control Parameters
 
@@ -78,9 +77,10 @@ Air pressure correction - very important to leave on as CRNS are very sensitive 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
 | method | Yes | string | `"hawdon_2014"` or<br> `"zreda_2012"` or<br> `"mcjannet_desilets_2023"` or<br> `"none"` | Method used for incoming intensity correction |
-| reference_neutron_monitor.station | Yes | string | `"JUNG"` or<br> `"SOPO"` or<br> `"OULU"` or<br> `"PSNM"` or<br> `"MXCO"` or<br> `"AATA"` or<br> `"INVK"` or<br> `"KIEL"` | Reference neutron monitor station |
+| reference_neutron_monitor.station | Yes | string | `"AATB"` or<br> `"INVK"` or<br> `"JUNG"` or<br> `"KERG"` or<br> `"KIEL"` or<br>`"MXCO"` or<br>`"NEWK"` or<br>`"OULU"` or<br>`"PSNM"` or<br>`"SOPO"` or<br>`"TERA"` or<br>`"THUL"` | Reference neutron monitor station |
 | reference_neutron_monitor.resolution | Yes | integer | `60` | Time resolution in minutes |
 | reference_neutron_monitor.nmdb_table | Yes | string | `"revori"` or `"ori"`| NMDB table name (revori recommended) |
+
 
 ### Above Ground Biomass Correction
 

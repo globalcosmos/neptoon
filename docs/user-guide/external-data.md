@@ -43,18 +43,7 @@ data_hub.attach_nmdb_data(
 
 - **station:** neptoon supports the following stations: 
 
-    "AATB"
-    "INVK"
-    "JUNG"
-    "KERG"
-    "KIEL"
-    "MXCO"
-    "NEWK"
-    "OULU"
-    "PSNM"
-    "SOPO"
-    "TERA"
-    "THUL"
+    ["AATB", "INVK", "JUNG", "KERG", "KIEL", "MXCO", "NEWK". "OULU", "PSNM", "SOPO", "TERA", "THUL"]
 
 - **resolution:** The resolution of the data in minutes
 - **nmdb_table:** The specific table (recommended to use `revori` - revised original)
