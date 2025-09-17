@@ -809,7 +809,7 @@ wheels = [
 
 [[package]]
 name = "magazine"
-version = "0.3.9"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "figurex" },
@@ -821,9 +821,9 @@ dependencies = [
     { name = "numpy", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fa/e3/9cbe8a28d4c3eef5d7766cb9a7b852f497c30579f4ebd9303a1cb5c6b1a1/magazine-0.3.9.tar.gz", hash = "sha256:0b1f4591f9a1185d832488c336fa60a30199afce0c0ee0c8b53ab65ec4230b06", size = 10773 }
+sdist = { url = "https://files.pythonhosted.org/packages/eb/a6/ca03814468e38a07c7ae699961ffa34c22bbad76c461cf6d9d0c63873bef/magazine-0.4.0.tar.gz", hash = "sha256:99c0ed467ba0f8d0a5bd755de857ec9d024a80409815ba3906eeee0522f37535", size = 292676 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4b/a7/b05ad48bee57a9b94c131ec072e75dbce02decd0e282391a6569a28612ea/magazine-0.3.9-py3-none-any.whl", hash = "sha256:b27b542a7d61f406a92223fd3c06880e7bc732b04d0a89dabca90d8b5a991963", size = 11556 },
+    { url = "https://files.pythonhosted.org/packages/4f/b0/4d8ae073eac89edefa334aab00254c1a4226607e2a552e095b567bc7093d/magazine-0.4.0-py3-none-any.whl", hash = "sha256:97d88d091667593771973c0b04e02f8ca7826cd44b6aa35064a53eeec608bd4e", size = 293192 },
 ]
 
 [[package]]
@@ -1049,7 +1049,7 @@ gui = [
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=24.1.1" },
     { name = "figurex", specifier = ">=0.2.15" },
-    { name = "magazine", specifier = ">=0.3.9" },
+    { name = "magazine", specifier = ">=0.4.0" },
     { name = "numpy", specifier = ">=2.0" },
     { name = "pandas", specifier = ">=2.2.0" },
     { name = "pandera", specifier = ">0.24" },
