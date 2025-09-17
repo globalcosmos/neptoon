@@ -20,7 +20,7 @@ dependencies = [
     "pandera>0.24",
     "numpy>=2.0",
     "saqc>=2.7.0",
-    "magazine>=0.3.9",
+    "magazine>=0.4.0",
     "figurex>=0.2.15",
     "seaborn>=0.13.2",
     "typer>=0.15.2",
