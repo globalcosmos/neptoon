@@ -71,7 +71,7 @@ def timedelta_to_freq_str(time_delta: datetime.timedelta) -> str:
     elif total_seconds % 60 == 0:  # Minutes
         return f"{int(total_seconds // 60)}min"
     else:  # Seconds
-        return f"{int(total_seconds)}S"
+        return f"{int(total_seconds)}s"
 
 
 def validate_timestamp_index(data_frame):
