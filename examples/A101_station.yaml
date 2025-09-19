@@ -16,6 +16,7 @@ sensor_info:
   N0: 1100
   beta_coefficient:
   mean_pressure:
+  above_ground_biomass:
 
 ##################################################################
 #    The below section is optional and is only necessary         #
@@ -110,7 +111,7 @@ calibration:
     radial_distance_from_sensor: LOC_rad
 
 data_storage:
-  save_folder:
+  save_location:
   append_yaml_hash_to_folder_name: False
   create_report: True
 
