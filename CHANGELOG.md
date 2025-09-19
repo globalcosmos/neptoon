@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- update save_folder to save_location in the sensor config file
+- change save_folder to save_location in the sensor config file
 
 ## [0.13.0] 
 
