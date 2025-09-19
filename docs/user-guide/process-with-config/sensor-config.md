@@ -158,7 +158,7 @@ These values are required if `calibrate` is set to `true` in the above section.
 
 | Parameter | Required | Type | Example | Description |
 |-----------|----------|------|---------|-------------|
-| save_folder | No | string | - | Directory for saving outputs - if left blank it will use current working directory instead |
+| save_location | No | string | - | Directory for saving outputs - if left blank it will use current working directory instead |
 | append_timestamp_to_folder_name | No | boolean | `True` | Whether to append a timestamp to the output folder name. Useful when experimenting to avoid overwriting data. |
 | create_report | No | boolean | `true` | Whether to create a detailed report of your data outputs during the processing run and save it into the output folder |
 
@@ -1288,7 +1288,7 @@ Name of the column with lattice water values.
 ## Data Storage Options (`data_storage`)
 
 ---
-#### `save_folder`
+#### `save_location`
 **Description**  
 Directory for saving outputs.
 

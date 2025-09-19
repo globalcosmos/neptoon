@@ -381,7 +381,7 @@ class ProcessWithConfig:
         """
         file_name = sensor_config.sensor_info.name
         try:
-            initial_folder_str = Path(sensor_config.data_storage.save_folder)
+            initial_folder_str = Path(sensor_config.data_storage.save_location)
         except TypeError:
             initial_folder_str = None
             message = (

@@ -355,7 +355,7 @@ class CalibrationConfig(BaseConfig):
 
 
 class DataStorageConfig(BaseConfig):
-    save_folder: Optional[str] = Field(default=None)
+    save_location: Optional[str] = Field(default=None)
     append_timestamp_to_folder_name: Optional[bool] = Field(default=True)
     append_audit_log_hash_to_folder_name: Optional[bool] = Field(default=False)
     create_report: Optional[bool] = Field(default=False)
