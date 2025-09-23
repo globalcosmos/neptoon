@@ -238,8 +238,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
         "Aug12_uranos_ewin",
         "Aug13_uranos_atmprof",
         "Aug13_uranos_atmprof2",
-    ] = "Mar21_uranos_drf",
-    biomass: float = 0.0,
+    ] = "Mar21_mcnp_drf",
 ):
     """
     Convert soil moisture to neutrons following following the method
@@ -257,9 +256,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
         n0 calibration term
     offset : float
         offset to apply to soil moisture. e.g., to account for lattice
-        water
-    bulk_density : float
-        dry soil bulk density g/cm^3
+        water or organic carbon
     koehli_parameters : str
         The method to apply. See reference. default Mar21_uranos_drf
     # Add offset water to consider total water content
@@ -496,7 +493,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
         + p[7] * abs_air_humidity**2
         + p[8] * abs_air_humidity**3 / soil_moisture_total
     ) + np.exp(-p[3] * soil_moisture_total) * (
-        p[4] + p[5] * (abs_air_humidity + biomass / 5 * 1000)
+        p[4] + p[5] * abs_air_humidity
     )
 
     return N * n0
@@ -576,8 +573,7 @@ def compute_n0_koehli_etal_2021(
         "Aug12_uranos_ewin",
         "Aug13_uranos_atmprof",
         "Aug13_uranos_atmprof2",
-    ] = "Mar21_uranos_drf",
-    biomass=0,
+    ] = "Mar21_mcnp_drf",
 ):
     """
     Computes the n0 for the UTS-function following the method outlined
@@ -632,7 +628,6 @@ def compute_n0_koehli_etal_2021(
                 n0=n0_try,
                 offset=off,
                 koehli_parameters=koehli_parameters,
-                biomass=biomass,
             )
         )
         error = np.abs(neutron_count - neutron_estimate)
