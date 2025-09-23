@@ -184,12 +184,34 @@ def neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
     water_equiv_soil_organic_carbon : float
         water equivelant soil organic carbon - decimal percent e.g, 0.02
 
-    Example
-    -------
-    convert_neutrons_to_soil_moisture_uts(
-        neutron_count=2000, n0=3000, air_humidity=5
-    )
+    Examples
+    --------
+    With scalars:
 
+    >>> soil_moisture_grv = neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
+    ...     neutron_count=1000,
+    ...     n0=3000,
+    ...     abs_air_humidity=5.0,
+    ...     lattice_water=0.02,
+    ...     water_equiv_soil_organic_carbon=0.03,
+    ... )
+    0.292
+
+    With Pandas:
+
+    >>> data = pandas.DataFrame()
+    >>> data["N"] = [1600, 1400, 1200, 1000]
+    >>> data["h"] = [2, 3, 4, 5]
+    >>> data["sm_grv"] = [
+    ...     neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
+    ...         neutron_count=N,
+    ...         n0=3000,
+    ...         abs_air_humidity=h,
+    ...         lattice_water=0.02,
+    ...         water_equiv_soil_organic_carbon=0.03,
+    ...     )
+    ...     for N, h in zip(data["N"].values, data["h"].values)
+    ... ]
     """
     if pd.isna(neutron_count) or pd.isna(abs_air_humidity):
         return np.nan
@@ -259,6 +281,17 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
         water or organic carbon
     koehli_parameters : str
         The method to apply. See reference. default Mar21_uranos_drf
+
+    Examples
+    --------
+    >>> N_cph = gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
+    ...     gravimetric_sm=0.292,
+    ...     n0=3000,
+    ...     abs_air_humidity=5.0,
+    ...     offset=0.05,
+    ... )
+    1000
+    """
     # Add offset water to consider total water content
     soil_moisture_total = gravimetric_sm + offset
 
@@ -498,56 +531,6 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
 
     return N * n0
 
-
-"""
-Examples
---------
-import pandas
-
-data = pandas.DataFrame()
-data["N"] = [2000, 1900, 1800, 2100]
-data["h"] = [1, 2, 3, 4]
-
-data["sm"] = [
-    convert_neutrons_to_soil_moisture_uts(
-        neutron_count=N,
-        n0=3000,
-        air_humidity=h,
-        bulk_density=1.23,
-        lattice_water=0.01,
-        water_equiv_soil_organic_carbon=0.01,
-        method="Mar21_mcnp_drf",
-    )
-    for (N, h) in data[["N", "h"]]
-]
-
-data["sm"] = data.apply(
-    lambda row: convert_neutrons_to_soil_moisture_uts(
-        neutron_count=row["N"],
-        n0=3000,
-        air_humidity=row["h"],
-        bulk_density=1.23,
-        lattice_water=0.01,
-        water_equiv_soil_organic_carbon=0.01,
-        method="Mar21_mcnp_drf",
-    ),
-    axis=1,
-)
-
-data
-
-soil_moisture_m3m3 = convert_neutrons_to_soil_moisture_uts(
-    neutron_count=2000,
-    n0=3000,
-    air_humidity=5.0,
-    bulk_density=1.23,
-    lattice_water=0.0027,
-    water_equiv_soil_organic_carbon=0.1,
-    method="Mar21_mcnp_drf",
-)
-"""
-
-
 def compute_n0_koehli_etal_2021(
     gravimetric_sm: float,
     abs_air_humidity: float,
@@ -601,20 +584,16 @@ def compute_n0_koehli_etal_2021(
     koehli_parameters: str
         one of "Mar21_uranos_drf", "Aug13_uranos_atmprof", ...
 
-    Example
-    -------
-
-    n0  = compute_n0_uts(soil_moisture=0.3, air_humidity=30,
-    neutron_count=3000, lattice_water=0.0,
-    water_equiv_soil_organic_carbon=0.0, bulk_density=1.2,
-    method="Mar21_uranos_drf", bio=0)
-
-    # check the determined n0, which should be close to n:
-    convert_soil_moisture_to_neutrons_uts(
-            sm=theta, air_humidity=30, n0=n0, offset=0.0,
-            bulk_density=bulk_density, method="Mar21_uranos_drf",
-            biomass=biomass)
-
+    Examples
+    --------
+    >>> N0 = compute_n0_koehli_etal_2021(
+    ...     gravimetric_sm=0.292,
+    ...     abs_air_humidity=5,
+    ...     neutron_count=1000,
+    ...     lattice_water=0.02,
+    ...     water_equiv_soil_organic_carbon=0.03
+    ... )
+    3000
     """
     from scipy.optimize import minimize_scalar
 
