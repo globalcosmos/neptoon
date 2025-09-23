@@ -262,12 +262,13 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
         dry soil bulk density g/cm^3
     koehli_parameters : str
         The method to apply. See reference. default Mar21_uranos_drf
-    biomass : float
-        The biomass at the site kg/m^2
-
-    """
-
+    # Add offset water to consider total water content
     soil_moisture_total = gravimetric_sm + offset
+
+    # Rescale to simulated bulk density according to Köhli et al. (2021), Appendix
+    soil_moisture_total *= 1.43 
+
+    # Numerical check to keep soil moisture above zero
     if soil_moisture_total == 0.0:
         soil_moisture_total = 0.001
     p = []
