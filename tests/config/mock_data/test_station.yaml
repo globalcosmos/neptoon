@@ -93,7 +93,7 @@ calibration:
     lattice_water: LatticeWater_g_g
 
 data_storage:
-  save_folder:
+  save_location:
   data_source: None
   append_yaml_to_folder_name: False
 
