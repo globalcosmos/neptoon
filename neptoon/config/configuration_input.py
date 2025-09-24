@@ -723,7 +723,7 @@ class ConfigurationManager:
             config_obj.calibration.location = return_file_path_with_suffix(
                 base_path="/workingdir/calibration"
             )
-            config_obj.data_storage.save_folder = "/workingdir/outputs"
+            config_obj.data_storage.save_location = "/workingdir/outputs"
         if hasattr(config_obj.time_series_data, "temporal"):
             message1 = (
                 "\n"
