@@ -5,9 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+### Added
+
+### Changed
+
+### Security
+
+## [0.13.6]
+
+### Fixed
+
+### Added
+
+- Added new parameter for neutron-to-soil moisture functions, `additional_gravimetric_water` which can include water from soil lattice, organic carbon,  and more.
+- New and 500x faster function to find an optimal N0 (`find_n0`) that works for all neutron-to-soil moisture functions and for all types of input (scalar, lists, array, pandas).
+
+### Removed
+
+- Neutron-to-soil moisture functions no longer accept parameters for *lattice water* and *water equiv. of soil organic carbon*. These values can now be added to the more general parameter `additional_gravimetric_water`.
+
+### Changed
+
+- Updated consistent names for neutron-to-soil moisture functions
+- Changed default koehli parameters to "Mar1_mcnp_drf"
+- Changed default bulk density to 1.43
 
 
-## [Unreleased] 
+## [0.13.4]
+
+### Fixed
+
+- change save_folder to save_location in the sensor config file
+
+## [0.13.3]
+
+### Changed
+
+- Neutron conversion to soil moisture and back based on Köhli et al. (2021) now includes the bulk density scaling factor, 1.43, as suggested in the Appendix of that paper. **Note: This will change you soil moisture output by factor 1.43!**
+
+## [0.13.0] 
 
 ### Added
 - bespoke ways to calibrate data - such as finding only weights or equal weighting

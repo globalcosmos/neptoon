@@ -99,7 +99,9 @@ else:
 
     # @st.cache_data(show_spinner="Downloading from NMDB...")
     def attach_nmdb(station="JUNG"):
-        st.session_state["yaml"]._attach_nmdb_data(st.session_state["yaml"].data_hub)
+        st.session_state["yaml"]._attach_nmdb_data(
+            st.session_state["yaml"].data_hub
+        )
 
     c1, c2 = st.columns([1, 2])
 
@@ -171,7 +173,9 @@ if st.session_state["data_nmdb_attached"]:
     @st.cache_data(show_spinner="Checking quality...")
     def make_quality_check():
 
-        st.session_state["yaml"]._prepare_static_values(st.session_state["yaml"].data_hub)
+        st.session_state["yaml"]._prepare_static_values(
+            st.session_state["yaml"].data_hub
+        )
 
         from neptoon.quality_control import (
             QualityAssessmentFlagBuilder,

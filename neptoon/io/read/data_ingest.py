@@ -373,9 +373,9 @@ class ManageFileCollection:
 
                 files = [
                     str(x.relative_to(self.config.data_location))
-                    for x in item_list if x.is_file()
-                ] # retrieve the filenames with path
-
+                    for x in item_list
+                    if x.is_file()
+                ]  # retrieve the filenames with path
 
             except FileNotFoundError as fnf_error:
                 message = (

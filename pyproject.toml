@@ -20,7 +20,7 @@ dependencies = [
     "pandera>0.24",
     "numpy>=2.0",
     "saqc>=2.7.0",
-    "magazine>=0.3.9",
+    "magazine>=0.4.0",
     "figurex>=0.2.15",
     "seaborn>=0.13.2",
     "typer>=0.15.2",
@@ -59,6 +59,17 @@ line-length = 79
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "mkdocs-gen-files>=0.5.0",
+    "mkdocs-literate-nav>=0.6.2",
+    "mkdocs-material>=9.6.20",
+    "mkdocs-roamlinks-plugin>=0.3.2",
+    "mkdocstrings[python]>=0.30.1",
+    "pytest>=8.4.2",
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true

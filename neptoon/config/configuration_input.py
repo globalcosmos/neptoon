@@ -360,7 +360,7 @@ class CalibrationConfig(BaseConfig):
 
 
 class DataStorageConfig(BaseConfig):
-    save_folder: Optional[str] = Field(default=None)
+    save_location: Optional[str] = Field(default=None)
     append_timestamp_to_folder_name: Optional[bool] = Field(default=True)
     append_audit_log_hash_to_folder_name: Optional[bool] = Field(default=False)
     create_report: Optional[bool] = Field(default=False)
@@ -478,7 +478,7 @@ class SoilMoistureEstimation(BaseModel):
         ]
     ] = Field(
         description="Koehli specific method for converting neutrons",
-        default="Mar21_uranos_drf",
+        default="Mar21_mcnp_drf",
     )
 
 
@@ -799,7 +799,7 @@ class ConfigurationManager:
             config_obj.calibration.location = return_file_path_with_suffix(
                 base_path="/workingdir/calibration"
             )
-            config_obj.data_storage.save_folder = "/workingdir/outputs"
+            config_obj.data_storage.save_location = "/workingdir/outputs"
         if hasattr(config_obj.time_series_data, "temporal"):
             message1 = (
                 "\n"
