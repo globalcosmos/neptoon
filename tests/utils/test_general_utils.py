@@ -1,4 +1,5 @@
 import pytest
+import platform
 from pathlib import Path
 from neptoon.utils.general_utils import (
     validate_and_convert_file_path,
@@ -35,7 +36,11 @@ def test_abs_file_path_and_base():
     """Tests AttributeError when a base and an absolute filepath are
     given"""
     base = "/base_path/"
-    abs_path = "/abs/path/"
+    if platform.system() == "Windows":
+        abs_path = "C:/abs/path/"
+    else: # Unix-like (Linux, macOS, etc.)
+        abs_path = "/abs/path/"
+
     with pytest.raises(AttributeError):
         tmp = validate_and_convert_file_path(
             file_path=abs_path,

@@ -58,6 +58,11 @@ line-length = 79
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]
+
 [tool.hatch.metadata]
 allow-direct-references = true
 
