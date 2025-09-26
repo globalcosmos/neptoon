@@ -38,7 +38,7 @@ def test_abs_file_path_and_base():
     base = "/base_path/"
     if platform.system() == "Windows":
         abs_path = "C:/abs/path/"
-    else: # Unix-like (Linux, macOS, etc.)
+    else:  # Unix-like (Linux, macOS, etc.)
         abs_path = "/abs/path/"
 
     with pytest.raises(AttributeError):

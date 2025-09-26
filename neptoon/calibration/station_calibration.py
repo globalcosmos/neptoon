@@ -10,8 +10,9 @@ import statistics
 from neptoon.columns import ColumnInfo
 from neptoon.corrections import (
     Schroen2017,
-    neutrons_to_total_grav_soil_moisture_desilets_etal_2010,
-    neutrons_to_total_grav_soil_moisture_koehli_etal_2021,
+    neutrons_to_grav_soil_moisture_desilets_etal_2010,
+    neutrons_to_grav_soil_moisture_koehli_etal_2021,
+    find_n0,
 )
 
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
@@ -96,15 +97,14 @@ class CalibrationConfiguration:
         converge_accuracy : float, optional
             The convergence threshold for when finding n0. Default is
             0.01.
-        neutron_conversion_method : {"desilets_etal_2010",
-        "koehli_etal_2021"}, optional
+        neutron_conversion_method : {"desilets_etal_2010", "koehli_etal_2021"}, optional
             The conversion method used to translate raw neutron counts
             into soil moisture estimates. Options are
             "desilets_etal_2010" or "koehli_etal_2021". Default is
             "desilets_etal_2010".
         koehli_parameters : str, optional
             Parameter set to use when koehli_etal_2021 method is
-            selected. Default is "Mar21_uranos_drf".
+            selected. Default is "Mar21_mcnp_drf".
         horizontal_weight_method : {"schroen_etal_2017", "equal"},
         optional
             Method for horizontal weighting. Default is
@@ -1951,20 +1951,24 @@ class CalculateN0:
         Tuple
             The N0 calibration term and absolute error (dummy nan value)
         """
-        gravimetric_sm_on_day_total = (
-            gravimetric_sm_on_day
-            + lattice_water
-            + water_equiv_soil_organic_carbon
-        )
+        # accounted for already in functions
+        gravimetric_sm_on_day_total = gravimetric_sm_on_day
+        # gravimetric_sm_on_day_total = (
+        #     gravimetric_sm_on_day
+        #     + lattice_water
+        #     + water_equiv_soil_organic_carbon
+        # )
 
         def calculate_sm_and_error_koehli(n0):
 
-            sm_prediction = neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
+            sm_prediction = neutrons_to_grav_soil_moisture_koehli_etal_2021(
                 neutron_count=neutron_mean,
                 n0=n0,
                 abs_air_humidity=abs_air_humidity,
-                lattice_water=lattice_water,
-                water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
+                additional_gravimetric_water=lattice_water
+                + water_equiv_soil_organic_carbon,
+                # lattice_water=lattice_water,
+                # water_equiv_soil_organic_carbon=water_equiv_soil_organic_carbon,
                 koehli_parameters=koehli_parameters,
             )
             rel_error = (
@@ -2039,7 +2043,7 @@ class CalculateN0:
             )
         else:
             n0_range = self._create_n0_range(context=context)
-
+        # print(np.min(n0_range), np.max(n0_range))
         lattice_water = context.value_avg_lattice_water
         water_equiv_soil_organic_carbon = (
             context.value_avg_soil_organic_carbon_water_equiv
@@ -2061,7 +2065,7 @@ class CalculateN0:
                 )
 
             elif context.neutron_conversion_method == "koehli_etal_2021":
-
+                # print(grav_sm, neutron_mean, metrics["absolute_air_humidity"], lattice_water, water_equiv_soil_organic_carbon,context.koehli_parameters)
                 df_calib = self._find_optimal_n0_single_day_koehli_etal_2021(
                     gravimetric_sm_on_day=grav_sm,
                     neutron_mean=neutron_mean,

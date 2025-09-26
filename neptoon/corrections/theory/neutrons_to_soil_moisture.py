@@ -1,147 +1,158 @@
 import numpy as np
 import pandas as pd
-from typing import Literal
 
-
-def neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
-    neutron_count=None,
-    neutrons=None,
-    n0=1000,
-    a0=0.0808,
-    a1=0.372,
-    a2=0.115,
+def grav_soil_moisture_to_neutrons_desilets_etal_2010(
+    gravimetric_sm: float,
+    n0: float,
+    additional_gravimetric_water: float = 0.0,
+    a0: float = 0.0808,
+    a1: float = 0.372,
+    a2: float = 0.115,
 ):
     """
-    Converts neutrons to total gravimetric soil moisture following the
-    Desilets et al., 2010 forumla. When we refer total gravimetric we
-    mean that it's the amount including lattice water and water
-    equivelant soil organic carbon.
+    Convert gravimetric soil moisture to neutron counts
+    based on Eq. (A1) in Desilets et al. (2010).
+    $$ N = N_0 \\,\\Big(\\frac{a_0}{\\theta_\\mathrm{grv} + \\theta_\\mathrm{add} + a_2} + a_1\\Big) $$
+
+    References
+    ----------
+    * Desilets et al. (2010), Water Resources Research, doi:[10.1029/2009wr008726](https://doi.org/10.1029/2009wr008726)
+
+    Parameters
+    ----------
+    gravimetric_sm : float
+        Gravimetric soil moisture, $\\theta_\\mathrm{grv}$ (g/g)
+    n0 : float
+        Neutron scaling parameter, $N_0$ (cph)
+    additional_gravimetric_water : float
+        Gravimetric water equivalent of additional hydrogen pools, $\\theta_\\mathrm{add}$ (g/g),
+        from lattice water or soil organic carbon, for instance.
+    a0 : float
+        Numerical constant
+    a1 : float
+        Numerical constant
+    a2 : float
+        Numerical constant
+
+    Returns
+    -------
+    neutron_count : float
+        Neutron count, $N$ (cph)
+    """
+    neutron_count = n0 * (
+        a0 / (gravimetric_sm + additional_gravimetric_water + a2) + a1
+    )
+    return neutron_count
+
+
+def neutrons_to_grav_soil_moisture_desilets_etal_2010(
+    neutron_count: float,
+    n0: float,
+    additional_gravimetric_water: float = 0.0,
+    a0: float = 0.0808,
+    a1: float = 0.372,
+    a2: float = 0.115,
+):
+    """
+    Convert corrected neutron counts to gravimetric soil moisture
+    based on Eq. (A1) in Desilets et al. (2010).
+    $$ \\theta_\\mathrm{grv}(N) = \\frac{a_0}{N/N_0 - a_1} - a_2 - \\theta_\\mathrm{add} $$
+
+    References
+    ----------
+    * Desilets et al. (2010), Water Resources Research, doi:[10.1029/2009wr008726](https://doi.org/10.1029/2009wr008726)
 
     Parameters
     ----------
     neutron_count : float
-        corrected neutron count
-    neutrons : float
-        alias for neutron count
-    n0 : int | float, optional
-        the n0 calibration term, by default 1000
-    a0 : float, optional
-        constant, by default 0.0808
-    a1 : float, optional
-        constant, by default 0.372
-    a2 : float, optional
-        constant, by default 0.115
+        Neutron count $N$ (cph)
+    n0 : float
+        Neutron scaling parameter, $N_0$ (cph)
+    additional_gravimetric_water : float
+        Gravimetric water equivalent of additional hydrogen pools, $\\theta_\\mathrm{add}$ (g/g),
+        from lattice water or soil organic carbon, for instance.
+    a0 : float
+        Numerical constant
+    a1 : float
+        Numerical constant
+    a2 : float
+        Numerical constant
 
     Returns
     -------
-    float
-        calculated gravimetric soil moisture value g/g
-    """
-    if neutrons:
-        neutron_count = neutrons
-    return a0 / (neutron_count / n0 - a1) - a2
-
-
-def neutrons_to_vol_soil_moisture_desilets_etal_2010(
-    neutron_count: float,
-    n0: float,
-    dry_soil_bulk_density: float,
-    lattice_water: float,
-    water_equiv_soil_organic_carbon: float,
-    a0: float = 0.0808,
-    a1: float = 0.372,
-    a2: float = 0.115,
-):
-    """
-    Converts corrected neutrons counts into volumetric soil moisture
-    following the Desilets et al., 2010 forumla.
-
-    doi: http://dx.doi.org/10.1029/2009WR008726
-
-    Parameters
-    ----------
-    neutron_count : int
-        Neutron count in counts per hour (cph)
-    n0 : int
-        N0 calibration term
-    bulk_density : float
-        dry soil bulk density of the soil in grams per cubic centimer
-        e.g. 1.4 (g/cm^3)
-    lattice_water : float
-        lattice water - decimal percent e.g. 0.002
-    water_equiv_soil_organic_carbon : float
-        water equivelant soil organic carbon - decimal percent e.g, 0.02
-    a0 : float
-        constant
-    a1 : float
-        constant
-    a2 : float
-        constant
+    gravimetric_sm : float
+        Gravimetric soil moisture, $\\theta_\\mathrm{grv}$ (g/g)
     """
     return (
         ((a0) / ((neutron_count / n0) - a1))
         - (a2)
-        - lattice_water
-        - water_equiv_soil_organic_carbon
-    ) * dry_soil_bulk_density
+        - additional_gravimetric_water
+    )
 
 
-def reformulated_neutrons_to_grav_soil_moisture_desilets_2010(
+def neutrons_to_grav_soil_moisture_desilets_etal_2010_reformulated(
     neutron_count: float,
-    n0: float,
-    lattice_water: float,
-    water_equiv_soil_organic_carbon: float,
+    n0: float = None,
+    n_max: float = None,
+    additional_gravimetric_water: float = 0.0,
     a0: float = 0.0808,
     a1: float = 0.372,
     a2: float = 0.115,
 ):
     """
-    Converts corrected neutrons counts into gravimetric soil moisture
-    following the reforumlated version of the desilets equation outlined
-    in Köhli et al. 2021
+    Convert corrected neutron counts to gravimetric soil moisture
+    based on Eq. (A1) in Desilets et al. (2010) and the reformulation
+    suggested by Eq. (12) in Köhli et al. (2021).
+    $$ \\theta_\\mathrm{grv}(N) = p_0\\,\\frac{1 - N/N_\\mathrm{max}}{p_1 - N/N_\\mathrm{max}} $$
 
-    https://doi.org/10.3389/frwa.2020.544847
+    References
+    ----------
+    * Desilets et al. (2010), Water Resources Research, doi:[10.1029/2009wr008726](https://doi.org/10.1029/2009wr008726)
+    * Köhli et al. (2021), Frontiers in Water, doi:[10.3389/frwa.2020.544847](https://doi.org/10.3389/frwa.2020.544847)
 
     Parameters
     ----------
     a0 : float
-        Constant
+        Numerical constant
     a1 : float
-        Constant
+        Numerical constant
     a2 : float
-        Constant
-    neutron_count : int
-        Neutron count in counts per hour (cph)
-    n0 : int
-        N0 number given as maximum number of neutrons possible over a 1
-        hour integration.
-    lattice_water : float
-        Lattice water - decimal percent e.g. 0.002
-    water_equiv_soil_organic_carbon : float
-        Water equivelant soil organic carbon - decimal percent e.g, 0.02
+        Numerical constant
+    neutron_count : float
+        Neutron count $N$ (cph)
+    n0 : float
+        Neutron scaling parameter, $N_0$ (in cph), if $N_\\mathrm{max}$ is not defined.
+    n_max : float
+        Neutron scaling parameter, $N_\\mathrm{max}$ (in cph), if $N_0$ is not defined.
+    additional_gravimetric_water : float
+        Gravimetric water equivalent of additional hydrogen pools, $\\theta_\\mathrm{add}$ (g/g),
+        from lattice water or soil organic carbon, for instance.
 
     Returns
     -------
-    volumetric_sm : float
-        Volumetric soil moisture
+    gravimetric_sm : float
+        Gravimetric soil moisture, $\\theta_\\mathrm{grv}$ (g/g)
     """
-    nmax = n0 * ((a0 + (a1 * a2)) / (a2))
-    ah0 = -a2
-    ah1 = (a1 * a2) / (a0 + (a1 * a2))
+    if n_max is None:
+        if n0 is None:
+            print(
+                "Error: Specify either N_0 or N_max for neutron to soil moisture conversion!"
+            )
+        else:
+            n_max = n0 * ((a0 + (a1 * a2)) / (a2))
+    p0 = -a2
+    p1 = (a1 * a2) / (a0 + (a1 * a2))
     volumetric_sm = (
-        (ah0 * ((1 - (neutron_count / nmax)) / (ah1 - (neutron_count / nmax))))
-        - lattice_water
-        - water_equiv_soil_organic_carbon
-    )
+        p0 * ((1 - (neutron_count / n_max)) / (p1 - (neutron_count / n_max)))
+    ) - additional_gravimetric_water
     return volumetric_sm
 
 
-def neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
+def neutrons_to_grav_soil_moisture_koehli_etal_2021(
     neutron_count: float,
     n0: float,
     abs_air_humidity: float,
-    lattice_water: float = 0.0,
-    water_equiv_soil_organic_carbon: float = 0.0,
+    additional_gravimetric_water: float = 0.0,
     koehli_parameters: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
@@ -164,36 +175,44 @@ def neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
     ] = "Mar21_mcnp_drf",
 ):
     """
-    Converts corrected neutrons counts into volumetric soil moisture
-    following the Universal Transport Solution (UTS) method outlined in
-    Köhli et al. 2021
+    Convert corrected neutron counts and air humidity to gravimetric
+    soil moisture based on the UTS function, Eq. (15) in Köhli et al. (2021).
+    Note that this is a numerical inversion of the UTS function,
+    developed by Prof. Ulrich Schmidt (University of Heidelberg).
+    $$ \\theta_\\mathrm{grv} = f(N, h) - \\theta_\\mathrm{add},\\quad\\mathrm{where}\\quad f=\\mathrm{UTS}^{-1} $$
 
-    https://doi.org/10.3389/frwa.2020.544847
-
+    References
+    ----------
+    * Köhli et al. (2021), Frontiers in Water, doi:[10.3389/frwa.2020.544847](https://doi.org/10.3389/frwa.2020.544847)
 
     Parameters
     ----------
     neutron_count : float
-        Neutron count in counts per hour (cph)
+        Neutron count $N$ (cph)
     n0 : float
-        N0 calibration term
+        Neutron scaling parameter ($N_0$ or $N_\\mathrm{D}$)
     abs_air_humidity : float
-         absolute air humidity (g/cm3))
-    lattice_water : float
-        lattice water - decimal percent e.g. 0.002
-    water_equiv_soil_organic_carbon : float
-        water equivelant soil organic carbon - decimal percent e.g, 0.02
+        Absolute air humidity, $h$ (g/cm³)
+    additional_gravimetric_water : float
+        Gravimetric water equivalent of additional hydrogen pools, $\\theta_\\mathrm{add}$ (g/g),
+        from lattice water or soil organic carbon, for instance.
+    koehli_parameters : str
+        Parameter set to use.
+
+    Returns
+    -------
+    gravimetric_sm : float
+        Gravimetric soil moisture, $\\theta_\\mathrm{grv}$ (g/g)
 
     Examples
     --------
     With scalars:
 
-    >>> soil_moisture_grv = neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
+    >>> soil_moisture_grv = neutrons_to_grav_soil_moisture_koehli_etal_2021(
     ...     neutron_count=1000,
     ...     n0=3000,
     ...     abs_air_humidity=5.0,
-    ...     lattice_water=0.02,
-    ...     water_equiv_soil_organic_carbon=0.03,
+    ...     additional_gravimetric_water = 0.05,
     ... )
     0.292
 
@@ -203,12 +222,11 @@ def neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
     >>> data["N"] = [1600, 1400, 1200, 1000]
     >>> data["h"] = [2, 3, 4, 5]
     >>> data["sm_grv"] = [
-    ...     neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
+    ...     neutrons_to_grav_soil_moisture_koehli_etal_2021(
     ...         neutron_count=N,
     ...         n0=3000,
     ...         abs_air_humidity=h,
-    ...         lattice_water=0.02,
-    ...         water_equiv_soil_organic_carbon=0.03,
+    ...         additional_gravimetric_water = 0.05,
     ...     )
     ...     for N, h in zip(data["N"].values, data["h"].values)
     ... ]
@@ -222,12 +240,12 @@ def neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
         gravimetric_soil_moisture_2 = (0.5 * gravimetric_soil_moisture_0) + (
             0.5 * gravimetric_soil_moisture_1
         )
-        n2 = gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
+        n2 = grav_soil_moisture_to_neutrons_koehli_etal_2021(
             gravimetric_sm=gravimetric_soil_moisture_2,
             abs_air_humidity=abs_air_humidity,
             n0=n0,
             koehli_parameters=koehli_parameters,
-            offset=lattice_water + water_equiv_soil_organic_carbon,
+            additional_gravimetric_water=additional_gravimetric_water,
         )
         if neutron_count < n2:
             gravimetric_soil_moisture_0 = gravimetric_soil_moisture_2
@@ -236,11 +254,11 @@ def neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
     return gravimetric_soil_moisture_2
 
 
-def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
+def grav_soil_moisture_to_neutrons_koehli_etal_2021(
     gravimetric_sm: float,
     abs_air_humidity: float,
     n0: float,
-    offset: float = 0.0,
+    additional_gravimetric_water: float = 0.0,
     koehli_parameters: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
@@ -263,40 +281,52 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
     ] = "Mar21_mcnp_drf",
 ):
     """
-    Convert soil moisture to neutrons following following the method
-    outlined in Köhli et al. 2021
+    Convert gravimetric soil moisture and air humidity to neutrons
+    based on the UTS function, Eq. (15) in Köhli et al. (2021). Note that the UTS
+    implementation here includes bulk density scaling,
+    $\\theta_\\mathrm{vol}\\cdot1.43/\\varrho_\\mathrm{s}=\\theta_\\mathrm{grv}\\cdot1.43$
+    (see Appendix).
+    $$ N = \\mathrm{UTS}(\\theta_\\mathrm{grv} + \\theta_\\mathrm{add}, h) $$
 
-    https://doi.org/10.3389/frwa.2020.544847
+    References
+    ----------
+    * Köhli et al. (2021), Frontiers in Water, doi:[10.3389/frwa.2020.544847](https://doi.org/10.3389/frwa.2020.544847)
 
     Parameters
     ----------
     gravimetric_sm : float
-        soil moisture gravimetric g/g
+        Gravimetric soil moisture, $\\theta_\\mathrm{grv}$ (g/g)
     abs_air_humidity : float
-        absolute air humidity at the site (g/cm3)
+        Aabsolute air humidity at the site, $h$ (g/cm³)
     n0 : float
-        n0 calibration term
-    offset : float
-        offset to apply to soil moisture. e.g., to account for lattice
-        water or organic carbon
+        Neutron scaling parameter ($N_0$ or $N_\\mathrm{D}$)
+    additional_gravimetric_water : float
+        Gravimetric water equivalent of additional hydrogen pools, $\\theta_\\mathrm{add}$ (g/g),
+        from lattice water or soil organic carbon, for instance.
     koehli_parameters : str
-        The method to apply. See reference. default Mar21_uranos_drf
+        Parameter set to use
+
+    Returns
+    -------
+    neutron_count : float
+        Neutron count $N$ (cph)
 
     Examples
     --------
-    >>> N_cph = gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
+    >>> N_cph = grav_soil_moisture_to_neutrons_koehli_etal_2021(
     ...     gravimetric_sm=0.292,
     ...     n0=3000,
     ...     abs_air_humidity=5.0,
-    ...     offset=0.05,
+    ...     additional_gravimetric_water=0.05,
     ... )
     1000
     """
+
     # Add offset water to consider total water content
-    soil_moisture_total = gravimetric_sm + offset
+    soil_moisture_total = gravimetric_sm + additional_gravimetric_water
 
     # Rescale to simulated bulk density according to Köhli et al. (2021), Appendix
-    soil_moisture_total *= 1.43 
+    soil_moisture_total *= 1.43
 
     # Numerical check to keep soil moisture above zero
     if soil_moisture_total == 0.0:
@@ -525,9 +555,7 @@ def gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
         + p[6] * abs_air_humidity
         + p[7] * abs_air_humidity**2
         + p[8] * abs_air_humidity**3 / soil_moisture_total
-    ) + np.exp(-p[3] * soil_moisture_total) * (
-        p[4] + p[5] * abs_air_humidity
-    )
+    ) + np.exp(-p[3] * soil_moisture_total) * (p[4] + p[5] * abs_air_humidity)
 
     return N * n0
 

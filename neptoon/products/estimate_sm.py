@@ -5,8 +5,8 @@ import pandera.pandas as pa
 ###
 from neptoon.columns import ColumnInfo
 from neptoon.corrections import (
-    neutrons_to_total_grav_soil_moisture_desilets_etal_2010,
-    neutrons_to_total_grav_soil_moisture_koehli_etal_2021,
+    neutrons_to_grav_soil_moisture_desilets_etal_2010,
+    neutrons_to_grav_soil_moisture_koehli_etal_2021,
     Schroen2017,
 )
 from neptoon.data_prep.conversions import AbsoluteHumidityCreator
@@ -162,9 +162,10 @@ class NeutronsToSM:
         self,
         crns_data_frame: pd.DataFrame,
         n0: float,
-        dry_soil_bulk_density: float = 1.4,
+        dry_soil_bulk_density: float = 1.43,
         lattice_water: float = 0,
         soil_organic_carbon: float = 0,
+        additional_gravimetric_water: float = 0,
         corrected_neutrons_col_name: str | None = None,
         soil_moisture_vol_col_name: str | None = None,
         soil_moisture_grav_col_name: str | None = None,
@@ -192,7 +193,7 @@ class NeutronsToSM:
             "Aug12_uranos_ewin",
             "Aug13_uranos_atmprof",
             "Aug13_uranos_atmprof2",
-        ] = "Mar21_uranos_drf",
+        ] = "Mar21_mcnp_drf",
         abs_air_humidity_col_name=str(ColumnInfo.Name.ABSOLUTE_HUMIDITY),
         air_pressure_col_name=str(ColumnInfo.Name.AIR_PRESSURE),
     ):
@@ -211,6 +212,8 @@ class NeutronsToSM:
             in decimal percent, by default 0
         soil_organic_carbon : float, optional
             in decimal percent, by default 0
+        additional_gravimetric_water: float, optional
+            Any additional hydrogen pools
         corrected_neutrons_col_name : str, optional
             column name where corrected neutrons are to be found, by
             default str(
@@ -233,7 +236,7 @@ class NeutronsToSM:
         self.dry_soil_bulk_density = (
             dry_soil_bulk_density
             if dry_soil_bulk_density is not None
-            else 1.42
+            else 1.43
         )
         self.lattice_water = lattice_water if lattice_water is not None else 0
         self.soil_organic_carbon = (
@@ -242,6 +245,15 @@ class NeutronsToSM:
         self.water_equiv_soil_organic_carbon = self._convert_soc_to_wsom(
             self.soil_organic_carbon
         )
+        self.additional_gravimetric_water = (
+            additional_gravimetric_water
+            if additional_gravimetric_water is not None
+            else 0
+        )
+        self.additional_gravimetric_water += (
+            self.water_equiv_soil_organic_carbon + self.lattice_water
+        )
+
         self.corrected_neutrons_col_name = (
             str(ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT_FINAL)
             if corrected_neutrons_col_name is None
@@ -379,19 +391,20 @@ class NeutronsToSM:
         """
         # Create a series of grav soil moisture (incl. LW and WESOC)
         if self.conversion_theory == "desilets_etal_2010":
-            raw_grav = self.crns_data_frame.apply(
-                lambda row: neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
+            grav_sm = self.crns_data_frame.apply(
+                lambda row: neutrons_to_grav_soil_moisture_desilets_etal_2010(
                     neutron_count=row[neutron_data_column_name],
                     n0=self.n0,
+                    additional_gravimetric_water=self.additional_gravimetric_water,
                 ),
                 axis=1,
             )
 
         elif self.conversion_theory == "koehli_etal_2021":
-            print(
-                "Using Koehli et al., 2021 method for converting neutrons to soil moisture"
-            )
-            print("This takes a little longer... please stand by....")
+            # print(
+            #     "Using Koehli et al., 2021 method for converting neutrons to soil moisture"
+            # )
+            # print("This takes a little longer... please stand by....")
 
             self._check_if_humidity_correction_applied(auto_uncorrect=True)
             self._ensure_abs_humidity_available()
@@ -399,23 +412,25 @@ class NeutronsToSM:
             self.crns_data_frame = validate_df(
                 self.crns_data_frame, schema=build_input_schema_koehli()
             )
-            raw_grav = self.crns_data_frame.apply(
-                lambda row: neutrons_to_total_grav_soil_moisture_koehli_etal_2021(
+            grav_sm = self.crns_data_frame.apply(
+                lambda row: neutrons_to_grav_soil_moisture_koehli_etal_2021(
                     neutron_count=row[neutron_data_column_name],
                     n0=self.n0,
-                    lattice_water=self.lattice_water,
                     abs_air_humidity=row[self.abs_air_humidity_col_name],
-                    water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
+                    # lattice_water=self.lattice_water,
+                    # water_equiv_soil_organic_carbon=self.water_equiv_soil_organic_carbon,
+                    additional_gravimetric_water=self.additional_gravimetric_water,
                     koehli_parameters=self.koehli_parameters,
                 ),
                 axis=1,
             )
 
-        grav_sm = (
-            raw_grav
-            - self.lattice_water
-            - self.water_equiv_soil_organic_carbon
-        )
+        # already took all hydrogen pools into account
+        # grav_sm = (
+        #     raw_grav
+        #     - self.lattice_water
+        #     - self.water_equiv_soil_organic_carbon
+        # )
 
         if soil_moisture_column_write_name_grav:
             self.crns_data_frame[soil_moisture_column_write_name_grav] = (
