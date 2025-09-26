@@ -114,7 +114,7 @@ def neutrons_to_grav_soil_moisture_desilets_etal_2010_reformulated(
     Convert corrected neutron counts to gravimetric soil moisture
     based on Eq. (A1) in Desilets et al. (2010) and the reformulation
     suggested by Eq. (12) in Köhli et al. (2021).
-    $$ \\theta_\\mathrm{grv}(N) = p_0\\,\\frac{1 - N/N_\\mathrm{max}}{p_1 - N/N_\\mathrm{max}} $$
+    $$ \\theta_\\mathrm{grv}(N) = p_0\\,\\frac{1 - N/N_\\mathrm{max}}{p_1 - N/N_\\mathrm{max}} - \\theta_\\mathrm{add} $$
 
     References
     ----------
@@ -123,12 +123,6 @@ def neutrons_to_grav_soil_moisture_desilets_etal_2010_reformulated(
 
     Parameters
     ----------
-    a0 : float
-        Numerical constant
-    a1 : float
-        Numerical constant
-    a2 : float
-        Numerical constant
     neutron_count : float
         Neutron count $N$ (cph)
     n0 : float
@@ -138,6 +132,12 @@ def neutrons_to_grav_soil_moisture_desilets_etal_2010_reformulated(
     additional_gravimetric_water : float
         Gravimetric water equivalent of additional hydrogen pools, $\\theta_\\mathrm{add}$ (g/g),
         from lattice water or soil organic carbon, for instance.
+    a0 : float
+        Numerical constant
+    a1 : float
+        Numerical constant
+    a2 : float
+        Numerical constant
 
     Returns
     -------
