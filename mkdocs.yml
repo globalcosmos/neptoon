@@ -1,4 +1,4 @@
-site_name: neptoon documentation
+site_name: neptoon Docs
 docs_dir: docs
 site_dir: public
 repo_url: https://codebase.helmholtz.cloud/cosmos/neptoon
@@ -80,11 +80,12 @@ nav:
       - Overview: advanced-users/overview.md
       - Changing Expected Column Names: advanced-users/changing-column-names.md
       - Write Your Own Corrections: advanced-users/write-your-own-corrections.md
-  - API Reference:
-      - Overview: api-reference/index.md
-      - Corrections: api-reference/corrections.md
-      - Quality Control: api-reference/quality.md
-      - Calibration: api-reference/calibration.md
+  # - API Reference:
+  #     - Overview: api-reference/index.md
+  #     - Corrections: api-reference/corrections.md
+  #     - Quality Control: api-reference/quality.md
+  #     - Calibration: api-reference/calibration.md
+  - Code Reference: reference/
   - Develop with Neptoon:
       - Overview: contribution/overview-contribution.md
 
@@ -119,28 +120,47 @@ markdown_extensions:
       alternate_style: true
   - toc:
       permalink: true
+      toc_depth: 4
   - pymdownx.highlight:
       anchor_linenums: true
       use_pygments: true
       pygments_style: "github-dark" 
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
 plugins:
   - search
   - roamlinks
+  - gen-files:
+      scripts:
+        - docs/generate_reference.py
+  - literate-nav:
+      nav_file: SUMMARY.md
   - mkdocstrings:
       handlers:
         python:
           paths: ["../neptoon"]
           options:
             docstring_style: numpy
-            show_source: true
-            show_root_heading: true
-            show_category_heading: true
+            show_source: false
+            # show_source_link: true
+            show_root_heading: false
+            show_root_full_path: false
+            show_object_full_path: false
+            show_root_members_full_path: false
+            show_category_heading: false 
             heading_level: 2
             merge_init_into_class: true
             show_signature: true
-            show_signature_annotations: true
+            separate_signature: true
+            show_signature_annotations: false
+            signature_crossrefs: true
             docstring_section_style: table
             members_order: source # Maintains source code order
+          extra:
+            show_source_link: true
 extra_css:
   - stylesheets/extra.css
   - https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap

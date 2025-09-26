@@ -72,7 +72,10 @@ if st.session_state["calibration_read_ready"]:
 
     @st.cache_data(show_spinner="Calibrating")
     def make_calibration():
-        st.session_state["yaml"]._calibrate_data(st.session_state["yaml"].data_hub, st.session_state["yaml"].sensor_config)
+        st.session_state["yaml"]._calibrate_data(
+            st.session_state["yaml"].data_hub,
+            st.session_state["yaml"].sensor_config,
+        )
         st.session_state["calibration_finished"] = True
 
     if st.button("Calibrate!", type="primary"):
