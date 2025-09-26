@@ -100,7 +100,7 @@ Remember that when you find this N0 value, all subsequent neutron corrections an
 
 
 ```python
-from neptoon.calibration import CalculateN0
+from neptoon.calibration.station_calibration import CalculateN0
 
 n0_calc = CalculateN0()
 n0_calc.set_values(
@@ -116,7 +116,7 @@ n0_calc.find_optimal_N0()
 or
 
 ```python
-from neptoon.calibration import CalculateN0
+from neptoon.calibration.station_calibration import CalculateN0
 
 n0_calc = CalculateN0()
 n0_calc.set_values(

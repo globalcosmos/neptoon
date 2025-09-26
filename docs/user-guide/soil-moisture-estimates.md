@@ -48,7 +48,7 @@ data_hub.produce_soil_moisture_estimates(
     dry_soil_bulk_density = 1.1,
     lattice_water = 0.01,
     soil_organic_carbon = 0.02,
-    koehli_parameters = "Mar21_mcnp_ewin"
+    koehli_parameters = "Mar21_mcnp_drf"
     ) 
 ```
 

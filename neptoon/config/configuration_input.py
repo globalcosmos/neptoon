@@ -473,7 +473,7 @@ class SoilMoistureEstimation(BaseModel):
         ]
     ] = Field(
         description="Koehli specific method for converting neutrons",
-        default="Mar21_uranos_drf",
+        default="Mar21_mcnp_drf",
     )
 
 
