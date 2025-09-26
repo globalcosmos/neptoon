@@ -229,7 +229,9 @@ else:
         # import plotly.express as px
 
         # with st.spinner("Creating data table..."):
-        st.session_state["yaml"].data_hub =  st.session_state["yaml"]._create_data_hub(st.session_state["yaml"].sensor_config)
+        st.session_state["yaml"].data_hub = st.session_state[
+            "yaml"
+        ]._create_data_hub(st.session_state["yaml"].sensor_config)
         data_hub = st.session_state["yaml"].data_hub
         st.write(
             "Parsed {:,.0f} lines and {:.0f} columns of data.".format(
