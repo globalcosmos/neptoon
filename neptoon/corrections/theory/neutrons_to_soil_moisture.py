@@ -1,5 +1,16 @@
 import numpy as np
 import pandas as pd
+from typing import Literal, Union, List, Sequence
+
+ArrayLike = Union[
+    float,
+    int,  # scalars
+    List[Union[float, int]],  # lists
+    Sequence[Union[float, int]],  # any sequence (tuple, etc.)
+    np.ndarray,  # numpy arrays
+    pd.Series,  # pandas series
+]
+
 
 def grav_soil_moisture_to_neutrons_desilets_etal_2010(
     gravimetric_sm: float,
@@ -559,12 +570,16 @@ def grav_soil_moisture_to_neutrons_koehli_etal_2021(
 
     return N * n0
 
-def compute_n0_koehli_etal_2021(
-    gravimetric_sm: float,
-    abs_air_humidity: float,
-    neutron_count: float,
-    lattice_water=0.0,
-    water_equiv_soil_organic_carbon=0.0,
+
+def find_n0(
+    gravimetric_sm: ArrayLike,
+    neutron_count: ArrayLike,
+    abs_air_humidity: ArrayLike = 0.0,
+    additional_gravimetric_water: ArrayLike = 0.0,
+    conversion_theory: Literal[
+        "desilets_etal_2010", "koehli_etal_2021"
+    ] = "desilets_etal_2010",
+    desilets_parameters: ArrayLike = [0.0808, 0.372, 0.115],
     koehli_parameters: Literal[
         "Jan23_uranos",
         "Jan23_mcnpfull",
@@ -585,62 +600,132 @@ def compute_n0_koehli_etal_2021(
         "Aug13_uranos_atmprof",
         "Aug13_uranos_atmprof2",
     ] = "Mar21_mcnp_drf",
+    metric: Literal[
+        "rmse",
+        "mae",
+        "mse",
+        "mape",
+        "rmspe",
+        "log_mse",
+        "log_mse",
+        "relative_rmse",
+    ] = "rmse",
+    return_error: bool = False,
 ):
     """
-    Computes the n0 for the UTS-function following the method outlined
-    in Köhli et al. 2021 (as needed by
-    convert_neutrons_to_soil_moisture_uts() and
-    convert_soil_moisture_to_neutrons_uts())
+    Finds the neutron scaling parameter, $N_0$ for Desilets et al. (2010)
+    or $N_\\mathrm{D}$ for Köhli et al. (2021). The function works with scalar
+    input (single calibration day) or vectorized input (multiple days).
 
-    https://doi.org/10.3389/frwa.2020.544847
+    References
+    ----------
+    * Desilets et al. (2010), Water Resources Research, doi:[10.1029/2009wr008726](https://doi.org/10.1029/2009wr008726)
+    * Köhli et al. (2021), Frontiers in Water, doi:[10.3389/frwa.2020.544847](https://doi.org/10.3389/frwa.2020.544847)
 
     Parameters
     ----------
     gravimetric_sm : float
         gravimetric water content (g/cm3)
-    abs_air_humidity : float
-        absolute air humidity (g/cm3)
-    bulk_density : float
-        Dry soil bulk density of the soil in grams per cubic centimeter
-        e.g. 1.4 (g/cm^3)
     neutron_count : float
         Neutron count in counts per hour (cph)
-    lattice_water : float
-        Lattice water - decimal percent e.g. 0.002
-    water_equiv_soil_organic_carbon : float
-        Water equivalent soil organic carbon - decimal percent e.g, 0.02
+    abs_air_humidity : float
+        absolute air humidity (g/cm³)
+    additional_gravimetric_water : float
+        Gravimetric water equivalent of additional hydrogen pools (g/g),
+        from lattice water or soil organic carbon, for instance.
+    desilets_parameters: ArrayLike
+        Parameter set for the Desilets Eq., [a0, a1, a2],
     koehli_parameters: str
-        one of "Mar21_uranos_drf", "Aug13_uranos_atmprof", ...
+        Parameter set for the Köhli Eq.
+    metric:
+        Error metric to optimize, one of: 'rmse',  'mae',  'mse',  'mape',  'rmspe',  'log_mse',  'log_mse', 'relative_rmse'
+    return_error: bool
+        If true, return a second value representing the RMSE
 
     Examples
     --------
-    >>> N0 = compute_n0_koehli_etal_2021(
-    ...     gravimetric_sm=0.292,
-    ...     abs_air_humidity=5,
-    ...     neutron_count=1000,
-    ...     lattice_water=0.02,
-    ...     water_equiv_soil_organic_carbon=0.03
+    >>> N0, rmse = find_n0(
+    ...    gravimetric_sm=[0.292, 0.032],
+    ...    abs_air_humidity=[5,4],
+    ...    neutron_count=[1000,1650],
+    ...    additional_gravimetric_water=[0.05,0.05],
+    ...    conversion_theory='koehli_etal_2021',
+    ...    return_error = True
     ... )
-    3000
+    >>> print(f"N0 = {N0:.0f} ± {rmse:.0f}")
+    3165 ± 46
     """
     from scipy.optimize import minimize_scalar
 
-    off = lattice_water + water_equiv_soil_organic_carbon
+    # Broadcast ArrayLike input to same-lengths arrays
+    n_array, sm_array, h_array, a_array = np.broadcast_arrays(
+        np.atleast_1d(neutron_count),
+        np.atleast_1d(gravimetric_sm),
+        np.atleast_1d(abs_air_humidity),
+        np.atleast_1d(additional_gravimetric_water),
+    )
 
-    def obj_n0(n0_try):  # objective function to optimize for best n0
-        neutron_estimate = (
-            gravimetric_soil_moisture_to_neutrons_koehli_etal_2021(
-                gravimetric_sm=gravimetric_sm,
-                abs_air_humidity=abs_air_humidity,
-                n0=n0_try,
-                offset=off,
-                koehli_parameters=koehli_parameters,
+    def _obj_n0(n0_try):
+        if conversion_theory == "koehli_etal_2021":
+            neutron_estimates = np.array(
+                [
+                    grav_soil_moisture_to_neutrons_koehli_etal_2021(
+                        gravimetric_sm=sm_i,
+                        abs_air_humidity=h_i,
+                        n0=n0_try,
+                        additional_gravimetric_water=a_i,
+                        koehli_parameters=koehli_parameters,
+                    )
+                    for sm_i, h_i, a_i in zip(sm_array, h_array, a_array)
+                ]
             )
-        )
-        error = np.abs(neutron_count - neutron_estimate)
-        return np.mean(error)
+        elif conversion_theory == "desilets_etal_2010":
+            neutron_estimates = np.array(
+                [
+                    grav_soil_moisture_to_neutrons_desilets_etal_2010(
+                        gravimetric_sm=sm_i,
+                        n0=n0_try,
+                        additional_gravimetric_water=a_i,
+                        a0=desilets_parameters[0],
+                        a1=desilets_parameters[1],
+                        a2=desilets_parameters[2],
+                    )
+                    for sm_i, a_i in zip(sm_array, a_array)
+                ]
+            )
 
-    singleopt = minimize_scalar(obj_n0)  # optimize to find best n0
-    n0 = singleopt.x  #
+        errors = n_array - neutron_estimates
+        if metric == "rmse":
+            return np.sqrt(np.mean(errors**2))
+        elif metric == "mae":
+            return np.mean(np.abs(errors))
+        elif metric == "mse":
+            return np.mean(errors**2)
+        elif metric == "mape":
+            # Mean Absolute Percentage Error - good for non-linear functions
+            return np.mean(np.abs(errors / n_array)) * 100
+        elif metric == "rmspe":
+            # Root Mean Square Percentage Error
+            return np.sqrt(np.mean((errors / n_array) ** 2)) * 100
+        elif metric == "log_mse":
+            # Log-scale MSE - reduces impact of large values
+            log_n = np.log(np.maximum(n_array, 1e-10))  # Avoid log(0)
+            log_estimates = np.log(np.maximum(neutron_estimates, 1e-10))
+            return np.mean((log_n - log_estimates) ** 2)
+        elif metric == "log_mse":
+            # Relative RMSE - normalized by target values
+            relative_errors = errors / np.maximum(np.abs(n_array), 1e-10)
+            return np.sqrt(np.mean(relative_errors**2))
+        elif metric == "relative_rmse":
+            # Relative RMSE - normalized by target values
+            relative_errors = errors / np.maximum(np.abs(n_array), 1e-10)
+            return np.sqrt(np.mean(relative_errors**2))
+        else:
+            raise ValueError(f"Error: Invalid metric selected: {metric}")
 
-    return n0
+    n0 = minimize_scalar(_obj_n0).x
+
+    if return_error:
+        return n0, _obj_n0(n0)
+    else:
+        return n0

@@ -1889,19 +1889,17 @@ class CalculateN0:
         float
             N0
         """
-
-        gravimetric_sm_on_day_total = (
-            gravimetric_sm_on_day
-            + lattice_water
-            + water_equiv_soil_organic_carbon
-        )
+        gravimetric_sm_on_day_total = gravimetric_sm_on_day
+        # gravimetric_sm_on_day_total = (
+        #     gravimetric_sm_on_day
+        #     + lattice_water
+        #     + water_equiv_soil_organic_carbon
+        # )
 
         def calculate_sm_and_error_desilets(n0):
-            sm_prediction = (
-                neutrons_to_total_grav_soil_moisture_desilets_etal_2010(
-                    neutron_count=neutron_mean,
-                    n0=n0,
-                )
+            sm_prediction = neutrons_to_grav_soil_moisture_desilets_etal_2010(
+                neutron_count=neutron_mean,
+                n0=n0,
             )
             rel_error = (
                 abs(sm_prediction - gravimetric_sm_on_day_total)
@@ -2018,11 +2016,33 @@ class CalculateN0:
             total_neutron_mean = pd.Series(all_neutron_values).mean()
 
         n0_range = pd.Series(
-            range(int(total_neutron_mean), int(total_neutron_mean * 2.5))
+            range(int(total_neutron_mean), int(total_neutron_mean * 3.5))
         )
         return n0_range
 
     def find_optimal_N0(self):
+        n0_optimal, rmse = find_n0(
+            gravimetric_sm=[
+                metrics["field_average_soil_moisture_gravimetric"]
+                for metrics in self.context.calib_metrics_dict.values()
+            ],
+            neutron_count=[
+                metrics["average_neutron_count"]
+                for metrics in self.context.calib_metrics_dict.values()
+            ],
+            abs_air_humidity=[
+                metrics["absolute_air_humidity"]
+                for metrics in self.context.calib_metrics_dict.values()
+            ],
+            additional_gravimetric_water=self.context.value_avg_lattice_water
+            + self.context.value_avg_soil_organic_carbon_water_equiv,
+            conversion_theory=self.context.neutron_conversion_method,
+            koehli_parameters=self.context.koehli_parameters,
+            return_error=True,
+        )
+        return n0_optimal
+
+    def find_optimal_N0_old(self):
         """
         Finds the optimal N0 number for the site using the weighted
         field average soil mositure.
@@ -2032,6 +2052,7 @@ class CalculateN0:
         average_n0
             The optimal n0 across all the supplied calibration days.
         """
+        print("This function is depreciated and will be removed.")
         # Create neutron range
         context = self.context
 
