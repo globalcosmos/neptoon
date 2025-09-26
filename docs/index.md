@@ -72,6 +72,8 @@ We would also like to acknowledge the following people for continued support dur
 - Miguel Rico-Ramirez
 - Till Francke
 - Louis Ferdinand Trinkle
+- Daniel Rasche
+- Markus Köhli
 
 
 The development of neptoon was supported by the European Commission’s Horizon Europe Framework Programme - ENVironment Research infrastructures INNOVation Roadmap- (ENVRINNOV project, grant no.  101131426)

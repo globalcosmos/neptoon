@@ -1,10 +1,11 @@
 # neptoon
 
 [![PyPI version](https://img.shields.io/pypi/v/neptoon.svg)](https://pypi.org/project/neptoon/)
-[![Python Version](https://img.shields.io/pypi/pyversions/neptoon.svg)](https://pypi.org/project/neptoon/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17209375.svg)](https://doi.org/10.5281/zenodo.17209375)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://www.neptoon.org)
 [![License](https://img.shields.io/pypi/l/neptoon.svg)](https://codebase.helmholtz.cloud/cosmos/neptoon/-/blob/main/LICENSE)
 [![PyPI Downloads](https://static.pepy.tech/badge/neptoon)](https://pepy.tech/projects/neptoon)
+
 
 neptoon is a Python package for processing Cosmic-Ray Neutron Sensor (CRNS) data to produce field-scale soil moisture estimates. 
 
@@ -20,28 +21,24 @@ neptoon is a Python package for processing Cosmic-Ray Neutron Sensor (CRNS) data
 
 ## Installation
 
-### Basic Installation
-
 ```bash
 pip install neptoon
 ```
 
-### GUI Installation
-
+Isolated Environment with **uv** (recommended):
 ```bash
-pipx install "neptoon[gui]"
+uv init --python 3.10
+uv add neptoon
 ```
 
-### Recommended Installation (Isolated Environment)
-
+Isolated Environment with **conda**:
 ```bash
-# Create a new environment with Python 3.10
 conda create -n neptoon python=3.10 ipykernel
 conda activate neptoon
 pip install neptoon
 ```
 
-For more detailed installation instructions, see the [installation documentation](https://www.neptoon.org/en/latest/user-guide/installation/).
+For more detailed instructions, see the [installation documentation](https://www.neptoon.org/en/latest/user-guide/installation/).
 
 ## Quick Start
 
@@ -71,15 +68,15 @@ Comprehensive documentation is available at:
 
 ## Project Status
 
-neptoon is currently in active development. Version 1.0, focusing on stability and robustness, is expected soon. Future plans include:
+Neptoon is currently in active development. Version 1.0, focusing on stability and robustness, is expected soon. Future plans include:
 
 - Roving CRNS processing capabilities
 - Server/Docker versions for automated processing
 
 ## Support and Contribution
 
+- **Contact**: Email us at [contact@neptoon.org](mailto:contact@neptoon.org)
 - **Issues**: Report bugs or request features through [GitLab issues](https://codebase.helmholtz.cloud/cosmos/neptoon/-/issues)
-- **Contact**: Email us at [neptoon-contact@ufz.de](mailto:neptoon-contact@ufz.de)
 - **Contributing**: See the [contribution guidelines](https://www.neptoon.org/en/latest/contribution/overview-contribution/) for details on how to contribute
 
 ## Authors and Acknowledgments
@@ -92,15 +89,30 @@ neptoon is currently in active development. Version 1.0, focusing on stability a
 - Fredo Erxleben
 - Steffen Zacharias
 - Rafael Rosolem
+- Louis Trinkle
+- Daniel Rasche
+- Markus Köhli
 
 ## License
 
-neptoon is licensed under the MIT License. See the [LICENSE](https://codebase.helmholtz.cloud/cosmos/neptoon/-/blob/main/LICENSE) file for details.
+Neptoon is licensed under the MIT License. See the [LICENSE](https://codebase.helmholtz.cloud/cosmos/neptoon/-/blob/main/LICENSE) file for details.
 
 ## Citation
 
-If you use neptoon in your research, please cite:
+> Power, D., Schrön, M., Erxleben, F., Rosolem, R., & Zacharias, S. (2025). "Neptoon". Zenodo. doi:[10.5281/zenodo.17209375](https://doi.org/10.5281/zenodo.17209375)
 
+<details>
+<summary>BibTex</summary>
+
+```bibtex
+@software{Neptoon,
+  author       = {Power, Daniel and Schrön, Martin and Erxleben, Fredo and Rosolem, Rafael and Zacharias, Steffen},
+  title        = {Neptoon},
+  month        = sep,
+  year         = 2025,
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.17209375},
+  url          = {https://doi.org/10.5281/zenodo.17209375},
+}
 ```
-Power, D., Erxleben, F., Zacharias, S., Rosolem, R., & Schrön, M. (2025). neptoon (v0.8.2). Helmholtz Zentrum für Umweltforschung. https://doi.org/10.5281/zenodo.15181751
-```
+</details>
