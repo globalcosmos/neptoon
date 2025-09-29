@@ -10,9 +10,11 @@ from pathlib import Path
 import datetime
 import yaml
 import warnings
+import typer
 from enum import Enum
-from rich.console import Console
+from neptoon.cli import console
 from rich.table import Table
+from rich import box
 from contextlib import contextmanager
 from rich.traceback import install
 from pydantic import ValidationError
@@ -612,8 +614,6 @@ class ConfigType(Enum):
 
 install(show_locals=True)
 
-console = Console()
-
 
 @contextmanager
 def rich_validation(config_file: str, verbose=False):
@@ -630,22 +630,26 @@ def rich_validation(config_file: str, verbose=False):
         _print_table_format(e=e, config_file=config_file)
         if verbose:
             raise
+        else:
+            raise typer.Exit(code=1)
 
 
 def _print_table_format(e: ValidationError, config_file: str):
     """Print errors in a clean table format."""
     table = Table(
-        title=f"Incorrect value given in the {config_file}",
-        title_style="bold orange3",
-        border_style="orange3",
+        title=f"✗ Incorrect values given in the {config_file}:",
+        title_justify="left",
+        title_style="bold red",
+        box=box.SIMPLE,
+        border_style="dim white",
         show_header=True,
-        header_style="bold white on orange3",
+        header_style="bold dim white",
     )
 
-    table.add_column("#", style="cyan", width=3)
-    table.add_column("Field", style="yellow", min_width=15)
-    table.add_column("Error", style="orange3", min_width=20)
-    table.add_column("Incorrect value provided", style="cyan", min_width=15)
+    table.add_column("#", style="dim white", width=3)
+    table.add_column("Field", style="cyan", min_width=15)
+    table.add_column("Problem", style="red3", min_width=20)
+    table.add_column("Provided value", style="red", min_width=15)
 
     for i, error in enumerate(e.errors(), 1):
         field_parts = []
@@ -677,7 +681,7 @@ def _print_table_format(e: ValidationError, config_file: str):
 
     console.print("\n")
     console.print(table)
-    console.print()
+    # console.print()
 
 
 class ConfigurationManager:
@@ -789,6 +793,7 @@ class ConfigurationManager:
         config_type = str(ConfigType.SENSOR.value)
         with rich_validation(config_file="sensor config file"):
             config_obj = SensorConfig(**config_dict)
+
         if self.running_in_docker:
             config_obj.raw_data_parse_options.data_location = (
                 return_file_path_with_suffix(base_path="/workingdir/inputs")
