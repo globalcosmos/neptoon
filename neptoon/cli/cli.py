@@ -1,9 +1,21 @@
-from pathlib import Path
-import typer
+from rich.panel import Panel
+from neptoon import VERSION
+from neptoon.cli import console
 
-from neptoon.workflow import ProcessWithConfig
-from neptoon.config import ConfigurationManager
-from neptoon.utils.docker_utils import is_running_in_docker
+console.print(
+    Panel.fit(
+        f"[bold cyan]Neptoon[/bold cyan] [dim]{VERSION}[/dim]",
+        border_style="cyan",
+    )
+)
+
+with console.status("[bold green]Initializing..."):
+    from pathlib import Path
+    import typer
+
+    from neptoon.workflow import ProcessWithConfig
+    from neptoon.config import ConfigurationManager
+    from neptoon.utils.docker_utils import is_running_in_docker
 
 app = typer.Typer()
 
@@ -26,17 +38,14 @@ def main(
     """
     Process CRNS data using configuration files.
 
-
     Example
-
     -------
-
     neptoon -p /path/to/process.yaml -s /path/to/sensor.yaml
     """
     if processing_config and sensor_config:
-        typer.secho(
-            "Processing the sensor data...", fg=typer.colors.GREEN, bold=True
-        )
+        # typer.secho(
+        #     "Processing the sensor data...", fg=typer.colors.GREEN, bold=True
+        # )
         process_data(processing_config, sensor_config)
     elif processing_config or sensor_config:
         typer.echo(
@@ -56,37 +65,50 @@ def process_data(processing_config: str, sensor_config: str):
     """
     Process the data using the supplied config file locations.
     """
-    processing_config_path = Path(processing_config)
-    sensor_config_path = Path(sensor_config)
+    with console.status("Loading configuration..."):
+        processing_config_path = Path(processing_config)
+        sensor_config_path = Path(sensor_config)
 
-    if not processing_config_path.exists():
-        typer.echo(
-            f"Error: Processing configuration file not found: {processing_config_path}"
-        )
-        raise typer.Exit(code=1)
+        if not processing_config_path.exists():
+            typer.echo(
+                f"Error: Processing configuration file not found: {processing_config_path}"
+            )
+            raise typer.Exit(code=1)
 
-    if not sensor_config_path.exists():
-        typer.echo(
-            f"Error: Station configuration file not found: {sensor_config_path}"
-        )
-        raise typer.Exit(code=1)
-    if is_running_in_docker():
-        config = ConfigurationManager(running_in_docker=True)
-    else:
-        config = ConfigurationManager(running_in_docker=False)
+        if not sensor_config_path.exists():
+            typer.echo(
+                f"Error: Station configuration file not found: {sensor_config_path}"
+            )
+            raise typer.Exit(code=1)
 
-    try:
+        console.print("[green]✓ Config file paths: OK")
+        if is_running_in_docker():
+            config = ConfigurationManager(running_in_docker=True)
+        else:
+            config = ConfigurationManager(running_in_docker=False)
+
         config.load_configuration(file_path=sensor_config_path)
         config.load_configuration(file_path=processing_config_path)
-
         config_processor = ProcessWithConfig(configuration_object=config)
-        config_processor.run_full_process()  # Add verbose into run full process later TODO
-        typer.echo("Processing completed successfully.")
-    except Exception as e:
-        typer.echo(f"Error during processing: {str(e)}")
-        import traceback
 
-        traceback.print_exc()
+    console.print("[green]✓ Config loading: OK")
+
+    try:
+        config_processor.run_full_process()  # Add verbose into run full process later TODO
+        console.print("[green]✓ Done")
+    # typer.echo("Processing completed successfully.")
+    except Exception as e:
+        # typer.echo(
+        #     "Neptoon was not able to process the data, please check your input."
+        # )
+        console.print(
+            "[red]✗ Neptoon was not able to process the data, please check your input.[/red]"
+        )
+
+        # typer.echo(f"! Error during processing: {str(e)}")
+        # import traceback
+
+        # traceback.print_exc()
         raise typer.Exit(code=1)
 
 

@@ -23,6 +23,8 @@ from neptoon.config.configuration_input import ConfigurationManager, BaseConfig
 
 from magazine import Magazine
 
+from neptoon.cli import console
+
 core_logger = get_logger()
 
 
@@ -599,66 +601,71 @@ class ProcessWithConfig:
         """
         if self.sensor_config.data_storage.create_report:
             Magazine.active = True
-        print("Reading in data...")
-        self.data_hub = self._create_data_hub(sensor_config=self.sensor_config)
+        with console.status("Reading in data..."):
+            self.data_hub = self._create_data_hub(
+                sensor_config=self.sensor_config
+            )
 
         # Prepare data
-        print("Collecting and attaching NMDB.eu data...")
-        self.data_hub = self._attach_nmdb_data(self.data_hub)
-        self.data_hub = self._prepare_static_values(self.data_hub)
-        self.data_hub = self._prepare_additional_columns(self.data_hub)
+        with console.status("Collecting and attaching NMDB.eu data..."):
+            self.data_hub = self._attach_nmdb_data(self.data_hub)
+            self.data_hub = self._prepare_static_values(self.data_hub)
+            self.data_hub = self._prepare_additional_columns(self.data_hub)
+        console.print("[green]✓ NMDB included: OK")
         # First Quality assessment
         ## Raw Neutrons
-        print("Performing quality assessment...")
 
-        self.data_hub = self._apply_quality_assessment(
-            data_hub=self.data_hub,
-            sensor_config=self.sensor_config,
-            partial_config=self.process_config.neutron_quality_assessment,
-            name_of_target="raw_neutrons",
-        )
-        if (
-            hasattr(self.sensor_config, "neutron_quality_assessment")
-            and self.sensor_config.neutron_quality_assessment is not None
-        ):
-            try:
-                self.data_hub = self._apply_quality_assessment(
-                    data_hub=self.data_hub,
-                    sensor_config=self.sensor_config,
-                    partial_config=self.sensor_config.neutron_quality_assessment,
-                    name_of_target="raw_neutrons",
-                )
-            except Exception as e:
-                print(
-                    "Could not apply neutron QA from sensor config file. "
-                    f"Exception: {e}"
-                )
-        ## Meteo Variables
-        self.data_hub = self._apply_quality_assessment(
-            data_hub=self.data_hub,
-            sensor_config=self.sensor_config,
-            partial_config=self.sensor_config.input_data_qa,
-            name_of_target=None,
-        )
+        with console.status("Performing quality assessment..."):
+            self.data_hub = self._apply_quality_assessment(
+                data_hub=self.data_hub,
+                sensor_config=self.sensor_config,
+                partial_config=self.process_config.neutron_quality_assessment,
+                name_of_target="raw_neutrons",
+            )
+            if (
+                hasattr(self.sensor_config, "neutron_quality_assessment")
+                and self.sensor_config.neutron_quality_assessment is not None
+            ):
+                try:
+                    self.data_hub = self._apply_quality_assessment(
+                        data_hub=self.data_hub,
+                        sensor_config=self.sensor_config,
+                        partial_config=self.sensor_config.neutron_quality_assessment,
+                        name_of_target="raw_neutrons",
+                    )
+                except Exception as e:
+                    print(
+                        "Could not apply neutron QA from sensor config file. "
+                        f"Exception: {e}"
+                    )
+            ## Meteo Variables
+            self.data_hub = self._apply_quality_assessment(
+                data_hub=self.data_hub,
+                sensor_config=self.sensor_config,
+                partial_config=self.sensor_config.input_data_qa,
+                name_of_target=None,
+            )
+            console.print("[green]✓ Quality check: OK")
 
         # Corrections
-        print("Correcting neutrons...")
-        self.data_hub = self._select_corrections(
-            data_hub=self.data_hub,
-            process_config=self.process_config,
-            sensor_config=self.sensor_config,
-        )
-        self.data_hub = self._correct_neutrons(self.data_hub)
+        with console.status("Correcting neutrons..."):
+            self.data_hub = self._select_corrections(
+                data_hub=self.data_hub,
+                process_config=self.process_config,
+                sensor_config=self.sensor_config,
+            )
+            self.data_hub = self._correct_neutrons(self.data_hub)
+        console.print("[green]✓ Neutron corrections: OK")
 
         # Calibration
         if self.sensor_config.calibration.calibrate:
-            print("Calibrating the sensor...")
-
-            self.data_hub, self.sensor_config = self._calibrate_data(
-                data_hub=self.data_hub,
-                sensor_config=self.sensor_config,
-                process_config=self.process_config,
-            )
+            with console.status("Calibrating the sensor..."):
+                self.data_hub, self.sensor_config = self._calibrate_data(
+                    data_hub=self.data_hub,
+                    sensor_config=self.sensor_config,
+                    process_config=self.process_config,
+                )
+            console.print("[green]✓ Calibration: OK")
 
         # Second QA and Smoothing
 
@@ -671,74 +678,89 @@ class ProcessWithConfig:
         )
 
         if self.process_config.temporal_aggregation.aggregate_data:
-            self.data_hub.aggregate_data_frame(
-                output_resolution=self.process_config.temporal_aggregation.output_resolution,
-                max_na_fraction=self.process_config.temporal_aggregation.aggregate_maxna_fraction,
-                aggregate_method=self.process_config.temporal_aggregation.aggregate_method,
-            )
+            with console.status("Aggregation..."):
+                self.data_hub.aggregate_data_frame(
+                    output_resolution=self.process_config.temporal_aggregation.output_resolution,
+                    max_na_fraction=self.process_config.temporal_aggregation.aggregate_maxna_fraction,
+                    aggregate_method=self.process_config.temporal_aggregation.aggregate_method,
+                )
+                console.print("[green]✓ Aggregation: OK")
+
         elif self.process_config.temporal_aggregation.align_timestamps:
-            self.data_hub.align_time_stamps(
-                align_method=self.process_config.temporal_aggregation.alignment_method
-            )
+            with console.status("Aligning time stamps..."):
+                self.data_hub.align_time_stamps(
+                    align_method=self.process_config.temporal_aggregation.alignment_method
+                )
+                console.print("[green]✓ Time alignment: OK")
         else:
             pass
 
         if self.process_config.data_smoothing.smooth_corrected_neutrons:
-            self.data_hub = self._smooth_data(
-                data_hub=self.data_hub,
-                process_config=self.process_config,
-                column_to_smooth=str(
-                    ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
-                ),
-            )
-
-        # Produce soil moisture estimates
-        # NOTE: print statement inside NeutronsToSM in order to state which method used
-        if (
-            self.process_config.correction_steps.soil_moisture_estimation.method
-            == "none"
-        ):
-            message = (
-                "Soil moisture estimation method is set to none. "
-                "Skipping converting neutrons to soil moisture"
-            )
-            core_logger.info(message)
-            print(message)
-            pass
-        else:
-            self.data_hub = self._produce_soil_moisture_estimates(
-                self.data_hub,
-                conversion_theory=self.process_config.correction_steps.soil_moisture_estimation.method,
-            )
-            if self.process_config.data_smoothing.smooth_soil_moisture:
+            with console.status("Smoothing..."):
                 self.data_hub = self._smooth_data(
                     data_hub=self.data_hub,
                     process_config=self.process_config,
-                    column_to_smooth=str(ColumnInfo.Name.SOIL_MOISTURE_FINAL),
+                    column_to_smooth=str(
+                        ColumnInfo.Name.CORRECTED_EPI_NEUTRON_COUNT
+                    ),
                 )
-            self.data_hub = self._apply_quality_assessment(
-                data_hub=self.data_hub,
-                sensor_config=self.sensor_config,
-                partial_config=self.sensor_config.soil_moisture_qa,
-                name_of_target=None,
-            )
+                console.print("[green]✓ Smoothing: OK")
+
+        with console.status("Producing soil moisture estimates..."):
+            # Produce soil moisture estimates
+            # NOTE: print statement inside NeutronsToSM in order to state which method used
+            if (
+                self.process_config.correction_steps.soil_moisture_estimation.method
+                == "none"
+            ):
+                message = (
+                    "Soil moisture estimation method is set to none. "
+                    "Skipping converting neutrons to soil moisture"
+                )
+                core_logger.info(message)
+                print(message)
+                pass
+            else:
+                self.data_hub = self._produce_soil_moisture_estimates(
+                    self.data_hub,
+                    conversion_theory=self.process_config.correction_steps.soil_moisture_estimation.method,
+                )
+                if self.process_config.data_smoothing.smooth_soil_moisture:
+                    self.data_hub = self._smooth_data(
+                        data_hub=self.data_hub,
+                        process_config=self.process_config,
+                        column_to_smooth=str(
+                            ColumnInfo.Name.SOIL_MOISTURE_FINAL
+                        ),
+                    )
+                self.data_hub = self._apply_quality_assessment(
+                    data_hub=self.data_hub,
+                    sensor_config=self.sensor_config,
+                    partial_config=self.sensor_config.soil_moisture_qa,
+                    name_of_target=None,
+                )
+            console.print("[green]✓ Soil moisture produced.")
 
         # Create figures and save outputs
-        print("Creating figures...")
-        self.data_hub = self._create_figures(
-            data_hub=self.data_hub,
-            sensor_config=self.sensor_config,
-        )
-        self.data_hub = self._save_data(
-            data_hub=self.data_hub,
-            sensor_config=self.sensor_config,
-        )
-        self._config_saver(
-            data_hub=self.data_hub,
-            sensor_config=self.sensor_config,
-            process_config=self.process_config,
-        )
-        print("Data saved.")
+        with console.status("Saving output..."):
+            self.data_hub = self._create_figures(
+                data_hub=self.data_hub,
+                sensor_config=self.sensor_config,
+            )
+            console.print("[green]✓ Figures saved.")
+
+            self.data_hub = self._save_data(
+                data_hub=self.data_hub,
+                sensor_config=self.sensor_config,
+            )
+            console.print("[green]✓ Data saved.")
+
+            self._config_saver(
+                data_hub=self.data_hub,
+                sensor_config=self.sensor_config,
+                process_config=self.process_config,
+            )
+            console.print("[green]✓ Config saved.")
 
 
 class QualityAssessmentFromConfig:

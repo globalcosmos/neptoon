@@ -12,6 +12,7 @@ from neptoon.io.read.data_ingest import (
 )
 from neptoon.config.configuration_input import ConfigurationManager, BaseConfig
 from neptoon.logging import get_logger
+from neptoon.cli import console
 
 core_logger = get_logger()
 
@@ -217,7 +218,9 @@ class DataHubFromConfig:
         file_manager.get_list_of_files()
         file_manager.filter_files()
         # echo how many files have been found
-        print(f"Found {len(file_manager.files)} files to parse.")  # rr
+        console.print(
+            f"[green]✓ Found {len(file_manager.files)} files to parse."
+        )  # rr
         core_logger.info(f"Found {len(file_manager.files)} files to parse.")
         file_parser = ParseFilesIntoDataFrame(
             file_manager=file_manager, config=file_collection_config

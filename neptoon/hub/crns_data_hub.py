@@ -34,6 +34,7 @@ from neptoon.data_prep import TimeStampAggregator, TimeStampAligner
 from neptoon.columns import ColumnInfo
 from neptoon.logging import get_logger
 from magazine import Magazine
+from neptoon.cli import console
 
 core_logger = get_logger()
 
@@ -387,7 +388,7 @@ class CRNSDataHub:
         Data smoothing was done on {column_to_smooth}. This was done
         using {smooth_method} with a window of {window}.
         """
-        print(f"Smoothing data with a smoothing window of {window}")
+        console.print(f"- Smoothing window: {window}")
         smoother = SmoothData(
             data=self.crns_data_frame,
             column_to_smooth=column_to_smooth,
@@ -501,7 +502,7 @@ class CRNSDataHub:
         aggregate_method : str, optional
             _description_, by default "bagg"
         """
-        print(f"Aggregating data to {output_resolution} resolution")
+        console.print(f"- Aggregation resolution: {output_resolution}")
         timestamp_aggregator = TimeStampAggregator(
             data_frame=self.crns_data_frame,
             output_resolution=output_resolution,
@@ -568,7 +569,7 @@ class CRNSDataHub:
         soil organic carbon content of
         {default_params[soil_organic_carbon]}
         """
-        print("Producing soil moisture estimates.")
+        # print("Producing soil moisture estimates.")
         # Create attributes for NeutronsToSM
         default_params = {
             "n0": self.sensor_info.N0,

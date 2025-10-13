@@ -9,6 +9,7 @@ from dateutil import parser
 from neptoon.columns import ColumnInfo
 from neptoon.config.global_configuration import GlobalConfig
 from neptoon.logging import get_logger
+from neptoon.cli import console
 
 core_logger = get_logger()
 
@@ -370,13 +371,9 @@ class TermsDisplayManager:
 
         station_url = f"https://www.nmdb.eu/station/{station.lower()}/"
 
-        print(f"\n=== NMDB DATA USAGE NOTICE ===")
-        print(
-            f"Using NMDB.eu data for processing, there are stipulations in the usage of this data."
+        console.print(
+            f"[dim cyan]ℹ️ NMDB data usage notice: When using NMDB.eu data for processing, there are stipulations in the usage of this data. Please see {station_url} for details."
         )
-        print(f"Please see {station_url} for details.")
-        print("=" * 40)
-
         cls._displayed_stations.add(station)
 
 
