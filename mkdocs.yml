@@ -58,6 +58,7 @@ nav:
           - Process config: user-guide/process-with-config/process-config.md
           - Sensor config: user-guide/process-with-config/sensor-config.md
           - Using config files: user-guide/process-with-config/config-usage.md
+          - Run with Docker: user-guide/process-with-config/run-with-docker.md
       - Process data with python IDE:
           - Overview: user-guide/python-ide-overview.md
           - Importing data: user-guide/importing-data.md
