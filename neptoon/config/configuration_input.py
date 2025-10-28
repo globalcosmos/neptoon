@@ -230,17 +230,17 @@ class FlagRange(BaseConfig):
     )
 
     @model_validator(mode="after")
-    def validate_range(cls, values):
+    def validate_range(self):
         """Validate min is less than max after both fields are set."""
-        min_val = values.min if values.min is not None else float("-inf")
-        max_val = values.max if values.max is not None else float("inf")
+        min_val = self.min if self.min is not None else float("-inf")
+        max_val = self.max if self.max is not None else float("inf")
 
         if min_val > max_val:
             raise ValueError(
                 f"min value ({min_val}) must be less than max value ({max_val})"
             )
 
-        return values
+        return self
 
 
 class PersistenceCheck(BaseConfig):

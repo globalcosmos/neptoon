@@ -7,3 +7,5 @@ neptoon
 mkdocstrings
 mkdocstrings-python
 mkdocs-include-markdown-plugin
+mkdocs-gen-files
+mkdocs-literate-nav
